@@ -1,5 +1,5 @@
 /*
- *  linux/drivers/s390/misc/z90crypt.h
+ *  linux/drivers/s390/crypto/z90crypt.h
  *
  *  z90crypt 1.3.2
  *
@@ -24,8 +24,8 @@
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-#ifndef _LINUX_Z90CRYPT_H_
-#define _LINUX_Z90CRYPT_H_
+#ifndef _Z90CRYPT_H_
+#define _Z90CRYPT_H_
 
 #include <linux/ioctl.h>
 
@@ -36,7 +36,7 @@
 #define z90crypt_VARIANT 2	// 2 = added PCIXCC MCL3 and CEX2C support
 
 /**
- * For 2.3, there was no sparse checker
+ * If we are not using the sparse checker, __user has no use.
  */
 #ifdef __CHECKER__
 # define __user		__attribute__((noderef, address_space(1)))
@@ -175,17 +175,6 @@ struct ica_rsa_modexpo_crt {
  *     Return an integer count of all PCIXCCs (MCL2 + MCL3).
  *     This is DEPRECATED now that MCL3 PCIXCCs are treated differently from
  *     MCL2 PCIXCCs.
- *
- *   Z90QUIESCE (not recommended)
- *     Quiesce the driver.  This is intended to stop all new
- *     requests from being processed.  Its use is NOT recommended,
- *     except in circumstances where there is no other way to stop
- *     callers from accessing the driver.  Its original use was to
- *     allow the driver to be "drained" of work in preparation for
- *     a system shutdown.
- *
- *     NOTE: once issued, this ban on new work cannot be undone
- *           except by unloading and reloading the driver.
  */
 
 /**
@@ -197,9 +186,6 @@ struct ica_rsa_modexpo_crt {
 /* DEPRECATED status calls (bound for removal at some point) */
 #define ICAZ90STATUS	_IOR(Z90_IOCTL_MAGIC, 0x10, struct ica_z90_status)
 #define Z90STAT_PCIXCCCOUNT	_IOR(Z90_IOCTL_MAGIC, 0x43, int)
-
-/* unrelated to ICA callers */
-#define Z90QUIESCE	_IO(Z90_IOCTL_MAGIC, 0x11)
 
 /* New status calls */
 #define Z90STAT_TOTALCOUNT	_IOR(Z90_IOCTL_MAGIC, 0x40, int)
@@ -215,18 +201,6 @@ struct ica_rsa_modexpo_crt {
 #define Z90STAT_STATUS_MASK	_IOR(Z90_IOCTL_MAGIC, 0x48, char[64])
 #define Z90STAT_QDEPTH_MASK	_IOR(Z90_IOCTL_MAGIC, 0x49, char[64])
 #define Z90STAT_PERDEV_REQCNT	_IOR(Z90_IOCTL_MAGIC, 0x4a, int[64])
-
-/**
- * local errno definitions
- */
-#define ENOBUFF	  129	// filp->private_data->...>work_elem_p->buffer is NULL
-#define EWORKPEND 130	// user issues ioctl while another pending
-#define ERELEASED 131	// user released while ioctl pending
-#define EQUIESCE  132	// z90crypt quiescing (no more work allowed)
-#define ETIMEOUT  133	// request timed out
-#define EUNKNOWN  134	// some unrecognized error occured (retry may succeed)
-#define EGETBUFF  135	// Error getting buffer or hardware lacks capability
-			// (retry in software)
 
 /**
  * DEPRECATED STRUCTURES
@@ -255,4 +229,4 @@ struct ica_z90_status {
 	unsigned char qdepth[MASK_LENGTH];
 };
 
-#endif /* _LINUX_Z90CRYPT_H_ */
+#endif /* _Z90CRYPT_H_ */

@@ -346,9 +346,13 @@ void init() {
 #ifdef linux
 #include "platform.h"
 
-void __attribute__((constructor)) _init(void)
+void __attribute__((constructor)) icainit(void)
 {
   rsa_init();
   queryCryptoAssist(); // On non-zSeries platforms, this does nothing.
+}
+
+void __attribute__((destructor)) icafini(void)
+{
 }
 #endif

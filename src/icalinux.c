@@ -371,6 +371,8 @@
 /* Sep 22 04  EDR   Update signal handling                           */
 /* Nov 30 04  EDR   CPACF instruction testing should occur only at   */
 /*                  library initialization for S/390                 */
+/* Jan 31 05  EDR   Signal handling corrected to properly unblock    */
+/*                  signal prior to setting handler.                 */
 /*                                                                   */
 /*********************************************************************/
 
@@ -545,82 +547,64 @@ static unsigned char SHACONST[20] = {
 
 static volatile int sha_switch = 0;
 static volatile int des_switch = 0;
+static volatile int cpacf_checked = 0;
 
-static jmp_buf envqs;
-static jmp_buf envqd;
-static void sha_handler(int sig)
+static jmp_buf envq;
+static void sigill_handler(int sig)
 {
-	longjmp(envqs, EXCEPTION_RV);
-}
-
-static void des_handler(int sig)
-{
-	longjmp(envqd, EXCEPTION_RV);
+	longjmp(envq, EXCEPTION_RV);
 }
 
 static int querySHA1(void)
 {
 	unsigned char mask[16];
-	struct sigaction new, old;
 
-	new.sa_handler = (void *) sha_handler;
-	new.sa_flags = 0;
-	sigaction(SIGILL, &new, &old);
 	sha_switch = 0;
-	if (setjmp(envqs) == 0) {
-		asm volatile
+	asm volatile
 #ifdef _LINUX_S390X_
-		("	slgr	0,0		\n"	// R0 = 0;
-		 "	lgr	1,%0		\n"	// R1 = mask
-		 "	.long	0xb93e0004	\n"	// KIMD
-		 :
-		 :"d" (mask)
-		 :"cc","0","1","4");
+	("	slgr	0,0		\n"	// R0 = 0;
+	 "	lgr	1,%0		\n"	// R1 = mask
+	 "	.long	0xb93e0004	\n"	// KIMD
+	 :
+	 :"d" (mask)
+	 :"cc","0","1","4");
 #else
-		("	slr	0,0		\n"	// R0 = 0;
-		 "	lr	1,%0		\n"	// R1 = mask
-		 "	.long	0xb93e0004	\n"	// KIMD
-		 :
-		 :"d" (mask)
-		 :"cc","0","1","4");
+	("	slr	0,0		\n"	// R0 = 0;
+	 "	lr	1,%0		\n"	// R1 = mask
+	 "	.long	0xb93e0004	\n"	// KIMD
+	 :
+	 :"d" (mask)
+	 :"cc","0","1","4");
 #endif
-		if (mask[0] & 0x40)
-			sha_switch = 1;
-	}
-	sigaction(SIGILL, &old, NULL);
+	if (mask[0] & 0x40)
+		sha_switch = 1;
 	return sha_switch;
 }
 
 static int queryDES(void)
 {
 	unsigned char mask[16];
-	struct sigaction new, old;
 
-	new.sa_handler = (void *) des_handler;
-	new.sa_flags = 0;
-	sigaction(SIGILL, &new, &old);
 	des_switch = 0;
-	if (setjmp(envqd) == 0) {
-		asm volatile
+	sha_switch = 0;
+	asm volatile
 #ifdef _LINUX_S390X_
-		("	slgr	0,0		\n"	// R0 = 0;
-		 "	lgr	1,%0		\n"	// R1 = mask
-		 "	.long	0xb92e0062	\n"	// KM
-		 :
-		 :"d" (mask)
-		 :"cc","0","1","2","6");
+	("	slgr	0,0		\n"	// R0 = 0;
+	 "	lgr	1,%0		\n"	// R1 = mask
+	 "	.long	0xb92e0062	\n"	// KM
+	 :
+	 :"d" (mask)
+	 :"cc","0","1","2","6");
 #else
-		("	slr	0,0		\n"	// R0 = 0;
-		 "	lr	1,%0		\n"	// R1 = mask
-		 "	.long	0xb92e0062	\n"	// KM
-		 :
-		 :"d" (mask)
-		 :"cc","0","1","2","6");
+	("	slr	0,0		\n"	// R0 = 0;
+	 "	lr	1,%0		\n"	// R1 = mask
+	 "	.long	0xb92e0062	\n"	// KM
+	 :
+	 :"d" (mask)
+	 :"cc","0","1","2","6");
 #endif
-		if (mask[0] & 40)
-			des_switch = 1;
-	}
-	sigaction(SIGILL, &old, NULL);
+	if (mask[0] & 40)
+		des_switch = 1;
 	return des_switch;
 }
 
@@ -784,8 +768,26 @@ static int KLMD (unsigned char * digest_p,
 
 void queryCryptoAssist(void)
 {
-	querySHA1();
-	queryDES();
+	struct sigaction new, old;
+	sigset_t newset, oldset;
+
+	if (cpacf_checked)
+		return;
+
+	cpacf_checked = 1;
+	sigemptyset(&newset);
+	sigaddset(&newset, SIGILL);
+	sigprocmask(SIG_UNBLOCK, &newset, &oldset);
+	new.sa_handler = (void *) sigill_handler;
+	new.sa_flags = 0;
+	sigaction(SIGILL, &new, &old);
+
+	if (setjmp(envq) == 0) {
+		queryDES();
+		querySHA1();
+	}
+	sigaction(SIGILL, &old, NULL);
+	sigprocmask(SIG_SETMASK, &oldset, NULL);
 }
 #else // Non-zSeries platforms do not have CryptoAssist
 void queryCryptoAssist(void)
@@ -1412,7 +1414,7 @@ icaRsaModExpo( ICA_ADAPTER_HANDLE    hAdapterHandle,
      rc = ioctl(hAdapterHandle, ICARSAMODEXPO, &rb);
 
      if (rc == -1) {
-       if ((errno == EGETBUFF) || (errno == ENODEV)) {
+       if (errno == ENODEV) {
          rc = icaRsaModExpoSW(&rb);
          if (rc == 0) {
            *pOutputDataLength = bytelength;
@@ -1542,7 +1544,7 @@ icaRsaCrt( ICA_ADAPTER_HANDLE     hAdapterHandle,
      rc = ioctl(hAdapterHandle, ICARSACRT, &rb);
 
      if (rc == -1) {
-       if ((errno == EGETBUFF) || (errno == ENODEV)) {
+       if (errno == ENODEV) {
          rc = icaRsaCrtSW(&rb);
          if (rc == 0) {
            *pOutputDataLength = (bytelength * 2);
