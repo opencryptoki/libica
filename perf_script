@@ -1,0 +1,5 @@
+if [ "$1" == "debug" ]; then
+echo "PERFFLAG=-g -O0" >> ./Makefile.macros
+else
+echo "PERFFLAG=-O2" >> ./Makefile.macros
+fi

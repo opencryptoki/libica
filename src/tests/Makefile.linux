@@ -1,0 +1,26 @@
+OPTS = -g
+INCLUDE = -I . -I ../../include
+
+CC = gcc
+
+all: libica_3des_test libica_rsa_test libica_des_test libica_rng_test libica_keygen_test
+
+libica_3des_test: libica_3des_test.c
+	gcc $(OPTS) $(INCLUDE) -lica -o libica_3des_test libica_3des_test.c 
+
+libica_rsa_test: libica_rsa_test.c
+	gcc $(OPTS) $(INCLUDE) -lica -o libica_rsa_test libica_rsa_test.c 
+
+libica_des_test: libica_des_test.c
+	gcc $(OPTS) $(INCLUDE) -lica -o libica_des_test libica_des_test.c 
+
+libica_rng_test: libica_rng_test.c
+	gcc $(OPTS) $(INCLUDE) -lica -o libica_rng_test libica_rng_test.c 
+
+libica_keygen_test: libica_keygen_test.c
+	gcc $(OPTS) $(INCLUDE) -lica -o libica_keygen_test libica_keygen_test.c 
+
+
+clean: 
+	rm libica_3des_test libica_rsa_test libica_des_test libica_rng_test libica_keygen_test
+

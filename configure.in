@@ -1,0 +1,51 @@
+dnl New
+dnl Process this file with autoconf to produce a configure script.
+AC_INIT(src/icalinux.c)
+AC_CANONICAL_SYSTEM
+AM_INIT_AUTOMAKE(libica,1.2.0)
+
+
+dnl Checks for programs.
+
+dnl Checks for libraries.
+
+dnl Checks for header files.
+AC_DISABLE_STATIC
+
+AC_PROG_CC
+AC_PROG_LIBTOOL
+AC_HEADER_STDC
+AC_CHECK_HEADERS(fcntl.h sys/ioctl.h)
+case "$target" in
+# SAB don't need to check for zSeries.. header is local to the library now
+#s390*) AC_CHECK_HEADER(linux/z90crypt.h, ,
+#        AC_MSG_ERROR([*** Unable to find linux/z90crypt.h!!! Do you have the ICA device driver installed?])
+#) ;;
+i386* | i486* | i586* | i686* | powerpc*) AC_CHECK_HEADER(linux/icaioctl.h, ,
+        AC_MSG_ERROR([*** Unable to find linux/icaioctl.h!!! Do you have the ICA device driver installed?])
+) ;;
+esac
+
+
+
+./autoversion
+dnl Checks for typedefs, structures, and compiler characteristics.
+AC_C_CONST
+AC_C_INLINE
+AC_TYPE_SIZE_T
+
+dnl CFLAGS=-shared -fPIC -D_REENTRANT -I../include 
+INCLUDES=-I./inc
+CC=gcc
+dnl LDFLAGS=-shared
+
+AC_ARG_ENABLE([debug], [--enable-debug             add the -g option to
+CFLAGS],./perf_script debug, ./perf_script)
+
+dnl Checks for library functions.
+AC_PROG_GCC_TRADITIONAL
+AC_FUNC_MEMCMP
+
+AC_OUTPUT(Makefile src/Makefile)
+
+
