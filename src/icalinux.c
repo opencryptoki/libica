@@ -624,32 +624,39 @@ static int KMC (register long fc,	// function code
 /*********************************************************************/
 {
 	register int cc = 0;
-
+	asm volatile
 #ifdef _LINUX_S390X_
-	asm    (" lgr 0,%1 \n"	// R0 = fc
-		"\t lgr 1,%2 \n"	// R1 = pIK
-		"\t lgr 4,%3 \n"	// R4 = pO
-		"\t lgr 6,%4 \n"	// R6 = pI
-		"\t lgr 7,%5 \n"	// R7 = len
+	("	lgr	0,%1		\n"	// R0 = fc
+	 "	lgr	1,%2		\n"	// R1 = pIK
+	 "	lgr	4,%3		\n"	// R4 = pO
+	 "	lgr	6,%4		\n"	// R6 = pI
+	 "	lgr	7,%5		\n"	// R7 = len
+	 "0:	.long	0xb92f0046	\n"	// KMC
+	 "	brc	1,0b		\n"	// keep going while cc=3
+	 "	ipm	%0		\n"	// condition code as uint
+	 "	srl	%0,28		\n"	// ccode = condition code
+	 :"=d"(cc)
+	 :"d"(fc),"d"(pIK),"d"(pO),"d"(pI),"d"(len)
+	 :"cc","0","1","4","6","7");
 #else
-	asm    (" lr 0,%1 \n"	// R0 = fc
-		"\t lr 1,%2 \n"	// R1 = pIK
-		"\t lr 4,%3 \n"	// R4 = pO
-		"\t lr 6,%4 \n"	// R6 = pI
-		"\t lr 7,%5 \n"	// R7 = len
+	("	lr	0,%1		\n"	// R0 = fc
+	 "	lr	1,%2		\n"	// R1 = pIK
+	 "	lr	4,%3		\n"	// R4 = pO
+	 "	lr	6,%4		\n"	// R6 = pI
+	 "	lr	7,%5		\n"	// R7 = len
+	 "0:	.long	0xb92f0046	\n"	// KMC
+	 "	brc	1,0b		\n"	// keep going while cc=3
+	 "	ipm	%0		\n"	// condition code as uint
+	 "	srl	%0,28		\n"	// ccode = condition code
+	 :"=d"(cc)
+	 :"d"(fc),"d"(pIK),"d"(pO),"d"(pI),"d"(len)
+	 :"cc","0","1","4","6","7");
 #endif
-		"0:\t .long 0xb92f0046 \n"	// KMC
-		"\t brc 1,0b \n"	// keep going while cc=3
-		"\t ipm %0  \n"		// condition code as uint
-		"\t srl %0,28 \n"	// ccode = condition code
-		:"=d"(cc)
-		:"d"(fc),"d"(pIK),"d"(pO),"d"(pI),"d"(len)
-		:"cc","0","1","4","6","7");
 
 	return cc;
-}; //end KMC
+} // end KMC
 
-static int KME (unsigned long fc,	// function code
+static int KM (unsigned long fc,	// function code
 			unsigned char * pK,	// key
 			unsigned char * pO,	// output address
 			unsigned char * pI,	// input address
@@ -660,37 +667,45 @@ static int KME (unsigned long fc,	// function code
 /*         r4 = pO                                                   */
 /*         r6 = pI                                                   */
 /*         r7 = len                                                  */
-/*           KME                                                     */
+/*           KM                                                     */
 /*         until cc != 3                                             */
 /*********************************************************************/
 {
 	register int cc = 0;
 
+	asm volatile
 #ifdef _LINUX_S390X_
-	asm    (" lgr 0,%1 \n"		// R0 = fc
-		"\t lgr 1,%2 \n"	// R1 = pK
-		"\t lgr 4,%3 \n"	// R4 = pO
-		"\t lgr 6,%4 \n"	// R6 = pI
-		"\t lgr 7,%5 \n"	// R7 = len
+	("	lgr	0,%1		\n"	// R0 = fc
+	 "	lgr	1,%2		\n"	// R1 = pK
+	 "	lgr	4,%3		\n"	// R4 = pO
+	 "	lgr	6,%4		\n"	// R6 = pI
+	 "	lgr	7,%5		\n"	// R7 = len
+	 "0:	.long	0xb92e0046	\n"	// KM
+	 "	brc	1,0b		\n"	// keep going while cc=3
+	 "	ipm	%0		\n"	// condition code as uint
+	 "	srl	%0,28		\n"	// ccode = condition code
+	 :"=d"(cc)
+	 :"d"(fc),"d"(pK),"d"(pO),"d"(pI),"d"(len)
+	 :"cc","0","1","4","6","7");
 #else
-	asm    (" lr 0,%1 \n"		// R0 = fc
-		"\t lr 1,%2 \n"		// R1 = pK
-		"\t lr 4,%3 \n"		// R4 = pO
-		"\t lr 6,%4 \n"		// R6 = pI
-		"\t lr 7,%5 \n"		// R7 = len
+	("	lr	0,%1		\n"	// R0 = fc
+	 "	lr	1,%2		\n"	// R1 = pK
+	 "	lr	4,%3		\n"	// R4 = pO
+	 "	lr	6,%4		\n"	// R6 = pI
+	 "	lr	7,%5		\n"	// R7 = len
+	 "0:	.long	0xb92e0046	\n"	// KM
+	 "	brc	1,0b		\n"	// keep going while cc=3
+	 "	ipm	%0		\n"	// condition code as uint
+	 "	srl	%0,28		\n"	// ccode = condition code
+	 :"=d"(cc)
+	 :"d"(fc),"d"(pK),"d"(pO),"d"(pI),"d"(len)
+	 :"cc","0","1","4","6","7");
 #endif
-		"0:\t .long 0xb92e0046 \n"	// KM
-		"\t brc 1,0b \n"	// keep going while cc=3
-		"\t ipm %0  \n"		// condition code as uint
-		"\t srl %0,28 \n"	// ccode = condition code
-		:"=d"(cc)
-		:"d"(fc),"d"(pK),"d"(pO),"d"(pI),"d"(len)
-		:"cc","0","1","4","6","7");
 
 	return cc;
-}; //end KME
+} //end KM
 
-static int KMMD (unsigned char * digest_p,
+static int KIMD (unsigned char * digest_p,
 		unsigned char * msgP,
 		unsigned long msgL)
 /*********************************************************************/
@@ -698,35 +713,43 @@ static int KMMD (unsigned char * digest_p,
 /*         r1 = digest_p                                             */
 /*         r6 = msgP                                                 */
 /*         r7 = msgL                                                 */
-/*           KMMD (6)                                                */
+/*           KIMD (6)                                                */
 /*         until ccode != 3                                          */
 /*********************************************************************/
 {
 	register int ccode = 0;
 
+	asm volatile
 #ifdef _LINUX_S390X_
-	asm volatile (" slgr 0,0 \n"	// R0 = 0;
-		"\t lghi 0,1 \n"	// R0 = 0x01
-		"\t lgr 1,%1 \n"	// R1 = digest_p
-		"\t lgr 6,%2 \n"	// R6 = message_p
-		"\t lgr 7,%3 \n"	// R7 = messageLen
+	("	slgr	0,0		\n"	// R0 = 0;
+	 "	lghi	0,1		\n"	// R0 = 0x01
+	 "	lgr	1,%1		\n"	// R1 = digest_p
+	 "	lgr	6,%2		\n"	// R6 = message_p
+	 "	lgr	7,%3		\n"	// R7 = messageLen
+	 "0:	.long	0xb93e0006	\n"	// KIMD
+	 "1:	brc	1,0b		\n"	// keep going while cc=3
+	 "	ipm	%0		\n"	// condition code as uint
+	 "	srl	%0,28		\n"	// ccode = condition code
+	 :"=d"(ccode)
+	 :"d" (digest_p),"d" (msgP),"d" (msgL)
+	 :"cc","0","1","6","7");
 #else
-	asm volatile (" slr  0,0 \n"	// R0 = 0;
-		"\t lhi 0,1 \n"		// R0 = 0x01
-		"\t lr 1,%1 \n"		// R1 = digest_p
-		"\t lr 6,%2 \n"		// R6 = message_p
-		"\t lr 7,%3 \n"		// R7 = messageLen
+	("	slr	0,0		\n"	// R0 = 0;
+	 "	lhi	0,1		\n"	// R0 = 0x01
+	 "	lr	1,%1		\n"	// R1 = digest_p
+	 "	lr	6,%2		\n"	// R6 = message_p
+	 "	lr	7,%3		\n"	// R7 = messageLen
+	 "0:	.long	0xb93e0006	\n"	// KIMD
+	 "1:	brc	1,0b		\n"	// keep going while cc=3
+	 "	ipm	%0		\n"	// condition code as uint
+	 "	srl	%0,28		\n"	// ccode = condition code
+	 :"=d"(ccode)
+	 :"d" (digest_p),"d" (msgP),"d" (msgL)
+	 :"cc","0","1","6","7");
 #endif
-		"0:\t .long 0xb93e0006 \n"	// KIMD
-		"1:\t brc 1,0b \n"	// keep going while cc=3
-		"\t ipm %0  \n"		// condition code as uint
-		"\t srl %0,28 \n"	// ccode = condition code
-		:"=d"(ccode)
-		:"d" (digest_p),"d" (msgP),"d" (msgL)
-		:"cc","0","1","6","7");
 
 	return ccode;
-}; //end KMMD
+} //end KIMD
 
 static int KLMD (unsigned char * digest_p,
 		unsigned char * msgP,
@@ -742,29 +765,37 @@ static int KLMD (unsigned char * digest_p,
 {
 	register int ccode = 0;
 
+	asm volatile
 #ifdef _LINUX_S390X_
-	asm volatile (" slgr 0,0 \n"	// R0 = 0;
-		"\t lghi 0,1 \n"	// R0 = 0x01
-		"\t lgr 1,%1 \n"	// R1 = digest_p
-		"\t lgr 6,%2 \n"	// R6 = message_p
-		"\t lgr 7,%3 \n"	// R7 = messageLen
+	("	slgr	0,0		\n"	// R0 = 0;
+	 "	lghi	0,1		\n"	// R0 = 0x01
+	 "	lgr	1,%1		\n"	// R1 = digest_p
+	 "	lgr	6,%2		\n"	// R6 = message_p
+	 "	lgr	7,%3		\n"	// R7 = messageLen
+	 "0:	.long	0xb93f0006	\n"	// KLMD
+	 "1:	brc	1,0b		\n"	// keep going while cc=3
+	 "	ipm	%0		\n"	// condition code as uint
+	 "	srl	%0,28		\n"	// ccode = condition code
+	 :"=d"(ccode)
+	 :"d" (digest_p),"d" (msgP),"d" (msgL)
+	 :"cc","0","1","6","7");
 #else
-	asm volatile (" slr  0,0 \n"	// R0 = 0;
-		"\t lhi 0,1 \n"		// R0 = 0x01
-		"\t lr 1,%1 \n"		// R1 = digest_p
-		"\t lr 6,%2 \n"		// R6 = message_p
-		"\t lr 7,%3 \n"		// R7 = messageLen
+	("	slr	0,0		\n"	// R0 = 0;
+	 "	lhi	0,1		\n"	// R0 = 0x01
+	 "	lr	1,%1		\n"	// R1 = digest_p
+	 "	lr	6,%2		\n"	// R6 = message_p
+	 "	lr	7,%3		\n"	// R7 = messageLen
+	 "0:	.long	0xb93f0006	\n"	// KLMD
+	 "1:	brc	1,0b		\n"	// keep going while cc=3
+	 "	ipm	%0		\n"	// condition code as uint
+	 "	srl	%0,28		\n"	// ccode = condition code
+	 :"=d"(ccode)
+	 :"d" (digest_p),"d" (msgP),"d" (msgL)
+	 :"cc","0","1","6","7");
 #endif
-		"0:\t .long 0xb93f0006 \n"	// KLMD
-		"1:\t brc 1,0b \n"	// keep going while cc=3
-		"\t ipm %0  \n"		// condition code as uint
-		"\t srl %0,28 \n"	// ccode = condition code
-		:"=d"(ccode)
-		:"d" (digest_p),"d" (msgP),"d" (msgL)
-		:"cc","0","1","6","7");
 
-		return ccode;
-}; //end KLMD
+	return ccode;
+} //end KLMD
 
 void queryCryptoAssist(void)
 {
@@ -3425,7 +3456,7 @@ int zSha1(ica_sha1_t * arg, unsigned int rule, unsigned long long *pSum)
 	// If there are any complete blocks:
 	if (complete_blocks_length) {
 		// Digest the complete blocks and recompute the bitlength
-		if ((rv = KMMD(shabuff,
+		if ((rv = KIMD(shabuff,
 				pSha->inputdata,
 				complete_blocks_length)) == 0) {
 			sum += (long long) complete_blocks_length;
@@ -3525,7 +3556,7 @@ int zDes(ica_des_t * arg, unsigned int keysLen)
 		}
 	} // end if mode = CBC
 	else {
-		rv = KME(function_code,
+		rv = KM(function_code,
 			keybuff,
 			pDes->outputdata,
 			pDes->inputdata,
