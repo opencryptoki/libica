@@ -353,27 +353,28 @@
 /*      MulSW                                                        */
 /*                                                                   */
 /* Authors:                                                          */
-/*      Amuche Chukudebelu and Robert Burroughs                      */
+/*      Amuche Chukudebelu, Robert Burroughs, and Eric Rossman       */
 /*                                                                   */
 /*-------------------------------------------------------------------*/
 /* Change history:                                                   */
-/* Date       Init  Description                                      */
-/* ---------  ----  -------------------------------------------------*/
-/* Jan 25 01  JAG   Create file                                      */
-/* Aug 29 01  AC    Added icaDesSW and icaTDesSW                     */
-/* Aug 29 01  RHB   Added SW RSA/Multiprecision Routines             */
-/* Nov 27 01  RHB   Fixed icaRsaCrtSw to handle 2048 bit             */
-/* Jan 11 02  RHB   Fixed Des routines                               */
-/* Nov 11 02  RHB   Added crypto assist instruction support          */
-/* May 31 04  EDR   Support new /udev char device files, and use new */
-/*                  ioctl for z90crypt, replacing deprecated ioctl   */
-/* Jun 01 04  EDR   Fix SHA1 function on 64-bit s390x platform       */
-/* Sep 22 04  EDR   Update signal handling                           */
-/* Nov 30 04  EDR   CPACF instruction testing should occur only at   */
-/*                  library initialization for S/390                 */
-/* Jan 31 05  EDR   Signal handling corrected to properly unblock    */
-/*                  signal prior to setting handler.                 */
-/*                                                                   */
+/* Date        Init  Description                                     */
+/* ----------  ----  ------------------------------------------------*/
+/* 2001-01-25  JAG   Create file                                     */
+/* 2001-08-29  AC    Added icaDesSW and icaTDesSW                    */
+/* 2001-08-29  RHB   Added SW RSA/Multiprecision Routines            */
+/* 2001-11-27  RHB   Fixed icaRsaCrtSw to handle 2048 bit            */
+/* 2002-01-11  RHB   Fixed Des routines                              */
+/* 2002-11-11  RHB   Added crypto assist instruction support         */
+/* 2004-05-31  EDR   Support new /udev char device files, and use new*/
+/*                   ioctl for z90crypt, replacing deprecated ioctl  */
+/* 2004-06-01  EDR   Fix SHA1 function on 64-bit s390x platform      */
+/* 2004-09-22  EDR   Update signal handling                          */
+/* 2004-11-30  EDR   CPACF instruction testing should occur only at  */
+/*                   library initialization for S/390                */
+/* 2005-01-31  EDR   Signal handling corrected to properly unblock   */
+/*                   signal prior to setting handler.                */
+/* 2005-05-16  EDR   Clean up the formatting in several sections of  */
+/*                   code and fix a few minor bugs.                  */
 /*********************************************************************/
 
 #include <stdio.h>
@@ -545,7 +546,7 @@ static unsigned char SHACONST[20] = {
 
 #define EXCEPTION_RV 20
 
-static volatile int sha_switch = 0;
+static volatile int sha1_switch = 0;
 static volatile int des_switch = 0;
 static volatile int cpacf_checked = 0;
 
@@ -559,7 +560,6 @@ static int querySHA1(void)
 {
 	unsigned char mask[16];
 
-	sha_switch = 0;
 	asm volatile
 #ifdef _LINUX_S390X_
 	("	slgr	0,0		\n"	// R0 = 0;
@@ -577,16 +577,14 @@ static int querySHA1(void)
 	 :"cc","0","1","4");
 #endif
 	if (mask[0] & 0x40)
-		sha_switch = 1;
-	return sha_switch;
+		sha1_switch = 1;
+	return sha1_switch;
 }
 
 static int queryDES(void)
 {
 	unsigned char mask[16];
 
-	des_switch = 0;
-	sha_switch = 0;
 	asm volatile
 #ifdef _LINUX_S390X_
 	("	slgr	0,0		\n"	// R0 = 0;
@@ -608,11 +606,6 @@ static int queryDES(void)
 	return des_switch;
 }
 
-static int KMC (register long fc,	// function code
-			unsigned char * pIK,	// ICV followed by key
-			unsigned char * pO,	// output address
-			unsigned char * pI,	// input address
-			unsigned long len)	// input length
 /*********************************************************************/
 /*         r0 = fc                                                   */
 /*         r1 = pIK                                                  */
@@ -622,6 +615,11 @@ static int KMC (register long fc,	// function code
 /*           KMC                                                     */
 /*         until cc != 3                                             */
 /*********************************************************************/
+static int KMC(unsigned long fc,	// function code
+	       unsigned char *pIK,	// ICV followed by key
+	       unsigned char *pO,	// output address
+	       unsigned char *pI,	// input address
+	       unsigned long len)	// input length
 {
 	register int cc = 0;
 	asm volatile
@@ -634,7 +632,7 @@ static int KMC (register long fc,	// function code
 	 "0:	.long	0xb92f0046	\n"	// KMC
 	 "	brc	1,0b		\n"	// keep going while cc=3
 	 "	ipm	%0		\n"	// condition code as uint
-	 "	srl	%0,28		\n"	// ccode = condition code
+	 "	srl	%0,28		\n"	// cc = condition code
 	 :"=d"(cc)
 	 :"d"(fc),"d"(pIK),"d"(pO),"d"(pI),"d"(len)
 	 :"cc","0","1","4","6","7");
@@ -647,7 +645,7 @@ static int KMC (register long fc,	// function code
 	 "0:	.long	0xb92f0046	\n"	// KMC
 	 "	brc	1,0b		\n"	// keep going while cc=3
 	 "	ipm	%0		\n"	// condition code as uint
-	 "	srl	%0,28		\n"	// ccode = condition code
+	 "	srl	%0,28		\n"	// cc = condition code
 	 :"=d"(cc)
 	 :"d"(fc),"d"(pIK),"d"(pO),"d"(pI),"d"(len)
 	 :"cc","0","1","4","6","7");
@@ -656,20 +654,20 @@ static int KMC (register long fc,	// function code
 	return cc;
 } // end KMC
 
-static int KM (unsigned long fc,	// function code
-			unsigned char * pK,	// key
-			unsigned char * pO,	// output address
-			unsigned char * pI,	// input address
-			unsigned long len)	// input length
 /*********************************************************************/
 /*         r0 = fc                                                   */
 /*         r1 = pK                                                   */
 /*         r4 = pO                                                   */
 /*         r6 = pI                                                   */
 /*         r7 = len                                                  */
-/*           KM                                                     */
+/*           KM                                                      */
 /*         until cc != 3                                             */
 /*********************************************************************/
+static int KM(unsigned long fc,		// function code
+	      unsigned char *pK,	// key
+	      unsigned char *pO,	// output address
+	      unsigned char *pI,	// input address
+	      unsigned long len)	// input length
 {
 	register int cc = 0;
 
@@ -683,7 +681,7 @@ static int KM (unsigned long fc,	// function code
 	 "0:	.long	0xb92e0046	\n"	// KM
 	 "	brc	1,0b		\n"	// keep going while cc=3
 	 "	ipm	%0		\n"	// condition code as uint
-	 "	srl	%0,28		\n"	// ccode = condition code
+	 "	srl	%0,28		\n"	// cc = condition code
 	 :"=d"(cc)
 	 :"d"(fc),"d"(pK),"d"(pO),"d"(pI),"d"(len)
 	 :"cc","0","1","4","6","7");
@@ -696,28 +694,28 @@ static int KM (unsigned long fc,	// function code
 	 "0:	.long	0xb92e0046	\n"	// KM
 	 "	brc	1,0b		\n"	// keep going while cc=3
 	 "	ipm	%0		\n"	// condition code as uint
-	 "	srl	%0,28		\n"	// ccode = condition code
+	 "	srl	%0,28		\n"	// cc = condition code
 	 :"=d"(cc)
 	 :"d"(fc),"d"(pK),"d"(pO),"d"(pI),"d"(len)
 	 :"cc","0","1","4","6","7");
 #endif
 
 	return cc;
-} //end KM
+} // end KM
 
-static int KIMD (unsigned char * digest_p,
-		unsigned char * msgP,
-		unsigned long msgL)
 /*********************************************************************/
 /*         r0 = 0x01                                                 */
 /*         r1 = digest_p                                             */
 /*         r6 = msgP                                                 */
 /*         r7 = msgL                                                 */
 /*           KIMD (6)                                                */
-/*         until ccode != 3                                          */
+/*         until cc != 3                                             */
 /*********************************************************************/
+static int KIMD(unsigned char *digest_p,
+		unsigned char *msgP,
+		unsigned long msgL)
 {
-	register int ccode = 0;
+	register int cc = 0;
 
 	asm volatile
 #ifdef _LINUX_S390X_
@@ -729,8 +727,8 @@ static int KIMD (unsigned char * digest_p,
 	 "0:	.long	0xb93e0006	\n"	// KIMD
 	 "1:	brc	1,0b		\n"	// keep going while cc=3
 	 "	ipm	%0		\n"	// condition code as uint
-	 "	srl	%0,28		\n"	// ccode = condition code
-	 :"=d"(ccode)
+	 "	srl	%0,28		\n"	// cc = condition code
+	 :"=d"(cc)
 	 :"d" (digest_p),"d" (msgP),"d" (msgL)
 	 :"cc","0","1","6","7");
 #else
@@ -742,28 +740,28 @@ static int KIMD (unsigned char * digest_p,
 	 "0:	.long	0xb93e0006	\n"	// KIMD
 	 "1:	brc	1,0b		\n"	// keep going while cc=3
 	 "	ipm	%0		\n"	// condition code as uint
-	 "	srl	%0,28		\n"	// ccode = condition code
-	 :"=d"(ccode)
+	 "	srl	%0,28		\n"	// cc = condition code
+	 :"=d"(cc)
 	 :"d" (digest_p),"d" (msgP),"d" (msgL)
 	 :"cc","0","1","6","7");
 #endif
 
-	return ccode;
-} //end KIMD
+	return cc;
+} // end KIMD
 
-static int KLMD (unsigned char * digest_p,
-		unsigned char * msgP,
-		unsigned long msgL)
 /*********************************************************************/
 /*         r0 = 0x01                                                 */
 /*         r1 = digest_p                                             */
 /*         r6 = msgP                                                 */
 /*         r7 = msgL                                                 */
 /*           KLMD (6)                                                */
-/*         until ccode != 3                                          */
+/*         until cc != 3                                             */
 /*********************************************************************/
+static int KLMD(unsigned char *digest_p,
+		unsigned char *msgP,
+		unsigned long msgL)
 {
-	register int ccode = 0;
+	register int cc = 0;
 
 	asm volatile
 #ifdef _LINUX_S390X_
@@ -775,8 +773,8 @@ static int KLMD (unsigned char * digest_p,
 	 "0:	.long	0xb93f0006	\n"	// KLMD
 	 "1:	brc	1,0b		\n"	// keep going while cc=3
 	 "	ipm	%0		\n"	// condition code as uint
-	 "	srl	%0,28		\n"	// ccode = condition code
-	 :"=d"(ccode)
+	 "	srl	%0,28		\n"	// cc = condition code
+	 :"=d"(cc)
 	 :"d" (digest_p),"d" (msgP),"d" (msgL)
 	 :"cc","0","1","6","7");
 #else
@@ -788,14 +786,14 @@ static int KLMD (unsigned char * digest_p,
 	 "0:	.long	0xb93f0006	\n"	// KLMD
 	 "1:	brc	1,0b		\n"	// keep going while cc=3
 	 "	ipm	%0		\n"	// condition code as uint
-	 "	srl	%0,28		\n"	// ccode = condition code
-	 :"=d"(ccode)
+	 "	srl	%0,28		\n"	// cc = condition code
+	 :"=d"(cc)
 	 :"d" (digest_p),"d" (msgP),"d" (msgL)
 	 :"cc","0","1","6","7");
 #endif
 
-	return ccode;
-} //end KLMD
+	return cc;
+} // end KLMD
 
 void queryCryptoAssist(void)
 {
@@ -806,6 +804,8 @@ void queryCryptoAssist(void)
 		return;
 
 	cpacf_checked = 1;
+	des_switch = 0;
+	sha1_switch = 0;
 	sigemptyset(&newset);
 	sigaddset(&newset, SIGILL);
 	sigprocmask(SIG_UNBLOCK, &newset, &oldset);
@@ -1001,7 +1001,7 @@ icaOpenAdapter(unsigned int         adapterId,
 				totalcount = ica_stat.totalcount;
 			}
 			if ((rv != 0) || (totalcount == 0)) {
-				if (!des_switch) {
+				if (!sha1_switch) {
 					return ENOENT;
 				}
 			}
@@ -1150,7 +1150,7 @@ icaSha1( ICA_ADAPTER_HANDLE      hAdapterHandle,
 	rb.outputdata = (ica_sha1_result_t *)pOutputData;
 	rb.initialh = &pShaContext->shaHash;
 
-	if (sha_switch) {
+	if (sha1_switch) {
 		//
 		// In zLinux, the hardware performs padding and
 		// appropriate initialization, so we'll skip that part here.
@@ -1161,8 +1161,7 @@ icaSha1( ICA_ADAPTER_HANDLE      hAdapterHandle,
 				ICA_SHA_DATALENGTH);
 		}
 		return(rc);
-	}
-	else {
+	} else {
 		rc = icaSha1SW(&rb,
 				shaMessagePart,
 				&pShaContext->runningLength,
@@ -1690,29 +1689,26 @@ icaDesEncrypt( ICA_ADAPTER_HANDLE      hAdapterHandle,
 		*pOutputDataLength = dataLength;
 		rv = zDes(&des,sizeof(ICA_KEY_DES_SINGLE));
 		if (rv == EXCEPTION_RV) {
-           		return(icaDesSW(mode,
-					dataLength,
-					DES_ENCRYPT,
-					pInputData,
-					pIv,
-					pKeyDes,
-					pOutputDataLength,
-					pOutputData));
+			rv = icaDesSW(mode,
+				      dataLength,
+				      DES_ENCRYPT,
+				      pInputData,
+				      pIv,
+				      pKeyDes,
+				      pOutputDataLength,
+				      pOutputData);
 		}
-		else {
-			return rv;
-		}
+	} else {
+		rv = icaDesSW(mode,
+			      dataLength,
+			      DES_ENCRYPT,
+			      pInputData,
+			      pIv,
+			      pKeyDes,
+			      pOutputDataLength,
+			      pOutputData);
 	}
-	else {
-           	return(icaDesSW(mode,
-				dataLength,
-				DES_ENCRYPT,
-				pInputData,
-				pIv,
-				pKeyDes,
-				pOutputDataLength,
-				pOutputData));
-	}
+	return rv;
 #else // not S390
      if( ioctl( hAdapterHandle, ICADES, &des ) == -1 ) {
 
@@ -1802,29 +1798,26 @@ icaDesDecrypt( ICA_ADAPTER_HANDLE      hAdapterHandle,
 		*pOutputDataLength = dataLength;
 		rv = zDes(&des,sizeof(ICA_KEY_DES_SINGLE));
 		if (rv == EXCEPTION_RV) {
-           		return(icaDesSW(mode,
-					dataLength,
-					DES_DECRYPT,
-					pInputData,
-					pIv,
-					pKeyDes,
-					pOutputDataLength,
-					pOutputData));
+			rv = icaDesSW(mode,
+				      dataLength,
+				      DES_DECRYPT,
+				      pInputData,
+				      pIv,
+				      pKeyDes,
+				      pOutputDataLength,
+				      pOutputData);
 		}
-		else {
-			return rv;
-		}
+	} else {
+		rv = icaDesSW(mode,
+			      dataLength,
+			      DES_DECRYPT,
+			      pInputData,
+			      pIv,
+			      pKeyDes,
+			      pOutputDataLength,
+			      pOutputData);
 	}
-	else {
-           	return(icaDesSW(mode,
-				dataLength,
-				DES_DECRYPT,
-				pInputData,
-				pIv,
-				pKeyDes,
-				pOutputDataLength,
-				pOutputData));
-	}
+	return rv;
 #else // not S390
      if( ioctl( hAdapterHandle, ICADES, &des ) == -1 ) {
           /* op failed; return errno */
@@ -1914,29 +1907,26 @@ icaTDesEncrypt( ICA_ADAPTER_HANDLE      hAdapterHandle,
 		*pOutputDataLength = dataLength;
 		rv = zDes(&des,sizeof(ICA_KEY_DES_TRIPLE));
 		if (rv == EXCEPTION_RV) {
-           		return(icaTDesSW(mode,
-					dataLength,
-					DES_ENCRYPT,
-					pInputData,
-					pIv,
-					pKeyDes,
-					pOutputDataLength,
-					pOutputData));
+			rv = icaTDesSW(mode,
+				       dataLength,
+				       DES_ENCRYPT,
+				       pInputData,
+				       pIv,
+				       pKeyDes,
+				       pOutputDataLength,
+				       pOutputData);
 		}
-		else {
-			return rv;
-		}
+	} else {
+		rv = icaTDesSW(mode,
+			       dataLength,
+			       DES_ENCRYPT,
+			       pInputData,
+			       pIv,
+			       pKeyDes,
+			       pOutputDataLength,
+			       pOutputData);
 	}
-	else {
-           	return(icaTDesSW(mode,
-				dataLength,
-				DES_ENCRYPT,
-				pInputData,
-				pIv,
-				pKeyDes,
-				pOutputDataLength,
-				pOutputData));
-	}
+	return rv;
 #else // not S390
 
      if( ioctl( hAdapterHandle, ICATDES, &des ) == -1 ) {
@@ -2027,29 +2017,26 @@ icaTDesDecrypt( ICA_ADAPTER_HANDLE      hAdapterHandle,
 		*pOutputDataLength = dataLength;
 		rv = zDes(&des,sizeof(ICA_KEY_DES_TRIPLE));
 		if (rv == EXCEPTION_RV) {
-           		return(icaTDesSW(mode,
-					dataLength,
-					DES_DECRYPT,
-					pInputData,
-					pIv,
-					pKeyDes,
-					pOutputDataLength,
-					pOutputData));
+			rv = icaTDesSW(mode,
+				       dataLength,
+				       DES_DECRYPT,
+				       pInputData,
+				       pIv,
+				       pKeyDes,
+				       pOutputDataLength,
+				       pOutputData);
 		}
-		else {
-			return rv;
-		}
+	} else {
+		rv = icaTDesSW(mode,
+			       dataLength,
+			       DES_DECRYPT,
+			       pInputData,
+			       pIv,
+			       pKeyDes,
+			       pOutputDataLength,
+			       pOutputData);
 	}
-	else {
-           	return(icaTDesSW(mode,
-				dataLength,
-				DES_DECRYPT,
-				pInputData,
-				pIv,
-				pKeyDes,
-				pOutputDataLength,
-				pOutputData));
-	}
+	return rv;
 #else // not S390
 
      if( ioctl( hAdapterHandle, ICATDES, &des ) == -1 ) {
@@ -2262,11 +2249,6 @@ icaRsaCrtSW(ica_rsa_modexpo_crt_t *pCrt)
   int rc = 0;
   int longlen = 0;
   int shrtlen = 0;
-#ifndef _LINUX_S390_
-  char * outp;
-  int outl;
-  int i;
-#endif
   int orig_outl;
   char ir1[136];
   int ir1length = sizeof(ir1);
@@ -3393,8 +3375,7 @@ icaSha1SW(ica_sha1_t * arg, unsigned int rule,
 					ICA_SHA_DATALENGTH);
 				SHAA_Update(&ctx,arg->inputdata,
 						arg->inputdatalength);
-			}
-			else {
+			} else {
 	                        ctx.bytes_in_buffer = arg->inputdatalength;
         	                memcpy ((unsigned char *)ctx.byte_buffer,
                 	                (unsigned char *)arg->inputdata,
@@ -3426,17 +3407,13 @@ int zSha1(ica_sha1_t * arg, unsigned int rule, unsigned long long *pSum)
 	unsigned long remnant = 0;
 	int complete_blocks_length = 0;
 	unsigned char shabuff[LENGTH_SHA_CONTEXT];
-#ifdef __s390x__
-	unsigned char * shabuffH;
-#endif  // __s390x__
 
 	// If this is a FIRST or ONLY call, supply the standard SHA1
 	// initial vector.  Otherwise, use the input chaining vector
 	if (rule == SHA_MSG_PART_ONLY || rule == SHA_MSG_PART_FIRST) {
 		memcpy (shabuff, SHACONST, ICA_SHA_DATALENGTH);
 		sum = 0LL;
-	}
-	else {
+	} else {
 		// Copy the caller's chaining vector to local storage
 		memcpy(shabuff, (void *)pSha->initialh, ICA_SHA_DATALENGTH);
 		sum = *pSum;
@@ -3552,22 +3529,15 @@ int zDes(ica_des_t * arg, unsigned int keysLen)
 			pDes->outputdata,
 			pDes->inputdata,
 			pDes->inputdatalength);
-		if (rv == EXCEPTION_RV) {
-		}
-	} // end if mode = CBC
-	else {
+	} else {
 		rv = KM(function_code,
 			keybuff,
 			pDes->outputdata,
 			pDes->inputdata,
 			pDes->inputdatalength);
-		if (rv == EXCEPTION_RV) {
-		}
-	} // end else mode = ECB
+	}
 
 	return rv;
-
 } // end zDes
-
 #endif // end if _LINUX_S390_
 
