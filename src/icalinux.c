@@ -375,6 +375,8 @@
 /*                   signal prior to setting handler.                */
 /* 2005-05-16  EDR   Clean up the formatting in several sections of  */
 /*                   code and fix a few minor bugs.                  */
+/* 2005-05-16  EDR   Add error handling around calls to CPACF        */
+/*                   instructions.                                   */
 /*********************************************************************/
 
 #include <stdio.h>
@@ -3407,6 +3409,8 @@ int zSha1(ica_sha1_t * arg, unsigned int rule, unsigned long long *pSum)
 	unsigned long remnant = 0;
 	int complete_blocks_length = 0;
 	unsigned char shabuff[LENGTH_SHA_CONTEXT];
+	struct sigaction new, old;
+	sigset_t newset, oldset;
 
 	// If this is a FIRST or ONLY call, supply the standard SHA1
 	// initial vector.  Otherwise, use the input chaining vector
@@ -3430,25 +3434,41 @@ int zSha1(ica_sha1_t * arg, unsigned int rule, unsigned long long *pSum)
 								(remnant != 0))
 		return HDDInvalidParm;
 
-	// If there are any complete blocks:
-	if (complete_blocks_length) {
-		// Digest the complete blocks and recompute the bitlength
-		if ((rv = KIMD(shabuff,
-				pSha->inputdata,
-				complete_blocks_length)) == 0) {
-			sum += (long long) complete_blocks_length;
-		} // end if rv 0
-	} // end if there are complete blocks
+	sigemptyset(&newset);
+	sigaddset(&newset, SIGILL);
+	sigprocmask(SIG_UNBLOCK, &newset, &oldset);
+	new.sa_handler = (void *) sigill_handler;
+	new.sa_flags = 0;
+	sigaction(SIGILL, &new, &old);
 
-	if (rule == SHA_MSG_PART_ONLY || rule == SHA_MSG_PART_FINAL) {
-		// Digest the remnant and compute the bit length
-		sum = 8*(sum + (long long) remnant);
-		memcpy(shabuff+ICA_SHA_DATALENGTH, (unsigned char *)&sum,
-				sizeof(sum));
-		rv = KLMD(shabuff,
-			pSha->inputdata+complete_blocks_length,
-			remnant);
-	} // end if ONLY or FINAL
+	if (setjmp(envq) == 0) {
+		// If there are any complete blocks:
+		if (complete_blocks_length) {
+			// Digest the complete blocks and recompute the
+			// bitlength
+			if ((rv = KIMD(shabuff,
+					pSha->inputdata,
+					complete_blocks_length)) == 0) {
+				sum += (long long) complete_blocks_length;
+			} // end if rv 0
+		} // end if there are complete blocks
+
+		if (rule == SHA_MSG_PART_ONLY || rule == SHA_MSG_PART_FINAL) {
+			// Digest the remnant and compute the bit length
+			sum = 8*(sum + (long long) remnant);
+			memcpy(shabuff+ICA_SHA_DATALENGTH,
+			       (unsigned char *)&sum,
+			       sizeof(sum));
+			rv = KLMD(shabuff,
+				pSha->inputdata+complete_blocks_length,
+				remnant);
+		} // end if ONLY or FINAL
+	} else {
+		rv = EXCEPTION_RV;
+	}
+
+	sigaction(SIGILL, &old, NULL);
+	sigprocmask(SIG_SETMASK, &oldset, NULL);
 
 	if(rv == 0) {
 		// Copy the caller's output
@@ -3473,6 +3493,8 @@ int zSha1(ica_sha1_t * arg, unsigned int rule, unsigned long long *pSum)
 /*-------------------------------------------------------------------*/
 int zDes(ica_des_t * arg, unsigned int keysLen)
 {
+	struct sigaction new, old;
+	sigset_t newset, oldset;
 	int rv = 0;
 	unsigned long function_code;
 	ica_des_t * pDes = arg;
@@ -3523,20 +3545,33 @@ int zDes(ica_des_t * arg, unsigned int keysLen)
 			break;
 	}
 
-	if (pDes->mode == DEVICA_MODE_DES_CBC) {
-		rv = KMC(function_code,
-			keybuff,
-			pDes->outputdata,
-			pDes->inputdata,
-			pDes->inputdatalength);
+	sigemptyset(&newset);
+	sigaddset(&newset, SIGILL);
+	sigprocmask(SIG_UNBLOCK, &newset, &oldset);
+	new.sa_handler = (void *) sigill_handler;
+	new.sa_flags = 0;
+	sigaction(SIGILL, &new, &old);
+
+	if (setjmp(envq) == 0) { // taking an exception will fall through...
+		if (pDes->mode == DEVICA_MODE_DES_CBC) {
+			rv = KMC(function_code,
+				 keybuff,
+				 pDes->outputdata,
+				 pDes->inputdata,
+				 pDes->inputdatalength);
+		} else {
+			rv = KM(function_code,
+				keybuff,
+				pDes->outputdata,
+				pDes->inputdata,
+				pDes->inputdatalength);
+		}
 	} else {
-		rv = KM(function_code,
-			keybuff,
-			pDes->outputdata,
-			pDes->inputdata,
-			pDes->inputdatalength);
+		rv = EXCEPTION_RV;
 	}
 
+	sigaction(SIGILL, &old, NULL);
+	sigprocmask(SIG_SETMASK, &oldset, NULL);
 	return rv;
 } // end zDes
 #endif // end if _LINUX_S390_
