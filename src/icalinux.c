@@ -816,8 +816,8 @@ void queryCryptoAssist(void)
 	sigaction(SIGILL, &new, &old);
 
 	if (setjmp(envq) == 0) {
-		queryDES();
 		querySHA1();
+		queryDES();
 	}
 	sigaction(SIGILL, &old, NULL);
 	sigprocmask(SIG_SETMASK, &oldset, NULL);
