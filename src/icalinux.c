@@ -1446,7 +1446,7 @@ icaRsaModExpo( ICA_ADAPTER_HANDLE    hAdapterHandle,
      rc = ioctl(hAdapterHandle, ICARSAMODEXPO, &rb);
 
      if (rc == -1) {
-       if (errno == ENODEV) {
+       if ((errno == 135) || (errno == ENODEV)) { // 135=EGETBUFF (old z90crypt)
          rc = icaRsaModExpoSW(&rb);
          if (rc == 0) {
            *pOutputDataLength = bytelength;
@@ -1576,7 +1576,7 @@ icaRsaCrt( ICA_ADAPTER_HANDLE     hAdapterHandle,
      rc = ioctl(hAdapterHandle, ICARSACRT, &rb);
 
      if (rc == -1) {
-       if (errno == ENODEV) {
+       if ((errno == 135) || (errno == ENODEV)) { // 135=EGETBUFF (old z90crypt)
          rc = icaRsaCrtSW(&rb);
          if (rc == 0) {
            *pOutputDataLength = (bytelength * 2);
