@@ -2,7 +2,7 @@ include ../Makefile.macros
 bin_PROGRAMS=libica.so
 bindir=$(INSROOT)/usr/lib
 
-libica_so_LDFLAGS = -shared -nostartfiles $(LIBCRYPTO)
+libica_so_LDFLAGS = -shared $(LIBCRYPTO)
 
 CFLAGS = $(S390_FLAG) $(PERFFLAG) -shared -fPIC -D_REENTRANT -I../include
 
