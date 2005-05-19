@@ -3464,6 +3464,7 @@ int zSha1(ica_sha1_t * arg, unsigned int rule, unsigned long long *pSum)
 				remnant);
 		} // end if ONLY or FINAL
 	} else {
+		sha1_switch = 0;
 		rv = EXCEPTION_RV;
 	}
 
@@ -3567,6 +3568,7 @@ int zDes(ica_des_t * arg, unsigned int keysLen)
 				pDes->inputdatalength);
 		}
 	} else {
+		des_switch = 0;
 		rv = EXCEPTION_RV;
 	}
 
