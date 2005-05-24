@@ -436,6 +436,8 @@ unsigned char Ciphertext[] =
 
 extern int errno;
 
+void dump_array(char *ptr, int size);
+
 int main()
 {
    ICA_ADAPTER_HANDLE	adapter_handle;
@@ -575,7 +577,7 @@ int main()
    return 0;
 }
 
-dump_array(char *ptr, int size)
+void dump_array(char *ptr, int size)
 {
    char *ptr_end;
    char *intptr;

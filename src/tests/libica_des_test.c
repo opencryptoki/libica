@@ -375,8 +375,7 @@ int main(int argc, char **argv)
    return 0;
 }
 
-
-dump_array(char *ptr, int size)
+void dump_array(char *ptr, int size)
 {
    char *ptr_end;
    char *intptr;
