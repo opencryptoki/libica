@@ -3434,6 +3434,7 @@ int zSha1(ica_sha1_t * arg, unsigned int rule, unsigned long long *pSum)
 								(remnant != 0))
 		return HDDInvalidParm;
 
+#ifdef EXTRA_SIGILL_CHECKS
 	sigemptyset(&newset);
 	sigaddset(&newset, SIGILL);
 	sigprocmask(SIG_UNBLOCK, &newset, &oldset);
@@ -3442,6 +3443,7 @@ int zSha1(ica_sha1_t * arg, unsigned int rule, unsigned long long *pSum)
 	sigaction(SIGILL, &new, &old);
 
 	if (setjmp(envq) == 0) {
+#endif
 		// If there are any complete blocks:
 		if (complete_blocks_length) {
 			// Digest the complete blocks and recompute the
@@ -3463,6 +3465,7 @@ int zSha1(ica_sha1_t * arg, unsigned int rule, unsigned long long *pSum)
 				pSha->inputdata+complete_blocks_length,
 				remnant);
 		} // end if ONLY or FINAL
+#ifdef EXTRA_SIGILL_CHECKS
 	} else {
 		sha1_switch = 0;
 		rv = EXCEPTION_RV;
@@ -3470,7 +3473,7 @@ int zSha1(ica_sha1_t * arg, unsigned int rule, unsigned long long *pSum)
 
 	sigaction(SIGILL, &old, NULL);
 	sigprocmask(SIG_SETMASK, &oldset, NULL);
-
+#endif
 	if(rv == 0) {
 		// Copy the caller's output
 		memcpy((void *)pSha->outputdata, shabuff,
@@ -3546,6 +3549,7 @@ int zDes(ica_des_t * arg, unsigned int keysLen)
 			break;
 	}
 
+#ifdef EXTRA_SIGILL_CHECKS
 	sigemptyset(&newset);
 	sigaddset(&newset, SIGILL);
 	sigprocmask(SIG_UNBLOCK, &newset, &oldset);
@@ -3554,6 +3558,7 @@ int zDes(ica_des_t * arg, unsigned int keysLen)
 	sigaction(SIGILL, &new, &old);
 
 	if (setjmp(envq) == 0) { // taking an exception will fall through...
+#endif
 		if (pDes->mode == DEVICA_MODE_DES_CBC) {
 			rv = KMC(function_code,
 				 keybuff,
@@ -3567,6 +3572,7 @@ int zDes(ica_des_t * arg, unsigned int keysLen)
 				pDes->inputdata,
 				pDes->inputdatalength);
 		}
+#ifdef EXTRA_SIGILL_CHECKS
 	} else {
 		des_switch = 0;
 		rv = EXCEPTION_RV;
@@ -3574,6 +3580,7 @@ int zDes(ica_des_t * arg, unsigned int keysLen)
 
 	sigaction(SIGILL, &old, NULL);
 	sigprocmask(SIG_SETMASK, &oldset, NULL);
+#endif
 	return rv;
 } // end zDes
 #endif // end if _LINUX_S390_

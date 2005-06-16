@@ -1031,8 +1031,9 @@ Optional Features:
   --enable-fast-install[=PKGS]
                           optimize for fast installation [default=yes]
   --disable-libtool-lock  avoid locking (might break parallel builds)
---enable-debug             add the -g option to
-CFLAGS
+  --enable-debug          add the -g option to CFLAGS
+  --enable-sigill-checks  turns on SIGILL checking for all calls to CPACF
+                          (only has an effect on z/Series builds)
 
 Optional Packages:
   --with-PACKAGE[=ARG]    use PACKAGE [ARG=yes]
@@ -19360,6 +19361,25 @@ if test "${enable_debug+set}" = set; then
   ./perf_script debug
 else
   ./perf_script
+fi;
+
+# Check whether --enable-sigill-checks or --disable-sigill-checks was given.
+if test "${enable_sigill_checks+set}" = set; then
+  enableval="$enable_sigill_checks"
+  case $enableval in
+  yes)
+    echo "SIGILLCHECK=-DEXTRA_SIGILL_CHECKS" >> ./Makefile.macros
+    ;;
+  no)
+    echo "SIGILLCHECK=" >> ./Makefile.macros
+    ;;
+  *)
+    echo "I don't understand --enable-sigill-checks=$enableval"
+    exit 1;
+    ;;
+  esac
+else
+  echo "SIGILLCHECK=" >> ./Makefile.macros
 fi;
 
 if test $ac_cv_c_compiler_gnu = yes; then
