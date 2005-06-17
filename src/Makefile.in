@@ -88,17 +88,14 @@ RC = @RC@
 STRIP = @STRIP@
 VERSION = @VERSION@
 
-S390_FLAG = -D_LINUX_S390_ -D_LINUX_S390X_
-LIBCRYPTO = -lcrypto
 PERFFLAG = -O2
-SIGILLCHECK =
 
 bin_PROGRAMS = libica.so
 bindir = $(INSROOT)/usr/lib
 
 libica_so_LDFLAGS = -shared $(LIBCRYPTO)
 
-CFLAGS = $(S390_FLAG) $(PERFFLAG) $(SIGILLCHECK) -shared -fPIC -D_REENTRANT -I../include
+CFLAGS = $(S390_FLAG) $(PERFFLAG) -shared -fPIC -D_REENTRANT -I../include
 
 INCLUDES = -I ./inc -I ../include
 
@@ -131,7 +128,7 @@ DIST_COMMON =  Makefile.am Makefile.in
 
 DISTFILES = $(DIST_COMMON) $(SOURCES) $(HEADERS) $(TEXINFOS) $(EXTRA_DIST)
 
-TAR = gtar
+TAR = tar
 GZIP_ENV = --best
 DEP_FILES =  .deps/ansipran.P .deps/genprime.P .deps/icalinux.P \
 .deps/init.P .deps/mp_hw.P .deps/mp_modul.P .deps/mp_util.P \

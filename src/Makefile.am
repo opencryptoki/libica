@@ -4,7 +4,7 @@ bindir=$(INSROOT)/usr/lib
 
 libica_so_LDFLAGS = -shared $(LIBCRYPTO)
 
-CFLAGS = $(S390_FLAG) $(PERFFLAG) $(SIGILLCHECK) -shared -fPIC -D_REENTRANT -I../include
+CFLAGS = $(S390_FLAG) $(PERFFLAG) -shared -fPIC -D_REENTRANT -I../include
 
 INCLUDES = -I ./inc -I ../include
 

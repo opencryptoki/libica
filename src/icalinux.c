@@ -797,6 +797,52 @@ static int KLMD(unsigned char *digest_p,
 	return cc;
 } // end KLMD
 
+int queryEnvExtraSigillChecks(void)
+{
+	char *ptr;
+
+	ptr = getenv("LIBICA_SIGILL_CHECKS");
+
+	// If there is no environment variable, no extra checks.
+	if (ptr == NULL)
+		return 0;
+
+	// If the environment variable is set without a value, add extra checks.
+	// bash/sh: export LIBICA_SIGILL_CHECKS=
+	// tcsh:    setenv LIBICA_SIGILL_CHECKS
+	if (strlen(ptr) == 0)
+		return 1;
+
+	// If the environment variable is set to some affirmative value, add
+	// extra checks.
+	// bash/sh: export LIBICA_SIGILL_CHECKS=yes
+	//          export LIBICA_SIGILL_CHECKS=y
+	//          export LIBICA_SIGILL_CHECKS=1
+	// tcsh:    setenv LIBICA_SIGILL_CHECKS=yes
+	//          setenv LIBICA_SIGILL_CHECKS=y
+	//          setenv LIBICA_SIGILL_CHECKS=1
+	if (!strcmp(ptr, "yes") || !strcmp(ptr, "y") || !strcmp(ptr, "1"))
+		return 1;
+
+	// If the environment variable is set to some negative value, no
+	// extra checks.
+	// bash/sh: export LIBICA_SIGILL_CHECKS=no
+	//          export LIBICA_SIGILL_CHECKS=n
+	//          export LIBICA_SIGILL_CHECKS=0
+	// tcsh:    setenv LIBICA_SIGILL_CHECKS=no
+	//          setenv LIBICA_SIGILL_CHECKS=n
+	//          setenv LIBICA_SIGILL_CHECKS=0
+	if (!strcmp(ptr, "no") || !strcmp(ptr, "n") || !strcmp(ptr, "0"))
+		return 0;
+
+	// Huh? We couldn't understand what was specified.
+	printf("Unable to understand LIBICA_SIGILL_CHECKS=%s\n", ptr);
+	printf("No extra SIGILL checks will be performed.\n");
+	return 0;
+}
+
+int extra_sigill_checks = 0;
+
 void queryCryptoAssist(void)
 {
 	struct sigaction new, old;
@@ -804,6 +850,8 @@ void queryCryptoAssist(void)
 
 	if (cpacf_checked)
 		return;
+
+	extra_sigill_checks = queryEnvExtraSigillChecks();
 
 	cpacf_checked = 1;
 	des_switch = 0;
@@ -3434,46 +3482,49 @@ int zSha1(ica_sha1_t * arg, unsigned int rule, unsigned long long *pSum)
 								(remnant != 0))
 		return HDDInvalidParm;
 
-#ifdef EXTRA_SIGILL_CHECKS
-	sigemptyset(&newset);
-	sigaddset(&newset, SIGILL);
-	sigprocmask(SIG_UNBLOCK, &newset, &oldset);
-	new.sa_handler = (void *) sigill_handler;
-	new.sa_flags = 0;
-	sigaction(SIGILL, &new, &old);
+	if (extra_sigill_checks) {
+		sigemptyset(&newset);
+		sigaddset(&newset, SIGILL);
+		sigprocmask(SIG_UNBLOCK, &newset, &oldset);
+		new.sa_handler = (void *) sigill_handler;
+		new.sa_flags = 0;
+		sigaction(SIGILL, &new, &old);
 
-	if (setjmp(envq) == 0) {
-#endif
-		// If there are any complete blocks:
-		if (complete_blocks_length) {
-			// Digest the complete blocks and recompute the
-			// bitlength
-			if ((rv = KIMD(shabuff,
-					pSha->inputdata,
-					complete_blocks_length)) == 0) {
-				sum += (long long) complete_blocks_length;
-			} // end if rv 0
-		} // end if there are complete blocks
-
-		if (rule == SHA_MSG_PART_ONLY || rule == SHA_MSG_PART_FINAL) {
-			// Digest the remnant and compute the bit length
-			sum = 8*(sum + (long long) remnant);
-			memcpy(shabuff+ICA_SHA_DATALENGTH,
-			       (unsigned char *)&sum,
-			       sizeof(sum));
-			rv = KLMD(shabuff,
-				pSha->inputdata+complete_blocks_length,
-				remnant);
-		} // end if ONLY or FINAL
-#ifdef EXTRA_SIGILL_CHECKS
-	} else {
-		sha1_switch = 0;
-		rv = EXCEPTION_RV;
+		if (setjmp(envq) != 0) {
+			sha1_switch = 0;
+			sigaction(SIGILL, &old, NULL);
+			sigprocmask(SIG_SETMASK, &oldset, NULL);
+			return EXCEPTION_RV;
+		}
 	}
 
-	sigaction(SIGILL, &old, NULL);
-	sigprocmask(SIG_SETMASK, &oldset, NULL);
-#endif
+	// If there are any complete blocks:
+	if (complete_blocks_length) {
+		// Digest the complete blocks and recompute the
+		// bitlength
+		if ((rv = KIMD(shabuff,
+				pSha->inputdata,
+				complete_blocks_length)) == 0) {
+			sum += (long long) complete_blocks_length;
+		} // end if rv 0
+	} // end if there are complete blocks
+
+	if (rule == SHA_MSG_PART_ONLY || rule == SHA_MSG_PART_FINAL) {
+		// Digest the remnant and compute the bit length
+		sum = 8*(sum + (long long) remnant);
+		memcpy(shabuff+ICA_SHA_DATALENGTH,
+		       (unsigned char *)&sum,
+		       sizeof(sum));
+		rv = KLMD(shabuff,
+			pSha->inputdata+complete_blocks_length,
+			remnant);
+	} // end if ONLY or FINAL
+
+	if (extra_sigill_checks) {
+		sigaction(SIGILL, &old, NULL);
+		sigprocmask(SIG_SETMASK, &oldset, NULL);
+	}
+
 	if(rv == 0) {
 		// Copy the caller's output
 		memcpy((void *)pSha->outputdata, shabuff,
@@ -3549,38 +3600,40 @@ int zDes(ica_des_t * arg, unsigned int keysLen)
 			break;
 	}
 
-#ifdef EXTRA_SIGILL_CHECKS
-	sigemptyset(&newset);
-	sigaddset(&newset, SIGILL);
-	sigprocmask(SIG_UNBLOCK, &newset, &oldset);
-	new.sa_handler = (void *) sigill_handler;
-	new.sa_flags = 0;
-	sigaction(SIGILL, &new, &old);
-
-	if (setjmp(envq) == 0) { // taking an exception will fall through...
-#endif
-		if (pDes->mode == DEVICA_MODE_DES_CBC) {
-			rv = KMC(function_code,
-				 keybuff,
-				 pDes->outputdata,
-				 pDes->inputdata,
-				 pDes->inputdatalength);
-		} else {
-			rv = KM(function_code,
-				keybuff,
-				pDes->outputdata,
-				pDes->inputdata,
-				pDes->inputdatalength);
+	if (extra_sigill_checks) {
+		sigemptyset(&newset);
+		sigaddset(&newset, SIGILL);
+		sigprocmask(SIG_UNBLOCK, &newset, &oldset);
+		new.sa_handler = (void *) sigill_handler;
+		new.sa_flags = 0;
+		sigaction(SIGILL, &new, &old);
+		if (setjmp(envq) != 0) {
+			des_switch = 0;
+			sigaction(SIGILL, &old, NULL);
+			sigprocmask(SIG_SETMASK, &oldset, NULL);
+			return EXCEPTION_RV;
 		}
-#ifdef EXTRA_SIGILL_CHECKS
-	} else {
-		des_switch = 0;
-		rv = EXCEPTION_RV;
 	}
 
-	sigaction(SIGILL, &old, NULL);
-	sigprocmask(SIG_SETMASK, &oldset, NULL);
-#endif
+	if (pDes->mode == DEVICA_MODE_DES_CBC) {
+		rv = KMC(function_code,
+			 keybuff,
+			 pDes->outputdata,
+			 pDes->inputdata,
+			 pDes->inputdatalength);
+	} else {
+		rv = KM(function_code,
+			keybuff,
+			pDes->outputdata,
+			pDes->inputdata,
+			pDes->inputdatalength);
+	}
+
+	if (extra_sigill_checks) {
+		sigaction(SIGILL, &old, NULL);
+		sigprocmask(SIG_SETMASK, &oldset, NULL);
+	}
+
 	return rv;
 } // end zDes
 #endif // end if _LINUX_S390_
