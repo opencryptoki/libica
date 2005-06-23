@@ -799,45 +799,11 @@ static int KLMD(unsigned char *digest_p,
 
 int queryEnvExtraSigillChecks(void)
 {
-	char *ptr;
-
-	ptr = getenv("LIBICA_SIGILL_CHECKS");
-
-	// If there is no environment variable, no extra checks.
-	if (ptr == NULL)
-		return 0;
-
-	// If the environment variable is set without a value, add extra checks.
-	// bash/sh: export LIBICA_SIGILL_CHECKS=
-	// tcsh:    setenv LIBICA_SIGILL_CHECKS
-	if (strlen(ptr) == 0)
+	// If there is an environment variable, add extra checks.
+	if (getenv("LIBICA_SIGILL_CHECKS") != NULL)
 		return 1;
 
-	// If the environment variable is set to some affirmative value, add
-	// extra checks.
-	// bash/sh: export LIBICA_SIGILL_CHECKS=yes
-	//          export LIBICA_SIGILL_CHECKS=y
-	//          export LIBICA_SIGILL_CHECKS=1
-	// tcsh:    setenv LIBICA_SIGILL_CHECKS=yes
-	//          setenv LIBICA_SIGILL_CHECKS=y
-	//          setenv LIBICA_SIGILL_CHECKS=1
-	if (!strcmp(ptr, "yes") || !strcmp(ptr, "y") || !strcmp(ptr, "1"))
-		return 1;
-
-	// If the environment variable is set to some negative value, no
-	// extra checks.
-	// bash/sh: export LIBICA_SIGILL_CHECKS=no
-	//          export LIBICA_SIGILL_CHECKS=n
-	//          export LIBICA_SIGILL_CHECKS=0
-	// tcsh:    setenv LIBICA_SIGILL_CHECKS=no
-	//          setenv LIBICA_SIGILL_CHECKS=n
-	//          setenv LIBICA_SIGILL_CHECKS=0
-	if (!strcmp(ptr, "no") || !strcmp(ptr, "n") || !strcmp(ptr, "0"))
-		return 0;
-
-	// Huh? We couldn't understand what was specified.
-	printf("Unable to understand LIBICA_SIGILL_CHECKS=%s\n", ptr);
-	printf("No extra SIGILL checks will be performed.\n");
+	// Otherwise, no extra checks.
 	return 0;
 }
 
