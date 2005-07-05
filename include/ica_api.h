@@ -375,7 +375,7 @@
 #define SHA_MSG_PART_MIDDLE     2
 #define SHA_MSG_PART_FINAL      3
 #define LENGTH_SHA_HASH         20
-
+#define LENGTH_SHA256_HASH      32
 
 #if defined(linux) || defined (_AIX)
 #define ICA_CALL 
@@ -407,6 +407,26 @@
         unsigned char      shaHash[LENGTH_SHA_HASH];
  } SHA_CONTEXT;
 #define LENGTH_SHA_CONTEXT  sizeof(SHA_CONTEXT)
+
+ typedef struct _SHA256_CONTEXT{
+#if defined (_WIN32)
+        DBL_ULONG          runningLength;
+#elif defined (_AIX)
+   #if   defined (__64BIT__)
+        unsigned long      runningLength;
+   #else
+        unsigned long long runningLength;
+   #endif
+#elif defined (linux)
+   #ifdef __s390__
+        unsigned long long runningLength;
+   #else
+        unsigned long runningLength;
+   #endif
+#endif
+        unsigned char      sha256Hash[LENGTH_SHA_HASH];
+ } SHA256_CONTEXT;
+#define LENGTH_SHA256_CONTEXT  sizeof(SHA256_CONTEXT)
 
 /*------------------------------------------------*
  | RSA defines and typedefs                       |
