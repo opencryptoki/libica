@@ -6,6 +6,7 @@ CC = gcc
 TARGETS = libica_des_test libica_3des_test \
           libica_aes128_test libica_aes192_test libica_aes256_test \
           libica_sha1_test \
+          libica_sha256_test \
           libica_rsa_test libica_rng_test libica_keygen_test
 
 all: $(TARGETS)
@@ -27,6 +28,9 @@ libica_aes256_test: libica_aes256_test.c
 
 libica_sha1_test: libica_sha1_test.c
 	gcc $(OPTS) $(INCLUDE) -lica -o libica_sha1_test libica_sha1_test.c
+
+libica_sha256_test: libica_sha256_test.c
+	gcc $(OPTS) $(INCLUDE) -lica -o libica_sha256_test libica_sha256_test.c
 
 libica_rsa_test: libica_rsa_test.c
 	gcc $(OPTS) $(INCLUDE) -lica -o libica_rsa_test libica_rsa_test.c
