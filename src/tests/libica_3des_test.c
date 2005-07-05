@@ -292,6 +292,8 @@ static const char rcsid[] = "$Header$";
 #include <fcntl.h>
 #include <sys/errno.h>
 #include <stdio.h>
+#include <string.h>
+#include <strings.h>
 #include "ica_api.h"
 
 
@@ -387,7 +389,6 @@ int main(int argc, char **argv)
 void dump_array(char *ptr, int size)
 {
    char *ptr_end;
-   char *intptr;
    unsigned char *h;
    int i = 1;
 

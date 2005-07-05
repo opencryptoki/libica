@@ -1,6 +1,6 @@
-
 static const char rcsid[] = "$Header$";
-/* 
+
+/*
 	     Common Public License Version 0.5
 
              THE ACCOMPANYING PROGRAM IS PROVIDED UNDER THE TERMS OF
@@ -288,242 +288,132 @@ static const char rcsid[] = "$Header$";
 
 */
 
-/* (C) COPYRIGHT International Business Machines Corp. 2001          */
+/* (C) COPYRIGHT International Business Machines Corp. 2005          */
 #include <fcntl.h>
 #include <sys/errno.h>
 #include <stdio.h>
 #include <string.h>
+#include <strings.h>
 #include "ica_api.h"
 
-#define NUM_FIPS_TESTS 3
-
-unsigned char FIPS_TEST_DATA[NUM_FIPS_TESTS][64] = {
-  // Test 0: "abc"
-  { 0x61,0x62,0x63 },
-  // Test 1: "abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq"
-  {
-0x61,0x62,0x63,0x64,0x62,0x63,0x64,0x65,0x63,0x64,0x65,0x66,0x64,0x65,0x66,0x67,
-0x65,0x66,0x67,0x68,0x66,0x67,0x68,0x69,0x67,0x68,0x69,0x6a,0x68,0x69,0x6a,0x6b,
-0x69,0x6a,0x6b,0x6c,0x6a,0x6b,0x6c,0x6d,0x6b,0x6c,0x6d,0x6e,0x6c,0x6d,0x6e,0x6f,
-0x6d,0x6e,0x6f,0x70,0x6e,0x6f,0x70,0x71,
-  },
-  // Test 2: 1,000,000 'a' -- don't actually use this... see the special case
-  // in the loop below.
-  {
-0x61,
-  },
+unsigned char NIST_KEY3[] = {
+	0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
+	0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f,
+	0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17,
+	0x18, 0x19, 0x1a, 0x1b, 0x1c, 0x1d, 0x1e, 0x1f,
 };
 
-unsigned int FIPS_TEST_DATA_SIZE[NUM_FIPS_TESTS] = {
-  // Test 0: "abc"
-  3,
-  // Test 1: "abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq"
-  56,
-  // Test 2: 1,000,000 'a'
-  1000000,
+unsigned char NIST_TEST_DATA[] = {
+	0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77,
+	0x88, 0x99, 0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff,
 };
 
-unsigned char FIPS_TEST_RESULT[NUM_FIPS_TESTS][LENGTH_SHA_HASH] =
-{
-  // Hash for test 0: "abc"
-  {
-0xA9,0x99,0x3E,0x36,0x47,0x06,0x81,0x6A,0xBA,0x3E,0x25,0x71,0x78,0x50,0xC2,0x6C,
-0x9C,0xD0,0xD8,0x9D,
-  },
-  // Hash for test 1: "abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq"
-  {
-0x84,0x98,0x3E,0x44,0x1C,0x3B,0xD2,0x6E,0xBA,0xAE,0x4A,0xA1,0xF9,0x51,0x29,0xE5,
-0xE5,0x46,0x70,0xF1,
-  },
-  // Hash for test 2: 1,000,000 'a'
-  {
-0x34,0xAA,0x97,0x3C,0xD4,0xC4,0xDA,0xA4,0xF6,0x1E,0xEB,0x2B,0xDB,0xAD,0x27,0x31,
-0x65,0x34,0x01,0x6F,
-  },
+unsigned char NIST_TEST_RESULT[] = {
+	0x8e, 0xa2, 0xb7, 0xca, 0x51, 0x67, 0x45, 0xbf,
+	0xea, 0xfc, 0x49, 0x90, 0x4b, 0x49, 0x60, 0x89,
 };
 
 void dump_array(char *, int);
 
 int main(int argc, char **argv)
 {
-  ICA_ADAPTER_HANDLE adapter_handle;
-  SHA_CONTEXT ShaContext;
-  int rc = 0, i = 0;
-  unsigned char input_data[1000000];
-  unsigned int  output_hash_length = LENGTH_SHA_HASH;
-  unsigned char output_hash[LENGTH_SHA_HASH];
+   ICA_ADAPTER_HANDLE adapter_handle;
+   ICA_AES_VECTOR iv;
+   ICA_KEY_AES_LEN256 key;
+   int rc = 0;
+   unsigned char dec_text[sizeof(NIST_TEST_DATA)],
+                 enc_text[sizeof(NIST_TEST_DATA)];
+   unsigned int i, mode;
 
-  rc = icaOpenAdapter(0, &adapter_handle);
-  if (rc != 0) {
-    printf("icaOpenAdapter failed and returned %d (0x%x).\n", rc, rc);
-    return 2;
-  }
+   if (argc <= 1) {
+      printf("Usage: %s [ ecb | cbc ]\n", argv[0]);
+      return 1;
+   }
 
-  for (i = 0; i < NUM_FIPS_TESTS; i++) {
-    // Test 2 is a special one, because we want to keep the size of the
-    // executable down, so we build it special, instead of using a static
-    if (i != 2)
-      memcpy(input_data, FIPS_TEST_DATA[i], FIPS_TEST_DATA_SIZE[i]);
-    else
-      memset(input_data, 'a', FIPS_TEST_DATA_SIZE[i]);
-   
-    printf("\nOriginal data for test %d:\n", i);
-    dump_array(input_data, FIPS_TEST_DATA_SIZE[i]);
-   
-    rc = icaSha1(adapter_handle,
-                 SHA_MSG_PART_ONLY,
-                 FIPS_TEST_DATA_SIZE[i],
-                 input_data,
-                 LENGTH_SHA_CONTEXT,
-                 &ShaContext,
-                 &output_hash_length,
-                 output_hash);
-   
-    if (rc != 0) {
-      printf("icaSha1 failed with errno %d (0x%x).\n", rc, rc);
-      return 2;
-    }
-   
-    if (output_hash_length != LENGTH_SHA_HASH) {
-      printf("icaSha1 returned an incorrect output data length, %u (0x%x).\n",
-             output_hash_length, output_hash_length);
-      return 2;
-    }
-   
-    printf("\nOutput hash for test %d:\n", i);
-    dump_array(output_hash, output_hash_length);
-    if (memcmp(output_hash, FIPS_TEST_RESULT[i], LENGTH_SHA_HASH) != 0) {
-       printf("This does NOT match the known result.\n");
-    } else {
-       printf("Yep, it's what it should be.\n");
-    }
-  }
+   mode = argv[1][0] == 'e' ? MODE_ECB : MODE_CBC;
 
-  // This test is the same as test 2, except that we use the SHA_CONTEXT and
-  // break it into calls of 1024 bytes each.
-  printf("\nOriginal data for test 2(chunks = 1024) is calls of 1024 'a's at a time\n");
-  i = FIPS_TEST_DATA_SIZE[2];
-  while (i > 0) {
-    unsigned int shaMessagePart;
-    memset(input_data, 'a', 1024);
-   
-    if (i == FIPS_TEST_DATA_SIZE[2])
-      shaMessagePart = SHA_MSG_PART_FIRST;
-    else if (i <= 1024)
-      shaMessagePart = SHA_MSG_PART_FINAL;
-    else
-      shaMessagePart = SHA_MSG_PART_MIDDLE;
+   rc = icaOpenAdapter(0, &adapter_handle);
+   if (rc != 0) {
+      printf("icaOpenAdapter failed and returned %d (0x%x).\n", rc, rc);
+      return 1;
+   }
 
-    rc = icaSha1(adapter_handle,
-                 shaMessagePart,
-                 (i < 1024) ? i : 1024,
-                 input_data,
-                 LENGTH_SHA_CONTEXT,
-                 &ShaContext,
-                 &output_hash_length,
-                 output_hash);
-   
-    if (rc != 0) {
-      printf("icaSha1 failed with errno %d (0x%x) on iteration %d.\n", rc, rc, i);
-      return 2;
-    }
-    
-    i -= 1024;
-  }
-   
-  if (output_hash_length != LENGTH_SHA_HASH) {
-    printf("icaSha1 returned an incorrect output data length, %u (0x%x).\n",
-           output_hash_length, output_hash_length);
-    return 2;
-  }
-  
-  printf("\nOutput hash for test 2(chunks = 1024):\n");
-  dump_array(output_hash, output_hash_length);
-  if (memcmp(output_hash, FIPS_TEST_RESULT[2], LENGTH_SHA_HASH) != 0) {
-     printf("This does NOT match the known result.\n");
-  } else {
-     printf("Yep, it's what it should be.\n");
-  }
+   bzero(dec_text, sizeof(dec_text));
+   bzero(enc_text, sizeof(enc_text));
+   bzero(iv, sizeof(iv));
+   bcopy(NIST_KEY3, key, sizeof(NIST_KEY3));
 
-  // This test is the same as test 2, except that we use the SHA_CONTEXT and
-  // break it into calls of 64 bytes each.
-  printf("\nOriginal data for test 2(chunks = 64) is calls of 64 'a's at a time\n");
-  i = FIPS_TEST_DATA_SIZE[2];
-  while (i > 0) {
-    unsigned int shaMessagePart;
-    memset(input_data, 'a', 64);
-   
-    if (i == FIPS_TEST_DATA_SIZE[2])
-      shaMessagePart = SHA_MSG_PART_FIRST;
-    else if (i <= 64)
-      shaMessagePart = SHA_MSG_PART_FINAL;
-    else
-      shaMessagePart = SHA_MSG_PART_MIDDLE;
+   printf("\nOriginal data:\n");
+   dump_array(NIST_TEST_DATA, sizeof(NIST_TEST_DATA));
 
-    rc = icaSha1(adapter_handle,
-                 shaMessagePart,
-                 (i < 64) ? i : 64,
-                 input_data,
-                 LENGTH_SHA_CONTEXT,
-                 &ShaContext,
-                 &output_hash_length,
-                 output_hash);
-   
-    if (rc != 0) {
-      printf("icaSha1 failed with errno %d (0x%x) on iteration %d.\n", rc, rc, i);
-      return 2;
-    }
-    
-    i -= 64;
-  }
-   
-  if (output_hash_length != LENGTH_SHA_HASH) {
-    printf("icaSha1 returned an incorrect output data length, %u (0x%x).\n",
-           output_hash_length, output_hash_length);
-    return 2;
-  }
-  
-  printf("\nOutput hash for test 2(chunks = 64):\n");
-  dump_array(output_hash, output_hash_length);
-  if (memcmp(output_hash, FIPS_TEST_RESULT[2], LENGTH_SHA_HASH) != 0) {
-     printf("This does NOT match the known result.\n");
-  } else {
-     printf("Yep, it's what it should be.\n");
-  }
+   i = sizeof(enc_text);
+   rc = icaAesEncrypt(adapter_handle, mode, sizeof(NIST_TEST_DATA),
+                      NIST_TEST_DATA, &iv, AES_KEY_LEN256,
+		      (ICA_KEY_AES_SINGLE *)&key, &i, enc_text);
+   if (rc != 0) {
+      printf("icaAesEncrypt failed with errno %d (0x%x).\n", rc, rc);
+      return 1;
+   }
+   if (i != sizeof(enc_text)) {
+      printf("icaAesEncrypt returned an incorrect output data length, %u (0x%x).\n", i, i);
+      return 1;
+   }
 
-  printf("\nAll SHA1 tests completed successfully\n");
+   printf("\nEncrypted data:\n");
+   dump_array(enc_text, sizeof(enc_text));
+   if (memcmp(enc_text, NIST_TEST_RESULT, sizeof(NIST_TEST_RESULT)) != 0) {
+      printf("This does NOT match the known result.\n");
+      return 1;
+   } else {
+      printf("Yep, it's what it should be.\n");
+   }
 
-  icaCloseAdapter(adapter_handle);
+   i = sizeof(dec_text);
+   rc = icaAesDecrypt(adapter_handle, mode, sizeof(enc_text),
+                      enc_text, &iv, AES_KEY_LEN256,
+		      (ICA_KEY_AES_SINGLE *)&key, &i, dec_text);
+   if (rc != 0) {
+      printf("icaAesDecrypt failed with errno %d (0x%x).\n", rc, rc);
+      return 1;
+   }
+   if (i != sizeof(dec_text)) {
+      printf("icaAesDecrypt returned an incorrect output data length, %u (0x%x).\n", i, i);
+      return 1;
+   }
 
-  return 0;
+   printf("\nDecrypted data:\n");
+   dump_array(dec_text, sizeof(dec_text));
+   if (memcmp(dec_text, NIST_TEST_DATA, sizeof(NIST_TEST_DATA)) != 0) {
+      printf("This does NOT match the original data.\n");
+      return 1;
+   } else {
+      printf("Successful!\n");
+   }
+
+   icaCloseAdapter(adapter_handle);
+
+   return 0;
 }
 
-void
-dump_array(char *ptr, int size)
+void dump_array(char *ptr, int size)
 {
-  char *ptr_end;
-  char *h;
-  int i = 1, trunc = 0;
+   char *ptr_end;
+   unsigned char *h;
+   int i = 1;
 
-  if (size > 64) {
-    trunc = size - 64;
-    size = 64;
-  }
-  h = ptr;
-  ptr_end = ptr + size;
-  while (h < ptr_end) {
-    printf("0x%02x ", *h);
-    h++;
-    if (i == 8) {
-      if (h != ptr_end)
-        printf("\n");
-      i = 1;
-    } else {
-     ++i;
-    }
-  }
-  printf("\n");
-  if (trunc > 0)
-    printf("... %d bytes not printed\n", trunc);
+
+   h = ptr;
+   ptr_end = ptr + size;
+   while (h < (unsigned char *)ptr_end) {
+      printf("0x%02x ",(unsigned char ) *h);
+      h++;
+      if (i == 8) {
+         printf("\n");
+         i = 1;
+      } else {
+         ++i;
+      }
+   }
+   printf("\n");
 }
 

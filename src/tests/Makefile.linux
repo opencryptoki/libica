@@ -1,31 +1,42 @@
-OPTS = -g
+OPTS = -g -Wall
 INCLUDE = -I . -I ../../include
 
 CC = gcc
 
-TARGETS = libica_3des_test libica_rsa_test libica_des_test libica_rng_test \
-          libica_keygen_test libica_sha1_test
+TARGETS = libica_des_test libica_3des_test \
+          libica_aes128_test libica_aes192_test libica_aes256_test \
+          libica_sha1_test \
+          libica_rsa_test libica_rng_test libica_keygen_test
 
 all: $(TARGETS)
 
-libica_3des_test: libica_3des_test.c
-	gcc $(OPTS) $(INCLUDE) -lica -o libica_3des_test libica_3des_test.c 
-
-libica_rsa_test: libica_rsa_test.c
-	gcc $(OPTS) $(INCLUDE) -lica -o libica_rsa_test libica_rsa_test.c 
-
 libica_des_test: libica_des_test.c
-	gcc $(OPTS) $(INCLUDE) -lica -o libica_des_test libica_des_test.c 
+	gcc $(OPTS) $(INCLUDE) -lica -o libica_des_test libica_des_test.c
 
-libica_rng_test: libica_rng_test.c
-	gcc $(OPTS) $(INCLUDE) -lica -o libica_rng_test libica_rng_test.c 
+libica_3des_test: libica_3des_test.c
+	gcc $(OPTS) $(INCLUDE) -lica -o libica_3des_test libica_3des_test.c
 
-libica_keygen_test: libica_keygen_test.c
-	gcc $(OPTS) $(INCLUDE) -lica -o libica_keygen_test libica_keygen_test.c 
+libica_aes128_test: libica_aes128_test.c
+	gcc $(OPTS) $(INCLUDE) -lica -o libica_aes128_test libica_aes128_test.c
+
+libica_aes192_test: libica_aes192_test.c
+	gcc $(OPTS) $(INCLUDE) -lica -o libica_aes192_test libica_aes192_test.c
+
+libica_aes256_test: libica_aes256_test.c
+	gcc $(OPTS) $(INCLUDE) -lica -o libica_aes256_test libica_aes256_test.c
 
 libica_sha1_test: libica_sha1_test.c
-	gcc $(OPTS) $(INCLUDE) -lica -o libica_sha1_test libica_sha1_test.c 
+	gcc $(OPTS) $(INCLUDE) -lica -o libica_sha1_test libica_sha1_test.c
 
-clean: 
-	rm $(TARGETS)
+libica_rsa_test: libica_rsa_test.c
+	gcc $(OPTS) $(INCLUDE) -lica -o libica_rsa_test libica_rsa_test.c
+
+libica_rng_test: libica_rng_test.c
+	gcc $(OPTS) $(INCLUDE) -lica -o libica_rng_test libica_rng_test.c
+
+libica_keygen_test: libica_keygen_test.c
+	gcc $(OPTS) $(INCLUDE) -lica -o libica_keygen_test libica_keygen_test.c
+
+clean:
+	rm -f $(TARGETS)
 

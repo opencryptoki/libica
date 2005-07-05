@@ -444,17 +444,11 @@ int main()
    ICA_KEY_RSA_CRT	icakey;
    ICA_KEY_RSA_MODEXPO	wockey;
    caddr_t		key;
-   int			rcode;
    caddr_t		my_result;
-   caddr_t		clic_result, cr2;
-   caddr_t		clic_decrypt_result, cdr2, cdr3;
    caddr_t		my_result2;
    /* icaRsaModExpo_t	rsawoc; */
    int			i;
    unsigned int		length;
-   char			*publKey, *pkey;
-   char			*privKey, *tbuf;
-   unsigned int		allocated, keysizebits;
 
    i = icaOpenAdapter(0, &adapter_handle);
    if (i != 0) {
@@ -466,7 +460,7 @@ int main()
      * encrypt with public key
      */
 
-    printf("modulus size = %d \n", sizeof(modulus1024));
+    printf("modulus size = %ld \n", sizeof(modulus1024));
     bzero(&wockey, sizeof(wockey));
     wockey.keyType = KEYTYPE_MODEXPO;
     wockey.keyLength = sizeof(ICA_KEY_RSA_MODEXPO);
@@ -486,8 +480,8 @@ int main()
     bzero(my_result, sizeof(A));
     length = sizeof(A);
 
-    if (i = icaRsaModExpo(adapter_handle, sizeof(A), A,
-                          &wockey, &length, my_result)) {
+    if ((i = icaRsaModExpo(adapter_handle, sizeof(A), A,
+                          &wockey, &length, my_result)) != 0) {
       printf("icaRsaModExpo failed and returned %d (0x%x).\n", i, i);
     }
 
@@ -556,8 +550,8 @@ int main()
     dump_array(&icakey,sizeof(ICA_KEY_RSA_CRT)); */
 
     length = sizeof(Ciphertext);
-    if (i = icaRsaCrt(adapter_handle, sizeof(Ciphertext), Ciphertext,
-                      &icakey, &length, my_result2)) {
+    if ((i = icaRsaCrt(adapter_handle, sizeof(Ciphertext), Ciphertext,
+                      &icakey, &length, my_result2)) != 0) {
       printf("icaRsaCrt failed and returned %d (0x%x).\n", i, i);
     }
 
@@ -580,7 +574,6 @@ int main()
 void dump_array(char *ptr, int size)
 {
    char *ptr_end;
-   char *intptr;
    unsigned char *h;
    int i = 1;
 
