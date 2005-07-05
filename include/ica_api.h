@@ -433,7 +433,7 @@
         unsigned long runningLength;
    #endif
 #endif
-        unsigned char      sha256Hash[LENGTH_SHA_HASH];
+        unsigned char      sha256Hash[LENGTH_SHA256_HASH];
  } SHA256_CONTEXT;
 #define LENGTH_SHA256_CONTEXT  sizeof(SHA256_CONTEXT)
 
@@ -1465,6 +1465,60 @@ icaSha1( ICA_ADAPTER_HANDLE      hAdapterHandle,
 	 unsigned int           *pOutputDataLength,
 	 unsigned char          *pOutputData );
 
+/*---------------------------------------------------------------------*
+ |                                                                     |
+ | icaSha256                                                           |
+ |                                                                     |
+ | Purpose: Perform secure hash on input data using the SHA-256        |
+ |          algorithm.                                                 |
+ |                                                                     |
+ | Parameters:                                                         |
+ |    hAdapterHandle - pointer to a previously opened device handle.   |
+ |                                                                     |
+ |    shaMessagePart - the message chaining state. Must be one of the  |
+ |                     following:                                      |
+ |                                                                     |
+ |                     SHA_MSG_PART_ONLY   - A single hash operation   |
+ |                     SHA_MSG_PART_FIRST  - The first part            |
+ |                     SHA_MSG_PART_MIDDLE - The middle part           |
+ |                     SHA_MSG_PART_FINAL  - The last part             |
+ |                                                                     |
+ |    inputDataLength - the byte length of the input data to be        |
+ |                      SHA-256 hashed and must be greater than zero.  |
+ |                                                                     |
+ |    pInputData - pointer to the input data data.                     |
+ |                                                                     |
+ |    shaContextLength - specifies the length of the SHA256 message    |
+ |                       context structure and must contain a value    |
+ |                       that is at least LENGTH_SHA256_CONTEXT decimal|
+ |                                                                     |
+ |    pShaContext - pointer to the SHA256 context structure used to    |
+ |                  store the intermediate values when chaining is     |
+ |                  used. The application must not modify the contents |
+ |                  of this structure when chaining is used.           |
+ |                                                                     |
+ |    pOutputDataLength - on input specifies the length of the         |
+ |                        pOutputData buffer and must be greater than  |
+ |                        LENGTH_SHA256_HASH. On output it contains the|
+ |                        actual byte length of the hash returned in   |
+ |                        pOutputData.                                 |
+ |                                                                     |
+ |    pOutputData - pointer to the buffer to contain the resulting     |
+ |                  hash data.                                         |
+ |                                                                     |
+ | Return code: Zero if successful                                     |
+ |                                                                     |
+ *---------------------------------------------------------------------*/
+
+unsigned int
+icaSha256(ICA_ADAPTER_HANDLE      hAdapterHandle,
+	  unsigned int            shaMessagePart,
+	  unsigned int            inputDataLength,
+	  unsigned char          *pInputData,
+	  unsigned int            shaContextLength,
+	  SHA256_CONTEXT         *pSha256Context,
+	  unsigned int           *pOutputDataLength,
+	  unsigned char          *pOutputData);
 
 /*---------------------------------------------------------------------*
  |                                                                     |

@@ -509,6 +509,12 @@ typedef struct _ica_sha {
   unsigned char     *initialh;
 } ica_sha_t;
 
+enum _hash_function_code {
+	QUERY_FC   = 0,
+	SHA1_FC    = 1,
+	SHA256_FC  = 2
+};
+
 /*--------------------------------------------------------------------------*
  * Function prototypes for z routines                                       *
  *--------------------------------------------------------------------------*/
@@ -545,16 +551,23 @@ int icaSha1SW(ica_sha_t *,
 int zDes(ica_des_t *, unsigned int);
 int zAes(ica_aes_t *, unsigned int);
 int zSha1(ica_sha_t *, unsigned int, unsigned long long *);
+int zSha256(ica_sha_t *, unsigned int, unsigned long long *);
 
-static unsigned char SHACONST[20] = {
+static unsigned char SHA1CONST[ICA_SHA1_DATALENGTH] = {
  0x67,0x45,0x23,0x01,0xef,0xcd,0xab,0x89,
  0x98,0xba,0xdc,0xfe,0x10,0x32,0x54,0x76,
  0xc3,0xd2,0xe1,0xf0
 };
 
+static unsigned char SHA256CONST[ICA_SHA256_DATALENGTH] = {
+0x6A,0x09,0xE6,0x67,0xBB,0x67,0xAE,0x85,0x3C,0x6E,0xF3,0x72,0xA5,0x4F,0xF5,0x3A,
+0x51,0x0E,0x52,0x7F,0x9B,0x05,0x68,0x8C,0x1F,0x83,0xD9,0xAB,0x5B,0xE0,0xCD,0x19,
+};
+
 #define EXCEPTION_RV 20
 
 static volatile int sha1_switch = 0;
+static volatile int sha256_switch = 0;
 static volatile int des_switch = 0;
 static volatile int tdes_switch = 0;
 static volatile int aes128_switch = 0;
@@ -569,7 +582,7 @@ static void sigill_handler(int sig)
 	longjmp(envq, EXCEPTION_RV);
 }
 
-static int querySHA1(void)
+static void queryHash(void)
 {
 	unsigned char mask[16];
 
@@ -591,7 +604,8 @@ static int querySHA1(void)
 #endif
 	if (mask[0] & 0x40)
 		sha1_switch = 1;
-	return sha1_switch;
+	if (mask[0] & 0x20)
+		sha256_switch = 1;
 }
 
 static void queryCipher(void)
@@ -726,14 +740,15 @@ static int KM(unsigned long fc,		// function code
 } // end KM
 
 /*********************************************************************/
-/*         r0 = 0x01                                                 */
+/*         r0 = fc                                                   */
 /*         r1 = digest_p                                             */
 /*         r6 = msgP                                                 */
 /*         r7 = msgL                                                 */
 /*           KIMD (6)                                                */
 /*         until cc != 3                                             */
 /*********************************************************************/
-static int KIMD(unsigned char *digest_p,
+static int KIMD(unsigned long fc,
+		unsigned char *digest_p,
 		unsigned char *msgP,
 		unsigned long msgL)
 {
@@ -741,30 +756,28 @@ static int KIMD(unsigned char *digest_p,
 
 	asm volatile
 #ifdef _LINUX_S390X_
-	("	slgr	0,0		\n"	// R0 = 0;
-	 "	lghi	0,1		\n"	// R0 = 0x01
-	 "	lgr	1,%1		\n"	// R1 = digest_p
-	 "	lgr	6,%2		\n"	// R6 = message_p
-	 "	lgr	7,%3		\n"	// R7 = messageLen
+	("	lgr	0,%1		\n"	// R0 = fc
+	 "	lgr	1,%2		\n"	// R1 = digest_p
+	 "	lgr	6,%3		\n"	// R6 = message_p
+	 "	lgr	7,%4		\n"	// R7 = messageLen
 	 "0:	.long	0xb93e0006	\n"	// KIMD
 	 "1:	brc	1,0b		\n"	// keep going while cc=3
 	 "	ipm	%0		\n"	// condition code as uint
 	 "	srl	%0,28		\n"	// cc = condition code
 	 :"=d"(cc)
-	 :"d" (digest_p),"d" (msgP),"d" (msgL)
+	 :"d" (fc),"d" (digest_p),"d" (msgP),"d" (msgL)
 	 :"cc","0","1","6","7");
 #else
-	("	slr	0,0		\n"	// R0 = 0;
-	 "	lhi	0,1		\n"	// R0 = 0x01
-	 "	lr	1,%1		\n"	// R1 = digest_p
-	 "	lr	6,%2		\n"	// R6 = message_p
-	 "	lr	7,%3		\n"	// R7 = messageLen
+	("	lr	0,%1		\n"	// R0 = fc
+	 "	lr	1,%2		\n"	// R1 = digest_p
+	 "	lr	6,%3		\n"	// R6 = message_p
+	 "	lr	7,%4		\n"	// R7 = messageLen
 	 "0:	.long	0xb93e0006	\n"	// KIMD
 	 "1:	brc	1,0b		\n"	// keep going while cc=3
 	 "	ipm	%0		\n"	// condition code as uint
 	 "	srl	%0,28		\n"	// cc = condition code
 	 :"=d"(cc)
-	 :"d" (digest_p),"d" (msgP),"d" (msgL)
+	 :"d" (fc),"d" (digest_p),"d" (msgP),"d" (msgL)
 	 :"cc","0","1","6","7");
 #endif
 
@@ -772,14 +785,15 @@ static int KIMD(unsigned char *digest_p,
 } // end KIMD
 
 /*********************************************************************/
-/*         r0 = 0x01                                                 */
+/*         r0 = fc                                                   */
 /*         r1 = digest_p                                             */
 /*         r6 = msgP                                                 */
 /*         r7 = msgL                                                 */
 /*           KLMD (6)                                                */
 /*         until cc != 3                                             */
 /*********************************************************************/
-static int KLMD(unsigned char *digest_p,
+static int KLMD(unsigned long fc,
+		unsigned char *digest_p,
 		unsigned char *msgP,
 		unsigned long msgL)
 {
@@ -787,30 +801,28 @@ static int KLMD(unsigned char *digest_p,
 
 	asm volatile
 #ifdef _LINUX_S390X_
-	("	slgr	0,0		\n"	// R0 = 0;
-	 "	lghi	0,1		\n"	// R0 = 0x01
-	 "	lgr	1,%1		\n"	// R1 = digest_p
-	 "	lgr	6,%2		\n"	// R6 = message_p
-	 "	lgr	7,%3		\n"	// R7 = messageLen
+	("	lgr	0,%1		\n"	// R0 = fc
+	 "	lgr	1,%2		\n"	// R1 = digest_p
+	 "	lgr	6,%3		\n"	// R6 = message_p
+	 "	lgr	7,%4		\n"	// R7 = messageLen
 	 "0:	.long	0xb93f0006	\n"	// KLMD
 	 "1:	brc	1,0b		\n"	// keep going while cc=3
 	 "	ipm	%0		\n"	// condition code as uint
 	 "	srl	%0,28		\n"	// cc = condition code
 	 :"=d"(cc)
-	 :"d" (digest_p),"d" (msgP),"d" (msgL)
+	 :"d" (fc),"d" (digest_p),"d" (msgP),"d" (msgL)
 	 :"cc","0","1","6","7");
 #else
-	("	slr	0,0		\n"	// R0 = 0;
-	 "	lhi	0,1		\n"	// R0 = 0x01
-	 "	lr	1,%1		\n"	// R1 = digest_p
-	 "	lr	6,%2		\n"	// R6 = message_p
-	 "	lr	7,%3		\n"	// R7 = messageLen
+	("	lr	0,%1		\n"	// R0 = fc
+	 "	lr	1,%2		\n"	// R1 = digest_p
+	 "	lr	6,%3		\n"	// R6 = message_p
+	 "	lr	7,%4		\n"	// R7 = messageLen
 	 "0:	.long	0xb93f0006	\n"	// KLMD
 	 "1:	brc	1,0b		\n"	// keep going while cc=3
 	 "	ipm	%0		\n"	// condition code as uint
 	 "	srl	%0,28		\n"	// cc = condition code
 	 :"=d"(cc)
-	 :"d" (digest_p),"d" (msgP),"d" (msgL)
+	 :"d" (fc),"d" (digest_p),"d" (msgP),"d" (msgL)
 	 :"cc","0","1","6","7");
 #endif
 
@@ -841,6 +853,7 @@ void queryCryptoAssist(void)
 
 	cpacf_checked = 1;
 	sha1_switch = 0;
+	sha256_switch = 0;
 	des_switch = 0;
 	tdes_switch = 0;
 	aes128_switch = 0;
@@ -855,7 +868,7 @@ void queryCryptoAssist(void)
 	sigaction(SIGILL, &new, &old);
 
 	if (setjmp(envq) == 0) {
-		querySHA1();
+		queryHash();
 		queryCipher();
 	}
 	sigaction(SIGILL, &old, NULL);
@@ -1369,6 +1382,134 @@ icaSha1( ICA_ADAPTER_HANDLE      hAdapterHandle,
 
      return( 0 );
 #endif
+}
+
+/*---------------------------------------------------------------------*
+ |                                                                     |
+ | icaSha256                                                           |
+ |                                                                     |
+ | Purpose: Perform secure hash on input data using the SHA-256        |
+ |          algorithm.                                                 |
+ |                                                                     |
+ | Parameters:                                                         |
+ |    hAdapterHandle - pointer to a previously opened device handle.   |
+ |                                                                     |
+ |    shaMessagePart - the message chaining state. Must be one of the  |
+ |                     following:                                      |
+ |                                                                     |
+ |                     SHA_MSG_PART_ONLY   - A single hash operation   |
+ |                     SHA_MSG_PART_FIRST  - The first part            |
+ |                     SHA_MSG_PART_MIDDLE - The middle part           |
+ |                     SHA_MSG_PART_FINAL  - The last part             |
+ |                                                                     |
+ |    inputDataLength - the byte length of the input data to be        |
+ |                      SHA-256 hashed and must be greater than zero.  |
+ |                                                                     |
+ |    pInputData - pointer to the input data data.                     |
+ |                                                                     |
+ |    shaContextLength - specifies the length of the SHA256 message    |
+ |                       context structure.                            |
+ |                                                                     |
+ |    pSha256Context - pointer to the SHA-256 context structure used   |
+ |                     to store the intermediate values when chaining  |
+ |                     is used. The application must not modify the    |
+ |                     contents of this structure when chaining is used|
+ |                                                                     |
+ |    pOutputDataLength - on input specifies the length of the         |
+ |                        pOutputData buffer and must be greater than  |
+ |                        LENGTH_SHA256_HASH. On output it contains    |
+ |                        the actual byte length of the hash returned  |
+ |                        in pOutputData.                              |
+ |                                                                     |
+ |    pOutputData - pointer to the buffer to contain the resulting     |
+ |                  hash data.                                         |
+ |                                                                     |
+ | Return code: Zero if successful                                     |
+ |                                                                     |
+ *---------------------------------------------------------------------*/
+unsigned int
+icaSha256(ICA_ADAPTER_HANDLE      hAdapterHandle,
+	  unsigned int            shaMessagePart,
+	  unsigned int            inputDataLength,
+	  unsigned char          *pInputData,
+	  unsigned int            shaContextLength,
+	  SHA256_CONTEXT         *pSha256Context,
+	  unsigned int           *pOutputDataLength,
+	  unsigned char          *pOutputData )
+{
+	ica_sha_t            rb;
+	int                  rc;
+	char                 pad[ICA_SHA256_BLOCKLENGTH * 2];
+	__u64                leftover;
+	ica_sha256_result_t *initialh;
+
+	/* check for obvious errors in parms */
+	if ((pInputData == NULL)                      ||
+	    (pSha256Context == NULL)                  ||
+	    (pOutputDataLength == NULL)               ||
+	    (pOutputData == NULL)                     ||
+	    (*pOutputDataLength < LENGTH_SHA256_HASH) ||
+	    (shaContextLength < LENGTH_SHA_CONTEXT))
+		return HDDInvalidParm;
+
+	/* make sure some message part is specified */
+	if ((shaMessagePart != SHA_MSG_PART_ONLY)   &&
+	    (shaMessagePart != SHA_MSG_PART_FIRST)  &&
+	    (shaMessagePart != SHA_MSG_PART_MIDDLE) &&
+	    (shaMessagePart != SHA_MSG_PART_FINAL))
+		return HDDInvalidParm;
+
+#ifndef _LINUX_S390_
+	/* check for maximum and minimum input data length */
+	if (inputDataLength > 0x01fffffc)
+		return HDDInvalidParm;
+#endif
+
+	/*
+	 * if this is the first or middle part, the input
+	 * data length must be a multiple of 64 bytes
+	 */
+	if ((inputDataLength & 0x3f) &&
+	   ((shaMessagePart == SHA_MSG_PART_FIRST) ||
+	    (shaMessagePart == SHA_MSG_PART_MIDDLE)))
+		return HDDInvalidParm;
+
+#ifndef _LINUX_S390_
+	/*
+	 * If this is the middle or final part, the running
+	 * length should not be zero
+	 */
+	if ((pSha256Context->runningLength == 0) &&
+	    ((shaMessagePart == SHA_MSG_PART_MIDDLE) ||
+	     (shaMessagePart == SHA_MSG_PART_FINAL)))
+		return HDDInvalidParm;
+#endif
+
+#ifdef _LINUX_S390_
+	rb.inputdata = pInputData;
+	rb.inputdatalength = inputDataLength;
+	rb.outputdata = pOutputData;
+	rb.initialh = (unsigned char *)&pSha256Context->sha256Hash;
+
+	if (sha256_switch) {
+		// In zLinux, the hardware performs padding and
+		// appropriate initialization, so we'll skip that part here.
+		rc = zSha256(&rb, shaMessagePart, &pSha256Context->runningLength);
+	} else {
+		// Here would be any software backup...
+		//rc = icaSha1SW(&rb,
+		//		 shaMessagePart,
+		//		 &pSha256Context->runningLength,
+		//		 pOutputData);
+		rc = ENODEV;
+	}
+	if (!rc)
+		memcpy(&pSha256Context->sha256Hash, pOutputData,
+		       ICA_SHA256_DATALENGTH);
+#else
+	rc = ENODEV;
+#endif
+	return rc;
 }
 
 /*---------------------------------------------------------------------*
@@ -3637,7 +3778,7 @@ icaSha1SW(ica_sha_t * arg, unsigned int rule,
 } // end icaSha1SW
 
 /*-------------------------------------------------------------------*/
-/* sha                                                               */
+/* SHA-1                                                             */
 /*-------------------------------------------------------------------*/
 int zSha1(ica_sha_t * arg, unsigned int rule, unsigned long long *pSum)
 {
@@ -3653,7 +3794,7 @@ int zSha1(ica_sha_t * arg, unsigned int rule, unsigned long long *pSum)
 	// If this is a FIRST or ONLY call, supply the standard SHA1
 	// initial vector.  Otherwise, use the input chaining vector
 	if (rule == SHA_MSG_PART_ONLY || rule == SHA_MSG_PART_FIRST) {
-		memcpy (shabuff, SHACONST, ICA_SHA1_DATALENGTH);
+		memcpy (shabuff, SHA1CONST, ICA_SHA1_DATALENGTH);
 		sum = 0LL;
 	} else {
 		// Copy the caller's chaining vector to local storage
@@ -3682,6 +3823,7 @@ int zSha1(ica_sha_t * arg, unsigned int rule, unsigned long long *pSum)
 
 		if (setjmp(envq) != 0) {
 			sha1_switch = 0;
+			sha256_switch = 0;
 			des_switch = 0;
 			tdes_switch = 0;
 			aes128_switch = 0;
@@ -3698,9 +3840,10 @@ int zSha1(ica_sha_t * arg, unsigned int rule, unsigned long long *pSum)
 	if (complete_blocks_length) {
 		// Digest the complete blocks and recompute the
 		// bitlength
-		if ((rv = KIMD(shabuff,
-				pSha->inputdata,
-				complete_blocks_length)) == 0) {
+		if ((rv = KIMD(SHA1_FC,
+			       shabuff,
+			       pSha->inputdata,
+			       complete_blocks_length)) == 0) {
 			sum += (long long) complete_blocks_length;
 		} // end if rv 0
 	} // end if there are complete blocks
@@ -3711,9 +3854,10 @@ int zSha1(ica_sha_t * arg, unsigned int rule, unsigned long long *pSum)
 		memcpy(shabuff+ICA_SHA1_DATALENGTH,
 		       (unsigned char *)&sum,
 		       sizeof(sum));
-		rv = KLMD(shabuff,
-			pSha->inputdata+complete_blocks_length,
-			remnant);
+		rv = KLMD(SHA1_FC,
+			  shabuff,
+			  pSha->inputdata+complete_blocks_length,
+			  remnant);
 	} // end if ONLY or FINAL
 
 	if (extra_sigill_checks) {
@@ -3738,6 +3882,106 @@ int zSha1(ica_sha_t * arg, unsigned int rule, unsigned long long *pSum)
 	return rv;
 
 } // end zSha1
+
+/*-------------------------------------------------------------------*/
+/* SHA256                                                            */
+/*-------------------------------------------------------------------*/
+int zSha256(ica_sha_t *pSha256, unsigned int rule, unsigned long long *pSum)
+{
+	int rv = 0;
+	unsigned long long sum;
+	unsigned long remnant = 0;
+	int complete_blocks_length = 0;
+	unsigned char shabuff[LENGTH_SHA256_CONTEXT];
+	struct sigaction new, old;
+	sigset_t newset, oldset;
+
+	// If this is a FIRST or ONLY call, supply the standard SHA256
+	// initial vector.  Otherwise, use the input chaining vector
+	if ((rule == SHA_MSG_PART_ONLY) || (rule == SHA_MSG_PART_FIRST)) {
+		memcpy (shabuff, SHA256CONST, ICA_SHA256_DATALENGTH);
+		sum = 0LL;
+	} else {
+		// Copy the caller's chaining vector to local storage
+		memcpy(shabuff, (void *)pSha256->initialh, ICA_SHA256_DATALENGTH);
+		sum = *pSum;
+	}
+
+	// Compute the length of any incomplete block
+	if (pSha256->inputdatalength) {
+		remnant = pSha256->inputdatalength % ICA_SHA256_BLOCKLENGTH;
+		complete_blocks_length = pSha256->inputdatalength - remnant;
+	}
+
+	// If this is a FIRST or MIDDLE call, the remnant must be zero.
+	if (((rule == SHA_MSG_PART_FIRST) || (rule == SHA_MSG_PART_MIDDLE)) &&
+	    (remnant != 0))
+		return HDDInvalidParm;
+
+	if (extra_sigill_checks) {
+		sigemptyset(&newset);
+		sigaddset(&newset, SIGILL);
+		sigprocmask(SIG_UNBLOCK, &newset, &oldset);
+		new.sa_handler = (void *) sigill_handler;
+		new.sa_flags = 0;
+		sigaction(SIGILL, &new, &old);
+
+		if (setjmp(envq) != 0) {
+			sha1_switch = 0;
+			sha256_switch = 0;
+			des_switch = 0;
+			tdes_switch = 0;
+			aes128_switch = 0;
+			aes192_switch = 0;
+			aes256_switch = 0;
+			prng_switch = 0;
+			sigaction(SIGILL, &old, NULL);
+			sigprocmask(SIG_SETMASK, &oldset, NULL);
+			return EXCEPTION_RV;
+		}
+	}
+
+	// If there are any complete blocks:
+	if (complete_blocks_length) {
+		// Digest the complete blocks and recompute the
+		// bitlength
+		if ((rv = KIMD(SHA256_FC, shabuff, pSha256->inputdata,
+			       complete_blocks_length)) == 0) {
+			sum += (long long) complete_blocks_length;
+		} // end if rv 0
+	} // end if there are complete blocks
+
+	if ((rule == SHA_MSG_PART_ONLY) || (rule == SHA_MSG_PART_FINAL)) {
+		// Digest the remnant and compute the bit length
+		sum = 8*(sum + (long long) remnant);
+		memcpy(shabuff+ICA_SHA256_DATALENGTH,
+		       (unsigned char *)&sum,
+		       sizeof(sum));
+		rv = KLMD(SHA256_FC, shabuff,
+			  pSha256->inputdata+complete_blocks_length, remnant);
+	}
+
+	if (extra_sigill_checks) {
+		sigaction(SIGILL, &old, NULL);
+		sigprocmask(SIG_SETMASK, &oldset, NULL);
+	}
+
+	if (rv == 0) {
+		// Copy the caller's output
+		memcpy((void *)pSha256->outputdata, shabuff,
+		       ICA_SHA256_DATALENGTH);
+		// If appropriate, copy the caller's
+		// chaining vector and running total
+		if ((rule != SHA_MSG_PART_FINAL) &&
+		    (rule != SHA_MSG_PART_ONLY)) {
+			memcpy((void *)pSha256->initialh, shabuff,
+			       ICA_SHA1_DATALENGTH);
+			*pSum = sum;
+		}
+	}
+
+	return rv;
+} // end zSha256
 
 /*-------------------------------------------------------------------*/
 /* DES                                                               */
