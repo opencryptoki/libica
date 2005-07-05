@@ -377,6 +377,8 @@
 /*                   code and fix a few minor bugs.                  */
 /* 2005-05-16  EDR   Add error handling around calls to CPACF        */
 /*                   instructions.                                   */
+/* 2005-07-05  EDR   Rename many of the constants used in the zSeries*/
+/*                   code to allow for future expansion.             */
 /*********************************************************************/
 
 #include <stdio.h>
