@@ -287,7 +287,7 @@
 
 */
 
-/* (C) COPYRIGHT International Business Machines Corp. 2001          */
+/* (C) COPYRIGHT International Business Machines Corp. 2001,2005     */
 
 
 /*********************************************************************/
@@ -543,6 +543,7 @@ int icaSha1SW(ica_sha_t *,
               unsigned char *);
 
 int zDes(ica_des_t *, unsigned int);
+int zAes(ica_aes_t *, unsigned int);
 int zSha1(ica_sha_t *, unsigned int, unsigned long long *);
 
 static unsigned char SHACONST[20] = {
@@ -555,6 +556,11 @@ static unsigned char SHACONST[20] = {
 
 static volatile int sha1_switch = 0;
 static volatile int des_switch = 0;
+static volatile int tdes_switch = 0;
+static volatile int aes128_switch = 0;
+static volatile int aes192_switch = 0;
+static volatile int aes256_switch = 0;
+static volatile int prng_switch = 0;
 static volatile int cpacf_checked = 0;
 
 static jmp_buf envq;
@@ -588,7 +594,7 @@ static int querySHA1(void)
 	return sha1_switch;
 }
 
-static int queryDES(void)
+static void queryCipher(void)
 {
 	unsigned char mask[16];
 
@@ -608,9 +614,18 @@ static int queryDES(void)
 	 :"d" (mask)
 	 :"cc","0","1","2","6");
 #endif
-	if (mask[0] & 40)
+	if (mask[0] & 0x40)
 		des_switch = 1;
-	return des_switch;
+	if (mask[0] & 0x10)
+		tdes_switch = 1;
+	if (mask[2] & 0x20)
+		aes128_switch = 1;
+	if (mask[2] & 0x10)
+		aes192_switch = 1;
+	if (mask[3] & 0x80)
+		aes256_switch = 1;
+	if (mask[8] & 0x10)
+		prng_switch = 1;
 }
 
 /*********************************************************************/
@@ -825,8 +840,13 @@ void queryCryptoAssist(void)
 	extra_sigill_checks = queryEnvExtraSigillChecks();
 
 	cpacf_checked = 1;
-	des_switch = 0;
 	sha1_switch = 0;
+	des_switch = 0;
+	tdes_switch = 0;
+	aes128_switch = 0;
+	aes192_switch = 0;
+	aes256_switch = 0;
+	prng_switch = 0;
 	sigemptyset(&newset);
 	sigaddset(&newset, SIGILL);
 	sigprocmask(SIG_UNBLOCK, &newset, &oldset);
@@ -836,7 +856,7 @@ void queryCryptoAssist(void)
 
 	if (setjmp(envq) == 0) {
 		querySHA1();
-		queryDES();
+		queryCipher();
 	}
 	sigaction(SIGILL, &old, NULL);
 	sigprocmask(SIG_SETMASK, &oldset, NULL);
@@ -907,11 +927,11 @@ check_des_parms( ICA_ADAPTER_HANDLE      hAdapterHandle,
      /* check for obvious errors in parms */
 
      if( (pInputData == NULL             )           ||
-	 ((pIv == NULL)  && (mode == MODE_DES_CBC )) ||
+	 ((pIv == NULL)  && (mode == MODE_CBC )) ||
 	 (pKeyDes == NULL                )           ||
 	 (pOutputDataLength == NULL      )           ||
 	 (pOutputData == NULL            )           ||
-         ((mode != MODE_DES_ECB) && (mode != MODE_DES_CBC )) ||
+         ((mode != MODE_ECB) && (mode != MODE_CBC )) ||
 	 (dataLength & 0x07              )           ||
 	 (dataLength > *pOutputDataLength) ) {
 
@@ -921,9 +941,46 @@ check_des_parms( ICA_ADAPTER_HANDLE      hAdapterHandle,
      return( 0 );
 }
 
+/*---------------------------------------------------------------------*
+ |                                                                     |
+ | NAME:        check_aes_parms                                        |
+ |                                                                     |
+ | FUNCTION:    Check the parameters passed from the application for   |
+ |              AES operations.                                        |
+ |                                                                     |
+ | RETURN:      zero if successfull, nonzero if failure.               |
+ |                                                                     |
+ | Note:  There are no checks for really stupid errors like the        |
+ |        key, chaining vector, outputs and inputs overlapping.        |
+ |                                                                     |
+ *---------------------------------------------------------------------*/
+unsigned int
+check_aes_parms(ICA_ADAPTER_HANDLE      hAdapterHandle,
+		unsigned int            mode,
+		unsigned int            dataLength,
+		unsigned char          *pInputData,
+		ICA_AES_VECTOR         *pIv,
+		unsigned int            KeyLength,
+		ICA_KEY_AES_SINGLE     *pKeyAes,
+		unsigned int           *pOutputDataLength,
+		unsigned char          *pOutputData )
+{
+	/* check for obvious errors in parms */
+	if ((pInputData == NULL)                       ||
+	    ((pIv == NULL) && (mode == MODE_CBC))      ||
+	    (KeyLength & 0x07)                         ||
+	    (KeyLength < 16)                           ||
+	    (KeyLength > 32)                           ||
+	    (pKeyAes == NULL)                          ||
+	    (pOutputDataLength == NULL)                ||
+	    (pOutputData == NULL)                      ||
+	    ((mode != MODE_ECB) && (mode != MODE_CBC)) ||
+	    (dataLength & 0x0F)                        ||
+	    (dataLength > *pOutputDataLength))
+		return HDDInvalidParm;
 
-
-
+	return 0;
+}
 
 /*---------------------------------------------------------------------*
  |                                                                     |
@@ -1646,8 +1703,8 @@ icaRsaCrt( ICA_ADAPTER_HANDLE     hAdapterHandle,
  |                                                                     |
  |    mode - specifies the operational mode and must be:               |
  |                                                                     |
- |           MODE_DES_ECB - use Electronic Code Book mode              |
- |           MODE_DES_CBC - use Cipher Block Chaining mode             |
+ |           MODE_ECB - use Electronic Code Book mode                  |
+ |           MODE_CBC - use Cipher Block Chaining mode                 |
  |                                                                     |
  |    dataLength - specifies the byte length of the input data.        |
  |                 Must be a mutiple of the cipher block.              |
@@ -1695,7 +1752,7 @@ icaDesEncrypt( ICA_ADAPTER_HANDLE      hAdapterHandle,
 	  return( HDDInvalidParm );
      }
 
-     des.mode = (mode == MODE_DES_ECB) ? DEVICA_MODE_ECB : DEVICA_MODE_CBC;
+     des.mode = (mode == MODE_ECB) ? DEVICA_MODE_ECB : DEVICA_MODE_CBC;
      des.direction = DEVICA_DIR_ENCRYPT;
      des.inputdata = pInputData;
      des.inputdatalength = dataLength;
@@ -1754,8 +1811,8 @@ icaDesEncrypt( ICA_ADAPTER_HANDLE      hAdapterHandle,
  |                                                                     |
  |    mode - specifies the operational mode and must be:               |
  |                                                                     |
- |           MODE_DES_ECB - use Electronic Code Book mode              |
- |           MODE_DES_CBC - use Cipher Block Chaining mode             |
+ |           MODE_ECB - use Electronic Code Book mode                  |
+ |           MODE_CBC - use Cipher Block Chaining mode                 |
  |                                                                     |
  |    dataLength - specifies the byte length of the input data.        |
  |                 Must be a mutiple of the cipher block.              |
@@ -1805,7 +1862,7 @@ icaDesDecrypt( ICA_ADAPTER_HANDLE      hAdapterHandle,
 	  return( HDDInvalidParm );
      }
 
-     des.mode = (mode == MODE_DES_ECB) ? DEVICA_MODE_ECB : DEVICA_MODE_CBC;
+     des.mode = (mode == MODE_ECB) ? DEVICA_MODE_ECB : DEVICA_MODE_CBC;
      des.direction = DEVICA_DIR_DECRYPT;
      des.inputdata = pInputData;
      des.inputdatalength = dataLength;
@@ -1862,8 +1919,8 @@ icaDesDecrypt( ICA_ADAPTER_HANDLE      hAdapterHandle,
  |                                                                     |
  |    mode - specifies the operational mode and must be:               |
  |                                                                     |
- |           MODE_DES_ECB - use Electronic Code Book mode              |
- |           MODE_DES_CBC - use Cipher Block Chaining mode             |
+ |           MODE_ECB - use Electronic Code Book mode                  |
+ |           MODE_CBC - use Cipher Block Chaining mode                 |
  |                                                                     |
  |    dataLength - specifies the byte length of the input data.        |
  |                 Must be a mutiple of the cipher block.              |
@@ -1913,7 +1970,7 @@ icaTDesEncrypt( ICA_ADAPTER_HANDLE      hAdapterHandle,
 	  return( HDDInvalidParm );
      }
 
-     des.mode = (mode == MODE_DES_ECB) ? DEVICA_MODE_ECB : DEVICA_MODE_CBC;
+     des.mode = (mode == MODE_ECB) ? DEVICA_MODE_ECB : DEVICA_MODE_CBC;
      des.direction = DEVICA_DIR_ENCRYPT;
      des.inputdata = pInputData;
      des.inputdatalength = dataLength;
@@ -1924,7 +1981,7 @@ icaTDesEncrypt( ICA_ADAPTER_HANDLE      hAdapterHandle,
      des.outputdatalength = *pOutputDataLength;
 
 #ifdef _LINUX_S390_
-	if (des_switch) {
+	if (tdes_switch) {
 		*pOutputDataLength = dataLength;
 		rv = zDes(&des,sizeof(ICA_KEY_DES_TRIPLE));
 		if (rv == EXCEPTION_RV) {
@@ -1972,8 +2029,8 @@ icaTDesEncrypt( ICA_ADAPTER_HANDLE      hAdapterHandle,
  |                                                                     |
  |    mode - specifies the operational mode and must be:               |
  |                                                                     |
- |           MODE_DES_ECB - use Electronic Code Book mode              |
- |           MODE_DES_CBC - use Cipher Block Chaining mode             |
+ |           MODE_ECB - use Electronic Code Book mode                  |
+ |           MODE_CBC - use Cipher Block Chaining mode                 |
  |                                                                     |
  |    dataLength - specifies the byte length of the input data.        |
  |                 Must be a mutiple of the cipher block.              |
@@ -2023,7 +2080,7 @@ icaTDesDecrypt( ICA_ADAPTER_HANDLE      hAdapterHandle,
 	  return( HDDInvalidParm );
      }
 
-     des.mode = (mode == MODE_DES_ECB) ? DEVICA_MODE_ECB : DEVICA_MODE_CBC;
+     des.mode = (mode == MODE_ECB) ? DEVICA_MODE_ECB : DEVICA_MODE_CBC;
      des.direction = DEVICA_DIR_DECRYPT;
      des.inputdata = pInputData;
      des.inputdatalength = dataLength;
@@ -2034,7 +2091,7 @@ icaTDesDecrypt( ICA_ADAPTER_HANDLE      hAdapterHandle,
      des.outputdatalength = *pOutputDataLength;
 
 #ifdef _LINUX_S390_
-	if (des_switch) {
+	if (tdes_switch) {
 		*pOutputDataLength = dataLength;
 		rv = zDes(&des,sizeof(ICA_KEY_DES_TRIPLE));
 		if (rv == EXCEPTION_RV) {
@@ -2069,6 +2126,168 @@ icaTDesDecrypt( ICA_ADAPTER_HANDLE      hAdapterHandle,
 
      return( 0 );
 #endif // _LINUX_S390_
+}
+
+/*---------------------------------------------------------------------*
+ |                                                                     |
+ | icaAesEncrypt                                                       |
+ |                                                                     |
+ | Purpose: Encrypt data using AES (keylength is 16, 24, or 32)        |
+ |                                                                     |
+ | Parameters:                                                         |
+ |    hAdapterHandle - pointer to a previously opened device handle.   |
+ |                                                                     |
+ |    mode - specifies the operational mode and must be:               |
+ |                                                                     |
+ |           MODE_ECB - use Electronic Code Book mode                  |
+ |           MODE_CBC - use Cipher Block Chaining mode                 |
+ |                                                                     |
+ |    dataLength - specifies the byte length of the input data.        |
+ |                 Must be a mutiple of the cipher block.              |
+ |                                                                     |
+ |    pInputData - pointer to the input data data to be encrypted.     |
+ |                                                                     |
+ |    pIv - pointer to a valid 16 byte initialization vector.          |
+ |                                                                     |
+ |    KeyLength - Length of the AES key being used.                    |
+ |                                                                     |
+ |    pKeyAes - pointer to the AES key.                                |
+ |                                                                     |
+ |    pOutputDataLength - on input specifies the length of the         |
+ |                        pOutputData buffer and must be as large as   |
+ |                        dataLength. On output it contains the        |
+ |                        actual byte length of the data returned in   |
+ |                        pOutputData.                                 |
+ |                                                                     |
+ |    pOutputData - pointer to the buffer to contain the resulting     |
+ |                  encrypted data.                                    |
+ |                                                                     |
+ | Return code: Zero if successful                                     |
+ |                                                                     |
+ *---------------------------------------------------------------------*/
+unsigned int
+icaAesEncrypt(ICA_ADAPTER_HANDLE      hAdapterHandle,
+	      unsigned int            mode,
+	      unsigned int            dataLength,
+	      unsigned char          *pInputData,
+	      ICA_AES_VECTOR         *pIv,
+	      unsigned int            KeyLength,
+	      ICA_KEY_AES_SINGLE     *pKeyAes,
+	      unsigned int           *pOutputDataLength,
+	      unsigned char          *pOutputData )
+{
+	ica_aes_t         aes;
+	int rv = ENODEV;
+
+	/* check for obvious errors in parms */
+	if (check_aes_parms(hAdapterHandle,
+	   		    mode,
+	   		    dataLength,
+	   		    pInputData,
+	   		    pIv,
+	   		    KeyLength,
+	   		    pKeyAes,
+	   		    pOutputDataLength,
+	   		    pOutputData))
+		return HDDInvalidParm;
+
+	aes.mode = (mode == MODE_ECB) ? DEVICA_MODE_ECB : DEVICA_MODE_CBC;
+	aes.direction = DEVICA_DIR_ENCRYPT;
+	aes.inputdata = pInputData;
+	aes.inputdatalength = dataLength;
+	aes.iv = (ica_vector_t *)pIv;
+	aes.keys = (ica_key_t *)pKeyAes;
+	aes.outputdata = pOutputData;
+	aes.outputdatalength = *pOutputDataLength;
+
+#ifdef _LINUX_S390_
+	*pOutputDataLength = dataLength;
+	rv = zAes(&aes, KeyLength);
+#else // not S390
+#endif // _LINUX_S390_
+
+	return rv;
+}
+
+/*---------------------------------------------------------------------*
+ |                                                                     |
+ | icaAesDecrypt                                                       |
+ |                                                                     |
+ | Purpose: Decrypt data using AES (keylength is 16, 24, or 32)        |
+ |                                                                     |
+ | Parameters:                                                         |
+ |    hAdapterHandle - pointer to a previously opened device handle.   |
+ |                                                                     |
+ |    mode - specifies the operational mode and must be:               |
+ |                                                                     |
+ |           MODE_ECB - use Electronic Code Book mode                  |
+ |           MODE_CBC - use Cipher Block Chaining mode                 |
+ |                                                                     |
+ |    dataLength - specifies the byte length of the input data.        |
+ |                 Must be a mutiple of the cipher block.              |
+ |                                                                     |
+ |    pInputData - pointer to the input data data to be decrypted.     |
+ |                                                                     |
+ |    pIv - pointer to a valid 16 byte initialization vector.          |
+ |                                                                     |
+ |    KeyLength - Length of the AES key being used.                    |
+ |                                                                     |
+ |    pKeyAes - pointer to the AES key.                                |
+ |                                                                     |
+ |    pOutputDataLength - on input specifies the length of the         |
+ |                        pOutputData buffer and must be as large as   |
+ |                        dataLength. On output it contains the        |
+ |                        actual byte length of the data returned in   |
+ |                        pOutputData.                                 |
+ |                                                                     |
+ |    pOutputData - pointer to the buffer to contain the resulting     |
+ |                  decrypted data.                                    |
+ |                                                                     |
+ | Return code: Zero if successful                                     |
+ |                                                                     |
+ *---------------------------------------------------------------------*/
+unsigned int
+icaAesDecrypt(ICA_ADAPTER_HANDLE      hAdapterHandle,
+	      unsigned int            mode,
+	      unsigned int            dataLength,
+	      unsigned char          *pInputData,
+	      ICA_AES_VECTOR         *pIv,
+	      unsigned int            KeyLength,
+	      ICA_KEY_AES_SINGLE     *pKeyAes,
+	      unsigned int           *pOutputDataLength,
+	      unsigned char          *pOutputData )
+{
+	ica_aes_t         aes;
+	int rv = ENODEV;
+
+	/* check for obvious errors in parms */
+	if (check_aes_parms(hAdapterHandle,
+			    mode,
+	   		    dataLength,
+	   		    pInputData,
+	   		    pIv,
+	   		    KeyLength,
+	   		    pKeyAes,
+	   		    pOutputDataLength,
+	   		    pOutputData))
+		return HDDInvalidParm;
+
+	aes.mode = (mode == MODE_ECB) ? DEVICA_MODE_ECB : DEVICA_MODE_CBC;
+	aes.direction = DEVICA_DIR_DECRYPT;
+	aes.inputdata = pInputData;
+	aes.inputdatalength = dataLength;
+	aes.iv = (ica_vector_t *)pIv;
+	aes.keys = (ica_key_t *)pKeyAes;
+	aes.outputdata = pOutputData;
+	aes.outputdatalength = *pOutputDataLength;
+
+#ifdef _LINUX_S390_
+	*pOutputDataLength = dataLength;
+	rv = zAes(&aes, KeyLength);
+#else // not S390
+#endif // _LINUX_S390_
+
+	return rv;
 }
 
 /*---------------------------------------------------------------------*
@@ -2445,8 +2664,8 @@ icaRsaModMultSW(ica_rsa_modmult_t *pMul)
  | Parameters:                                                         |
  |    mode - specifies the operational mode and must be:               |
  |                                                                     |
- |           MODE_DES_ECB - use Electronic Code Book mode              |
- |           MODE_DES_CBC - use Cipher Block Chaining mode             |
+ |           MODE_ECB - use Electronic Code Book mode                  |
+ |           MODE_CBC - use Cipher Block Chaining mode                 |
  |                                                                     |
  |    dataLength - specifies the byte length of the input data.        |
  |                 Must be a mutiple of the cipher block.              |
@@ -2481,7 +2700,7 @@ icaRsaModMultSW(ica_rsa_modmult_t *pMul)
  |                                                                     |
  |    3.  Invoke des_set_key_unchecked(temp_key, schedule)             |
  |                                                                     |
- |    4.  If mode is MODE_DES_CBC                                      |
+ |    4.  If mode is MODE_CBC                                          |
  |          Invoke des_ncbc_encrypt(pInputData,                        |
  |                                  pOutputData,                       |
  |                                  (long) dataLength,                 |
@@ -2530,7 +2749,7 @@ icaDesSW(unsigned int       mode,
   memcpy (&temp_key, pKeyDes, 8);
   des_set_key_unchecked(&temp_key, ks );
 
-  if ( mode == MODE_DES_CBC ) {
+  if ( mode == MODE_CBC ) {
     memcpy(&temp_iv, pIv, 8);
     des_ncbc_encrypt((const unsigned char *)pInputData,
 		     pOutputData,
@@ -2564,8 +2783,8 @@ icaDesSW(unsigned int       mode,
  | Parameters:                                                         |
  |    mode - specifies the operational mode and must be:               |
  |                                                                     |
- |           MODE_DES_ECB - use Electronic Code Book mode              |
- |           MODE_DES_CBC - use Cipher Block Chaining mode             |
+ |           MODE_ECB - use Electronic Code Book mode                  |
+ |           MODE_CBC - use Cipher Block Chaining mode                 |
  |                                                                     |
  |    dataLength - specifies the byte length of the input data.        |
  |                 Must be a mutiple of the cipher block.              |
@@ -2603,7 +2822,7 @@ icaDesSW(unsigned int       mode,
  |          des_set_key_unchecked(pKeyDes+8, ks[1])                    |
  |          des_set_key_unchecked(pKeyDes+16, ks[2])                   |
  |                                                                     |
- |    4.  If mode is MODE_DES_CBC                                      |
+ |    4.  If mode is MODE_CBC                                          |
  |          Invoke des_ede3_cbc_encrypt(pInputData,                    |
  |                                      pOutputData,                   |
  |                                      (long) dataLength,             |
@@ -2656,7 +2875,7 @@ icaTDesSW(unsigned int            mode,
     keyp += 8;
   }
 
-  if ( mode == MODE_DES_CBC ) {
+  if ( mode == MODE_CBC ) {
     memcpy(&temp_iv, pIv, 8);
     des_ede3_cbc_encrypt((const unsigned char *)pInputData,
 			 pOutputData,
@@ -3463,6 +3682,12 @@ int zSha1(ica_sha_t * arg, unsigned int rule, unsigned long long *pSum)
 
 		if (setjmp(envq) != 0) {
 			sha1_switch = 0;
+			des_switch = 0;
+			tdes_switch = 0;
+			aes128_switch = 0;
+			aes192_switch = 0;
+			aes256_switch = 0;
+			prng_switch = 0;
 			sigaction(SIGILL, &old, NULL);
 			sigprocmask(SIG_SETMASK, &oldset, NULL);
 			return EXCEPTION_RV;
@@ -3515,7 +3740,7 @@ int zSha1(ica_sha_t * arg, unsigned int rule, unsigned long long *pSum)
 } // end zSha1
 
 /*-------------------------------------------------------------------*/
-/* des                                                               */
+/* DES                                                               */
 /*-------------------------------------------------------------------*/
 int zDes(ica_des_t * arg, unsigned int keysLen)
 {
@@ -3524,15 +3749,8 @@ int zDes(ica_des_t * arg, unsigned int keysLen)
 	int rv = 0;
 	unsigned long function_code;
 	ica_des_t * pDes = arg;
-#ifndef _SCAFF
         unsigned char keybuff
 			[sizeof(ICA_DES_VECTOR)+sizeof(ICA_KEY_DES_TRIPLE)];
-#else
-	unsigned char * keybuff;
-	keybuff = (unsigned char *)malloc(sizeof(ICA_DES_VECTOR)+
-					  sizeof(ICA_KEY_DES_TRIPLE));
-#endif  // _SCAFF
-
 
 	// Check input data length
 	if (pDes->inputdatalength & 0x07) {
@@ -3541,14 +3759,14 @@ int zDes(ica_des_t * arg, unsigned int keysLen)
 
 	switch(pDes->mode){
 		case DEVICA_MODE_CBC:
-
 			// Copy caller's chaining vector and keys to local stge
-			memcpy(keybuff, (void *)pDes->iv, sizeof(*(pDes->iv)));
-			memcpy(keybuff+sizeof(*(pDes->iv)),pDes->keys,keysLen);
+			memcpy(keybuff, (void *)pDes->iv,
+			       sizeof(ICA_DES_VECTOR));
+			memcpy(keybuff + sizeof(ICA_DES_VECTOR), pDes->keys,
+			       keysLen);
 			break;
 
 		case DEVICA_MODE_ECB:
-
 			// Copy the caller's keys to local storage
 			memcpy(keybuff, pDes->keys, keysLen);
 			break;
@@ -3580,6 +3798,11 @@ int zDes(ica_des_t * arg, unsigned int keysLen)
 		sigaction(SIGILL, &new, &old);
 		if (setjmp(envq) != 0) {
 			des_switch = 0;
+			tdes_switch = 0;
+			aes128_switch = 0;
+			aes192_switch = 0;
+			aes256_switch = 0;
+			prng_switch = 0;
 			sigaction(SIGILL, &old, NULL);
 			sigprocmask(SIG_SETMASK, &oldset, NULL);
 			return EXCEPTION_RV;
@@ -3607,5 +3830,112 @@ int zDes(ica_des_t * arg, unsigned int keysLen)
 
 	return rv;
 } // end zDes
+
+/*-------------------------------------------------------------------*/
+/* AES                                                               */
+/*-------------------------------------------------------------------*/
+int zAes(ica_aes_t *pAes, unsigned int keysLen)
+{
+	struct sigaction new, old;
+	sigset_t newset, oldset;
+	int rv = 0;
+	unsigned long function_code;
+        unsigned char keybuff[sizeof(ICA_AES_VECTOR)+sizeof(ICA_KEY_AES_LEN256)];
+
+	// Check input data length
+	if (pAes->inputdatalength & 0x07) {
+		return HDDInvalidParm;
+	}
+
+	// Verify that we have the key length requested.
+	switch (keysLen) {
+		case AES_KEY_LEN128:
+			if (!aes128_switch)
+				return ENODEV;
+			break;
+		case AES_KEY_LEN192:
+			if (!aes192_switch)
+				return ENODEV;
+			break;
+		case AES_KEY_LEN256:
+			if (!aes256_switch)
+				return ENODEV;
+			break;
+		default:
+			return HDDInvalidParm;
+	}
+
+	switch(pAes->mode){
+		case DEVICA_MODE_CBC:
+			// Copy caller's chaining vector and keys to local stge
+			memcpy(keybuff, (void *)pAes->iv,
+			       sizeof(ICA_AES_VECTOR));
+			memcpy(keybuff + sizeof(ICA_AES_VECTOR), pAes->keys,
+			       keysLen);
+			break;
+
+		case DEVICA_MODE_ECB:
+			// Copy the caller's keys to local storage
+			memcpy(keybuff, pAes->keys, keysLen);
+			break;
+
+		default:
+			return HDDInvalidParm;
+	} // end switch mode
+
+	// Compute the function code
+	// AES uses 18-20 decimal, corresponding to lengths 16, 24, 32.
+	function_code = 0x10 + (keysLen/8);
+	switch (pAes->direction) {
+		case DEVICA_DIR_DECRYPT:
+			function_code += 0x80;
+			break;
+		case DEVICA_DIR_ENCRYPT:
+			break;
+		default:
+			return HDDInvalidParm;
+	}
+
+	if (extra_sigill_checks) {
+		sigemptyset(&newset);
+		sigaddset(&newset, SIGILL);
+		sigprocmask(SIG_UNBLOCK, &newset, &oldset);
+		new.sa_handler = (void *) sigill_handler;
+		new.sa_flags = 0;
+		sigaction(SIGILL, &new, &old);
+		if (setjmp(envq) != 0) {
+			des_switch = 0;
+			tdes_switch = 0;
+			aes128_switch = 0;
+			aes192_switch = 0;
+			aes256_switch = 0;
+			prng_switch = 0;
+			sigaction(SIGILL, &old, NULL);
+			sigprocmask(SIG_SETMASK, &oldset, NULL);
+			return EXCEPTION_RV;
+		}
+	}
+
+	if (pAes->mode == DEVICA_MODE_CBC) {
+		rv = KMC(function_code,
+			 keybuff,
+			 pAes->outputdata,
+			 pAes->inputdata,
+			 pAes->inputdatalength);
+	} else {
+		rv = KM(function_code,
+			keybuff,
+			pAes->outputdata,
+			pAes->inputdata,
+			pAes->inputdatalength);
+	}
+
+	if (extra_sigill_checks) {
+		sigaction(SIGILL, &old, NULL);
+		sigprocmask(SIG_SETMASK, &oldset, NULL);
+	}
+
+	return rv;
+} // end zAes
 #endif // end if _LINUX_S390_
 

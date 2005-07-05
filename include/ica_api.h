@@ -287,15 +287,13 @@
 
 */
 
-/* (C) COPYRIGHT International Business Machines Corp. 2001          */
+/* (C) COPYRIGHT International Business Machines Corp. 2001,2005     */
 
 
 #ifndef __ICA_API_H__
 #define __ICA_API_H__
 
 /***************************************************************************
-***                                                                      ***
-***       (C) COPYRIGHT IBM CORP  2000                                   ***
 ***                                                                      ***
 ***       LICENSED MATERIALS  -  PROPERTY OF IBM                         ***
 ***                                                                      ***
@@ -356,16 +354,27 @@
 #define RSA_PUBLIC_65537  2
 #define RSA_PUBLIC_FIXED  3
 
+/*
+ * General cipher constants
+ */
+#define MODE_ECB      1
+#define MODE_CBC      2
+
 /**
  ** DES options
  **/
-
 /* FIXME MAC & SHA? */
-#define MODE_DES_ECB      1
-#define MODE_DES_CBC      2
+#define MODE_DES_ECB      MODE_ECB
+#define MODE_DES_CBC      MODE_CBC
 /*#define MODE_MAC          0xC0000000*/
 /*#define MODE_SHA1         0x40000000*/
 
+/**
+ ** AES constants
+ **/
+#define AES_KEY_LEN128	(128/8)
+#define AES_KEY_LEN192	(192/8)
+#define AES_KEY_LEN256	(256/8)
 
 /*------------------------------------------------*
  | SHA defines and typedefs                       |
@@ -601,6 +610,16 @@ typedef struct _ICA_KEY_RSA_CRT
         ICA_KEY_DES_SINGLE key2;
         ICA_KEY_DES_SINGLE key3;
  } ICA_KEY_DES_TRIPLE;
+
+/*------------------------------------------------*
+ | AES defines and typedefs                       |
+ *------------------------------------------------*/
+typedef unsigned char ICA_AES_VECTOR[16];
+
+typedef unsigned char ICA_KEY_AES_SINGLE[8];
+typedef unsigned char ICA_KEY_AES_LEN128[16];
+typedef unsigned char ICA_KEY_AES_LEN192[24];
+typedef unsigned char ICA_KEY_AES_LEN256[32];
 
 /*------------------------------------------------*
  | Adapter ID block format                        |
@@ -1212,6 +1231,103 @@ icaTDesDecrypt( ICA_ADAPTER_HANDLE      hAdapterHandle,
 		unsigned int           *pOutputDataLength,
 		unsigned char          *pOutputData );
 
+/*---------------------------------------------------------------------*
+ |                                                                     |
+ | icaAesEncrypt                                                       |
+ |                                                                     |
+ | Purpose: Encrypt data using an AES key of length 16, 24, or 32 bytes|
+ |                                                                     |
+ | Parameters:                                                         |
+ |    hAdapterHandle - pointer to a previously opened device handle.   |
+ |                                                                     |
+ |    mode - specifies the operational mode and must be:               |
+ |                                                                     |
+ |           MODE_ECB - use Electronic Code Book mode                  |
+ |           MODE_CBC - use Cipher Block Chaining mode                 |
+ |                                                                     |
+ |    dataLength - specifies the byte length of the input data.        |
+ |                 Must be a mutiple of the cipher block.              |
+ |                                                                     |
+ |    pInputData - pointer to the input data data to be encrypted.     |
+ |                                                                     |
+ |    pIv - pointer to a valid 8 byte initialization vector.           |
+ |                                                                     |
+ |    KeyLength - specifies the byte length of the AES key.            |
+ |                                                                     |
+ |    pKeyAes - pointer to the AES key.                                |
+ |                                                                     |
+ |    pOutputDataLength - on input specifies the length of the         |
+ |                        pOutputData buffer and must be as large as   |
+ |                        dataLength. On output it contains the        |
+ |                        actual byte length of the data returned in   |
+ |                        pOutputData.                                 |
+ |                                                                     |
+ |    pOutputData - pointer to the buffer to contain the resulting     |
+ |                  encrypted data.                                    |
+ |                                                                     |
+ | Return code: Zero if successful                                     |
+ |                                                                     |
+ *---------------------------------------------------------------------*/
+
+unsigned int
+icaAesEncrypt(ICA_ADAPTER_HANDLE      hAdapterHandle,
+	      unsigned int            mode,
+	      unsigned int            dataLength,
+	      unsigned char          *pInputData,
+	      ICA_AES_VECTOR         *pIv,
+	      unsigned int            KeyLength,
+	      ICA_KEY_AES_SINGLE     *pKeyAes,
+	      unsigned int           *pOutputDataLength,
+	      unsigned char          *pOutputData);
+
+/*---------------------------------------------------------------------*
+ |                                                                     |
+ | icaAesDecrypt                                                       |
+ |                                                                     |
+ | Purpose: Decrypt data using an AES key of length 16, 24, or 32 bytes|
+ |                                                                     |
+ | Parameters:                                                         |
+ |    hAdapterHandle - pointer to a previously opened device handle.   |
+ |                                                                     |
+ |    mode - specifies the operational mode and must be:               |
+ |                                                                     |
+ |           MODE_ECB - use Electronic Code Book mode                  |
+ |           MODE_CBC - use Cipher Block Chaining mode                 |
+ |                                                                     |
+ |    dataLength - specifies the byte length of the input data.        |
+ |                 Must be a mutiple of the cipher block.              |
+ |                                                                     |
+ |    pInputData - pointer to the input data data to be decrypted.     |
+ |                                                                     |
+ |    pIv - pointer to a valid 8 byte initialization vector.           |
+ |                                                                     |
+ |    KeyLength - specifies the byte length of the AES key.            |
+ |                                                                     |
+ |    pKeyAes - pointer to the AES key.                                |
+ |                                                                     |
+ |    pOutputDataLength - on input specifies the length of the         |
+ |                        pOutputData buffer and must be as large as   |
+ |                        dataLength. On output it contains the        |
+ |                        actual byte length of the data returned in   |
+ |                        pOutputData.                                 |
+ |                                                                     |
+ |    pOutputData - pointer to the buffer to contain the resulting     |
+ |                  decrypted data.                                    |
+ |                                                                     |
+ | Return code: Zero if successful                                     |
+ |                                                                     |
+ *---------------------------------------------------------------------*/
+
+unsigned int
+icaAesDecrypt(ICA_ADAPTER_HANDLE      hAdapterHandle,
+	      unsigned int            mode,
+	      unsigned int            dataLength,
+	      unsigned char          *pInputData,
+	      ICA_AES_VECTOR         *pIv,
+	      unsigned int            KeyLength,
+	      ICA_KEY_AES_SINGLE     *pKeyAes,
+	      unsigned int           *pOutputDataLength,
+	      unsigned char          *pOutputData);
 
 /*---------------------------------------------------------------------*
  |                                                                     |
