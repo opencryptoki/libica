@@ -379,6 +379,7 @@
 /*                   instructions.                                   */
 /* 2005-07-05  EDR   Rename many of the constants used in the zSeries*/
 /*                   code to allow for future expansion.             */
+/* 2005-08-05  EDR   Add PRNG functionality.                         */
 /*********************************************************************/
 
 #include <stdio.h>
