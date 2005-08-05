@@ -552,6 +552,8 @@ int zDes(ica_des_t *, unsigned int);
 int zAes(ica_aes_t *, unsigned int);
 int zSha1(ica_sha_t *, unsigned int, unsigned long long *);
 int zSha256(ica_sha_t *, unsigned int, unsigned long long *);
+int zPrng(unsigned char *, unsigned int);
+int zPRNG_Seed_Random(void *, unsigned int);
 
 static unsigned char SHA1CONST[ICA_SHA1_DATALENGTH] = {
  0x67,0x45,0x23,0x01,0xef,0xcd,0xab,0x89,
@@ -564,7 +566,8 @@ static unsigned char SHA256CONST[ICA_SHA256_DATALENGTH] = {
 0x51,0x0E,0x52,0x7F,0x9B,0x05,0x68,0x8C,0x1F,0x83,0xD9,0xAB,0x5B,0xE0,0xCD,0x19,
 };
 
-#define EXCEPTION_RV 20
+#define EXCEPTION_RV	20
+#define DWORD		8
 
 static volatile int sha1_switch = 0;
 static volatile int sha256_switch = 0;
@@ -873,6 +876,33 @@ void queryCryptoAssist(void)
 	}
 	sigaction(SIGILL, &old, NULL);
 	sigprocmask(SIG_SETMASK, &oldset, NULL);
+
+	if (prng_switch) {
+		int rc;
+		do {
+			unsigned char seed[16];
+			int handle;
+			rc = open("/dev/urandom", O_RDONLY);
+			if (rc == -1)
+				break;
+			handle = rc;
+			rc = read(handle, seed, sizeof(seed));
+			if (rc == -1)
+				break;
+			rc = zPRNG_Seed_Random(seed, sizeof(seed)/DWORD);
+			if (rc) {
+				printf("zPRNG_Seed_Random(%d) FAILED with "
+				       "rc = %02X!\n", sizeof(seed), rc);
+				break;
+			}
+			close(handle);
+		} while (0);
+		if (rc) {
+			if ((rc = zPRNG_Seed_Random(NULL, 0)) != 0)
+				printf("zPRNG_Seed_Random(0) FAILED with "
+				       "rc = %02X!\n", rc);
+		}
+	}
 }
 #else // Non-zSeries platforms do not have CryptoAssist
 void queryCryptoAssist(void)
@@ -1541,22 +1571,27 @@ icaRandomNumberGenerate( ICA_ADAPTER_HANDLE  hAdapterHandle,
     return HDDInvalidParm;
   }
 
-#ifdef _LINUX_S390_
-  // We'll reuse our local copy of hAdapterHandle
-  hAdapterHandle = open("/dev/urandom", O_RDONLY);
-  if (hAdapterHandle == -1)
-    return errno;
-#endif
-
+#ifndef _LINUX_S390_
   if( read( hAdapterHandle, pOutputData, outputDataLength ) == -1 ) {
-#ifdef _LINUX_S390_
-          close(hAdapterHandle);
-#endif
           return( errno );
   }
+#else
+	if (prng_switch) {
+		if (zPrng(pOutputData, outputDataLength) == 0)
+			return 0;
+	}
 
-#ifdef _LINUX_S390_
-  close(hAdapterHandle);
+	// We'll reuse our local copy of hAdapterHandle
+	hAdapterHandle = open("/dev/urandom", O_RDONLY);
+	if (hAdapterHandle == -1)
+		return errno;
+	
+	if (read( hAdapterHandle, pOutputData, outputDataLength) == -1) {
+		close(hAdapterHandle);
+		return errno;
+	}
+	
+	close(hAdapterHandle);
 #endif
 
   return 0;
@@ -4181,5 +4216,170 @@ int zAes(ica_aes_t *pAes, unsigned int keysLen)
 
 	return rv;
 } // end zAes
+
+/*-------------------------------------------------------------------*/
+/* PRNG                                                              */
+/*-------------------------------------------------------------------*/
+/*
+ * Wrapper for the STCK machine language instruction
+ */
+int
+STCK(void *stckval)
+{
+	register int cc = 0;
+	u_int64_t loc_TS;
+
+	// There aren't different 31/64 bit versions because the instructions
+	// are identical.
+	asm volatile
+	("	la	1,%1		\n"	// get the address
+	 "	stck	0(1)		\n"	// STCK
+	 "	ipm	%0		\n"	// condition code as uint
+	 "	srl	%0,28		\n"	// cc = condition code
+	 :"=d"(cc),"=m"(loc_TS)
+	 :
+	 :"cc","1");
+
+	*(u_int64_t *)stckval = loc_TS;
+
+	return cc;
+}
+
+/*
+ * Parameter block for the KMC(PRNG) instruction.
+ *
+ * The value here is merely the initial value, since I don't like 0x00... for
+ * the initial parameter block.
+ */
+unsigned char zPRNG_PB[32] = {
+0x0F,0x2B,0x8E,0x63,0x8C,0x8E,0xD2,0x52,0x64,0xB7,0xA0,0x7B,0x75,0x28,0xB8,0xF4,
+0x75,0x5F,0xD2,0xA6,0x8D,0x97,0x11,0xFF,0x49,0xD8,0x23,0xF3,0x7E,0x21,0xEC,0xA0,
+};
+
+/*
+ * Constants.
+ */
+#define PRNG_BLK_SZ	8
+#define TEN_SECONDS	0xF4240000
+
+/*
+ * Adds some entropy to the system.
+ *
+ * This is called at the first request for random and again if more than ten
+ * seconds have passed since the last request for random bytes.
+ */
+int
+zPRNG_AddEntropy(void)
+{
+	unsigned char entropy[4*DWORD];
+	unsigned int K;
+	int rc;
+
+	for (K = 0; K < 16; K++) {
+		if ((rc = STCK(entropy+0*DWORD)))
+			return -(0x80+rc);
+		if ((rc = STCK(entropy+1*DWORD)))
+			return -(0x80+rc);
+		if ((rc = STCK(entropy+2*DWORD)))
+			return -(0x80+rc);
+		if ((rc = STCK(entropy+3*DWORD)))
+			return -(0x80+rc);
+		if ((rc = KMC(0x43, zPRNG_PB, entropy, entropy, sizeof(entropy))))
+			return -(0x90+rc);
+		memcpy(zPRNG_PB, entropy, sizeof(entropy));
+	}
+	return 0;
+}
+
+/*
+ * This is the time stamp of the last time zPRNG_AddEntropy was called.
+ */
+u_int64_t TS = 0LL;
+
+/*
+ * This is the function that does the heavy lifting.
+ *
+ * It is here that the PRNG is actually done.
+ */
+int
+zPrng(unsigned char *random_bytes, unsigned int num_bytes)
+{
+	unsigned int i, remainder;
+	unsigned char last_dw[DWORD];
+	int rc;
+	u_int64_t T2;
+
+	// Add entropy as needed.
+	// - Store the TOD
+	// - If the difference between current TOD and last entropy add is
+	//   over 10 seconds, add some more entropy.
+	if ((rc = STCK(&T2))) {
+		rc = -(0xA0+rc);
+		goto done_Generate_Random;
+	}
+	if ((T2 - TS) > TEN_SECONDS) {
+		if ((rc = zPRNG_AddEntropy()))
+			goto done_Generate_Random;
+		TS = T2;
+	}
+
+	// The KMC(PRNG) instruction requires a multiple of PRNG_BLK_SZ, so we
+	// will save the remainder and then do a final chunk if we have
+	// non-zero remainder.
+	remainder = num_bytes % PRNG_BLK_SZ;
+	num_bytes -= remainder;
+
+	for (i = 0; i < (num_bytes / DWORD); i++) {
+		if ((rc = STCK(random_bytes+i*DWORD))) {
+			rc = -(0xB0+rc);
+			goto done_Generate_Random;
+		}
+	}
+	if ((rc = KMC(0x43, zPRNG_PB, random_bytes, random_bytes, num_bytes))) {
+		rc = -(0xC0+rc);
+		goto done_Generate_Random;
+	}
+
+	// If there was a remainder, we'll use an internal buffer to handle it.
+	if (remainder) {
+		if ((rc = STCK(last_dw))) {
+			rc = -(0xD0+rc);
+			goto done_Generate_Random;
+		}
+		if ((rc = KMC(0x43, zPRNG_PB, last_dw, last_dw, DWORD))) {
+			rc = -(0xE0+rc);
+			goto done_Generate_Random;
+		}
+		memcpy(random_bytes+num_bytes, last_dw, remainder);
+	}
+
+	rc = 0;
+
+done_Generate_Random:
+	return rc;
+}
+
+/*
+ * This is the function that seeds the random number generator.
+ * SRV is the source randomization value.
+ * count is the number of doublewords (DWORD bytes) in the SRV..
+ */
+int
+zPRNG_Seed_Random(void *SRV, unsigned int count)
+{
+	unsigned int i;
+	int rc;
+
+	// Add entropy using the source randomization value.
+	for (i = 0; i < count; i++) {
+		*((u_int64_t *)zPRNG_PB) ^= *((u_int64_t *)SRV+i*DWORD);
+		if ((rc = zPRNG_AddEntropy()))
+			return -(0xF0+rc);
+	}
+	// Stir one last time.
+	if ((rc = zPRNG_AddEntropy()))
+		return -(0xF0+rc);
+	return 0;
+}
 #endif // end if _LINUX_S390_
 
