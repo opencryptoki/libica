@@ -467,8 +467,8 @@ enum arbitrary {
  * Structures and #defines for z routines                                   *
  *--------------------------------------------------------------------------*/
 enum _sizelimits {
-  ICA_SHA1_DATALENGTH = 20,
-  ICA_SHA1_BLOCKLENGTH = 64,
+  ICA_SHA_DATALENGTH = 20,
+  ICA_SHA_BLOCKLENGTH = 64,
   ICA_SHA256_DATALENGTH = 32,
   ICA_SHA256_BLOCKLENGTH = 64,
 };
@@ -478,14 +478,22 @@ typedef struct ica_rsa_modexpo ica_rsa_modmult_t;
 typedef struct ica_rsa_modexpo_crt ica_rsa_modexpo_crt_t;
 
 typedef unsigned char ica_vector_t[8];
+#define ica_des_vector_t ica_vector_t;
+#define ica_aes_vector_t ica_vector_t;
 typedef unsigned char ica_key_t[8];
+#define ica_des_key_t ica_key_t;
+#define ica_aes_key_t ica_key_t;
 
 enum _ica_mode {
+  DEVICA_MODE_DES_CBC = 0,
+  DEVICA_MODE_DES_ECB = 1
   DEVICA_MODE_CBC = 0,
   DEVICA_MODE_ECB = 1
 };
 
 enum _ica_direction {
+  DEVICA_DIR_DES_ENCRYPT = 0,
+  DEVICA_DIR_DES_DECRYPT = 1
   DEVICA_DIR_ENCRYPT = 0,
   DEVICA_DIR_DECRYPT = 1
 };
@@ -501,7 +509,7 @@ typedef struct _ica_des_or_aes {
   int               outputdatalength;
 } ica_des_t, ica_aes_t;
 
-typedef unsigned char ica_sha1_result_t[ICA_SHA1_DATALENGTH];
+typedef unsigned char ica_sha1_result_t[ICA_SHA_DATALENGTH];
 typedef unsigned char ica_sha256_result_t[ICA_SHA256_DATALENGTH];
 
 typedef struct _ica_sha {
@@ -545,19 +553,19 @@ unsigned int icaTDesSW(unsigned int,
                        ICA_KEY_DES_TRIPLE *,
                        unsigned int *,
                        unsigned char *);
-int icaSha1SW(ica_sha_t *,
+int icaSha1SW(ica_sha1_t *,
               unsigned int,
               unsigned long long *,
               unsigned char *);
 
 int zDes(ica_des_t *, unsigned int);
 int zAes(ica_aes_t *, unsigned int);
-int zSha1(ica_sha_t *, unsigned int, unsigned long long *);
+int zSha1(ica_sha1_t *, unsigned int, unsigned long long *);
 int zSha256(ica_sha_t *, unsigned int, unsigned long long *);
 int zPrng(unsigned char *, unsigned int);
 int zPRNG_Seed_Random(void *, unsigned int);
 
-static unsigned char SHA1CONST[ICA_SHA1_DATALENGTH] = {
+static unsigned char SHA1CONST[ICA_SHA_DATALENGTH] = {
  0x67,0x45,0x23,0x01,0xef,0xcd,0xab,0x89,
  0x98,0xba,0xdc,0xfe,0x10,0x32,0x54,0x76,
  0xc3,0xd2,0xe1,0xf0
@@ -910,21 +918,6 @@ void queryCryptoAssist(void)
 void queryCryptoAssist(void)
 {
 }
-
-/*
- * Map the icadd names (found in icaioctl.h) to the libICA names.
- *
- * #define LIBICA_NAME ICADD_NAME
- */
-#define ica_sha_t		ica_sha1_t
-#define ICA_SHA1_BLOCKLENGTH	ICA_SHA_BLOCKLENGTH
-#define ICA_SHA1_DATALENGTH	ICA_SHA_DATALENGTH
-#define DEVICA_MODE_CBC		DEVICA_MODE_DES_CBC
-#define DEVICA_MODE_ECB		DEVICA_MODE_DES_ECB
-#define DEVICA_DIR_ENCRYPT	DEVICA_DIR_DES_ENCRYPT
-#define DEVICA_DIR_DECRYPT	DEVICA_DIR_DES_DECRYPT
-#define ica_vector_t		ica_des_vector_t
-#define ica_key_t		ica_des_key_t
 #endif
 
 // item is assumed to point to the last item in the list, and will be updated
@@ -1383,9 +1376,9 @@ icaSha1( ICA_ADAPTER_HANDLE      hAdapterHandle,
 	 unsigned int           *pOutputDataLength,
 	 unsigned char          *pOutputData )
 {
-     ica_sha_t         rb;
+     ica_sha1_t        rb;
      int               rc;
-     char              pad[ICA_SHA1_BLOCKLENGTH * 2];
+     char              pad[ICA_SHA_BLOCKLENGTH * 2];
      __u64              leftover;
      ica_sha1_result_t *initialh;
 
@@ -1452,7 +1445,7 @@ icaSha1( ICA_ADAPTER_HANDLE      hAdapterHandle,
 		rc = zSha1(&rb, shaMessagePart, &pShaContext->runningLength);
 		if (!rc) {
 			memcpy(&pShaContext->shaHash, pOutputData,
-				ICA_SHA1_DATALENGTH);
+				ICA_SHA_DATALENGTH);
 		}
 		return(rc);
 	} else {
@@ -1462,7 +1455,7 @@ icaSha1( ICA_ADAPTER_HANDLE      hAdapterHandle,
 				pOutputData);
 		if (!rc) {
 			memcpy(&pShaContext->shaHash, pOutputData,
-				ICA_SHA1_DATALENGTH);
+				ICA_SHA_DATALENGTH);
 		}
 		return(rc);
 	}
@@ -1491,7 +1484,7 @@ icaSha1( ICA_ADAPTER_HANDLE      hAdapterHandle,
       */
 
      rb.inputdata = pInputData;
-     leftover = inputDataLength % ICA_SHA1_BLOCKLENGTH;
+     leftover = inputDataLength % ICA_SHA_BLOCKLENGTH;
      rb.inputdatalength = inputDataLength - leftover;
      rb.outputdata = (ica_sha1_result_t *)pOutputData;
      rb.initialh = initialh;
@@ -1529,7 +1522,7 @@ icaSha1( ICA_ADAPTER_HANDLE      hAdapterHandle,
 	* a 0x80 to deal with the binary 1 directy following the data.
 	*/
 
-       memset(pad, 0x00, ICA_SHA1_BLOCKLENGTH * 2);
+       memset(pad, 0x00, ICA_SHA_BLOCKLENGTH * 2);
        memcpy(pad, pInputData + inputDataLength - leftover, leftover);
        memset(pad + leftover, 0x80, 1);
 
@@ -1555,10 +1548,10 @@ icaSha1( ICA_ADAPTER_HANDLE      hAdapterHandle,
 	* to overflow to another padding block.
 	*/
 
-       if(leftover >= (ICA_SHA1_BLOCKLENGTH - sizeof(__u64))){
-	 count = ICA_SHA1_BLOCKLENGTH * 2;
+       if(leftover >= (ICA_SHA_BLOCKLENGTH - sizeof(__u64))){
+	 count = ICA_SHA_BLOCKLENGTH * 2;
        } else {
-	 count = ICA_SHA1_BLOCKLENGTH;
+	 count = ICA_SHA_BLOCKLENGTH;
        }
 
        /* Set the bitlength field */
@@ -1581,7 +1574,7 @@ icaSha1( ICA_ADAPTER_HANDLE      hAdapterHandle,
      }
 
      pShaContext->runningLength += inputDataLength;
-     memcpy(&pShaContext->shaHash, pOutputData, ICA_SHA1_DATALENGTH);
+     memcpy(&pShaContext->shaHash, pOutputData, ICA_SHA_DATALENGTH);
 
      return( 0 );
 #endif
@@ -2083,12 +2076,12 @@ icaDesEncrypt( ICA_ADAPTER_HANDLE      hAdapterHandle,
 	  return( HDDInvalidParm );
      }
 
-     des.mode = (mode == MODE_ECB) ? DEVICA_MODE_ECB : DEVICA_MODE_CBC;
-     des.direction = DEVICA_DIR_ENCRYPT;
+     des.mode = (mode == MODE_ECB) ? DEVICA_MODE_DES_ECB : DEVICA_MODE_DES_CBC;
+     des.direction = DEVICA_DIR_DES_ENCRYPT;
      des.inputdata = pInputData;
      des.inputdatalength = dataLength;
-     des.iv = (ica_vector_t *)pIv;
-     des.keys = (ica_key_t *)pKeyDes;
+     des.iv = (ica_des_vector_t *)pIv;
+     des.keys = (ica_des_key_t *)pKeyDes;
 
      des.outputdata = pOutputData;
      des.outputdatalength = *pOutputDataLength;
@@ -2193,12 +2186,12 @@ icaDesDecrypt( ICA_ADAPTER_HANDLE      hAdapterHandle,
 	  return( HDDInvalidParm );
      }
 
-     des.mode = (mode == MODE_ECB) ? DEVICA_MODE_ECB : DEVICA_MODE_CBC;
-     des.direction = DEVICA_DIR_DECRYPT;
+     des.mode = (mode == MODE_ECB) ? DEVICA_MODE_DES_ECB : DEVICA_MODE_DES_CBC;
+     des.direction = DEVICA_DIR_DES_DECRYPT;
      des.inputdata = pInputData;
      des.inputdatalength = dataLength;
-     des.iv = (ica_vector_t *)pIv;
-     des.keys = (ica_key_t *)pKeyDes;
+     des.iv = (ica_des_vector_t *)pIv;
+     des.keys = (ica_des_key_t *)pKeyDes;
      des.outputdata = pOutputData;
      des.outputdatalength = *pOutputDataLength;
 
@@ -2301,12 +2294,12 @@ icaTDesEncrypt( ICA_ADAPTER_HANDLE      hAdapterHandle,
 	  return( HDDInvalidParm );
      }
 
-     des.mode = (mode == MODE_ECB) ? DEVICA_MODE_ECB : DEVICA_MODE_CBC;
-     des.direction = DEVICA_DIR_ENCRYPT;
+     des.mode = (mode == MODE_ECB) ? DEVICA_MODE_DES_ECB : DEVICA_MODE_DES_CBC;
+     des.direction = DEVICA_DIR_DES_ENCRYPT;
      des.inputdata = pInputData;
      des.inputdatalength = dataLength;
-     des.iv = (ica_vector_t *)pIv;
-     des.keys = (ica_key_t *)pKeyDes;
+     des.iv = (ica_des_vector_t *)pIv;
+     des.keys = (ica_des_key_t *)pKeyDes;
 
      des.outputdata = pOutputData;
      des.outputdatalength = *pOutputDataLength;
@@ -2411,12 +2404,12 @@ icaTDesDecrypt( ICA_ADAPTER_HANDLE      hAdapterHandle,
 	  return( HDDInvalidParm );
      }
 
-     des.mode = (mode == MODE_ECB) ? DEVICA_MODE_ECB : DEVICA_MODE_CBC;
-     des.direction = DEVICA_DIR_DECRYPT;
+     des.mode = (mode == MODE_ECB) ? DEVICA_MODE_DES_ECB : DEVICA_MODE_DES_CBC;
+     des.direction = DEVICA_DIR_DES_DECRYPT;
      des.inputdata = pInputData;
      des.inputdatalength = dataLength;
-     des.iv = (ica_vector_t *)pIv;
-     des.keys = (ica_key_t *)pKeyDes;
+     des.iv = (ica_des_vector_t *)pIv;
+     des.keys = (ica_des_key_t *)pKeyDes;
 
      des.outputdata = pOutputData;
      des.outputdatalength = *pOutputDataLength;
@@ -2527,8 +2520,8 @@ icaAesEncrypt(ICA_ADAPTER_HANDLE      hAdapterHandle,
 	aes.direction = DEVICA_DIR_ENCRYPT;
 	aes.inputdata = pInputData;
 	aes.inputdatalength = dataLength;
-	aes.iv = (ica_vector_t *)pIv;
-	aes.keys = (ica_key_t *)pKeyAes;
+	aes.iv = (ica_aes_vector_t *)pIv;
+	aes.keys = (ica_aes_key_t *)pKeyAes;
 	aes.outputdata = pOutputData;
 	aes.outputdatalength = *pOutputDataLength;
 
@@ -2603,8 +2596,8 @@ icaAesDecrypt(ICA_ADAPTER_HANDLE      hAdapterHandle,
 	aes.direction = DEVICA_DIR_DECRYPT;
 	aes.inputdata = pInputData;
 	aes.inputdatalength = dataLength;
-	aes.iv = (ica_vector_t *)pIv;
-	aes.keys = (ica_key_t *)pKeyAes;
+	aes.iv = (ica_aes_vector_t *)pIv;
+	aes.keys = (ica_aes_key_t *)pKeyAes;
 	aes.outputdata = pOutputData;
 	aes.outputdatalength = *pOutputDataLength;
 
@@ -3822,7 +3815,7 @@ cleanup:
  |          libica.                                                    |
  |                                                                     |
  | Parameters:                                                         |
- |    arg - pointer to an ica_sha_t containing:                        |
+ |    arg - pointer to an ica_sha1_t containing:                       |
  |                                                                     |
  |          a.  inputdata -- address of input                          |
  |          b.  intputdatalength -- byte length of input               |
@@ -3886,7 +3879,7 @@ cleanup:
  |                                                                     |
  *---------------------------------------------------------------------*/
 int
-icaSha1SW(ica_sha_t * arg, unsigned int rule,
+icaSha1SW(ica_sha1_t * arg, unsigned int rule,
 		unsigned long long *pSum, unsigned char * outputh)
 {
 	int rv = 0;
@@ -3907,7 +3900,7 @@ icaSha1SW(ica_sha_t * arg, unsigned int rule,
 				sizeof(long long));
 			memcpy(outputh,
 			       (unsigned char *)&ctx.h0,
-				ICA_SHA1_DATALENGTH);
+				ICA_SHA_DATALENGTH);
 			break;
 		case SHA_MSG_PART_MIDDLE:
 			memset((unsigned char *)&ctx, 0, sizeof(ctx));
@@ -3916,14 +3909,14 @@ icaSha1SW(ica_sha_t * arg, unsigned int rule,
 				sizeof(long long));
 			memcpy((unsigned char *)&ctx.h0,
 				(unsigned char *)arg->initialh,
-				ICA_SHA1_DATALENGTH);
+				ICA_SHA_DATALENGTH);
 			SHAA_Update(&ctx,arg->inputdata,arg->inputdatalength);
 			memcpy((unsigned char *)pSum,
 			       (unsigned char *)&ctx.Lhigh,
 				sizeof(long long));
 			memcpy(outputh,
 			       (unsigned char *)&ctx.h0,
-				ICA_SHA1_DATALENGTH);
+				ICA_SHA_DATALENGTH);
 			break;
 		case SHA_MSG_PART_FINAL:
 			if (arg->inputdatalength > 63) {
@@ -3935,7 +3928,7 @@ icaSha1SW(ica_sha_t * arg, unsigned int rule,
 					sizeof(long long));
 				memcpy((unsigned char *)&ctx.h0,
 					(unsigned char *)arg->initialh,
-					ICA_SHA1_DATALENGTH);
+					ICA_SHA_DATALENGTH);
 				SHAA_Update(&ctx,arg->inputdata,
 						arg->inputdatalength);
 			} else {
@@ -3945,7 +3938,7 @@ icaSha1SW(ica_sha_t * arg, unsigned int rule,
                         	         arg->inputdatalength);
 				memcpy((unsigned char *)&ctx.h0,
 					(unsigned char *)arg->initialh,
-					ICA_SHA1_DATALENGTH);
+					ICA_SHA_DATALENGTH);
                         	*pSum+=arg->inputdatalength;
 				memcpy((unsigned char *)&ctx.Lhigh,
 					(unsigned char *)pSum,
@@ -3962,10 +3955,10 @@ icaSha1SW(ica_sha_t * arg, unsigned int rule,
 /*-------------------------------------------------------------------*/
 /* SHA-1                                                             */
 /*-------------------------------------------------------------------*/
-int zSha1(ica_sha_t * arg, unsigned int rule, unsigned long long *pSum)
+int zSha1(ica_sha1_t * arg, unsigned int rule, unsigned long long *pSum)
 {
 	int rv = 0;
-	ica_sha_t * pSha = arg;
+	ica_sha1_t * pSha = arg;
 	unsigned long long sum;
 	unsigned long remnant = 0;
 	int complete_blocks_length = 0;
@@ -3976,17 +3969,17 @@ int zSha1(ica_sha_t * arg, unsigned int rule, unsigned long long *pSum)
 	// If this is a FIRST or ONLY call, supply the standard SHA1
 	// initial vector.  Otherwise, use the input chaining vector
 	if (rule == SHA_MSG_PART_ONLY || rule == SHA_MSG_PART_FIRST) {
-		memcpy (shabuff, SHA1CONST, ICA_SHA1_DATALENGTH);
+		memcpy (shabuff, SHA1CONST, ICA_SHA_DATALENGTH);
 		sum = 0LL;
 	} else {
 		// Copy the caller's chaining vector to local storage
-		memcpy(shabuff, (void *)pSha->initialh, ICA_SHA1_DATALENGTH);
+		memcpy(shabuff, (void *)pSha->initialh, ICA_SHA_DATALENGTH);
 		sum = *pSum;
 	}
 
 	// Compute the length of any incomplete block
 	if (pSha->inputdatalength) {
-		remnant = pSha->inputdatalength % ICA_SHA1_BLOCKLENGTH;
+		remnant = pSha->inputdatalength % ICA_SHA_BLOCKLENGTH;
 		complete_blocks_length = pSha->inputdatalength - remnant;
 	}
 
@@ -4033,7 +4026,7 @@ int zSha1(ica_sha_t * arg, unsigned int rule, unsigned long long *pSum)
 	if (rule == SHA_MSG_PART_ONLY || rule == SHA_MSG_PART_FINAL) {
 		// Digest the remnant and compute the bit length
 		sum = 8*(sum + (long long) remnant);
-		memcpy(shabuff+ICA_SHA1_DATALENGTH,
+		memcpy(shabuff+ICA_SHA_DATALENGTH,
 		       (unsigned char *)&sum,
 		       sizeof(sum));
 		rv = KLMD(SHA1_FC,
@@ -4050,13 +4043,13 @@ int zSha1(ica_sha_t * arg, unsigned int rule, unsigned long long *pSum)
 	if(rv == 0) {
 		// Copy the caller's output
 		memcpy((void *)pSha->outputdata, shabuff,
-			ICA_SHA1_DATALENGTH);
+			ICA_SHA_DATALENGTH);
 		// If appropriate, copy the caller's
 		// chaining vector and running total
 		if (rule != SHA_MSG_PART_FINAL &&
 				rule != SHA_MSG_PART_ONLY) {
 			memcpy((void *)pSha->initialh, shabuff,
-				ICA_SHA1_DATALENGTH);
+				ICA_SHA_DATALENGTH);
 			*pSum = sum;
 		}
 	} // end switch(rv)
@@ -4157,7 +4150,7 @@ int zSha256(ica_sha_t *pSha256, unsigned int rule, unsigned long long *pSum)
 		if ((rule != SHA_MSG_PART_FINAL) &&
 		    (rule != SHA_MSG_PART_ONLY)) {
 			memcpy((void *)pSha256->initialh, shabuff,
-			       ICA_SHA1_DATALENGTH);
+			       ICA_SHA256_DATALENGTH);
 			*pSum = sum;
 		}
 	}
@@ -4184,7 +4177,7 @@ int zDes(ica_des_t * arg, unsigned int keysLen)
 	}
 
 	switch(pDes->mode){
-		case DEVICA_MODE_CBC:
+		case DEVICA_MODE_DES_CBC:
 			// Copy caller's chaining vector and keys to local stge
 			memcpy(keybuff, (void *)pDes->iv,
 			       sizeof(ICA_DES_VECTOR));
@@ -4192,7 +4185,7 @@ int zDes(ica_des_t * arg, unsigned int keysLen)
 			       keysLen);
 			break;
 
-		case DEVICA_MODE_ECB:
+		case DEVICA_MODE_DES_ECB:
 			// Copy the caller's keys to local storage
 			memcpy(keybuff, pDes->keys, keysLen);
 			break;
@@ -4205,10 +4198,10 @@ int zDes(ica_des_t * arg, unsigned int keysLen)
 	// Compute the function code
 	function_code = keysLen/8;
 	switch(pDes->direction) {
-		case DEVICA_DIR_DECRYPT:
+		case DEVICA_DIR_DES_DECRYPT:
 			function_code += 0x80;
 			break;
-		case DEVICA_DIR_ENCRYPT:
+		case DEVICA_DIR_DES_ENCRYPT:
 			break;
 		default:
 			return HDDInvalidParm;
@@ -4235,7 +4228,7 @@ int zDes(ica_des_t * arg, unsigned int keysLen)
 		}
 	}
 
-	if (pDes->mode == DEVICA_MODE_CBC) {
+	if (pDes->mode == DEVICA_MODE_DES_CBC) {
 		rv = KMC(function_code,
 			 keybuff,
 			 pDes->outputdata,
