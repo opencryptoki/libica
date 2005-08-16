@@ -910,6 +910,21 @@ void queryCryptoAssist(void)
 void queryCryptoAssist(void)
 {
 }
+
+/*
+ * Map the icadd names (found in icaioctl.h) to the libICA names.
+ *
+ * #define LIBICA_NAME ICADD_NAME
+ */
+#define ica_sha_t		ica_sha1_t
+#define ICA_SHA1_BLOCKLENGTH	ICA_SHA_BLOCKLENGTH
+#define ICA_SHA1_DATALENGTH	ICA_SHA_DATALENGTH
+#define DEVICA_MODE_CBC		DEVICA_MODE_DES_CBC
+#define DEVICA_MODE_ECB		DEVICA_MODE_DES_ECB
+#define DEVICA_DIR_ENCRYPT	DEVICA_DIR_DES_ENCRYPT
+#define DEVICA_DIR_DECRYPT	DEVICA_DIR_DES_DECRYPT
+#define ica_vector_t		ica_des_vector_t
+#define ica_key_t		ica_des_key_t
 #endif
 
 // item is assumed to point to the last item in the list, and will be updated
@@ -1572,6 +1587,7 @@ icaSha1( ICA_ADAPTER_HANDLE      hAdapterHandle,
 #endif
 }
 
+#ifdef _LINUX_S390_
 /*---------------------------------------------------------------------*
  |                                                                     |
  | icaSha256                                                           |
@@ -1647,12 +1663,6 @@ icaSha256(ICA_ADAPTER_HANDLE      hAdapterHandle,
 	    (shaMessagePart != SHA_MSG_PART_FINAL))
 		return HDDInvalidParm;
 
-#ifndef _LINUX_S390_
-	/* check for maximum and minimum input data length */
-	if (inputDataLength > 0x01fffffc)
-		return HDDInvalidParm;
-#endif
-
 	/*
 	 * if this is the first or middle part, the input
 	 * data length must be a multiple of 64 bytes
@@ -1662,18 +1672,6 @@ icaSha256(ICA_ADAPTER_HANDLE      hAdapterHandle,
 	    (shaMessagePart == SHA_MSG_PART_MIDDLE)))
 		return HDDInvalidParm;
 
-#ifndef _LINUX_S390_
-	/*
-	 * If this is the middle or final part, the running
-	 * length should not be zero
-	 */
-	if ((pSha256Context->runningLength == 0) &&
-	    ((shaMessagePart == SHA_MSG_PART_MIDDLE) ||
-	     (shaMessagePart == SHA_MSG_PART_FINAL)))
-		return HDDInvalidParm;
-#endif
-
-#ifdef _LINUX_S390_
 	rb.inputdata = pInputData;
 	rb.inputdatalength = inputDataLength;
 	rb.outputdata = pOutputData;
@@ -1685,20 +1683,19 @@ icaSha256(ICA_ADAPTER_HANDLE      hAdapterHandle,
 		rc = zSha256(&rb, shaMessagePart, &pSha256Context->runningLength);
 	} else {
 		// Here would be any software backup...
-		//rc = icaSha1SW(&rb,
-		//		 shaMessagePart,
-		//		 &pSha256Context->runningLength,
-		//		 pOutputData);
+		//rc = icaSha256SW(&rb,
+		//		   shaMessagePart,
+		//		   &pSha256Context->runningLength,
+		//		   pOutputData);
 		rc = ENODEV;
 	}
 	if (!rc)
 		memcpy(&pSha256Context->sha256Hash, pOutputData,
 		       ICA_SHA256_DATALENGTH);
-#else
-	rc = ENODEV;
-#endif
+
 	return rc;
 }
+#endif // _LINUX_S390_
 
 /*---------------------------------------------------------------------*
  |                                                                     |
@@ -2462,11 +2459,13 @@ icaTDesDecrypt( ICA_ADAPTER_HANDLE      hAdapterHandle,
 #endif // _LINUX_S390_
 }
 
+#ifdef _LINUX_S390_
 /*---------------------------------------------------------------------*
  |                                                                     |
  | icaAesEncrypt                                                       |
  |                                                                     |
  | Purpose: Encrypt data using AES (keylength is 16, 24, or 32)        |
+ |          (Only available on zSeries)                                |
  |                                                                     |
  | Parameters:                                                         |
  |    hAdapterHandle - pointer to a previously opened device handle.   |
@@ -2511,7 +2510,6 @@ icaAesEncrypt(ICA_ADAPTER_HANDLE      hAdapterHandle,
 	      unsigned char          *pOutputData )
 {
 	ica_aes_t         aes;
-	int rv = ENODEV;
 
 	/* check for obvious errors in parms */
 	if (check_aes_parms(hAdapterHandle,
@@ -2534,13 +2532,8 @@ icaAesEncrypt(ICA_ADAPTER_HANDLE      hAdapterHandle,
 	aes.outputdata = pOutputData;
 	aes.outputdatalength = *pOutputDataLength;
 
-#ifdef _LINUX_S390_
 	*pOutputDataLength = dataLength;
-	rv = zAes(&aes, KeyLength);
-#else // not S390
-#endif // _LINUX_S390_
-
-	return rv;
+	return zAes(&aes, KeyLength);
 }
 
 /*---------------------------------------------------------------------*
@@ -2548,6 +2541,7 @@ icaAesEncrypt(ICA_ADAPTER_HANDLE      hAdapterHandle,
  | icaAesDecrypt                                                       |
  |                                                                     |
  | Purpose: Decrypt data using AES (keylength is 16, 24, or 32)        |
+ |          (Only available on zSeries)                                |
  |                                                                     |
  | Parameters:                                                         |
  |    hAdapterHandle - pointer to a previously opened device handle.   |
@@ -2592,7 +2586,6 @@ icaAesDecrypt(ICA_ADAPTER_HANDLE      hAdapterHandle,
 	      unsigned char          *pOutputData )
 {
 	ica_aes_t         aes;
-	int rv = ENODEV;
 
 	/* check for obvious errors in parms */
 	if (check_aes_parms(hAdapterHandle,
@@ -2615,14 +2608,10 @@ icaAesDecrypt(ICA_ADAPTER_HANDLE      hAdapterHandle,
 	aes.outputdata = pOutputData;
 	aes.outputdatalength = *pOutputDataLength;
 
-#ifdef _LINUX_S390_
 	*pOutputDataLength = dataLength;
-	rv = zAes(&aes, KeyLength);
-#else // not S390
-#endif // _LINUX_S390_
-
-	return rv;
+	return zAes(&aes, KeyLength);
 }
+#endif // _LINUX_S390_
 
 /*---------------------------------------------------------------------*
  |                                                                     |
