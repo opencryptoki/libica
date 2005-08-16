@@ -317,6 +317,11 @@ void dump_array(char *, int);
 
 int main(int argc, char **argv)
 {
+#ifndef __s390__
+   printf("AES-256 is not supported on non-zSeries machines.\n");
+   printf("Test skipped.\n");
+   return 0;
+#else
    ICA_ADAPTER_HANDLE adapter_handle;
    ICA_AES_VECTOR iv;
    ICA_KEY_AES_LEN256 key;
@@ -393,6 +398,7 @@ int main(int argc, char **argv)
    icaCloseAdapter(adapter_handle);
 
    return 0;
+#endif // __s390__
 }
 
 void dump_array(char *ptr, int size)

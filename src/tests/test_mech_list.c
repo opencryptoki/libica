@@ -306,5 +306,6 @@ main(void)
 		free(item);
 		item = next;
 	}
+	return 0;
 }
 
