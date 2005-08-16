@@ -460,7 +460,7 @@ int main()
      * encrypt with public key
      */
 
-    printf("modulus size = %ld \n", sizeof(modulus1024));
+    printf("modulus size = %ld\n", (long)sizeof(modulus1024));
     bzero(&wockey, sizeof(wockey));
     wockey.keyType = KEYTYPE_MODEXPO;
     wockey.keyLength = sizeof(ICA_KEY_RSA_MODEXPO);
