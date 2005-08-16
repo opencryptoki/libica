@@ -478,22 +478,22 @@ typedef struct ica_rsa_modexpo ica_rsa_modmult_t;
 typedef struct ica_rsa_modexpo_crt ica_rsa_modexpo_crt_t;
 
 typedef unsigned char ica_vector_t[8];
-#define ica_des_vector_t ica_vector_t;
-#define ica_aes_vector_t ica_vector_t;
+#define ica_des_vector_t ica_vector_t
+#define ica_aes_vector_t ica_vector_t
 typedef unsigned char ica_key_t[8];
-#define ica_des_key_t ica_key_t;
-#define ica_aes_key_t ica_key_t;
+#define ica_des_key_t ica_key_t
+#define ica_aes_key_t ica_key_t
 
 enum _ica_mode {
   DEVICA_MODE_DES_CBC = 0,
-  DEVICA_MODE_DES_ECB = 1
+  DEVICA_MODE_DES_ECB = 1,
   DEVICA_MODE_CBC = 0,
   DEVICA_MODE_ECB = 1
 };
 
 enum _ica_direction {
   DEVICA_DIR_DES_ENCRYPT = 0,
-  DEVICA_DIR_DES_DECRYPT = 1
+  DEVICA_DIR_DES_DECRYPT = 1,
   DEVICA_DIR_ENCRYPT = 0,
   DEVICA_DIR_DECRYPT = 1
 };
@@ -517,7 +517,7 @@ typedef struct _ica_sha {
   unsigned int       inputdatalength;
   unsigned char     *outputdata;
   unsigned char     *initialh;
-} ica_sha_t;
+} ica_sha_t, ica_sha1_t;
 
 enum _hash_function_code {
 	QUERY_FC   = 0,
