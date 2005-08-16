@@ -44,6 +44,10 @@ main(int argc, char *argv[])
 	if (bytes == 0) {
 		if ((rc = icaRandomNumberGenerate(adapter_handle, 0, output))) {
 			printf("icaRandomNumberGenerate(0) returned %08X\n", rc);
+#ifdef __s390__
+			if (rc == ENODEV)
+				printf("The usual cause of this on zSeries is that the CPACF instruction is not available.\n");
+#endif
 			return 1;
 		}
 	}

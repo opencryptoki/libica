@@ -381,6 +381,10 @@ int main(int argc, char **argv)
    
     if (rc != 0) {
       printf("icaSha1 failed with errno %d (0x%x).\n", rc, rc);
+#ifdef __s390__
+      if (rc == ENODEV)
+        printf("The usual cause of this on zSeries is that the CPACF instruction is not available.\n");
+#endif
       return 2;
     }
    

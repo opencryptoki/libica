@@ -368,6 +368,10 @@ int main(int argc, char **argv)
                        enc_text, &iv, &key, &i, dec_text);
    if (rc != 0) {
       printf("icaTDesDecrypt failed with errno %d (0x%x).\n", rc, rc);
+#ifdef __s390__
+      if (rc == ENODEV)
+        printf("The usual cause of this on zSeries is that the CPACF instruction is not available.\n");
+#endif
    }
    if (i != sizeof dec_text) {
       printf("icaTDesDecrypt returned an incorrect output data length, %u (0x%x).\n", i, i);

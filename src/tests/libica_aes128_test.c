@@ -355,6 +355,8 @@ int main(int argc, char **argv)
 		      (ICA_KEY_AES_SINGLE *)&key, &i, enc_text);
    if (rc != 0) {
       printf("icaAesEncrypt failed with errno %d (0x%x).\n", rc, rc);
+      if (rc == ENODEV)
+        printf("The usual cause of this on zSeries is that the CPACF instruction is not available.\n");
       return 1;
    }
    if (i != sizeof(enc_text)) {

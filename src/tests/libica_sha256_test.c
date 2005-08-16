@@ -361,6 +361,8 @@ int main(int argc, char **argv)
   rc = icaOpenAdapter(0, &adapter_handle);
   if (rc != 0) {
     printf("icaOpenAdapter failed and returned %d (0x%x).\n", rc, rc);
+    if (rc == ENODEV)
+      printf("The usual cause of this on zSeries is that the CPACF instruction is not available.\n");
     return 2;
   }
 

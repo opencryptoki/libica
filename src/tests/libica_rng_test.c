@@ -313,6 +313,10 @@ int main(int ac, char **av)
    rc = icaRandomNumberGenerate(adapter_handle, sizeof R, R);
    if (rc != 0) {
       printf("icaRandomNumberGenerate failed and returned %d (0x%x).\n", rc, rc);
+#ifdef __s390__
+      if (rc == ENODEV)
+        printf("The usual cause of this on zSeries is that the CPACF instruction is not available.\n");
+#endif
    }
    else {
       printf("\nHere it is:\n");
