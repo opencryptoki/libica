@@ -1,21 +1,5 @@
 #! /bin/bash
 
-rm -f Makefile.macros
-machine=`eval uname -m`
-if [ $machine == "s390" ]; 
-then
-   echo "S390_FLAG=-D_LINUX_S390_" > ./Makefile.macros
-   echo "LIBCRYPTO=-lcrypto" >> ./Makefile.macros
-else
-   if [ $machine == "s390x" ];
-   then
-      echo "S390_FLAG=-D_LINUX_S390_ -D_LINUX_S390X_" >./Makefile.macros
-      echo "LIBCRYPTO=-lcrypto" >> ./Makefile.macros
-   else
-   touch ./Makefile.macros
-   fi
-fi
-
 #all the stuff to get the version out of configure.in
 
 verLine=`eval grep AM_INIT_AUTOMAKE configure.in`

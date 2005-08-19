@@ -19105,7 +19105,20 @@ fi
  ;;
 esac
 
-
+rm -f Makefile.macros
+if [ $build_cpu == "s390" ]; 
+then
+   echo "S390_FLAG=-m31 -D_LINUX_S390_" > ./Makefile.macros
+   echo "LIBCRYPTO=-lcrypto" >> ./Makefile.macros
+else
+   if [ $build_cpu == "s390x" ];
+   then
+      echo "S390_FLAG=-m64 -D_LINUX_S390_ -D_LINUX_S390X_" >./Makefile.macros
+      echo "LIBCRYPTO=-lcrypto" >> ./Makefile.macros
+   else
+      touch ./Makefile.macros
+   fi
+fi
 
 ./autoversion
 echo "$as_me:$LINENO: checking for an ANSI C-conforming const" >&5
