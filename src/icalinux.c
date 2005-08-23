@@ -956,7 +956,7 @@ void generate_pkcs11_mech_list(struct mech_list *head)
 		NEWMECH(CKM_SHA_1, 0, 0, CKF_DIGEST)
 
 	if (sha256_switch)
-		NEWMECH(CKM_VENDOR_DEFINED, 0, 0, CKF_HW | CKF_DIGEST)
+		NEWMECH(CKM_SHA256, 0, 0, CKF_HW | CKF_DIGEST)
 
 	if (prng_switch) {
 		NEWMECH(CKM_VENDOR_DEFINED, 0, 0, CKF_HW)
