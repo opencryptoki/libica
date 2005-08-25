@@ -293,6 +293,8 @@
 #ifndef __ICA_API_H__
 #define __ICA_API_H__
 
+#include "mech_types.h"
+
 /***************************************************************************
 ***                                                                      ***
 ***       LICENSED MATERIALS  -  PROPERTY OF IBM                         ***
@@ -1544,5 +1546,7 @@ unsigned int
 icaRandomNumberGenerate( ICA_ADAPTER_HANDLE  hAdapterHandle,
 			 unsigned int        outputDataLength,
 			 unsigned char      *pOutputData );
+
+void generate_pkcs11_mech_list(struct mech_list *head);
 
 #endif   /* __ICA_API_H__ */
