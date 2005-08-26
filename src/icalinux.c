@@ -924,7 +924,7 @@ void queryCryptoAssist(void)
 // by this macro
 #define NEWMECH(mech, minkey, maxkey, flgs) \
 {							\
-	item->next = malloc(sizeof(struct mech_list));	\
+	item->next = malloc(sizeof(struct mech_list_item));	\
 	if (item->next == NULL)				\
 		return;					\
 	item = item->next;				\
@@ -938,15 +938,15 @@ void queryCryptoAssist(void)
 /**
  * Generates a list of supported mechanisms. This is the function that
  * openCryptoki will be calling directly with a pointer to a
- * placeholder mech_list struct.
+ * placeholder mech_list_item struct.
  *
- * @param head Pointer to placeholder mech_list struct; this function
+ * @param head Pointer to placeholder mech_list_item struct; this function
  *             fills in the list by tagging on newly malloc'd
- *             mech_list structs off of this struct.
+ *             mech_list_item structs off of this struct.
  */
-void generate_pkcs11_mech_list(struct mech_list *head)
+void generate_pkcs11_mech_list(struct mech_list_item *head)
 {
-	struct mech_list *item = head;
+	struct mech_list_item *item = head;
 	ICA_ADAPTER_HANDLE handle;
 
 #ifdef _LINUX_S390_

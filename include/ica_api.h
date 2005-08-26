@@ -293,8 +293,6 @@
 #ifndef __ICA_API_H__
 #define __ICA_API_H__
 
-#include "mech_types.h"
-
 /***************************************************************************
 ***                                                                      ***
 ***       LICENSED MATERIALS  -  PROPERTY OF IBM                         ***
@@ -368,6 +366,8 @@
 /* FIXME MAC & SHA? */
 #define MODE_DES_ECB      MODE_ECB
 #define MODE_DES_CBC      MODE_CBC
+#define MODE_AES_ECB      MODE_ECB
+#define MODE_AES_CBC      MODE_CBC
 /*#define MODE_MAC          0xC0000000*/
 /*#define MODE_SHA1         0x40000000*/
 
@@ -1547,6 +1547,7 @@ icaRandomNumberGenerate( ICA_ADAPTER_HANDLE  hAdapterHandle,
 			 unsigned int        outputDataLength,
 			 unsigned char      *pOutputData );
 
-void generate_pkcs11_mech_list(struct mech_list *head);
+struct mech_list_item;
+void generate_pkcs11_mech_list(struct mech_list_item *head);
 
 #endif   /* __ICA_API_H__ */
