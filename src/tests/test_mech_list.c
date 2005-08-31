@@ -291,13 +291,13 @@ static const char rcsid[] = "$Header$";
 #include <stdlib.h>
 #include "mech_types.h"
 
-extern void generate_pkcs11_mech_list(struct mech_list *head);
+extern void generate_pkcs11_mech_list(struct mech_list_item *head);
 
 int
 main(void)
 {
-	struct mech_list head;
-	struct mech_list *item, *next;
+	struct mech_list_item head;
+	struct mech_list_item *item, *next;
 	generate_pkcs11_mech_list(&head);
 	item = head.next;
 	while (item) {
