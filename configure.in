@@ -2,7 +2,7 @@ dnl New
 dnl Process this file with autoconf to produce a configure script.
 AC_INIT(src/icalinux.c)
 AC_CANONICAL_SYSTEM
-AM_INIT_AUTOMAKE(libica,1.2.0)
+AM_INIT_AUTOMAKE(libica,1.3.6)
 
 
 dnl Checks for programs.
