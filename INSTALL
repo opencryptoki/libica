@@ -82,7 +82,9 @@ architecture.
 Installation Names
 ==================
 
-   By default, `make install' will install libica.so in '/usr/lib/libica.so' and ica_api.h in '/usr/include/ica_api.h'.
+   By default, `make install' will install libica.so in '/usr/lib/libica.so'
+and ica_api.h in '/usr/include/ica_api.h', except on 64-bit platforms where
+libica.so will be installed in '/usr/lib64/libica.so'
 
    If the package supports it, you can cause programs to be installed
 with an extra prefix or suffix on their names by giving `configure' the

@@ -505,6 +505,7 @@ infodir='${prefix}/info'
 mandir='${prefix}/man'
 
 ac_prev=
+libdir_specified=
 for ac_option
 do
   # If the previous option needs an argument, assign it.
@@ -606,9 +607,11 @@ do
     infodir=$ac_optarg ;;
 
   -libdir | --libdir | --libdi | --libd)
-    ac_prev=libdir ;;
+    ac_prev=libdir
+    libdir_specified=YES ;;
   -libdir=* | --libdir=* | --libdi=* | --libd=*)
-    libdir=$ac_optarg ;;
+    libdir=$ac_optarg
+    libdir_specified=YES ;;
 
   -libexecdir | --libexecdir | --libexecdi | --libexecd | --libexec \
   | --libexe | --libex | --libe)
@@ -3417,6 +3420,7 @@ x86_64-*linux*|ppc*-*linux*|powerpc*-*linux*|s390*-*linux*|sparc*-*linux*)
           LD="${LD-ld} -m elf64_sparc"
           ;;
       esac
+      test "x$libdir_specified" = x && libdir='${exec_prefix}/lib64'
       ;;
     esac
   fi
