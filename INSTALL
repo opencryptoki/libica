@@ -49,6 +49,10 @@ The simplest way to compile this package is:
      all sorts of other programs in order to regenerate files that came
      with the distribution.
 
+NOTE: If you wish to build a 31-bit library on S390X, you will need to
+      pass the following to the ./configure in step 1:
+      --build=s390-unknown-linux-gnu
+
 Compilers and Options
 =====================
 
