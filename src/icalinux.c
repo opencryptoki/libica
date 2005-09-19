@@ -1065,24 +1065,24 @@ void generate_pkcs11_mech_list(struct mech_list_item *head)
 	 * caller wants to use the aes256 software implementation? */
 	if (aes256_switch) {
 		NEWMECH(CKM_AES_ECB, 16, 32,
-			CKF_HW | CKF_ENCRYPT | CKF_DECRYPT | CKF_WRAP 
+			CKF_HW | CKF_ENCRYPT | CKF_DECRYPT | CKF_WRAP
 			| CKF_UNWRAP);
 		NEWMECH(CKM_AES_CBC, 16, 32,
-			CKF_HW | CKF_ENCRYPT | CKF_DECRYPT | CKF_WRAP 
+			CKF_HW | CKF_ENCRYPT | CKF_DECRYPT | CKF_WRAP
 			| CKF_UNWRAP);
 	} else if (aes192_switch) {
 		NEWMECH(CKM_AES_ECB, 16, 24,
 			CKF_HW | CKF_ENCRYPT | CKF_DECRYPT | CKF_WRAP
 			| CKF_UNWRAP);
 		NEWMECH(CKM_AES_CBC, 16, 24,
-			CKF_HW | CKF_ENCRYPT | CKF_DECRYPT | CKF_WRAP 
+			CKF_HW | CKF_ENCRYPT | CKF_DECRYPT | CKF_WRAP
 			| CKF_UNWRAP);
 	} else if (aes128_switch) {
 		NEWMECH(CKM_AES_ECB, 16, 16,
 			CKF_HW | CKF_ENCRYPT | CKF_DECRYPT | CKF_WRAP
 			| CKF_UNWRAP);
 		NEWMECH(CKM_AES_CBC, 16, 16,
-			CKF_HW | CKF_ENCRYPT | CKF_DECRYPT | CKF_WRAP 
+			CKF_HW | CKF_ENCRYPT | CKF_DECRYPT | CKF_WRAP
 			| CKF_UNWRAP);
 	} else {
 		NEWMECH(CKM_AES_ECB, 16, 32,
@@ -3294,8 +3294,7 @@ icaAesSW(unsigned int mode, unsigned int dataLength, unsigned int enc,
 	int openssl_rc;
 	if (dataLength % AES_BLOCK_SIZE) {
 		(*pOutputDataLength) = 0;
-		rc = HDDInvalidParm;
-		goto out;
+		return HDDInvalidParm;
 	}
 	openssl_rc = 0;
 	if (enc) {
@@ -3305,29 +3304,28 @@ icaAesSW(unsigned int mode, unsigned int dataLength, unsigned int enc,
 	}
 	if (openssl_rc) {
 		*pOutputDataLength = 0;
-		rc = HDDInvalidParm;
-		goto out;		
+		return HDDInvalidParm;
 	}
 	if (mode == DEVICA_MODE_CBC) {
 		memcpy(&temp_iv, pIv, AES_BLOCK_SIZE);
-		openssl_rc = AES_cbc_encrypt((const unsigned char *)pInputData,
-					     pOutputData, dataLength, &aes_key,
-					     temp_iv,
-					     (enc ? AES_ENCRYPT : AES_DECRYPT));
+		AES_cbc_encrypt((const unsigned char *)pInputData,
+				pOutputData, dataLength, &aes_key,
+				temp_iv,
+				(enc ? AES_ENCRYPT : AES_DECRYPT));
 	} else {
 		/* ECB */
 		for (i = 0; i < dataLength; i += AES_BLOCK_SIZE) {
 			memcpy(&temp_input, pInputData + i, AES_BLOCK_SIZE);
 			/* Encrypt/decrypt a single block */
-			openssl_rc = AES_ecb_encrypt(
+			AES_ecb_encrypt(
 				(const unsigned char *)temp_input,
-				temp_output, &aes_key, 
+				temp_output, &aes_key,
 				(enc ? AES_ENCRYPT : AES_DECRYPT));
 			memcpy(pOutputData + i, temp_output, AES_BLOCK_SIZE);
 		}
 	}
 	(*pOutputDataLength) = dataLength;
- out:
+
 	return rc;
 } /* end icaAesSW() */
 
@@ -4392,53 +4390,58 @@ int zAes(ica_aes_t *pAes, unsigned int keysLen)
 			if (!aes128_switch) {
 				local_rc = icaAesSW(pAes->mode,
 						    pAes->inputdatalength,
-						    (pAes->direction 
+						    (pAes->direction
 						     == DEVICA_DIR_DECRYPT
 						     ? 0 : 1), pAes->inputdata,
-						    pAes->iv, 128, pAes->keys,
+						    (unsigned char *)pAes->iv,
+						    128,
+						    (unsigned char *)pAes->keys,
 						    &output_data_len,
 						    pAes->outputdata);
-				if (local_rc) {
-					rv = ENODEV;
-					goto out;
-				}
+				if (local_rc)
+					return ENODEV;
+				else
+					return 0;
 			}
 			break;
 		case AES_KEY_LEN192:
 			if (!aes192_switch) {
 				local_rc = icaAesSW(pAes->mode,
 						    pAes->inputdatalength,
-						    (pAes->direction 
+						    (pAes->direction
 						     == DEVICA_DIR_DECRYPT
 						     ? 0 : 1), pAes->inputdata,
-						    pAes->iv, 192, pAes->keys,
+						    (unsigned char *)pAes->iv,
+						    192,
+						    (unsigned char *)pAes->keys,
 						    &output_data_len,
 						    pAes->outputdata);
-				if (local_rc) {
-					rv = ENODEV;
-					goto out;
-				}
+				if (local_rc)
+					return ENODEV;
+				else
+					return 0;
 			}
 			break;
 		case AES_KEY_LEN256:
 			if (!aes256_switch) {
 				local_rc = icaAesSW(pAes->mode,
 						    pAes->inputdatalength,
-						    (pAes->direction 
+						    (pAes->direction
 						     == DEVICA_DIR_DECRYPT
 						     ? 0 : 1), pAes->inputdata,
-						    pAes->iv, 256, pAes->keys,
+						    (unsigned char *)pAes->iv,
+						    256,
+						    (unsigned char *)pAes->keys,
 						    &output_data_len,
 						    pAes->outputdata);
-				if (local_rc) {
-					rv = ENODEV;
-					goto out;
-				}
+				if (local_rc)
+					return ENODEV;
+				else
+					return 0;
 			}
 			break;
 		default:
-			rv = HDDInvalidParm;
-			goto out;
+			return HDDInvalidParm;
 	}
 
 	switch(pAes->mode){
@@ -4510,7 +4513,7 @@ int zAes(ica_aes_t *pAes, unsigned int keysLen)
 		sigaction(SIGILL, &old, NULL);
 		sigprocmask(SIG_SETMASK, &oldset, NULL);
 	}
- out:
+
 	return rv;
 } /* end zAes */
 
