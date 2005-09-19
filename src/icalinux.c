@@ -3310,7 +3310,6 @@ icaAesSW(unsigned int mode, unsigned int dataLength, unsigned int enc,
 	}
 	if (mode == DEVICA_MODE_CBC) {
 		memcpy(&temp_iv, pIv, AES_BLOCK_SIZE);
-		/* Encrypt/decrypt a single block */
 		openssl_rc = AES_cbc_encrypt((const unsigned char *)pInputData,
 					     pOutputData, dataLength, &aes_key,
 					     temp_iv,
@@ -3319,6 +3318,7 @@ icaAesSW(unsigned int mode, unsigned int dataLength, unsigned int enc,
 		/* ECB */
 		for (i = 0; i < dataLength; i += AES_BLOCK_SIZE) {
 			memcpy(&temp_input, pInputData + i, AES_BLOCK_SIZE);
+			/* Encrypt/decrypt a single block */
 			openssl_rc = AES_ecb_encrypt(
 				(const unsigned char *)temp_input,
 				temp_output, &aes_key, 
