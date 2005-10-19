@@ -894,10 +894,9 @@ void queryCryptoAssist(void)
 	sigprocmask(SIG_SETMASK, &oldset, NULL);
 
 	if (prng_switch) {
-		int rc;
+		int rc, handle = -1;
 		do {
 			unsigned char seed[16];
-			int handle;
 			rc = open("/dev/urandom", O_RDONLY);
 			if (rc == -1)
 				break;
@@ -911,8 +910,11 @@ void queryCryptoAssist(void)
 				       "rc = %02X!\n", sizeof(seed), rc);
 				break;
 			}
-			close(handle);
 		} while (0);
+		if (handle != -1)
+			close(handle);
+		// If the original seeding failed, we should try to stir in some
+		// entropy anyway (since we already put out a message).
 		if (rc) {
 			if ((rc = zPRNG_Seed_Random(NULL, 0)) != 0)
 				printf("zPRNG_Seed_Random(0) FAILED with "
@@ -1035,6 +1037,7 @@ void generate_pkcs11_mech_list(struct mech_list_item *head)
 			CKF_HW | CKF_ENCRYPT | CKF_DECRYPT | CKF_SIGN |
 			CKF_SIGN_RECOVER | CKF_VERIFY | CKF_VERIFY_RECOVER |
 			CKF_WRAP | CKF_UNWRAP)
+		icaCloseAdapter(handle);
 	}
 
 	if (des_switch) {
