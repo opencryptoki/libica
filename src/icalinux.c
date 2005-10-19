@@ -1064,8 +1064,6 @@ void generate_pkcs11_mech_list(struct mech_list_item *head)
 			CKF_ENCRYPT | CKF_DECRYPT | CKF_WRAP | CKF_UNWRAP)
 	}
 
-	/* TODO: What if only the hardware aes128 switch is on and the
-	 * caller wants to use the aes256 software implementation? */
 	if (aes256_switch) {
 		NEWMECH(CKM_AES_ECB, 16, 32,
 			CKF_HW | CKF_ENCRYPT | CKF_DECRYPT | CKF_WRAP
@@ -1080,6 +1078,10 @@ void generate_pkcs11_mech_list(struct mech_list_item *head)
 		NEWMECH(CKM_AES_CBC, 16, 24,
 			CKF_HW | CKF_ENCRYPT | CKF_DECRYPT | CKF_WRAP
 			| CKF_UNWRAP);
+		NEWMECH(CKM_AES_ECB, 32, 32,
+			CKF_ENCRYPT | CKF_DECRYPT | CKF_WRAP | CKF_UNWRAP);
+		NEWMECH(CKM_AES_CBC, 32, 32,
+			CKF_ENCRYPT | CKF_DECRYPT | CKF_WRAP | CKF_UNWRAP);
 	} else if (aes128_switch) {
 		NEWMECH(CKM_AES_ECB, 16, 16,
 			CKF_HW | CKF_ENCRYPT | CKF_DECRYPT | CKF_WRAP
@@ -1087,6 +1089,10 @@ void generate_pkcs11_mech_list(struct mech_list_item *head)
 		NEWMECH(CKM_AES_CBC, 16, 16,
 			CKF_HW | CKF_ENCRYPT | CKF_DECRYPT | CKF_WRAP
 			| CKF_UNWRAP);
+		NEWMECH(CKM_AES_ECB, 24, 32,
+			CKF_ENCRYPT | CKF_DECRYPT | CKF_WRAP | CKF_UNWRAP);
+		NEWMECH(CKM_AES_CBC, 24, 32,
+			CKF_ENCRYPT | CKF_DECRYPT | CKF_WRAP | CKF_UNWRAP);
 	} else {
 		NEWMECH(CKM_AES_ECB, 16, 32,
 			CKF_ENCRYPT | CKF_DECRYPT | CKF_WRAP | CKF_UNWRAP);
