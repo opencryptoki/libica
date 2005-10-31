@@ -1024,7 +1024,7 @@ void generate_pkcs11_mech_list(struct mech_list_item *head)
 		NEWMECH(CKM_AES_KEY_GEN, 0, 0, CKF_GENERATE)
 	}
 
-	if (icaOpenAdapter(0, &handle)) {
+	if (icaOpenAdapter(0, &handle) == 0) { // 0 == success
 		NEWMECH(CKM_RSA_PKCS, 128, 2048,
 			CKF_HW | CKF_ENCRYPT | CKF_DECRYPT | CKF_SIGN |
 			CKF_SIGN_RECOVER | CKF_VERIFY | CKF_VERIFY_RECOVER |
