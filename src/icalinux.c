@@ -1265,6 +1265,9 @@ icaOpenAdapter(unsigned int         adapterId,
 			rc = open(name, O_RDWR);
 		}
 		free_devicename(name);
+		if (rc == -1)
+			err = errno;
+		
 	} else { /* try the defaults */
 #ifndef _LINUX_S390_
 		name = DEFAULT_CRYPT_DEVICE;
