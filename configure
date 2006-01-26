@@ -1879,7 +1879,7 @@ echo "${ECHO_T}missing" >&6
 fi
 
 
-
+ac_default_prefix=/usr
 
 
 

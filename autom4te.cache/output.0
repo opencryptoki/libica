@@ -1879,7 +1879,7 @@ echo "${ECHO_T}missing" >&6
 fi
 
 
-
+ac_default_prefix=/usr
 
 
 
@@ -19695,7 +19695,7 @@ s390x-*)
         echo "S390_FLAG=-m64 -D_LINUX_S390_ -D_LINUX_S390X_" >./Makefile.macros
         echo "LIBCRYPTO=-lcrypto" >> ./Makefile.macros
 	if test $libdir = '${exec_prefix}/lib'; then
-	  echo 'Overriding libdir to "\${exec_prefix}/lib64"'
+	  echo 'Overriding libdir to "${exec_prefix}/lib64"'
 	  libdir='${exec_prefix}/lib64'
 	fi
 ;;
