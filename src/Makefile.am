@@ -1,6 +1,6 @@
 include ../Makefile.macros
 bin_PROGRAMS=libica.so
-bindir=$(INSROOT)/usr/lib
+bindir=$(INSROOT)$(libdir)
 
 libica_so_LDFLAGS = -shared $(LIBCRYPTO)
 
