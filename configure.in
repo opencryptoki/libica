@@ -18,6 +18,9 @@ AC_CHECK_HEADERS(fcntl.h sys/ioctl.h)
 
 CFLAGS="-I./inc -I../include"
 
+dnl If you'd like to install libica to a directory other than $libdir, which by default
+dnl is set to ${exec_prefix}/lib, please use the --libdir=/path/to/install option to
+dnl configure.
 case "$target" in
 	i*86* | *powerpc* | *ppc* )
 		AC_CHECK_HEADER(linux/icaioctl.h, ,
