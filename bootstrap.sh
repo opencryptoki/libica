@@ -2,5 +2,5 @@
 set -x
 aclocal
 libtoolize --force -c
-automake --add-missing -c
+automake --add-missing -c --foreign
 autoconf

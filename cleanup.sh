@@ -15,6 +15,7 @@ rm install-sh
 rm ltmain.sh
 rm missing
 rm libtool
+rm libica.spec
 find . -name Makefile -exec rm {} \;
 find . -name Makefile.in -exec rm {} \;
 find . -depth -name .deps -exec  rm -rf {} \;
