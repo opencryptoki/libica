@@ -1,9 +1,13 @@
-SUBDIRS = src
+SUBDIRS = src include
 
 rpm: 
-	mkdir -p /usr/src/libica/RPMS
+	rm -rf /usr/src/libica
+	mkdir -p /usr/src/libica/RPMS/$(shell uname -m)
 	mkdir -p /usr/src/libica/SRPMS
+	mkdir -p /usr/src/libica/SPEC
 	mkdir -p /usr/src/libica/SOURCES
 	mkdir -p /usr/src/libica/BUILD
-	tar -cvf /usr/src/libica/SOURCES/libica.tar ./*
-	rpmbuild -bb libica-1.1-4.spec || rpm -bb libica-1.1-4.spec
+	tar zcf /usr/src/libica/SOURCES/libica.tar.gz ./*
+	rpmbuild -bb libica.spec
+
+.PHONY: rpm
