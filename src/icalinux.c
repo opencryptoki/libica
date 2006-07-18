@@ -612,14 +612,14 @@ static void queryHash(void)
 	 "	.long	0xb93e0004	\n"	// KIMD
 	 :
 	 :"d" (mask)
-	 :"cc","0","1","4");
+	 :"cc","0","1");	// GPR4+5 are ignored for KIMD(query)
 #else
 	("	slr	0,0		\n"	// R0 = 0;
 	 "	lr	1,%0		\n"	// R1 = mask
 	 "	.long	0xb93e0004	\n"	// KIMD
 	 :
 	 :"d" (mask)
-	 :"cc","0","1","4");
+	 :"cc","0","1");	// GPR4+5 are ignored for KIMD(query)
 #endif
 	if (mask[0] & 0x40)
 		sha1_switch = 1;
@@ -638,14 +638,14 @@ static void queryCipher(void)
 	 "	.long	0xb92e0062	\n"	// KM
 	 :
 	 :"d" (mask)
-	 :"cc","0","1","2","6");
+	 :"cc","0","1");	// GPR2+3+6 are ignored for KM(query)
 #else
 	("	slr	0,0		\n"	// R0 = 0;
 	 "	lr	1,%0		\n"	// R1 = mask
 	 "	.long	0xb92e0062	\n"	// KM
 	 :
 	 :"d" (mask)
-	 :"cc","0","1","2","6");
+	 :"cc","0","1");	// GPR2+3+6 are ignored for KM(query)
 #endif
 	if (mask[0] & 0x40)
 		des_switch = 1;
