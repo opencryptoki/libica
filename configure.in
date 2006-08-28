@@ -74,6 +74,6 @@ else
 	CFLAGS="$CFLAGS -O2"
 fi
 
-AC_OUTPUT([libica.spec Makefile src/Makefile include/Makefile])
+AC_OUTPUT([Makefile src/Makefile include/Makefile])
 
 echo "CFLAGS=$CFLAGS"
