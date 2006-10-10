@@ -441,6 +441,7 @@
 #define DEFAULT_CRYPT_DEVICE "/udev/ica"
 #define DEFAULT2_CRYPT_DEVICE "/dev/ica"
 #endif
+#define DRIVER_NOT_LOADED -1
 
 #if __BYTE_ORDER == __BIG_ENDIAN
 /* The host byte order is the same as network byte order,
@@ -1245,7 +1246,8 @@ icaOpenAdapter(unsigned int         adapterId,
 	char *name;
 #ifdef _LINUX_S390_
 	struct ica_z90_status ica_stat;
-	int totalcount, rv = 0;
+	int rv = 0;
+	char status_mask[64];
 #endif
 
 
@@ -1301,6 +1303,11 @@ icaOpenAdapter(unsigned int         adapterId,
 		else
 			*pAdapterHandle = rc;
 #else
+		/*
+		 * In S390, do not fail if crypto device driver
+		 * is not loaded. Only fail if CPACF is not available
+		 * too.
+		 */
 		name = DEFAULT_CRYPT_DEVICE;
 		rc = open(name, O_RDWR);
 		if (rc == -1) {
@@ -1308,26 +1315,22 @@ icaOpenAdapter(unsigned int         adapterId,
 			rc = open(name, O_RDWR);
 		}
 		if (rc == -1) {
-			err = errno;
+			/* device driver not available */
+			if (!sha1_switch)
+				err = ENOENT;
+			else
+				*pAdapterHandle = DRIVER_NOT_LOADED;
 		} else {
-			/*
-			 * In S390, ensure that there's at least one physical
-			 * device present or that the DES crypto assist
-			 * instruction is available. If neither condition is
-			 * met, close the logical device and return 'open
-			 * failed'.
-			 */
-			rv = ioctl(rc, Z90STAT_TOTALCOUNT, &totalcount);
-			if (rv == -ENOTTY) {
-				rv = ioctl(rc, ICAZ90STATUS, &ica_stat);
-				totalcount = ica_stat.totalcount;
+			/* character device accessible */
+			rv = ioctl(rc, Z90STAT_STATUS_MASK, &status_mask);
+			if (!rv)
+				*pAdapterHandle = rc;
+			else {
+				if (!sha1_switch)
+					err = ENOENT;
+				else
+					*pAdapterHandle = DRIVER_NOT_LOADED;
 			}
-			if ((rv != 0) || (totalcount == 0)) {
-				if (!sha1_switch) {
-					return ENOENT;
-				}
-			}
-			*pAdapterHandle = rc;
 		}
 #endif
 	}
@@ -1351,7 +1354,10 @@ icaOpenAdapter(unsigned int         adapterId,
 unsigned int
 icaCloseAdapter( ICA_ADAPTER_HANDLE adapterHandle )
 {
-
+#ifdef _LINUX_S390_
+     if (adapterHandle == DRIVER_NOT_LOADED)
+        return 0;
+#endif
      if( close(adapterHandle) ){
        return errno;
      }
@@ -1877,34 +1883,30 @@ icaRsaModExpo( ICA_ADAPTER_HANDLE    hAdapterHandle,
      rb.n_modulus           = &pKeyModExpo->keyRecord[bytelength];
 
 #ifdef _LINUX_S390_
-
-     rc = ioctl(hAdapterHandle, ICARSAMODEXPO, &rb);
-
-     if (rc == -1) {
-       if ((errno == 135) || (errno == ENODEV)) { // 135=EGETBUFF (old z90crypt)
-         rc = icaRsaModExpoSW(&rb);
-         if (rc == 0) {
-           *pOutputDataLength = bytelength;
-         }
-       }
-       else {
-         perror("ioctl2");
-         return( errno );
-       }
-     }
-     else if (rc == 0) {
-       *pOutputDataLength = bytelength;
-     }
-     else {     // rc > 0
+     if (hAdapterHandle == DRIVER_NOT_LOADED) {
        rc = icaRsaModExpoSW(&rb);
-       if (rc == 0) {
-         *pOutputDataLength = bytelength;
+     } else {
+       rc = ioctl(hAdapterHandle, ICARSAMODEXPO, &rb);
+       if (rc == -1) {
+         if ((errno == 135) || (errno == ENODEV)) { // 135=EGETBUFF (old z90crypt)
+	   rc = icaRsaModExpoSW(&rb);
+	 } else {
+	   perror("ioctl2");
+	   rc = errno;
+	 }
        }
+       else if (rc > 0) {
+	 rc = icaRsaModExpoSW(&rb);
+       }
+     }
+     if (rc == 0) {
+       *pOutputDataLength = bytelength;
      }
 
      return (rc);
 
 #else
+
      if( ioctl( hAdapterHandle, ICARSAMODEXPO, &rb ) == -1 )  {
        perror("ioctl2");
           /* op failed; return errno */
@@ -1912,8 +1914,6 @@ icaRsaModExpo( ICA_ADAPTER_HANDLE    hAdapterHandle,
      }
 
      *pOutputDataLength = bytelength;
-
-
 
      return( 0 );
 #endif // end if S390
@@ -2008,29 +2008,23 @@ icaRsaCrt( ICA_ADAPTER_HANDLE     hAdapterHandle,
 
 
 #ifdef _LINUX_S390_
-     rc = ioctl(hAdapterHandle, ICARSACRT, &rb);
-
-     if (rc == -1) {
-       if ((errno == 135) || (errno == ENODEV)) { // 135=EGETBUFF (old z90crypt)
-         rc = icaRsaCrtSW(&rb);
-         if (rc == 0) {
-           *pOutputDataLength = (bytelength * 2);
-         }
-	 else {
-         }
-       }
-       else {
-         rc = errno;
-       }
-     }
-     else if (rc == 0) {
-       *pOutputDataLength = (bytelength * 2);
-     }
-     else {// rc > 0
+     if (hAdapterHandle == DRIVER_NOT_LOADED) {
        rc = icaRsaCrtSW(&rb);
-       if (rc == 0) {
-         *pOutputDataLength = (bytelength * 2);
+     } else {
+       rc = ioctl(hAdapterHandle, ICARSACRT, &rb);
+       if (rc == -1) {
+         if ((errno == 135) || (errno == ENODEV)) { // 135=EGETBUFF (old z90crypt)
+           rc = icaRsaCrtSW(&rb);
+	 } else {
+           rc = errno;
+	 }
        }
+       else if (rc > 0) {
+         rc = icaRsaCrtSW(&rb);
+       }
+     }
+     if (rc == 0) {
+       *pOutputDataLength = (bytelength * 2);
      }
 
      return (rc);
@@ -2046,10 +2040,9 @@ icaRsaCrt( ICA_ADAPTER_HANDLE     hAdapterHandle,
 
      return( 0 );
 
-#endif
+#endif // end if S390
 
 }
-
 
 /*---------------------------------------------------------------------*
  |                                                                     |
