@@ -298,15 +298,6 @@
 //                                                                     *
 //**********************************************************************
 //                                                                     *
-// IBM CONFIDENTIAL                                                    *
-// Object Code Only (OCO) source material                              *
-// (C) Copyright IBM Corporation, 2000                                 *
-// The source code for this program is not published or                *
-// otherwise divested of its trade secrets, irrespective of            *
-// what has been deposited with the U.S. Copyright Office.             *
-//                                                                     *
-//**********************************************************************
-//                                                                     *
 // Function                                                            *
 //                                                                     *
 // This header file defines the platform differences for the IBM       *

@@ -314,8 +314,6 @@
 
    Author: Joe Andruzzi
 
-   *** IBM Confidential ***
-
 ***********************************************************************/
 
 #include <windows.h>
