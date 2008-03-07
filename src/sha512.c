@@ -1,6 +1,5 @@
-/*
-             COPYRIGHT (c) International Business Machines Corp. 2005
 
+/*
              Common Public License Version 0.5
 
              THE ACCOMPANYING PROGRAM IS PROVIDED UNDER THE TERMS OF
@@ -10,10 +9,10 @@
 
              1. DEFINITIONS
 
-             "Contribution" means: 
+             "Contribution" means:
                    a) in the case of the initial Contributor, the
                    initial code and documentation distributed under
-                   this Agreement, and 
+                   this Agreement, and
 
                    b) in the case of each subsequent Contributor:
                    i) changes to the Program, and
@@ -37,7 +36,7 @@
              "Licensed Patents " mean patent claims licensable by a
              Contributor which are necessarily infringed by the use or
              sale of its Contribution alone or when combined with the
-             Program. 
+             Program.
 
              "Program" means the Contributions distributed in
              accordance with this Agreement.
@@ -132,7 +131,7 @@
                    a) it must be made available under this Agreement;
                    and
                    b) a copy of this Agreement must be included with
-                   each copy of the Program. 
+                   each copy of the Program.
 
              Contributors may not remove or alter any copyright notices
              contained within the Program.
@@ -140,7 +139,8 @@
              Each Contributor must identify itself as the originator of
              its Contribution, if any, in a manner that reasonably
              allows subsequent Recipients to identify the originator of
-             the Contribution. 
+             the Contribution.
+
 
              4. COMMERCIAL DISTRIBUTION
 
@@ -185,6 +185,7 @@
              to pay any damages as a result, the Commercial Contributor
              must pay those damages.
 
+
              5. NO WARRANTY
 
              EXCEPT AS EXPRESSLY SET FORTH IN THIS AGREEMENT, THE
@@ -199,7 +200,7 @@
              Agreement, including but not limited to the risks and
              costs of program errors, compliance with applicable laws,
              damage to or loss of data, programs or equipment, and
-             unavailability or interruption of operations. 
+             unavailability or interruption of operations.
 
              6. DISCLAIMER OF LIABILITY
              EXCEPT AS EXPRESSLY SET FORTH IN THIS AGREEMENT, NEITHER
@@ -222,6 +223,7 @@
              parties hereto, such provision shall be reformed to the
              minimum extent necessary to make such provision valid and
              enforceable.
+
 
              If Recipient institutes patent litigation against a
              Contributor with respect to a patent applicable to
@@ -247,7 +249,7 @@
              use and distribution of the Program as soon as reasonably
              practicable. However, Recipient's obligations under this
              Agreement and any licenses granted by Recipient relating
-             to the Program shall continue and survive. 
+             to the Program shall continue and survive.
 
              Everyone is permitted to copy and distribute copies of
              this Agreement, but in order to avoid inconsistency the
@@ -273,355 +275,236 @@
              estoppel or otherwise. All rights in the Program not
              expressly granted under this Agreement are reserved.
 
+
              This Agreement is governed by the laws of the State of New
              York and the intellectual property laws of the United
              States of America. No party to this Agreement will bring a
              legal action under this Agreement more than one year after
              the cause of action arose. Each party waives its rights to
-             a jury trial in any resulting litigation. 
+             a jury trial in any resulting litigation.
+
+
+
 */
 
-#ifndef _MECH_LIST_TYPES_H
-#define _MECH_LIST_TYPES_H
-
-
-/**
- * These defines are copied over from the pkcs11types.h file found in
- * the openCryptoki package.
+/*
+ * SHA-512, SHA-384
+ *
+ * Authors(s): Ralph Wuerthner <rwuerthn@de.ibm.com>
+ *
+ * Copyright IBM Corp. 2007
  */
-/* An unsigned value, at least 32 bits long */
-typedef unsigned long int CK_ULONG;
-
-/* A signed value, the same size as a CK_ULONG */
-/* CK_LONG is new for v2.0 */
-typedef long int          CK_LONG;
-
-/* At least 32 bits; each bit is a Boolean flag */
-typedef CK_ULONG          CK_FLAGS;
-
-/* CK_MECHANISM_TYPE is a value that identifies a mechanism
- * type */
-typedef CK_ULONG          CK_MECHANISM_TYPE;
-
-/* The following mechanism types are defined: */
-#define CKM_RSA_PKCS_KEY_PAIR_GEN      0x00000000
-#define CKM_RSA_PKCS                   0x00000001
-#define CKM_RSA_9796                   0x00000002
-#define CKM_RSA_X_509                  0x00000003
-
-/* CKM_MD2_RSA_PKCS, CKM_MD5_RSA_PKCS, and CKM_SHA1_RSA_PKCS
- * are new for v2.0.  They are mechanisms which hash and sign */
-#define CKM_MD2_RSA_PKCS               0x00000004
-#define CKM_MD5_RSA_PKCS               0x00000005
-#define CKM_SHA1_RSA_PKCS              0x00000006
-/* The following are new for v2.11: */
-#define CKM_RIPEMD128_RSA_PKCS         0x00000007
-#define CKM_RIPEMD160_RSA_PKCS         0x00000008
-#define CKM_RSA_PKCS_OAEP              0x00000009
-#define CKM_RSA_X9_31_KEY_PAIR_GEN     0x0000000A
-#define CKM_RSA_X9_31                  0x0000000B
-#define CKM_SHA1_RSA_X9_31             0x0000000C
-#define CKM_RSA_PKCS_PSS               0x0000000D
-#define CKM_SHA1_RSA_PKCS_PSS          0x0000000E
-
-#define CKM_DSA_KEY_PAIR_GEN           0x00000010
-#define CKM_DSA                        0x00000011
-#define CKM_DSA_SHA1                   0x00000012
-#define CKM_DH_PKCS_KEY_PAIR_GEN       0x00000020
-#define CKM_DH_PKCS_DERIVE             0x00000021
-/* The following are new for v2.11 */
-#define CKM_X9_42_DH_KEY_PAIR_GEN      0x00000030
-#define CKM_X9_42_DH_DERIVE            0x00000031
-#define CKM_X9_42_DH_HYBRID_DERIVE     0x00000032
-#define CKM_X9_42_MQV_DERIVE           0x00000033
-
-#define CKM_SHA256_RSA_PKCS_PSS        0x00000043
-
-#define CKM_RC2_KEY_GEN                0x00000100
-#define CKM_RC2_ECB                    0x00000101
-#define CKM_RC2_CBC                    0x00000102
-#define CKM_RC2_MAC                    0x00000103
-
-/* CKM_RC2_MAC_GENERAL and CKM_RC2_CBC_PAD are new for v2.0 */
-#define CKM_RC2_MAC_GENERAL            0x00000104
-#define CKM_RC2_CBC_PAD                0x00000105
-
-#define CKM_RC4_KEY_GEN                0x00000110
-#define CKM_RC4                        0x00000111
-#define CKM_DES_KEY_GEN                0x00000120
-#define CKM_DES_ECB                    0x00000121
-#define CKM_DES_CBC                    0x00000122
-#define CKM_DES_MAC                    0x00000123
-
-/* CKM_DES_MAC_GENERAL and CKM_DES_CBC_PAD are new for v2.0 */
-#define CKM_DES_MAC_GENERAL            0x00000124
-#define CKM_DES_CBC_PAD                0x00000125
-
-#define CKM_DES2_KEY_GEN               0x00000130
-#define CKM_DES3_KEY_GEN               0x00000131
-#define CKM_DES3_ECB                   0x00000132
-#define CKM_DES3_CBC                   0x00000133
-#define CKM_DES3_MAC                   0x00000134
-
-/* CKM_DES3_MAC_GENERAL, CKM_DES3_CBC_PAD, CKM_CDMF_KEY_GEN,
- * CKM_CDMF_ECB, CKM_CDMF_CBC, CKM_CDMF_MAC,
- * CKM_CDMF_MAC_GENERAL, and CKM_CDMF_CBC_PAD are new for v2.0 */
-#define CKM_DES3_MAC_GENERAL           0x00000135
-#define CKM_DES3_CBC_PAD               0x00000136
-#define CKM_CDMF_KEY_GEN               0x00000140
-#define CKM_CDMF_ECB                   0x00000141
-#define CKM_CDMF_CBC                   0x00000142
-#define CKM_CDMF_MAC                   0x00000143
-#define CKM_CDMF_MAC_GENERAL           0x00000144
-#define CKM_CDMF_CBC_PAD               0x00000145
-
-#define CKM_MD2                        0x00000200
-
-/* CKM_MD2_HMAC and CKM_MD2_HMAC_GENERAL are new for v2.0 */
-#define CKM_MD2_HMAC                   0x00000201
-#define CKM_MD2_HMAC_GENERAL           0x00000202
-
-#define CKM_MD5                        0x00000210
-
-/* CKM_MD5_HMAC and CKM_MD5_HMAC_GENERAL are new for v2.0 */
-#define CKM_MD5_HMAC                   0x00000211
-#define CKM_MD5_HMAC_GENERAL           0x00000212
-
-#define CKM_SHA_1                      0x00000220
-
-/* CKM_SHA_1_HMAC and CKM_SHA_1_HMAC_GENERAL are new for v2.0 */
-#define CKM_SHA_1_HMAC                 0x00000221
-#define CKM_SHA_1_HMAC_GENERAL         0x00000222
-
-/* The following are new for v2.11 */
-#define CKM_RIPEMD128                  0x00000230
-#define CKM_RIPEMD128_HMAC             0x00000231
-#define CKM_RIPEMD128_HMAC_GENERAL     0x00000232
-#define CKM_RIPEMD160                  0x00000240
-#define CKM_RIPEMD160_HMAC             0x00000241
-#define CKM_RIPEMD160_HMAC_GENERAL     0x00000242
-
-#define CKM_SHA256                     0x00000250
-#define CKM_SHA256_HMAC                0x00000251
-#define CKM_SHA256_HMAC_GENERAL        0x00000252
-
-/* SHA-224 is new for PKCS #11 v2.20 amendment 3 */
-#define CKM_SHA224                     0x00000255
-#define CKM_SHA224_HMAC                0x00000256
-#define CKM_SHA224_HMAC_GENERAL        0x00000257
-
-#define CKM_SHA384                     0x00000260
-#define CKM_SHA384_HMAC                0x00000261
-#define CKM_SHA384_HMAC_GENERAL        0x00000262
-#define CKM_SHA512                     0x00000270
-#define CKM_SHA512_HMAC                0x00000271
-#define CKM_SHA512_HMAC_GENERAL        0x00000272
-
-/* All of the following mechanisms are new for v2.0 */
-/* Note that CAST128 and CAST5 are the same algorithm */
-#define CKM_CAST_KEY_GEN               0x00000300
-#define CKM_CAST_ECB                   0x00000301
-#define CKM_CAST_CBC                   0x00000302
-#define CKM_CAST_MAC                   0x00000303
-#define CKM_CAST_MAC_GENERAL           0x00000304
-#define CKM_CAST_CBC_PAD               0x00000305
-#define CKM_CAST3_KEY_GEN              0x00000310
-#define CKM_CAST3_ECB                  0x00000311
-#define CKM_CAST3_CBC                  0x00000312
-#define CKM_CAST3_MAC                  0x00000313
-#define CKM_CAST3_MAC_GENERAL          0x00000314
-#define CKM_CAST3_CBC_PAD              0x00000315
-#define CKM_CAST5_KEY_GEN              0x00000320
-#define CKM_CAST128_KEY_GEN            0x00000320
-#define CKM_CAST5_ECB                  0x00000321
-#define CKM_CAST128_ECB                0x00000321
-#define CKM_CAST5_CBC                  0x00000322
-#define CKM_CAST128_CBC                0x00000322
-#define CKM_CAST5_MAC                  0x00000323
-#define CKM_CAST128_MAC                0x00000323
-#define CKM_CAST5_MAC_GENERAL          0x00000324
-#define CKM_CAST128_MAC_GENERAL        0x00000324
-#define CKM_CAST5_CBC_PAD              0x00000325
-#define CKM_CAST128_CBC_PAD            0x00000325
-#define CKM_RC5_KEY_GEN                0x00000330
-#define CKM_RC5_ECB                    0x00000331
-#define CKM_RC5_CBC                    0x00000332
-#define CKM_RC5_MAC                    0x00000333
-#define CKM_RC5_MAC_GENERAL            0x00000334
-#define CKM_RC5_CBC_PAD                0x00000335
-#define CKM_IDEA_KEY_GEN               0x00000340
-#define CKM_IDEA_ECB                   0x00000341
-#define CKM_IDEA_CBC                   0x00000342
-#define CKM_IDEA_MAC                   0x00000343
-#define CKM_IDEA_MAC_GENERAL           0x00000344
-#define CKM_IDEA_CBC_PAD               0x00000345
-#define CKM_GENERIC_SECRET_KEY_GEN     0x00000350
-#define CKM_CONCATENATE_BASE_AND_KEY   0x00000360
-#define CKM_CONCATENATE_BASE_AND_DATA  0x00000362
-#define CKM_CONCATENATE_DATA_AND_BASE  0x00000363
-#define CKM_XOR_BASE_AND_DATA          0x00000364
-#define CKM_EXTRACT_KEY_FROM_KEY       0x00000365
-#define CKM_SSL3_PRE_MASTER_KEY_GEN    0x00000370
-#define CKM_SSL3_MASTER_KEY_DERIVE     0x00000371
-#define CKM_SSL3_KEY_AND_MAC_DERIVE    0x00000372
-/* The following are new for v2.11 */
-#define CKM_SSL3_MASTER_KEY_DERIVE_DH  0x00000373
-#define CKM_TLS_PRE_MASTER_KEY_GEN     0x00000374
-#define CKM_TLS_MASTER_KEY_DERIVE      0x00000375
-#define CKM_TLS_KEY_AND_MAC_DERIVE     0x00000376
-#define CKM_TLS_MASTER_KEY_DERIVE_DH   0x00000377
-
-#define CKM_SSL3_MD5_MAC               0x00000380
-#define CKM_SSL3_SHA1_MAC              0x00000381
-#define CKM_MD5_KEY_DERIVATION         0x00000390
-#define CKM_MD2_KEY_DERIVATION         0x00000391
-#define CKM_SHA1_KEY_DERIVATION        0x00000392
-#define CKM_SHA256_KEY_DERIVATION      0x00000393
-#define CKM_PBE_MD2_DES_CBC            0x000003A0
-#define CKM_PBE_MD5_DES_CBC            0x000003A1
-#define CKM_PBE_MD5_CAST_CBC           0x000003A2
-#define CKM_PBE_MD5_CAST3_CBC          0x000003A3
-#define CKM_PBE_MD5_CAST5_CBC          0x000003A4
-#define CKM_PBE_MD5_CAST128_CBC        0x000003A4
-#define CKM_PBE_SHA1_CAST5_CBC         0x000003A5
-#define CKM_PBE_SHA1_CAST128_CBC       0x000003A5
-#define CKM_PBE_SHA1_RC4_128           0x000003A6
-#define CKM_PBE_SHA1_RC4_40            0x000003A7
-#define CKM_PBE_SHA1_DES3_EDE_CBC      0x000003A8
-#define CKM_PBE_SHA1_DES2_EDE_CBC      0x000003A9
-#define CKM_PBE_SHA1_RC2_128_CBC       0x000003AA
-#define CKM_PBE_SHA1_RC2_40_CBC        0x000003AB
-/* CKM_PKCS5_PBKD2 is new for v2.11 */
-#define CKM_PKCS5_PBKD2                0x000003B0
-#define CKM_PBA_SHA1_WITH_SHA1_HMAC    0x000003C0
-#define CKM_KEY_WRAP_LYNKS             0x00000400
-#define CKM_KEY_WRAP_SET_OAEP          0x00000401
-
-/* Fortezza mechanisms */
-#define CKM_SKIPJACK_KEY_GEN           0x00001000
-#define CKM_SKIPJACK_ECB64             0x00001001
-#define CKM_SKIPJACK_CBC64             0x00001002
-#define CKM_SKIPJACK_OFB64             0x00001003
-#define CKM_SKIPJACK_CFB64             0x00001004
-#define CKM_SKIPJACK_CFB32             0x00001005
-#define CKM_SKIPJACK_CFB16             0x00001006
-#define CKM_SKIPJACK_CFB8              0x00001007
-#define CKM_SKIPJACK_WRAP              0x00001008
-#define CKM_SKIPJACK_PRIVATE_WRAP      0x00001009
-#define CKM_SKIPJACK_RELAYX            0x0000100a
-#define CKM_KEA_KEY_PAIR_GEN           0x00001010
-#define CKM_KEA_KEY_DERIVE             0x00001011
-#define CKM_FORTEZZA_TIMESTAMP         0x00001020
-#define CKM_BATON_KEY_GEN              0x00001030
-#define CKM_BATON_ECB128               0x00001031
-#define CKM_BATON_ECB96                0x00001032
-#define CKM_BATON_CBC128               0x00001033
-#define CKM_BATON_COUNTER              0x00001034
-#define CKM_BATON_SHUFFLE              0x00001035
-#define CKM_BATON_WRAP                 0x00001036
-
-/* CKM_ECDSA_KEY_PAIR_GEN is deprecated in v2.11, 
- * CKM_EC_KEY_PAIR_GEN is preferred. */
-#define CKM_ECDSA_KEY_PAIR_GEN         0x00001040
-#define CKM_EC_KEY_PAIR_GEN            0x00001040
-#define CKM_ECDSA                      0x00001041
-#define CKM_ECDSA_SHA1                 0x00001042
-/* The following are new for v2.11 */
-#define CKM_ECDH1_DERIVE               0x00001050
-#define CKM_ECDH1_COFACTOR_DERIVE      0x00001051
-#define CKM_ECMQV_DERIVE               0x00001052
-
-#define CKM_JUNIPER_KEY_GEN            0x00001060
-#define CKM_JUNIPER_ECB128             0x00001061
-#define CKM_JUNIPER_CBC128             0x00001062
-#define CKM_JUNIPER_COUNTER            0x00001063
-#define CKM_JUNIPER_SHUFFLE            0x00001064
-#define CKM_JUNIPER_WRAP               0x00001065
-#define CKM_FASTHASH                   0x00001070
-/* The following are new for v2.11 */
-#define CKM_AES_KEY_GEN                0x00001080
-#define CKM_AES_ECB                    0x00001081
-#define CKM_AES_CBC                    0x00001082
-#define CKM_AES_MAC                    0x00001083
-#define CKM_AES_MAC_GENERAL            0x00001084
-#define CKM_AES_CBC_PAD                0x00001085
-#define CKM_DSA_PARAMETER_GEN          0x00002000
-#define CKM_DH_PKCS_PARAMETER_GEN      0x00002001
-#define CKM_X9_42_DH_PARAMETER_GEN     0x00002002
-
-#define CKM_VENDOR_DEFINED             0x80000000
-
-#define CK_PTR *
-typedef void        CK_PTR   CK_VOID_PTR;
-typedef CK_VOID_PTR CK_PTR CK_VOID_PTR_PTR;
-
-/* CK_MECHANISM is a structure that specifies a particular
- * mechanism  */
-typedef struct CK_MECHANISM {
-  CK_MECHANISM_TYPE mechanism;
-  CK_VOID_PTR       pParameter;
-  CK_ULONG          ulParameterLen;  /* in bytes */
-} CK_MECHANISM;
-
-typedef CK_MECHANISM CK_PTR CK_MECHANISM_PTR;
-
-/* CK_MECHANISM_INFO provides information about a particular
- * mechanism */
-typedef struct CK_MECHANISM_INFO {
-    CK_ULONG    ulMinKeySize;
-    CK_ULONG    ulMaxKeySize;
-    CK_FLAGS    flags;
-} CK_MECHANISM_INFO;
-
-/* The flags are defined as follows:
- *      Bit Flag               Mask        Meaning */
-#define CKF_HW                 0x00000001  /* performed by HW */
-
-/* The flags CKF_ENCRYPT, CKF_DECRYPT, CKF_DIGEST, CKF_SIGN,
- * CKG_SIGN_RECOVER, CKF_VERIFY, CKF_VERIFY_RECOVER,
- * CKF_GENERATE, CKF_GENERATE_KEY_PAIR, CKF_WRAP, CKF_UNWRAP,
- * and CKF_DERIVE are new for v2.0.  They specify whether or not
- * a mechanism can be used for a particular task */
-#define CKF_ENCRYPT            0x00000100
-#define CKF_DECRYPT            0x00000200
-#define CKF_DIGEST             0x00000400
-#define CKF_SIGN               0x00000800
-#define CKF_SIGN_RECOVER       0x00001000
-#define CKF_VERIFY             0x00002000
-#define CKF_VERIFY_RECOVER     0x00004000
-#define CKF_GENERATE           0x00008000
-#define CKF_GENERATE_KEY_PAIR  0x00010000
-#define CKF_WRAP               0x00020000
-#define CKF_UNWRAP             0x00040000
-#define CKF_DERIVE             0x00080000
-/* The following are new for v2.11 */
-#define CKF_EC_F_P             0x00100000
-#define CKF_EC_F_2M            0x00200000
-#define CKF_EC_ECPARAMETERS    0x00400000
-#define CKF_EC_NAMEDCURVE      0x00800000
-#define CKF_EC_UNCOMPRESS      0x01000000
-#define CKF_EC_COMPRESS        0x02000000
-
-#define CKF_EXTENSION          0x80000000  /* FALSE for 2.01 */
-
-typedef CK_MECHANISM_INFO CK_PTR CK_MECHANISM_INFO_PTR;
-
-#define CKR_MECHANISM_INVALID                 0x00000070
-#define CKR_MECHANISM_PARAM_INVALID           0x00000071
 
 
-/* From common/c_defs.h in openCryptoki */
-typedef struct _MECH_LIST_ELEMENT
-{
-   CK_MECHANISM_TYPE    mech_type;
-   CK_MECHANISM_INFO    mech_info;
-} MECH_LIST_ELEMENT;
+#include <string.h>
+#include <byteswap.h>
+#include <sha512.h>
 
-struct mech_list_item;
+#define ROTR64(x, n)	(((x) >> (n)) | ((x) << (64 - (n))))
+#define CH(x, y, z)	(((x) & (y)) ^ (~(x) & (z)))
+#define MAJ(x, y, z)	(((x) & (y)) ^ ((x) & (z)) ^ ((y) & (z)))
+#define S0(x)		(ROTR64(x, 28) ^ ROTR64(x, 34) ^ ROTR64(x, 39))
+#define S1(x)		(ROTR64(x, 14) ^ ROTR64(x, 18) ^ ROTR64(x, 41))
+#define s0(x)		(ROTR64(x, 1) ^ ROTR64(x, 8) ^ ((x) >> 7))
+#define s1(x)		(ROTR64(x, 19) ^ ROTR64(x, 61) ^ ((x) >> 6))
 
-struct mech_list_item {
-  struct mech_list_item *next;
-  MECH_LIST_ELEMENT element;
+#if BYTE_ORDER == BIG_ENDIAN
+#define HTOBE64(x) (x)
+#define BETOH64(x) (x)
+#else
+#define HTOBE64(x) bswap_64(x)
+#define BETOH64(x) bswap_64(x)
+#endif
+
+static const u_int64_t K[] = {
+	0x428a2f98d728ae22ULL, 0x7137449123ef65cdULL, 0xb5c0fbcfec4d3b2fULL,
+        0xe9b5dba58189dbbcULL, 0x3956c25bf348b538ULL, 0x59f111f1b605d019ULL,
+        0x923f82a4af194f9bULL, 0xab1c5ed5da6d8118ULL, 0xd807aa98a3030242ULL,
+        0x12835b0145706fbeULL, 0x243185be4ee4b28cULL, 0x550c7dc3d5ffb4e2ULL,
+        0x72be5d74f27b896fULL, 0x80deb1fe3b1696b1ULL, 0x9bdc06a725c71235ULL,
+        0xc19bf174cf692694ULL, 0xe49b69c19ef14ad2ULL, 0xefbe4786384f25e3ULL,
+        0x0fc19dc68b8cd5b5ULL, 0x240ca1cc77ac9c65ULL, 0x2de92c6f592b0275ULL,
+        0x4a7484aa6ea6e483ULL, 0x5cb0a9dcbd41fbd4ULL, 0x76f988da831153b5ULL,
+        0x983e5152ee66dfabULL, 0xa831c66d2db43210ULL, 0xb00327c898fb213fULL,
+        0xbf597fc7beef0ee4ULL, 0xc6e00bf33da88fc2ULL, 0xd5a79147930aa725ULL,
+        0x06ca6351e003826fULL, 0x142929670a0e6e70ULL, 0x27b70a8546d22ffcULL,
+        0x2e1b21385c26c926ULL, 0x4d2c6dfc5ac42aedULL, 0x53380d139d95b3dfULL,
+        0x650a73548baf63deULL, 0x766a0abb3c77b2a8ULL, 0x81c2c92e47edaee6ULL,
+        0x92722c851482353bULL, 0xa2bfe8a14cf10364ULL, 0xa81a664bbc423001ULL,
+        0xc24b8b70d0f89791ULL, 0xc76c51a30654be30ULL, 0xd192e819d6ef5218ULL,
+        0xd69906245565a910ULL, 0xf40e35855771202aULL, 0x106aa07032bbd1b8ULL,
+        0x19a4c116b8d2d0c8ULL, 0x1e376c085141ab53ULL, 0x2748774cdf8eeb99ULL,
+        0x34b0bcb5e19b48a8ULL, 0x391c0cb3c5c95a63ULL, 0x4ed8aa4ae3418acbULL,
+        0x5b9cca4f7763e373ULL, 0x682e6ff3d6b2b8a3ULL, 0x748f82ee5defb2fcULL,
+        0x78a5636f43172f60ULL, 0x84c87814a1f0ab72ULL, 0x8cc702081a6439ecULL,
+        0x90befffa23631e28ULL, 0xa4506cebde82bde9ULL, 0xbef9a3f7b2c67915ULL,
+        0xc67178f2e372532bULL, 0xca273eceea26619cULL, 0xd186b8c721c0c207ULL,
+        0xeada7dd6cde0eb1eULL, 0xf57d4f7fee6ed178ULL, 0x06f067aa72176fbaULL,
+        0x0a637dc5a2c898a6ULL, 0x113f9804bef90daeULL, 0x1b710b35131c471bULL,
+        0x28db77f523047d84ULL, 0x32caab7b40c72493ULL, 0x3c9ebe0a15c9bebcULL,
+        0x431d67c49c100d4cULL, 0x4cc5d4becb3e42b6ULL, 0x597f299cfc657e2aULL,
+        0x5fcb6fab3ad6faecULL, 0x6c44198c4a475817ULL
 };
 
+static const struct sha512_ctx sha384_ctx_init = {
+        .h = {
+		0xcbbb9d5dc1059ed8ULL, 0x629a292a367cd507ULL,
+		0x9159015a3070dd17ULL, 0x152fecd8f70e5939ULL,
+		0x67332667ffc00b31ULL, 0x8eb44a8768581511ULL,
+		0xdb0c2e0d64f98fa7ULL, 0x47b5481dbefa4fa4ULL
+	}
+};
+
+static const struct sha512_ctx sha512_ctx_init = {
+        .h = {
+		0x6a09e667f3bcc908ULL, 0xbb67ae8584caa73bULL,
+		0x3c6ef372fe94f82bULL, 0xa54ff53a5f1d36f1ULL,
+		0x510e527fade682d1ULL, 0x9b05688c2b3e6c1fULL,
+		0x1f83d9abfb41bd6bULL, 0x5be0cd19137e2179ULL
+        }
+};
+
+void sha384_init(struct sha512_ctx *ctx)
+{
+	memcpy(ctx, &sha384_ctx_init, SHA512_HASH_LENGTH);
+}
+
+void sha512_init(struct sha512_ctx *ctx)
+{
+	memcpy(ctx, &sha512_ctx_init, SHA512_HASH_LENGTH);
+}
+
+static void sha512_update_block(struct sha512_ctx *ctx,
+				const unsigned char *src)
+{
+	int j;
+	u_int64_t W[80];
+	u_int64_t a, b, c, d, e, f, g, h, t1, t2;
+
+	a = ctx->h[0];
+	b = ctx->h[1];
+	c = ctx->h[2];
+	d = ctx->h[3];
+	e = ctx->h[4];
+	f = ctx->h[5];
+	g = ctx->h[6];
+	h = ctx->h[7];
+	for (j=0; j < 16; j++)
+		W[j] = HTOBE64(((u_int64_t *) src)[j]);
+
+	for (; j < 80; j++)
+		W[j] = s1(W[j-2]) + W[j-7] + s0(W[j-15]) + W[j-16];
+
+	for (j=0; j < 80; j+=8) {
+		t1 = h + S1(e) + CH(e, f, g) + K[j] + W[j];
+		t2 = S0(a) + MAJ(a, b, c);
+		d += t1;
+		h = t1 + t2;
+
+		t1 = g + S1(d) + CH(d, e, f) + K[j+1] + W[j+1];
+		t2 = S0(h) + MAJ(h, a, b);
+		c += t1;
+		g = t1 + t2;
+
+		t1 = f + S1(c) + CH(c, d, e) + K[j+2] + W[j+2];
+		t2 = S0(g) + MAJ(g, h, a);
+		b += t1;
+		f = t1 + t2;
+
+		t1 = e + S1(b) + CH(b, c, d) + K[j+3] + W[j+3];
+		t2 = S0(f) + MAJ(f, g, h);
+		a += t1;
+		e = t1 + t2;
+
+		t1 = d + S1(a) + CH(a, b, c) + K[j+4] + W[j+4];
+		t2 = S0(e) + MAJ(e, f, g);
+		h += t1;
+		d = t1 + t2;
+
+		t1 = c + S1(h) + CH(h, a, b) + K[j+5] + W[j+5];
+		t2 = S0(d) + MAJ(d, e, f);
+		g += t1;
+		c = t1 + t2;
+
+		t1 = b + S1(g) + CH(g, h, a) + K[j+6] + W[j+6];
+		t2 = S0(c) + MAJ(c, d, e);
+		f += t1;
+		b = t1 + t2;
+
+		t1 = a + S1(f) + CH(f, g, h) + K[j+7] + W[j+7];
+		t2 = S0(b) + MAJ(b, c, d);
+		e += t1;
+		a = t1 + t2;
+	}
+	ctx->h[0] += a;
+	ctx->h[1] += b;
+	ctx->h[2] += c;
+	ctx->h[3] += d;
+	ctx->h[4] += e;
+	ctx->h[5] += f;
+	ctx->h[6] += g;
+	ctx->h[7] += h;
+	a = b = c = d = e = f = g = h = t1 = t2 = 0;
+	memset(W, 0x00, sizeof W);
+}
+
+int sha512_update(struct sha512_ctx *ctx, const unsigned char *src,
+		  long src_len)
+{
+	int l;
+#if BYTE_ORDER != BIG_ENDIAN
+	struct sha512_ctx h_ctx;
 #endif
+
+	if (src_len % SHA512_BLOCK_LENGTH)
+		return -1;
+
+#if BYTE_ORDER != BIG_ENDIAN
+	for (l = 0; l < 8; l++)
+		h_ctx.h[l] = HTOBE64(ctx->h[l]);
+
+	for (l = 0; l < src_len; l += SHA512_BLOCK_LENGTH,
+		     src += SHA512_BLOCK_LENGTH)
+		sha512_update_block(&h_ctx, src);
+
+	for (l = 0; l < 8; l++)
+		ctx->h[l] = BETOH64(h_ctx.h[l]);
+	memset(h_ctx, 0x00, sizeof h_ctx);
+#else
+	for (l = 0; l < src_len; l += SHA512_BLOCK_LENGTH,
+		     src += SHA512_BLOCK_LENGTH)
+		sha512_update_block(ctx, src);
+#endif
+	return 0;
+}
+
+int sha512_final(struct sha512_ctx *ctx, const unsigned char *src,
+		 long src_len)
+{
+	static const unsigned char pad[SHA512_BLOCK_LENGTH] = { 0x80 };
+	unsigned char buf[SHA512_BLOCK_LENGTH];
+	u_int64_t *msg_bit_length_high =
+		(u_int64_t *) (buf + SHA512_BLOCK_LENGTH - 16);
+	u_int64_t *msg_bit_length_low =
+		(u_int64_t *) (buf + SHA512_BLOCK_LENGTH - 8);
+	long remnant;
+
+	remnant = src_len % SHA512_BLOCK_LENGTH;
+
+	/* compute full blocks */
+	if (src_len - remnant)
+		sha512_update(ctx, src, src_len - remnant);
+
+	/* pad message */
+	memcpy(buf, src + src_len - remnant, remnant);
+	memcpy(buf + remnant, pad, SHA512_BLOCK_LENGTH - remnant);
+	if (remnant >= SHA512_BLOCK_LENGTH - 16) {
+		sha512_update(ctx, buf, SHA512_BLOCK_LENGTH);
+		memset(buf, 0x00, SHA512_BLOCK_LENGTH - 16);
+	}
+	*msg_bit_length_high = HTOBE64(ctx->msg_bit_length_high);
+	*msg_bit_length_low = HTOBE64(ctx->msg_bit_length_low);
+	sha512_update(ctx, buf, SHA512_BLOCK_LENGTH);
+	memset(buf, 0x00, sizeof buf);
+	return 0;
+}

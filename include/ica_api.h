@@ -386,7 +386,10 @@
 #define SHA_MSG_PART_MIDDLE     2
 #define SHA_MSG_PART_FINAL      3
 #define LENGTH_SHA_HASH         20
+#define LENGTH_SHA224_HASH      28
 #define LENGTH_SHA256_HASH      32
+#define LENGTH_SHA384_HASH      48
+#define LENGTH_SHA512_HASH      64
 
 #if defined(linux) || defined (_AIX)
 #define ICA_CALL 
@@ -438,6 +441,28 @@
         unsigned char      sha256Hash[LENGTH_SHA256_HASH];
  } SHA256_CONTEXT;
 #define LENGTH_SHA256_CONTEXT  sizeof(SHA256_CONTEXT)
+
+ typedef struct _SHA512_CONTEXT{
+#if defined (_WIN32)
+        DBL_ULONG          runningLength;
+#elif defined (_AIX)
+   #if   defined (__64BIT__)
+        unsigned long      runningLength;
+   #else
+        unsigned long long runningLength;
+   #endif
+#elif defined (linux)
+   #ifdef __s390__
+        unsigned long long runningLengthHigh;
+        unsigned long long runningLengthLow;
+   #else
+        unsigned long runningLengthHigh;
+        unsigned long runningLengthLow;
+   #endif
+#endif
+        unsigned char      sha512Hash[LENGTH_SHA512_HASH];
+ } SHA512_CONTEXT;
+#define LENGTH_SHA512_CONTEXT  sizeof(SHA512_CONTEXT)
 
 /*------------------------------------------------*
  | RSA defines and typedefs                       |
@@ -1469,6 +1494,63 @@ icaSha1( ICA_ADAPTER_HANDLE      hAdapterHandle,
 
 /*---------------------------------------------------------------------*
  |                                                                     |
+ | icaSha224                                                           |
+ |                                                                     |
+ | Purpose: Perform secure hash on input data using the SHA-224        |
+ |          algorithm.                                                 |
+ |                                                                     |
+ | Parameters:                                                         |
+ |    hAdapterHandle - pointer to a previously opened device handle.   |
+ |                                                                     |
+ |    shaMessagePart - the message chaining state. Must be one of the  |
+ |                     following:                                      |
+ |                                                                     |
+ |                     SHA_MSG_PART_ONLY   - A single hash operation   |
+ |                     SHA_MSG_PART_FIRST  - The first part            |
+ |                     SHA_MSG_PART_MIDDLE - The middle part           |
+ |                     SHA_MSG_PART_FINAL  - The last part             |
+ |                                                                     |
+ |    inputDataLength - the byte length of the input data to be        |
+ |                      SHA-224 hashed and must be greater than zero.  |
+ |                                                                     |
+ |    pInputData - pointer to the input data data.                     |
+ |                                                                     |
+ |    shaContextLength - specifies the length of the SHA-224 message   |
+ |                       context structure and must contain a value    |
+ |                       that is at least LENGTH_SHA256_CONTEXT decimal|
+ |                                                                     |
+ |    pShaContext - pointer to the SHA256 context structure used to    |
+ |                  store the intermediate values when chaining is     |
+ |                  used. The application must not modify the contents |
+ |                  of this structure when chaining is used.           |
+ |                  Note: due to the algorithm used by SHA-224 a       |
+ |                        SHA-256 context must by used.                |
+ |                                                                     |
+ |    pOutputDataLength - on input specifies the length of the         |
+ |                        pOutputData buffer and must be greater than  |
+ |                        LENGTH_SHA256_HASH. On output it contains the|
+ |                        actual byte length of the hash returned in   |
+ |                        pOutputData.                                 |
+ |                                                                     |
+ |    pOutputData - pointer to the buffer to contain the resulting     |
+ |                  hash data.                                         |
+ |                                                                     |
+ | Return code: Zero if successful                                     |
+ |                                                                     |
+ *---------------------------------------------------------------------*/
+
+unsigned int
+icaSha224(ICA_ADAPTER_HANDLE      hAdapterHandle,
+	  unsigned int            shaMessagePart,
+	  unsigned int            inputDataLength,
+	  unsigned char          *pInputData,
+	  unsigned int            shaContextLength,
+	  SHA256_CONTEXT         *pSha256Context,
+	  unsigned int           *pOutputDataLength,
+	  unsigned char          *pOutputData);
+
+/*---------------------------------------------------------------------*
+ |                                                                     |
  | icaSha256                                                           |
  |                                                                     |
  | Purpose: Perform secure hash on input data using the SHA-256        |
@@ -1519,6 +1601,118 @@ icaSha256(ICA_ADAPTER_HANDLE      hAdapterHandle,
 	  unsigned char          *pInputData,
 	  unsigned int            shaContextLength,
 	  SHA256_CONTEXT         *pSha256Context,
+	  unsigned int           *pOutputDataLength,
+	  unsigned char          *pOutputData);
+
+/*---------------------------------------------------------------------*
+ |                                                                     |
+ | icaSha384                                                           |
+ |                                                                     |
+ | Purpose: Perform secure hash on input data using the SHA-384        |
+ |          algorithm.                                                 |
+ |                                                                     |
+ | Parameters:                                                         |
+ |    hAdapterHandle - pointer to a previously opened device handle.   |
+ |                                                                     |
+ |    shaMessagePart - the message chaining state. Must be one of the  |
+ |                     following:                                      |
+ |                                                                     |
+ |                     SHA_MSG_PART_ONLY   - A single hash operation   |
+ |                     SHA_MSG_PART_FIRST  - The first part            |
+ |                     SHA_MSG_PART_MIDDLE - The middle part           |
+ |                     SHA_MSG_PART_FINAL  - The last part             |
+ |                                                                     |
+ |    inputDataLength - the byte length of the input data to be        |
+ |                      SHA-384 hashed and must be greater than zero.  |
+ |                                                                     |
+ |    pInputData - pointer to the input data data.                     |
+ |                                                                     |
+ |    shaContextLength - specifies the length of the SHA-384 message   |
+ |                       context structure and must contain a value    |
+ |                       that is at least LENGTH_SHA512_CONTEXT decimal|
+ |                                                                     |
+ |    pShaContext - pointer to the SHA512 context structure used to    |
+ |                  store the intermediate values when chaining is     |
+ |                  used. The application must not modify the contents |
+ |                  of this structure when chaining is used.           |
+ |                  Note: due to the algorithm used by SHA-384 a       |
+ |                        SHA-512 context must by used.                |
+ |                                                                     |
+ |    pOutputDataLength - on input specifies the length of the         |
+ |                        pOutputData buffer and must be greater than  |
+ |                        LENGTH_SHA384_HASH. On output it contains the|
+ |                        actual byte length of the hash returned in   |
+ |                        pOutputData.                                 |
+ |                                                                     |
+ |    pOutputData - pointer to the buffer to contain the resulting     |
+ |                  hash data.                                         |
+ |                                                                     |
+ | Return code: Zero if successful                                     |
+ |                                                                     |
+ *---------------------------------------------------------------------*/
+
+unsigned int
+icaSha384(ICA_ADAPTER_HANDLE      hAdapterHandle,
+	  unsigned int            shaMessagePart,
+	  unsigned int            inputDataLength,
+	  unsigned char          *pInputData,
+	  unsigned int            shaContextLength,
+	  SHA512_CONTEXT         *pSha512Context,
+	  unsigned int           *pOutputDataLength,
+	  unsigned char          *pOutputData);
+
+/*---------------------------------------------------------------------*
+ |                                                                     |
+ | icaSha512                                                           |
+ |                                                                     |
+ | Purpose: Perform secure hash on input data using the SHA-512        |
+ |          algorithm.                                                 |
+ |                                                                     |
+ | Parameters:                                                         |
+ |    hAdapterHandle - pointer to a previously opened device handle.   |
+ |                                                                     |
+ |    shaMessagePart - the message chaining state. Must be one of the  |
+ |                     following:                                      |
+ |                                                                     |
+ |                     SHA_MSG_PART_ONLY   - A single hash operation   |
+ |                     SHA_MSG_PART_FIRST  - The first part            |
+ |                     SHA_MSG_PART_MIDDLE - The middle part           |
+ |                     SHA_MSG_PART_FINAL  - The last part             |
+ |                                                                     |
+ |    inputDataLength - the byte length of the input data to be        |
+ |                      SHA-512 hashed and must be greater than zero.  |
+ |                                                                     |
+ |    pInputData - pointer to the input data data.                     |
+ |                                                                     |
+ |    shaContextLength - specifies the length of the SHA512 message    |
+ |                       context structure and must contain a value    |
+ |                       that is at least LENGTH_SHA512_CONTEXT decimal|
+ |                                                                     |
+ |    pShaContext - pointer to the SHA512 context structure used to    |
+ |                  store the intermediate values when chaining is     |
+ |                  used. The application must not modify the contents |
+ |                  of this structure when chaining is used.           |
+ |                                                                     |
+ |    pOutputDataLength - on input specifies the length of the         |
+ |                        pOutputData buffer and must be greater than  |
+ |                        LENGTH_SHA512_HASH. On output it contains the|
+ |                        actual byte length of the hash returned in   |
+ |                        pOutputData.                                 |
+ |                                                                     |
+ |    pOutputData - pointer to the buffer to contain the resulting     |
+ |                  hash data.                                         |
+ |                                                                     |
+ | Return code: Zero if successful                                     |
+ |                                                                     |
+ *---------------------------------------------------------------------*/
+
+unsigned int
+icaSha512(ICA_ADAPTER_HANDLE      hAdapterHandle,
+	  unsigned int            shaMessagePart,
+	  unsigned int            inputDataLength,
+	  unsigned char          *pInputData,
+	  unsigned int            shaContextLength,
+	  SHA512_CONTEXT         *pSha512Context,
 	  unsigned int           *pOutputDataLength,
 	  unsigned char          *pOutputData);
 

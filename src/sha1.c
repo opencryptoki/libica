@@ -355,7 +355,6 @@
 #include <string.h>
 
 #include "platform.h"
-#include <linux/config.h>
 #ifdef __s390__
 #define _LINUX_S390_ 1
 #ifdef _LINUX_S390_

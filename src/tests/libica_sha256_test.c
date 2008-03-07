@@ -381,7 +381,7 @@ int main(int argc, char **argv)
                  SHA_MSG_PART_ONLY,
                  FIPS_TEST_DATA_SIZE[i],
                  input_data,
-                 LENGTH_SHA_CONTEXT,
+                 LENGTH_SHA256_CONTEXT,
                  &Sha256Context,
                  &output_hash_length,
                  output_hash);
@@ -425,7 +425,7 @@ int main(int argc, char **argv)
                  shaMessagePart,
                  (i < 1024) ? i : 1024,
                  input_data,
-                 LENGTH_SHA_CONTEXT,
+                 LENGTH_SHA256_CONTEXT,
                  &Sha256Context,
                  &output_hash_length,
                  output_hash);
@@ -471,7 +471,7 @@ int main(int argc, char **argv)
                  shaMessagePart,
                  (i < 64) ? i : 64,
                  input_data,
-                 LENGTH_SHA_CONTEXT,
+                 LENGTH_SHA256_CONTEXT,
                  &Sha256Context,
                  &output_hash_length,
                  output_hash);

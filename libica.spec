@@ -1,5 +1,5 @@
 Name:          libica 
-Version:       1.3.7 
+Version:       1.3.8
 Release:       1%{?dist}
 Summary:       Interface library to the ICA device driver 
 
@@ -49,6 +49,7 @@ rm -rf $RPM_BUILD_ROOT
 %files
 %defattr(-,root,root,-)
 %doc LICENSE README INSTALL
+%{_bindir}/*
 %attr(755,root,root) %{_libdir}/*
 
 %files devel

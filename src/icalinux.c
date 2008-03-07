@@ -374,7 +374,6 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <linux/config.h>
 
 #ifdef __s390__
 #ifndef _LINUX_S390_
@@ -407,6 +406,8 @@
 #define __BIG_ENDIAN__ 1
 #endif
 #include "sha.h"
+#include "sha256.h"
+#include "sha512.h"
 #else
 #include <linux/icaioctl.h>
 #endif
@@ -459,10 +460,9 @@ enum arbitrary {
  * Structures and #defines for z routines                                   *
  *--------------------------------------------------------------------------*/
 enum _sizelimits {
-  ICA_SHA_DATALENGTH = 20,
   ICA_SHA_BLOCKLENGTH = 64,
-  ICA_SHA256_DATALENGTH = 32,
   ICA_SHA256_BLOCKLENGTH = 64,
+  ICA_SHA512_BLOCKLENGTH = 128,
 };
 
 typedef struct ica_rsa_modexpo ica_rsa_modexpo_t;
@@ -501,8 +501,7 @@ typedef struct _ica_des_or_aes {
   int               outputdatalength;
 } ica_des_t, ica_aes_t;
 
-typedef unsigned char ica_sha1_result_t[ICA_SHA_DATALENGTH];
-typedef unsigned char ica_sha256_result_t[ICA_SHA256_DATALENGTH];
+typedef unsigned char ica_sha1_result_t[LENGTH_SHA_HASH];
 
 typedef struct _ica_sha {
   unsigned char     *inputdata;
@@ -514,7 +513,8 @@ typedef struct _ica_sha {
 enum _hash_function_code {
 	QUERY_FC   = 0,
 	SHA1_FC    = 1,
-	SHA256_FC  = 2
+	SHA256_FC  = 2,
+	SHA512_FC  = 3
 };
 
 /*--------------------------------------------------------------------------*
@@ -558,19 +558,13 @@ int icaSha1SW(ica_sha1_t *,
 int zDes(ica_des_t *, unsigned int);
 int zAes(ica_aes_t *, unsigned int);
 int zSha1(ica_sha1_t *, unsigned int, unsigned long long *);
-int zSha256(ica_sha_t *, unsigned int, unsigned long long *);
 int zPrng(unsigned char *, unsigned int);
 int zPRNG_Seed_Random(void *, unsigned int);
 
-static unsigned char SHA1CONST[ICA_SHA_DATALENGTH] = {
+static unsigned char SHA1CONST[LENGTH_SHA_HASH] = {
  0x67,0x45,0x23,0x01,0xef,0xcd,0xab,0x89,
  0x98,0xba,0xdc,0xfe,0x10,0x32,0x54,0x76,
  0xc3,0xd2,0xe1,0xf0
-};
-
-static unsigned char SHA256CONST[ICA_SHA256_DATALENGTH] = {
-0x6A,0x09,0xE6,0x67,0xBB,0x67,0xAE,0x85,0x3C,0x6E,0xF3,0x72,0xA5,0x4F,0xF5,0x3A,
-0x51,0x0E,0x52,0x7F,0x9B,0x05,0x68,0x8C,0x1F,0x83,0xD9,0xAB,0x5B,0xE0,0xCD,0x19,
 };
 
 #define EXCEPTION_RV	20
@@ -578,6 +572,7 @@ static unsigned char SHA256CONST[ICA_SHA256_DATALENGTH] = {
 
 static volatile int sha1_switch = 0;
 static volatile int sha256_switch = 0;
+static volatile int sha512_switch = 0;
 static volatile int des_switch = 0;
 static volatile int tdes_switch = 0;
 static volatile int aes128_switch = 0;
@@ -586,10 +581,54 @@ static volatile int aes256_switch = 0;
 static volatile int prng_switch = 0;
 static volatile int cpacf_checked = 0;
 
+int extra_sigill_checks = 0;
+
 static jmp_buf envq;
 static void sigill_handler(int sig)
 {
 	longjmp(envq, EXCEPTION_RV);
+}
+
+static int begin_sigill_section(struct sigaction *oldact,
+				sigset_t *oldset)
+{
+	struct sigaction newact;
+	sigset_t newset;
+
+	if (!extra_sigill_checks)
+		return 0;
+
+	sigemptyset(&newset);
+	sigaddset(&newset, SIGILL);
+	sigprocmask(SIG_UNBLOCK, &newset, oldset);
+	newact.sa_handler = (void *) sigill_handler;
+	newact.sa_flags = 0;
+	sigaction(SIGILL, &newact, oldact);
+
+	if (setjmp(envq) != 0) {
+		sha1_switch = 0;
+		sha256_switch = 0;
+		sha512_switch = 0;
+		des_switch = 0;
+		tdes_switch = 0;
+		aes128_switch = 0;
+		aes192_switch = 0;
+		aes256_switch = 0;
+		prng_switch = 0;
+		sigaction(SIGILL, oldact, NULL);
+		sigprocmask(SIG_SETMASK, oldset, NULL);
+		return EXCEPTION_RV;
+	}
+	return 0;
+}
+
+static void end_sigill_section(struct sigaction *oldact,
+			       sigset_t *oldset)
+{
+	if (extra_sigill_checks) {
+                sigaction(SIGILL, oldact, NULL);
+                sigprocmask(SIG_SETMASK, oldset, NULL);
+        }
 }
 
 static void queryHash(void)
@@ -616,6 +655,8 @@ static void queryHash(void)
 		sha1_switch = 1;
 	if (mask[0] & 0x20)
 		sha256_switch = 1;
+	if (mask[0] & 0x10)
+		sha512_switch = 1;
 }
 
 static void queryCipher(void)
@@ -646,7 +687,7 @@ static void queryCipher(void)
 		aes128_switch = 1;
 	if (mask[2] & 0x10)
 		aes192_switch = 1;
-	if (mask[3] & 0x80)
+	if (mask[2] & 0x08)
 		aes256_switch = 1;
 	if (mask[8] & 0x10)
 		prng_switch = 1;
@@ -849,8 +890,6 @@ int queryEnvExtraSigillChecks(void)
 	return 0;
 }
 
-int extra_sigill_checks = 0;
-
 void queryCryptoAssist(void)
 {
 	struct sigaction new, old;
@@ -864,6 +903,7 @@ void queryCryptoAssist(void)
 	cpacf_checked = 1;
 	sha1_switch = 0;
 	sha256_switch = 0;
+	sha512_switch = 0;
 	des_switch = 0;
 	tdes_switch = 0;
 	aes128_switch = 0;
@@ -954,8 +994,21 @@ void generate_pkcs11_mech_list(struct mech_list_item *head)
 	else
 		NEWMECH(CKM_SHA_1, 0, 0, CKF_DIGEST)
 
-	if (sha256_switch)
+	if (sha256_switch) {
+		NEWMECH(CKM_SHA224, 0, 0, CKF_HW | CKF_DIGEST)
 		NEWMECH(CKM_SHA256, 0, 0, CKF_HW | CKF_DIGEST)
+	} else {
+		NEWMECH(CKM_SHA224, 0, 0, CKF_DIGEST)
+		NEWMECH(CKM_SHA256, 0, 0, CKF_DIGEST)
+	}
+
+	if (sha512_switch) {
+		NEWMECH(CKM_SHA384, 0, 0, CKF_HW | CKF_DIGEST)
+		NEWMECH(CKM_SHA512, 0, 0, CKF_HW | CKF_DIGEST)
+	} else {
+		NEWMECH(CKM_SHA384, 0, 0, CKF_DIGEST)
+		NEWMECH(CKM_SHA512, 0, 0, CKF_DIGEST)
+	}
 
 	if (prng_switch) {
 		NEWMECH(CKM_VENDOR_DEFINED, 0, 0, CKF_HW)
@@ -1357,6 +1410,38 @@ icaCloseAdapter( ICA_ADAPTER_HANDLE adapterHandle )
 
 /*---------------------------------------------------------------------*
  |                                                                     |
+ | icaCheckMessagePart                                                 |
+ |                                                                     |
+ | Purpose: Check for valid SHA message part                           |
+ |                                                                     |
+ | Parameters:                                                         |
+ |    shaMessagePart - the message chaining state. Must be one of the  |
+ |                     following:                                      |
+ |                                                                     |
+ |                     SHA_MSG_PART_ONLY   - A single hash operation   |
+ |                     SHA_MSG_PART_FIRST  - The first part            |
+ |                     SHA_MSG_PART_MIDDLE - The middle part           |
+ |                     SHA_MSG_PART_FINAL  - The last part             |
+ |                                                                     |
+ | Return code: Zero if successful                                     |
+ |                                                                     |
+ *---------------------------------------------------------------------*/
+
+unsigned int
+icaCheckMessagePart( unsigned int shaMessagePart )
+{
+	/* make sure some message part is specified */
+	if (shaMessagePart != SHA_MSG_PART_ONLY &&
+	    shaMessagePart != SHA_MSG_PART_FIRST &&
+	    shaMessagePart != SHA_MSG_PART_MIDDLE &&
+	    shaMessagePart != SHA_MSG_PART_FINAL)
+		return HDDInvalidParm;
+	else
+		return 0;
+}
+
+/*---------------------------------------------------------------------*
+ |                                                                     |
  | icaSha1                                                             |
  |                                                                     |
  | Purpose: Perform secure hash on input data using the SHA-1          |
@@ -1424,15 +1509,10 @@ icaSha1( ICA_ADAPTER_HANDLE      hAdapterHandle,
 	  return( HDDInvalidParm );
      }
 
-
      /* make sure some message part is specified */
-     if ( ( shaMessagePart != SHA_MSG_PART_ONLY   )   &&
-	  ( shaMessagePart != SHA_MSG_PART_FIRST  )   &&
-	  ( shaMessagePart != SHA_MSG_PART_MIDDLE )   &&
-	  ( shaMessagePart != SHA_MSG_PART_FINAL  ) ) {
-
-	  return( HDDInvalidParm );
-     }
+     rc = icaCheckMessagePart(shaMessagePart);
+     if (rc)
+	     return rc;
 
      /* check for maximum and minimum input data length */
 #ifndef _LINUX_S390_
@@ -1468,15 +1548,18 @@ icaSha1( ICA_ADAPTER_HANDLE      hAdapterHandle,
 	rb.outputdata = pOutputData;
 	rb.initialh = (unsigned char *)&pShaContext->shaHash;
 
+retry:
 	if (sha1_switch) {
 		//
 		// In zLinux, the hardware performs padding and
 		// appropriate initialization, so we'll skip that part here.
 		//
 		rc = zSha1(&rb, shaMessagePart, &pShaContext->runningLength);
+		if (rc == EXCEPTION_RV)
+			goto retry;
 		if (!rc) {
 			memcpy(&pShaContext->shaHash, pOutputData,
-				ICA_SHA_DATALENGTH);
+				LENGTH_SHA_HASH);
 		}
 		return(rc);
 	} else {
@@ -1486,7 +1569,7 @@ icaSha1( ICA_ADAPTER_HANDLE      hAdapterHandle,
 				pOutputData);
 		if (!rc) {
 			memcpy(&pShaContext->shaHash, pOutputData,
-				ICA_SHA_DATALENGTH);
+				LENGTH_SHA_HASH);
 		}
 		return(rc);
 	}
@@ -1605,13 +1688,141 @@ icaSha1( ICA_ADAPTER_HANDLE      hAdapterHandle,
      }
 
      pShaContext->runningLength += inputDataLength;
-     memcpy(&pShaContext->shaHash, pOutputData, ICA_SHA_DATALENGTH);
+     memcpy(&pShaContext->shaHash, pOutputData, LENGTH_SHA_HASH);
 
      return( 0 );
 #endif
 }
 
 #ifdef _LINUX_S390_
+/*---------------------------------------------------------------------*
+ |                                                                     |
+ | icaSha224                                                           |
+ |                                                                     |
+ | Purpose: Perform secure hash on input data using the SHA-224        |
+ |          algorithm.                                                 |
+ |                                                                     |
+ | Parameters:                                                         |
+ |    hAdapterHandle - pointer to a previously opened device handle.   |
+ |                                                                     |
+ |    shaMessagePart - the message chaining state. Must be one of the  |
+ |                     following:                                      |
+ |                                                                     |
+ |                     SHA_MSG_PART_ONLY   - A single hash operation   |
+ |                     SHA_MSG_PART_FIRST  - The first part            |
+ |                     SHA_MSG_PART_MIDDLE - The middle part           |
+ |                     SHA_MSG_PART_FINAL  - The last part             |
+ |                                                                     |
+ |    inputDataLength - the byte length of the input data to be        |
+ |                      SHA-224 hashed and must be greater than zero.  |
+ |                                                                     |
+ |    pInputData - pointer to the input data data.                     |
+ |                                                                     |
+ |    shaContextLength - specifies the length of the SHA-256 message   |
+ |                       context structure.                            |
+ |                                                                     |
+ |    pSha256Context - pointer to the SHA-256 context structure used   |
+ |                     to store the intermediate values when chaining  |
+ |                     is used. The application must not modify the    |
+ |                     contents of this structure when chaining is used|
+ |                     Note: due to the algorithm used by SHA-224 a    |
+ |                           SHA-256 context must by used.             |
+ |                                                                     |
+ |    pOutputDataLength - on input specifies the length of the         |
+ |                        pOutputData buffer and must be greater than  |
+ |                        LENGTH_SHA256_HASH. On output it contains    |
+ |                        the actual byte length of the hash returned  |
+ |                        in pOutputData.                              |
+ |                                                                     |
+ |    pOutputData - pointer to the buffer to contain the resulting     |
+ |                  hash data.                                         |
+ |                                                                     |
+ | Return code: Zero if successful                                     |
+ |                                                                     |
+ *---------------------------------------------------------------------*/
+unsigned int
+icaSha224(ICA_ADAPTER_HANDLE      hAdapterHandle,
+	  unsigned int            shaMessagePart,
+	  unsigned int            inputDataLength,
+	  unsigned char          *pInputData,
+	  unsigned int            shaContextLength,
+	  SHA256_CONTEXT         *pSha256Context,
+	  unsigned int           *pOutputDataLength,
+	  unsigned char          *pOutputData )
+{
+	unsigned int rc;
+	struct sha256_ctx ctx;
+	struct sigaction oldact;
+	sigset_t oldset;
+
+	/* check for obvious errors in parms */
+	if ((pInputData == NULL)                      ||
+	    (pSha256Context == NULL)                  ||
+	    (pOutputDataLength == NULL)               ||
+	    (pOutputData == NULL)                     ||
+	    (*pOutputDataLength < LENGTH_SHA224_HASH) ||
+	    (shaContextLength < LENGTH_SHA256_CONTEXT))
+		return HDDInvalidParm;
+
+	/* make sure some message part is specified */
+	rc = icaCheckMessagePart(shaMessagePart);
+	if (rc)
+	     return rc;
+
+	/*
+	 * for FIRST or MIDDLE calls the input
+	 * data length must be a multiple of 64 bytes.
+	 */
+	if (inputDataLength & 0x3f &&
+	    (shaMessagePart == SHA_MSG_PART_FIRST ||
+	     shaMessagePart == SHA_MSG_PART_MIDDLE))
+                return HDDInvalidParm;
+
+        /* if this is a FIRST or ONLY call, supply the standard SHA-256
+         * initial vector.  Otherwise, use the input chaining vector.
+         */
+        if ((shaMessagePart == SHA_MSG_PART_ONLY) ||
+            (shaMessagePart == SHA_MSG_PART_FIRST)) {
+		sha224_init(&ctx);
+		pSha256Context->runningLength = 0;
+	}
+        else
+                memcpy(&ctx, &pSha256Context->sha256Hash, LENGTH_SHA256_HASH);
+retry:
+	if (sha256_switch) {
+		if (begin_sigill_section(&oldact, &oldset))
+			goto retry;
+		if (shaMessagePart == SHA_MSG_PART_ONLY ||
+		    shaMessagePart == SHA_MSG_PART_FINAL) {
+			ctx.msg_bit_length = 8 * (pSha256Context->runningLength
+						  + inputDataLength);
+			rc = KLMD(SHA256_FC, (unsigned char *) &ctx, pInputData,
+				  inputDataLength);
+		} else
+			rc = KIMD(SHA256_FC, (unsigned char *) &ctx, pInputData,
+				  inputDataLength);
+		end_sigill_section(&oldact, &oldset);
+	} else {
+		if (shaMessagePart == SHA_MSG_PART_ONLY ||
+		    shaMessagePart == SHA_MSG_PART_FINAL) {
+			ctx.msg_bit_length = 8 * (pSha256Context->runningLength +
+						  inputDataLength);
+			rc = sha256_final(&ctx, pInputData, inputDataLength);
+		} else
+			rc = sha256_update(&ctx, pInputData, inputDataLength);
+	}
+        if (!rc) {
+		memcpy(pOutputData, &ctx, LENGTH_SHA224_HASH);
+                memcpy(&pSha256Context->sha256Hash, &ctx,
+                       LENGTH_SHA256_HASH);
+		pSha256Context->runningLength += inputDataLength;
+	}
+	else
+		rc = HDDInvalidParm;
+
+	return rc;
+}
+
 /*---------------------------------------------------------------------*
  |                                                                     |
  | icaSha256                                                           |
@@ -1635,7 +1846,7 @@ icaSha1( ICA_ADAPTER_HANDLE      hAdapterHandle,
  |                                                                     |
  |    pInputData - pointer to the input data data.                     |
  |                                                                     |
- |    shaContextLength - specifies the length of the SHA256 message    |
+ |    shaContextLength - specifies the length of the SHA-256 message   |
  |                       context structure.                            |
  |                                                                     |
  |    pSha256Context - pointer to the SHA-256 context structure used   |
@@ -1665,11 +1876,10 @@ icaSha256(ICA_ADAPTER_HANDLE      hAdapterHandle,
 	  unsigned int           *pOutputDataLength,
 	  unsigned char          *pOutputData )
 {
-	ica_sha_t            rb;
-	int                  rc;
-	char                 pad[ICA_SHA256_BLOCKLENGTH * 2];
-	__u64                leftover;
-	ica_sha256_result_t *initialh;
+	unsigned int rc;
+	struct sha256_ctx ctx;
+	struct sigaction oldact;
+	sigset_t oldset;
 
 	/* check for obvious errors in parms */
 	if ((pInputData == NULL)                      ||
@@ -1677,45 +1887,350 @@ icaSha256(ICA_ADAPTER_HANDLE      hAdapterHandle,
 	    (pOutputDataLength == NULL)               ||
 	    (pOutputData == NULL)                     ||
 	    (*pOutputDataLength < LENGTH_SHA256_HASH) ||
-	    (shaContextLength < LENGTH_SHA_CONTEXT))
+	    (shaContextLength < LENGTH_SHA256_CONTEXT))
 		return HDDInvalidParm;
 
 	/* make sure some message part is specified */
-	if ((shaMessagePart != SHA_MSG_PART_ONLY)   &&
-	    (shaMessagePart != SHA_MSG_PART_FIRST)  &&
-	    (shaMessagePart != SHA_MSG_PART_MIDDLE) &&
-	    (shaMessagePart != SHA_MSG_PART_FINAL))
-		return HDDInvalidParm;
+	rc = icaCheckMessagePart(shaMessagePart);
+	if (rc)
+	     return rc;
 
 	/*
-	 * if this is the first or middle part, the input
-	 * data length must be a multiple of 64 bytes
+	 * for FIRST or MIDDLE calls the input
+	 * data length must be a multiple of 64 bytes.
 	 */
-	if ((inputDataLength & 0x3f) &&
-	   ((shaMessagePart == SHA_MSG_PART_FIRST) ||
-	    (shaMessagePart == SHA_MSG_PART_MIDDLE)))
+	if (inputDataLength & 0x3f &&
+	    (shaMessagePart == SHA_MSG_PART_FIRST ||
+	     shaMessagePart == SHA_MSG_PART_MIDDLE))
+                return HDDInvalidParm;
+
+        /* if this is a FIRST or ONLY call, supply the standard SHA-256
+         * initial vector.  Otherwise, use the input chaining vector.
+         */
+        if ((shaMessagePart == SHA_MSG_PART_ONLY) ||
+            (shaMessagePart == SHA_MSG_PART_FIRST)) {
+		sha256_init(&ctx);
+		pSha256Context->runningLength = 0;
+	}
+        else
+                memcpy(&ctx, &pSha256Context->sha256Hash, LENGTH_SHA256_HASH);
+retry:
+	if (sha256_switch) {
+		if (begin_sigill_section(&oldact, &oldset))
+			goto retry;
+		if (shaMessagePart == SHA_MSG_PART_ONLY ||
+		    shaMessagePart == SHA_MSG_PART_FINAL) {
+			ctx.msg_bit_length = 8 * (pSha256Context->runningLength
+						  + inputDataLength);
+			rc = KLMD(SHA256_FC, (unsigned char *) &ctx, pInputData,
+				  inputDataLength);
+		} else
+			rc = KIMD(SHA256_FC, (unsigned char *) &ctx, pInputData,
+				  inputDataLength);
+		end_sigill_section(&oldact, &oldset);
+	} else {
+		if (shaMessagePart == SHA_MSG_PART_ONLY ||
+		    shaMessagePart == SHA_MSG_PART_FINAL) {
+			ctx.msg_bit_length = 8 * (pSha256Context->runningLength +
+						  inputDataLength);
+			rc = sha256_final(&ctx, pInputData, inputDataLength);
+		} else
+			rc = sha256_update(&ctx, pInputData, inputDataLength);
+	}
+        if (!rc) {
+		memcpy(pOutputData, &ctx, LENGTH_SHA256_HASH);
+                memcpy(&pSha256Context->sha256Hash, &ctx,
+                       LENGTH_SHA256_HASH);
+		pSha256Context->runningLength += inputDataLength;
+	}
+	else
+		rc = HDDInvalidParm;
+
+	return rc;
+}
+
+/*---------------------------------------------------------------------*
+ |                                                                     |
+ | icaSha384                                                           |
+ |                                                                     |
+ | Purpose: Perform secure hash on input data using the SHA-384        |
+ |          algorithm.                                                 |
+ |                                                                     |
+ | Parameters:                                                         |
+ |    hAdapterHandle - pointer to a previously opened device handle.   |
+ |                                                                     |
+ |    shaMessagePart - the message chaining state. Must be one of the  |
+ |                     following:                                      |
+ |                                                                     |
+ |                     SHA_MSG_PART_ONLY   - A single hash operation   |
+ |                     SHA_MSG_PART_FIRST  - The first part            |
+ |                     SHA_MSG_PART_MIDDLE - The middle part           |
+ |                     SHA_MSG_PART_FINAL  - The last part             |
+ |                                                                     |
+ |    inputDataLength - the byte length of the input data to be        |
+ |                      SHA-384 hashed and must be greater than zero.  |
+ |                                                                     |
+ |    pInputData - pointer to the input data data.                     |
+ |                                                                     |
+ |    shaContextLength - specifies the length of the SHA-384 message   |
+ |                       context structure.                            |
+ |                                                                     |
+ |    pSha512Context - pointer to the SHA-512 context structure used   |
+ |                     to store the intermediate values when chaining  |
+ |                     is used. The application must not modify the    |
+ |                     contents of this structure when chaining is used|
+ |                     Note: due to the algorithm used by SHA-384 a    |
+ |                           SHA-512 context must by used.             |
+ |                                                                     |
+ |    pOutputDataLength - on input specifies the length of the         |
+ |                        pOutputData buffer and must be greater than  |
+ |                        LENGTH_SHA384_HASH. On output it contains    |
+ |                        the actual byte length of the hash returned  |
+ |                        in pOutputData.                              |
+ |                                                                     |
+ |    pOutputData - pointer to the buffer to contain the resulting     |
+ |                  hash data.                                         |
+ |                                                                     |
+ | Return code: Zero if successful                                     |
+ |                                                                     |
+ *---------------------------------------------------------------------*/
+unsigned int
+icaSha384(ICA_ADAPTER_HANDLE      hAdapterHandle,
+	  unsigned int            shaMessagePart,
+	  unsigned int            inputDataLength,
+	  unsigned char          *pInputData,
+	  unsigned int            shaContextLength,
+	  SHA512_CONTEXT         *pSha512Context,
+	  unsigned int           *pOutputDataLength,
+	  unsigned char          *pOutputData )
+{
+	unsigned int rc;
+	u_int64_t low, high;
+	struct sha512_ctx ctx;
+	struct sigaction oldact;
+	sigset_t oldset;
+
+	/* check for obvious errors in parms */
+	if ((pInputData == NULL)                      ||
+	    (pSha512Context == NULL)                  ||
+	    (pOutputDataLength == NULL)               ||
+	    (pOutputData == NULL)                     ||
+	    (*pOutputDataLength < LENGTH_SHA384_HASH) ||
+	    (shaContextLength < LENGTH_SHA512_CONTEXT))
 		return HDDInvalidParm;
 
-	rb.inputdata = pInputData;
-	rb.inputdatalength = inputDataLength;
-	rb.outputdata = pOutputData;
-	rb.initialh = (unsigned char *)&pSha256Context->sha256Hash;
+	/* make sure some message part is specified */
+	rc = icaCheckMessagePart(shaMessagePart);
+	if (rc)
+	     return rc;
 
-	if (sha256_switch) {
-		// In zLinux, the hardware performs padding and
-		// appropriate initialization, so we'll skip that part here.
-		rc = zSha256(&rb, shaMessagePart, &pSha256Context->runningLength);
-	} else {
-		// Here would be any software backup...
-		//rc = icaSha256SW(&rb,
-		//		   shaMessagePart,
-		//		   &pSha256Context->runningLength,
-		//		   pOutputData);
-		rc = ENODEV;
+	/*
+	 * for FIRST or MIDDLE calls the input
+	 * data length must be a multiple of 128 bytes.
+	 */
+	if (inputDataLength & 0x7f &&
+	    (shaMessagePart == SHA_MSG_PART_FIRST ||
+	     shaMessagePart == SHA_MSG_PART_MIDDLE))
+                return HDDInvalidParm;
+
+        /* if this is a FIRST or ONLY call, supply the standard SHA-384
+         * initial vector.  Otherwise, use the input chaining vector.
+         */
+        if ((shaMessagePart == SHA_MSG_PART_ONLY) ||
+            (shaMessagePart == SHA_MSG_PART_FIRST)) {
+		sha384_init(&ctx);
+		pSha512Context->runningLengthLow = 0;
+		pSha512Context->runningLengthHigh = 0;
 	}
-	if (!rc)
-		memcpy(&pSha256Context->sha256Hash, pOutputData,
-		       ICA_SHA256_DATALENGTH);
+        else
+                memcpy(&ctx, &pSha512Context->sha512Hash, LENGTH_SHA512_HASH);
+
+	/* compute 128 bit running length information in bits required for
+	 * ONLY and FINAL messages
+	 */
+	low = pSha512Context->runningLengthLow + inputDataLength;
+	if (low < pSha512Context->runningLengthLow || low < inputDataLength)
+		high = pSha512Context->runningLengthHigh + 1;
+	else
+		high = pSha512Context->runningLengthHigh;
+	high = (high << 3) + (low >> (64 - 3));
+	low = low << 3;
+
+retry:
+	if (sha512_switch) {
+		if (begin_sigill_section(&oldact, &oldset))
+			goto retry;
+		if (shaMessagePart == SHA_MSG_PART_ONLY ||
+		    shaMessagePart == SHA_MSG_PART_FINAL) {
+			ctx.msg_bit_length_high = high;
+			ctx.msg_bit_length_low = low;
+			rc = KLMD(SHA512_FC, (unsigned char *) &ctx, pInputData,
+				  inputDataLength);
+		} else
+			rc = KIMD(SHA512_FC, (unsigned char *) &ctx, pInputData,
+				  inputDataLength);
+		end_sigill_section(&oldact, &oldset);
+	} else {
+		if (shaMessagePart == SHA_MSG_PART_ONLY ||
+		    shaMessagePart == SHA_MSG_PART_FINAL) {
+			ctx.msg_bit_length_high = high;
+			ctx.msg_bit_length_low = low;
+			rc = sha512_final(&ctx, pInputData, inputDataLength);
+		} else
+			rc = sha512_update(&ctx, pInputData, inputDataLength);
+	}
+        if (!rc) {
+		memcpy(pOutputData, &ctx, LENGTH_SHA384_HASH);
+                memcpy(&pSha512Context->sha512Hash, &ctx,
+                       LENGTH_SHA512_HASH);
+		pSha512Context->runningLengthLow += inputDataLength;
+		if (pSha512Context->runningLengthLow < inputDataLength)
+			pSha512Context->runningLengthHigh++;
+	}
+	else
+		rc = HDDInvalidParm;
+
+	return rc;
+}
+
+/*---------------------------------------------------------------------*
+ |                                                                     |
+ | icaSha512                                                           |
+ |                                                                     |
+ | Purpose: Perform secure hash on input data using the SHA-512        |
+ |          algorithm.                                                 |
+ |                                                                     |
+ | Parameters:                                                         |
+ |    hAdapterHandle - pointer to a previously opened device handle.   |
+ |                                                                     |
+ |    shaMessagePart - the message chaining state. Must be one of the  |
+ |                     following:                                      |
+ |                                                                     |
+ |                     SHA_MSG_PART_ONLY   - A single hash operation   |
+ |                     SHA_MSG_PART_FIRST  - The first part            |
+ |                     SHA_MSG_PART_MIDDLE - The middle part           |
+ |                     SHA_MSG_PART_FINAL  - The last part             |
+ |                                                                     |
+ |    inputDataLength - the byte length of the input data to be        |
+ |                      SHA-512 hashed and must be greater than zero.  |
+ |                                                                     |
+ |    pInputData - pointer to the input data data.                     |
+ |                                                                     |
+ |    shaContextLength - specifies the length of the SHA512 message    |
+ |                       context structure.                            |
+ |                                                                     |
+ |    pSha512Context - pointer to the SHA-512 context structure used   |
+ |                     to store the intermediate values when chaining  |
+ |                     is used. The application must not modify the    |
+ |                     contents of this structure when chaining is used|
+ |                                                                     |
+ |    pOutputDataLength - on input specifies the length of the         |
+ |                        pOutputData buffer and must be greater than  |
+ |                        LENGTH_SHA512_HASH. On output it contains    |
+ |                        the actual byte length of the hash returned  |
+ |                        in pOutputData.                              |
+ |                                                                     |
+ |    pOutputData - pointer to the buffer to contain the resulting     |
+ |                  hash data.                                         |
+ |                                                                     |
+ | Return code: Zero if successful                                     |
+ |                                                                     |
+ *---------------------------------------------------------------------*/
+unsigned int
+icaSha512(ICA_ADAPTER_HANDLE      hAdapterHandle,
+	  unsigned int            shaMessagePart,
+	  unsigned int            inputDataLength,
+	  unsigned char          *pInputData,
+	  unsigned int            shaContextLength,
+	  SHA512_CONTEXT         *pSha512Context,
+	  unsigned int           *pOutputDataLength,
+	  unsigned char          *pOutputData )
+{
+	unsigned int rc;
+	u_int64_t low, high;
+	struct sha512_ctx ctx;
+	struct sigaction oldact;
+	sigset_t oldset;
+
+	/* check for obvious errors in parms */
+	if ((pInputData == NULL)                      ||
+	    (pSha512Context == NULL)                  ||
+	    (pOutputDataLength == NULL)               ||
+	    (pOutputData == NULL)                     ||
+	    (*pOutputDataLength < LENGTH_SHA512_HASH) ||
+	    (shaContextLength < LENGTH_SHA512_CONTEXT))
+		return HDDInvalidParm;
+
+	/* make sure some message part is specified */
+	rc = icaCheckMessagePart(shaMessagePart);
+	if (rc)
+	     return rc;
+
+	/*
+	 * for FIRST or MIDDLE calls the input
+	 * data length must be a multiple of 128 bytes.
+	 */
+	if (inputDataLength & 0x7f &&
+	    (shaMessagePart == SHA_MSG_PART_FIRST ||
+	     shaMessagePart == SHA_MSG_PART_MIDDLE))
+                return HDDInvalidParm;
+
+        /* if this is a FIRST or ONLY call, supply the standard SHA-512
+         * initial vector.  Otherwise, use the input chaining vector.
+         */
+        if ((shaMessagePart == SHA_MSG_PART_ONLY) ||
+            (shaMessagePart == SHA_MSG_PART_FIRST)) {
+		sha512_init(&ctx);
+		pSha512Context->runningLengthLow = 0;
+		pSha512Context->runningLengthHigh = 0;
+	}
+        else
+                memcpy(&ctx, &pSha512Context->sha512Hash, LENGTH_SHA512_HASH);
+
+	/* compute 128 bit running length information in bits required for
+	 * ONLY and FINAL messages
+	 */
+	low = pSha512Context->runningLengthLow + inputDataLength;
+	if (low < pSha512Context->runningLengthLow || low < inputDataLength)
+		high = pSha512Context->runningLengthHigh + 1;
+	else
+		high = pSha512Context->runningLengthHigh;
+	high = (high << 3) + (low >> (64 - 3));
+	low = low << 3;
+
+retry:
+	if (sha512_switch) {
+		if (begin_sigill_section(&oldact, &oldset))
+			goto retry;
+		if (shaMessagePart == SHA_MSG_PART_ONLY ||
+		    shaMessagePart == SHA_MSG_PART_FINAL) {
+			ctx.msg_bit_length_high = high;
+			ctx.msg_bit_length_low = low;
+			rc = KLMD(SHA512_FC, (unsigned char *) &ctx, pInputData,
+				  inputDataLength);
+		} else
+			rc = KIMD(SHA512_FC, (unsigned char *) &ctx, pInputData,
+				  inputDataLength);
+		end_sigill_section(&oldact, &oldset);
+	} else {
+		if (shaMessagePart == SHA_MSG_PART_ONLY ||
+		    shaMessagePart == SHA_MSG_PART_FINAL) {
+			ctx.msg_bit_length_high = high;
+			ctx.msg_bit_length_low = low;
+			rc = sha512_final(&ctx, pInputData, inputDataLength);
+		} else
+			rc = sha512_update(&ctx, pInputData, inputDataLength);
+	}
+        if (!rc) {
+		memcpy(pOutputData, &ctx, LENGTH_SHA512_HASH);
+                memcpy(&pSha512Context->sha512Hash, &ctx,
+                       LENGTH_SHA512_HASH);
+		pSha512Context->runningLengthLow += inputDataLength;
+		if (pSha512Context->runningLengthLow < inputDataLength)
+			pSha512Context->runningLengthHigh++;
+	}
+	else
+		rc = HDDInvalidParm;
 
 	return rc;
 }
@@ -4008,7 +4523,7 @@ icaSha1SW(ica_sha1_t * arg, unsigned int rule,
 				sizeof(long long));
 			memcpy(outputh,
 			       (unsigned char *)&ctx.h0,
-				ICA_SHA_DATALENGTH);
+				LENGTH_SHA_HASH);
 			break;
 		case SHA_MSG_PART_MIDDLE:
 			memset((unsigned char *)&ctx, 0, sizeof(ctx));
@@ -4017,14 +4532,14 @@ icaSha1SW(ica_sha1_t * arg, unsigned int rule,
 				sizeof(long long));
 			memcpy((unsigned char *)&ctx.h0,
 				(unsigned char *)arg->initialh,
-				ICA_SHA_DATALENGTH);
+				LENGTH_SHA_HASH);
 			SHAA_Update(&ctx,arg->inputdata,arg->inputdatalength);
 			memcpy((unsigned char *)pSum,
 			       (unsigned char *)&ctx.Lhigh,
 				sizeof(long long));
 			memcpy(outputh,
 			       (unsigned char *)&ctx.h0,
-				ICA_SHA_DATALENGTH);
+				LENGTH_SHA_HASH);
 			break;
 		case SHA_MSG_PART_FINAL:
 			if (arg->inputdatalength > 63) {
@@ -4036,7 +4551,7 @@ icaSha1SW(ica_sha1_t * arg, unsigned int rule,
 					sizeof(long long));
 				memcpy((unsigned char *)&ctx.h0,
 					(unsigned char *)arg->initialh,
-					ICA_SHA_DATALENGTH);
+					LENGTH_SHA_HASH);
 				SHAA_Update(&ctx,arg->inputdata,
 						arg->inputdatalength);
 			} else {
@@ -4046,7 +4561,7 @@ icaSha1SW(ica_sha1_t * arg, unsigned int rule,
                         	         arg->inputdatalength);
 				memcpy((unsigned char *)&ctx.h0,
 					(unsigned char *)arg->initialh,
-					ICA_SHA_DATALENGTH);
+					LENGTH_SHA_HASH);
                         	*pSum+=arg->inputdatalength;
 				memcpy((unsigned char *)&ctx.Lhigh,
 					(unsigned char *)pSum,
@@ -4071,17 +4586,17 @@ int zSha1(ica_sha1_t * arg, unsigned int rule, unsigned long long *pSum)
 	unsigned long remnant = 0;
 	int complete_blocks_length = 0;
 	unsigned char shabuff[LENGTH_SHA_CONTEXT];
-	struct sigaction new, old;
-	sigset_t newset, oldset;
+	struct sigaction oldact;
+	sigset_t oldset;
 
 	// If this is a FIRST or ONLY call, supply the standard SHA1
 	// initial vector.  Otherwise, use the input chaining vector
 	if (rule == SHA_MSG_PART_ONLY || rule == SHA_MSG_PART_FIRST) {
-		memcpy (shabuff, SHA1CONST, ICA_SHA_DATALENGTH);
+		memcpy (shabuff, SHA1CONST, LENGTH_SHA_HASH);
 		sum = 0LL;
 	} else {
 		// Copy the caller's chaining vector to local storage
-		memcpy(shabuff, (void *)pSha->initialh, ICA_SHA_DATALENGTH);
+		memcpy(shabuff, (void *)pSha->initialh, LENGTH_SHA_HASH);
 		sum = *pSum;
 	}
 
@@ -4096,28 +4611,9 @@ int zSha1(ica_sha1_t * arg, unsigned int rule, unsigned long long *pSum)
 								(remnant != 0))
 		return HDDInvalidParm;
 
-	if (extra_sigill_checks) {
-		sigemptyset(&newset);
-		sigaddset(&newset, SIGILL);
-		sigprocmask(SIG_UNBLOCK, &newset, &oldset);
-		new.sa_handler = (void *) sigill_handler;
-		new.sa_flags = 0;
-		sigaction(SIGILL, &new, &old);
-
-		if (setjmp(envq) != 0) {
-			sha1_switch = 0;
-			sha256_switch = 0;
-			des_switch = 0;
-			tdes_switch = 0;
-			aes128_switch = 0;
-			aes192_switch = 0;
-			aes256_switch = 0;
-			prng_switch = 0;
-			sigaction(SIGILL, &old, NULL);
-			sigprocmask(SIG_SETMASK, &oldset, NULL);
-			return EXCEPTION_RV;
-		}
-	}
+	rv = begin_sigill_section(&oldact, &oldset);
+	if (rv)
+		return rv;
 
 	// If there are any complete blocks:
 	if (complete_blocks_length) {
@@ -4134,7 +4630,7 @@ int zSha1(ica_sha1_t * arg, unsigned int rule, unsigned long long *pSum)
 	if (rule == SHA_MSG_PART_ONLY || rule == SHA_MSG_PART_FINAL) {
 		// Digest the remnant and compute the bit length
 		sum = 8*(sum + (long long) remnant);
-		memcpy(shabuff+ICA_SHA_DATALENGTH,
+		memcpy(shabuff+LENGTH_SHA_HASH,
 		       (unsigned char *)&sum,
 		       sizeof(sum));
 		rv = KLMD(SHA1_FC,
@@ -4143,21 +4639,18 @@ int zSha1(ica_sha1_t * arg, unsigned int rule, unsigned long long *pSum)
 			  remnant);
 	} // end if ONLY or FINAL
 
-	if (extra_sigill_checks) {
-		sigaction(SIGILL, &old, NULL);
-		sigprocmask(SIG_SETMASK, &oldset, NULL);
-	}
+	end_sigill_section(&oldact, &oldset);
 
 	if(rv == 0) {
 		// Copy the caller's output
 		memcpy((void *)pSha->outputdata, shabuff,
-			ICA_SHA_DATALENGTH);
+			LENGTH_SHA_HASH);
 		// If appropriate, copy the caller's
 		// chaining vector and running total
 		if (rule != SHA_MSG_PART_FINAL &&
 				rule != SHA_MSG_PART_ONLY) {
 			memcpy((void *)pSha->initialh, shabuff,
-				ICA_SHA_DATALENGTH);
+				LENGTH_SHA_HASH);
 			*pSum = sum;
 		}
 	} // end switch(rv)
@@ -4167,112 +4660,12 @@ int zSha1(ica_sha1_t * arg, unsigned int rule, unsigned long long *pSum)
 } // end zSha1
 
 /*-------------------------------------------------------------------*/
-/* SHA256                                                            */
-/*-------------------------------------------------------------------*/
-int zSha256(ica_sha_t *pSha256, unsigned int rule, unsigned long long *pSum)
-{
-	int rv = 0;
-	unsigned long long sum;
-	unsigned long remnant = 0;
-	int complete_blocks_length = 0;
-	unsigned char shabuff[LENGTH_SHA256_CONTEXT];
-	struct sigaction new, old;
-	sigset_t newset, oldset;
-
-	// If this is a FIRST or ONLY call, supply the standard SHA256
-	// initial vector.  Otherwise, use the input chaining vector
-	if ((rule == SHA_MSG_PART_ONLY) || (rule == SHA_MSG_PART_FIRST)) {
-		memcpy (shabuff, SHA256CONST, ICA_SHA256_DATALENGTH);
-		sum = 0LL;
-	} else {
-		// Copy the caller's chaining vector to local storage
-		memcpy(shabuff, (void *)pSha256->initialh, ICA_SHA256_DATALENGTH);
-		sum = *pSum;
-	}
-
-	// Compute the length of any incomplete block
-	if (pSha256->inputdatalength) {
-		remnant = pSha256->inputdatalength % ICA_SHA256_BLOCKLENGTH;
-		complete_blocks_length = pSha256->inputdatalength - remnant;
-	}
-
-	// If this is a FIRST or MIDDLE call, the remnant must be zero.
-	if (((rule == SHA_MSG_PART_FIRST) || (rule == SHA_MSG_PART_MIDDLE)) &&
-	    (remnant != 0))
-		return HDDInvalidParm;
-
-	if (extra_sigill_checks) {
-		sigemptyset(&newset);
-		sigaddset(&newset, SIGILL);
-		sigprocmask(SIG_UNBLOCK, &newset, &oldset);
-		new.sa_handler = (void *) sigill_handler;
-		new.sa_flags = 0;
-		sigaction(SIGILL, &new, &old);
-
-		if (setjmp(envq) != 0) {
-			sha1_switch = 0;
-			sha256_switch = 0;
-			des_switch = 0;
-			tdes_switch = 0;
-			aes128_switch = 0;
-			aes192_switch = 0;
-			aes256_switch = 0;
-			prng_switch = 0;
-			sigaction(SIGILL, &old, NULL);
-			sigprocmask(SIG_SETMASK, &oldset, NULL);
-			return EXCEPTION_RV;
-		}
-	}
-
-	// If there are any complete blocks:
-	if (complete_blocks_length) {
-		// Digest the complete blocks and recompute the
-		// bitlength
-		if ((rv = KIMD(SHA256_FC, shabuff, pSha256->inputdata,
-			       complete_blocks_length)) == 0) {
-			sum += (long long) complete_blocks_length;
-		} // end if rv 0
-	} // end if there are complete blocks
-
-	if ((rule == SHA_MSG_PART_ONLY) || (rule == SHA_MSG_PART_FINAL)) {
-		// Digest the remnant and compute the bit length
-		sum = 8*(sum + (long long) remnant);
-		memcpy(shabuff+ICA_SHA256_DATALENGTH,
-		       (unsigned char *)&sum,
-		       sizeof(sum));
-		rv = KLMD(SHA256_FC, shabuff,
-			  pSha256->inputdata+complete_blocks_length, remnant);
-	}
-
-	if (extra_sigill_checks) {
-		sigaction(SIGILL, &old, NULL);
-		sigprocmask(SIG_SETMASK, &oldset, NULL);
-	}
-
-	if (rv == 0) {
-		// Copy the caller's output
-		memcpy((void *)pSha256->outputdata, shabuff,
-		       ICA_SHA256_DATALENGTH);
-		// If appropriate, copy the caller's
-		// chaining vector and running total
-		if ((rule != SHA_MSG_PART_FINAL) &&
-		    (rule != SHA_MSG_PART_ONLY)) {
-			memcpy((void *)pSha256->initialh, shabuff,
-			       ICA_SHA256_DATALENGTH);
-			*pSum = sum;
-		}
-	}
-
-	return rv;
-} // end zSha256
-
-/*-------------------------------------------------------------------*/
 /* DES                                                               */
 /*-------------------------------------------------------------------*/
 int zDes(ica_des_t * arg, unsigned int keysLen)
 {
-	struct sigaction new, old;
-	sigset_t newset, oldset;
+	struct sigaction oldact;
+	sigset_t oldset;
 	int rv = 0;
 	unsigned long function_code;
 	ica_des_t * pDes = arg;
@@ -4316,25 +4709,9 @@ int zDes(ica_des_t * arg, unsigned int keysLen)
 			break;
 	}
 
-	if (extra_sigill_checks) {
-		sigemptyset(&newset);
-		sigaddset(&newset, SIGILL);
-		sigprocmask(SIG_UNBLOCK, &newset, &oldset);
-		new.sa_handler = (void *) sigill_handler;
-		new.sa_flags = 0;
-		sigaction(SIGILL, &new, &old);
-		if (setjmp(envq) != 0) {
-			des_switch = 0;
-			tdes_switch = 0;
-			aes128_switch = 0;
-			aes192_switch = 0;
-			aes256_switch = 0;
-			prng_switch = 0;
-			sigaction(SIGILL, &old, NULL);
-			sigprocmask(SIG_SETMASK, &oldset, NULL);
-			return EXCEPTION_RV;
-		}
-	}
+	rv = begin_sigill_section(&oldact, &oldset);
+	if (rv)
+		return rv;
 
 	if (pDes->mode == DEVICA_MODE_DES_CBC) {
 		rv = KMC(function_code,
@@ -4350,10 +4727,7 @@ int zDes(ica_des_t * arg, unsigned int keysLen)
 			pDes->inputdatalength);
 	}
 
-	if (extra_sigill_checks) {
-		sigaction(SIGILL, &old, NULL);
-		sigprocmask(SIG_SETMASK, &oldset, NULL);
-	}
+	end_sigill_section(&oldact, &oldset);
 
 	return rv;
 } // end zDes
@@ -4363,8 +4737,8 @@ int zDes(ica_des_t * arg, unsigned int keysLen)
 /*-------------------------------------------------------------------*/
 int zAes(ica_aes_t *pAes, unsigned int keysLen)
 {
-	struct sigaction new, old;
-	sigset_t newset, oldset;
+	struct sigaction oldact;
+	sigset_t oldset;
 	int rv = 0;
 	int local_rc;
 	unsigned long function_code;
@@ -4378,6 +4752,7 @@ int zAes(ica_aes_t *pAes, unsigned int keysLen)
 		return HDDInvalidParm;
 	}
 
+retry:
 	// Verify that we have the key length requested.
 	switch (keysLen) {
 		case AES_KEY_LEN128:
@@ -4469,25 +4844,9 @@ int zAes(ica_aes_t *pAes, unsigned int keysLen)
 			return HDDInvalidParm;
 	}
 
-	if (extra_sigill_checks) {
-		sigemptyset(&newset);
-		sigaddset(&newset, SIGILL);
-		sigprocmask(SIG_UNBLOCK, &newset, &oldset);
-		new.sa_handler = (void *) sigill_handler;
-		new.sa_flags = 0;
-		sigaction(SIGILL, &new, &old);
-		if (setjmp(envq) != 0) {
-			des_switch = 0;
-			tdes_switch = 0;
-			aes128_switch = 0;
-			aes192_switch = 0;
-			aes256_switch = 0;
-			prng_switch = 0;
-			sigaction(SIGILL, &old, NULL);
-			sigprocmask(SIG_SETMASK, &oldset, NULL);
-			return EXCEPTION_RV;
-		}
-	}
+	rv = begin_sigill_section(&oldact, &oldset);
+	if (rv)
+		goto retry;
 
 	if (pAes->mode == DEVICA_MODE_CBC) {
 		rv = KMC(function_code,
@@ -4503,10 +4862,7 @@ int zAes(ica_aes_t *pAes, unsigned int keysLen)
 			pAes->inputdatalength);
 	}
 
-	if (extra_sigill_checks) {
-		sigaction(SIGILL, &old, NULL);
-		sigprocmask(SIG_SETMASK, &oldset, NULL);
-	}
+	end_sigill_section(&oldact, &oldset);
 
 	return rv;
 } /* end zAes */
