@@ -1,0 +1,4 @@
+v2.0
+Substitute software fallbacks with lowlevel OpenSSL function calls.
+Rewrite most of libica.
+Only Linux on System z code.

@@ -1,294 +1,10 @@
+/* This program is released under the Common Public License V1.0
+ *
+ * You should have received a copy of Common Public License V1.0 along with
+ * with this program.
+ */
 
-static const char rcsid[] = "$Header$";
-/* 
-	     Common Public License Version 0.5
-
-             THE ACCOMPANYING PROGRAM IS PROVIDED UNDER THE TERMS OF
-             THIS COMMON PUBLIC LICENSE ("AGREEMENT"). ANY USE,
-             REPRODUCTION OR DISTRIBUTION OF THE PROGRAM CONSTITUTES
-             RECIPIENT'S ACCEPTANCE OF THIS AGREEMENT.
-
-             1. DEFINITIONS
-
-             "Contribution" means:
-                   a) in the case of the initial Contributor, the
-                   initial code and documentation distributed under
-                   this Agreement, and
-
-                   b) in the case of each subsequent Contributor:
-                   i) changes to the Program, and
-                   ii) additions to the Program;
-
-                   where such changes and/or additions to the Program
-                   originate from and are distributed by that
-                   particular Contributor. A Contribution 'originates'
-                   from a Contributor if it was added to the Program
-                   by such Contributor itself or anyone acting on such
-                   Contributor's behalf. Contributions do not include
-                   additions to the Program which: (i) are separate
-                   modules of software distributed in conjunction with
-                   the Program under their own license agreement, and
-                   (ii) are not derivative works of the Program.
-
-
-             "Contributor" means any person or entity that distributes
-             the Program.
-
-             "Licensed Patents " mean patent claims licensable by a
-             Contributor which are necessarily infringed by the use or
-             sale of its Contribution alone or when combined with the
-             Program.
-
-             "Program" means the Contributions distributed in
-             accordance with this Agreement.
-
-             "Recipient" means anyone who receives the Program under
-             this Agreement, including all Contributors.
-
-             2. GRANT OF RIGHTS
-
-                   a) Subject to the terms of this Agreement, each
-                   Contributor hereby grants Recipient a
-                   non-exclusive, worldwide, royalty-free copyright
-                   license to reproduce, prepare derivative works of,
-                   publicly display, publicly perform, distribute and
-                   sublicense the Contribution of such Contributor, if
-                   any, and such derivative works, in source code and
-                   object code form.
-
-                   b) Subject to the terms of this Agreement, each
-                   Contributor hereby grants Recipient a
-                   non-exclusive, worldwide, royalty-free patent
-                   license under Licensed Patents to make, use, sell,
-                   offer to sell, import and otherwise transfer the
-                   Contribution of such Contributor, if any, in source
-                   code and object code form. This patent license
-                   shall apply to the combination of the Contribution
-                   and the Program if, at the time the Contribution is
-                   added by the Contributor, such addition of the
-                   Contribution causes such combination to be covered
-                   by the Licensed Patents. The patent license shall
-                   not apply to any other combinations which include
-                   the Contribution. No hardware per se is licensed
-                   hereunder.
-
-                   c) Recipient understands that although each
-                   Contributor grants the licenses to its
-                   Contributions set forth herein, no assurances are
-                   provided by any Contributor that the Program does
-                   not infringe the patent or other intellectual
-                   property rights of any other entity. Each
-                   Contributor disclaims any liability to Recipient
-                   for claims brought by any other entity based on
-                   infringement of intellectual property rights or
-                   otherwise. As a condition to exercising the rights
-                   and licenses granted hereunder, each Recipient
-                   hereby assumes sole responsibility to secure any
-                   other intellectual property rights needed, if any.
-
-                   For example, if a third party patent license is
-                   required to allow Recipient to distribute the
-                   Program, it is Recipient's responsibility to
-                   acquire that license before distributing the
-                   Program.
-
-                   d) Each Contributor represents that to its
-                   knowledge it has sufficient copyright rights in its
-                   Contribution, if any, to grant the copyright
-                   license set forth in this Agreement.
-
-             3. REQUIREMENTS
-
-             A Contributor may choose to distribute the Program in
-             object code form under its own license agreement, provided
-             that:
-                   a) it complies with the terms and conditions of
-                   this Agreement; and
-
-                   b) its license agreement:
-                   i) effectively disclaims on behalf of all
-                   Contributors all warranties and conditions, express
-                   and implied, including warranties or conditions of
-                   title and non-infringement, and implied warranties
-                   or conditions of merchantability and fitness for a
-                   particular purpose;
-
-                   ii) effectively excludes on behalf of all
-                   Contributors all liability for damages, including
-                   direct, indirect, special, incidental and
-                   consequential damages, such as lost profits;
-
-                   iii) states that any provisions which differ from
-                   this Agreement are offered by that Contributor
-                   alone and not by any other party; and
-
-                   iv) states that source code for the Program is
-                   available from such Contributor, and informs
-                   licensees how to obtain it in a reasonable manner
-                   on or through a medium customarily used for
-                   software exchange.
-
-             When the Program is made available in source code form:
-                   a) it must be made available under this Agreement;
-                   and
-                   b) a copy of this Agreement must be included with
-                   each copy of the Program.
-
-             Contributors may not remove or alter any copyright notices
-             contained within the Program.
-
-             Each Contributor must identify itself as the originator of
-             its Contribution, if any, in a manner that reasonably
-             allows subsequent Recipients to identify the originator of
-             the Contribution.
-
-
-             4. COMMERCIAL DISTRIBUTION
-
-             Commercial distributors of software may accept certain
-             responsibilities with respect to end users, business
-             partners and the like. While this license is intended to
-             facilitate the commercial use of the Program, the
-             Contributor who includes the Program in a commercial
-             product offering should do so in a manner which does not
-             create potential liability for other Contributors.
-             Therefore, if a Contributor includes the Program in a
-             commercial product offering, such Contributor ("Commercial
-             Contributor") hereby agrees to defend and indemnify every
-             other Contributor ("Indemnified Contributor") against any
-             losses, damages and costs (collectively "Losses") arising
-             from claims, lawsuits and other legal actions brought by a
-             third party against the Indemnified Contributor to the
-             extent caused by the acts or omissions of such Commercial
-             Contributor in connection with its distribution of the
-             Program in a commercial product offering. The obligations
-             in this section do not apply to any claims or Losses
-             relating to any actual or alleged intellectual property
-             infringement. In order to qualify, an Indemnified
-             Contributor must: a) promptly notify the Commercial
-             Contributor in writing of such claim, and b) allow the
-             Commercial Contributor to control, and cooperate with the
-             Commercial Contributor in, the defense and any related
-             settlement negotiations. The Indemnified Contributor may
-             participate in any such claim at its own expense.
-
-
-             For example, a Contributor might include the Program in a
-             commercial product offering, Product X. That Contributor
-             is then a Commercial Contributor. If that Commercial
-             Contributor then makes performance claims, or offers
-             warranties related to Product X, those performance claims
-             and warranties are such Commercial Contributor's
-             responsibility alone. Under this section, the Commercial
-             Contributor would have to defend claims against the other
-             Contributors related to those performance claims and
-             warranties, and if a court requires any other Contributor
-             to pay any damages as a result, the Commercial Contributor
-             must pay those damages.
-
-
-             5. NO WARRANTY
-
-             EXCEPT AS EXPRESSLY SET FORTH IN THIS AGREEMENT, THE
-             PROGRAM IS PROVIDED ON AN "AS IS" BASIS, WITHOUT
-             WARRANTIES OR CONDITIONS OF ANY KIND, EITHER EXPRESS OR
-             IMPLIED INCLUDING, WITHOUT LIMITATION, ANY WARRANTIES OR
-             CONDITIONS OF TITLE, NON-INFRINGEMENT, MERCHANTABILITY OR
-             FITNESS FOR A PARTICULAR PURPOSE. Each Recipient is solely
-             responsible for determining the appropriateness of using
-             and distributing the Program and assumes all risks
-             associated with its exercise of rights under this
-             Agreement, including but not limited to the risks and
-             costs of program errors, compliance with applicable laws,
-             damage to or loss of data, programs or equipment, and
-             unavailability or interruption of operations.
-
-             6. DISCLAIMER OF LIABILITY
-             EXCEPT AS EXPRESSLY SET FORTH IN THIS AGREEMENT, NEITHER
-             RECIPIENT NOR ANY CONTRIBUTORS SHALL HAVE ANY LIABILITY
-             FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY,
-             OR CONSEQUENTIAL DAMAGES (INCLUDING WITHOUT LIMITATION
-             LOST PROFITS), HOWEVER CAUSED AND ON ANY THEORY OF
-             LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-             (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT
-             OF THE USE OR DISTRIBUTION OF THE PROGRAM OR THE EXERCISE
-             OF ANY RIGHTS GRANTED HEREUNDER, EVEN IF ADVISED OF THE
-             POSSIBILITY OF SUCH DAMAGES.
-
-             7. GENERAL
-
-             If any provision of this Agreement is invalid or
-             unenforceable under applicable law, it shall not affect
-             the validity or enforceability of the remainder of the
-             terms of this Agreement, and without further action by the
-             parties hereto, such provision shall be reformed to the
-             minimum extent necessary to make such provision valid and
-             enforceable.
-
-
-             If Recipient institutes patent litigation against a
-             Contributor with respect to a patent applicable to
-             software (including a cross-claim or counterclaim in a
-             lawsuit), then any patent licenses granted by that
-             Contributor to such Recipient under this Agreement shall
-             terminate as of the date such litigation is filed. In
-             addition, If Recipient institutes patent litigation
-             against any entity (including a cross-claim or
-             counterclaim in a lawsuit) alleging that the Program
-             itself (excluding combinations of the Program with other
-             software or hardware) infringes such Recipient's
-             patent(s), then such Recipient's rights granted under
-             Section 2(b) shall terminate as of the date such
-             litigation is filed.
-
-             All Recipient's rights under this Agreement shall
-             terminate if it fails to comply with any of the material
-             terms or conditions of this Agreement and does not cure
-             such failure in a reasonable period of time after becoming
-             aware of such noncompliance. If all Recipient's rights
-             under this Agreement terminate, Recipient agrees to cease
-             use and distribution of the Program as soon as reasonably
-             practicable. However, Recipient's obligations under this
-             Agreement and any licenses granted by Recipient relating
-             to the Program shall continue and survive.
-
-             Everyone is permitted to copy and distribute copies of
-             this Agreement, but in order to avoid inconsistency the
-             Agreement is copyrighted and may only be modified in the
-             following manner. The Agreement Steward reserves the right
-             to publish new versions (including revisions) of this
-             Agreement from time to time. No one other than the
-             Agreement Steward has the right to modify this Agreement.
-
-             IBM is the initial Agreement Steward. IBM may assign the
-             responsibility to serve as the Agreement Steward to a
-             suitable separate entity. Each new version of the
-             Agreement will be given a distinguishing version number.
-             The Program (including Contributions) may always be
-             distributed subject to the version of the Agreement under
-             which it was received. In addition, after a new version of
-             the Agreement is published, Contributor may elect to
-             distribute the Program (including its Contributions) under
-             the new version. Except as expressly stated in Sections
-             2(a) and 2(b) above, Recipient receives no rights or
-             licenses to the intellectual property of any Contributor
-             under this Agreement, whether expressly, by implication,
-             estoppel or otherwise. All rights in the Program not
-             expressly granted under this Agreement are reserved.
-
-
-             This Agreement is governed by the laws of the State of New
-             York and the intellectual property laws of the United
-             States of America. No party to this Agreement will bring a
-             legal action under this Agreement more than one year after
-             the cause of action arose. Each party waives its rights to
-             a jury trial in any resulting litigation.
-
-
-
-*/
-
-/* (C) COPYRIGHT International Business Machines Corp. 2001          */
+/* (C) COPYRIGHT International Business Machines Corp. 2001, 2009          */
 #include <sys/errno.h>
 #include <fcntl.h>
 #include <memory.h>
@@ -297,362 +13,406 @@ static const char rcsid[] = "$Header$";
 #include <strings.h>
 #include "ica_api.h"
 
-#define CRT_SIZE_CORRECTION_NEEDED 0
 #define KEY_BYTES ((key_bits + 7) / 8)
 #define KEY_BYTES_MAX 256
 
 extern int errno;
 
+void dump_array(char *, int);
+
 int main(int argc, char **argv)
 {
-   ICA_ADAPTER_HANDLE  adapter_handle;
-   ICA_KEY_RSA_CRT     crtkey;
-   ICA_KEY_RSA_MODEXPO wockey, wockey2;
-   unsigned char       decrypted[KEY_BYTES_MAX], encrypted[KEY_BYTES_MAX], original[KEY_BYTES_MAX];
-   unsigned char       regen_data[16];
-   int                 rc;
-   unsigned int        length, length2;
-   unsigned int        exponent_type = RSA_PUBLIC_FIXED, key_bits = 1024;
+	ICA_ADAPTER_HANDLE adapter_handle;
+	ICA_KEY_RSA_CRT crtkey;
+	ICA_KEY_RSA_MODEXPO wockey, wockey2;
+	unsigned char decrypted[KEY_BYTES_MAX], encrypted[KEY_BYTES_MAX],
+		      original[KEY_BYTES_MAX];
+	int rc;
+	unsigned int length, length2;
+	unsigned int exponent_type = RSA_PUBLIC_FIXED, key_bits = 1024;
 
-   void dump_array(caddr_t, int);
+	length = sizeof wockey;
+	length2 = sizeof wockey2;
+	bzero(&wockey, sizeof wockey);
+	bzero(&wockey2, sizeof wockey2);
 
-   if (argc > 1) {
-      key_bits = atoi(argv[1]);
-      printf("Using %u-bit keys and ", key_bits);
-      if (argc > 2) {
-         switch (argv[2][0]) {
-            case '3':
-               exponent_type = RSA_PUBLIC_3;
-               printf("exponent 3 . . .\n");
-               break;
-            case '6':
-               exponent_type = RSA_PUBLIC_65537;
-               printf("exponent 65537 . . .\n");
-               break;
-            case 'R':
-            case 'r':
-               exponent_type = RSA_PUBLIC_RANDOM;
-               printf("a random exponent . . .\n");
-               break;
-            default:
-               exponent_type = RSA_PUBLIC_FIXED;
-               printf("a fixed exponent . . .\n");
-         }
-      }
-   }
+	rc = icaOpenAdapter(0, &adapter_handle);
+	if (rc != 0) {
+		printf("icaOpenAdapter failed and returned %d (0x%x).\n", rc,
+		       rc);
+	}
+	exponent_type = RSA_PUBLIC_FIXED;
+	printf("a fixed exponent . . .\n");
+	rc = icaRandomNumberGenerate(adapter_handle, KEY_BYTES,
+				     wockey.keyRecord);
+	if (rc != 0) {
+	      	printf("icaRandomNumberGenerate failed and returned %d (0x%x)"
+		       ".\n", rc, rc);
+		return -1;   	
+	}		
+	wockey.nLength = KEY_BYTES / 2;
+	wockey.expLength = sizeof(unsigned long);
+ 	wockey.expOffset = SZ_HEADER_MODEXPO;
+	wockey.keyRecord[wockey.expLength - 1] |= 1;
+	if (argc > 1) {
+		key_bits = atoi(argv[1]);
+		if (key_bits > KEY_BYTES_MAX * 8) {
+			printf("The maximum key length is %d bits.",
+			       KEY_BYTES_MAX * 8);
+			exit(0);
+		}
+		wockey.modulusBitLength = key_bits;
+		printf("Using %u-bit keys and ", key_bits);
+		if (argc > 2) {
+			switch (argv[2][0]) {
+			case '3':
+				exponent_type = RSA_PUBLIC_3;
+				printf("exponent 3 . . .\n");
+				wockey.expLength = 1;
+				break;
+			case '6':
+				exponent_type = RSA_PUBLIC_65537;
+				printf("exponent 65537 . . .\n");
+				wockey.expLength = 3;
+				break;
+			case 'R':
+			case 'r':
+				exponent_type = RSA_PUBLIC_RANDOM;
+				printf("a random exponent . . .\n");
+				break;
+			default:
+				break;
+			}
+		}
+	}
 
-   rc = icaOpenAdapter(0, &adapter_handle);
-   if (rc != 0) {
-      printf("icaOpenAdapter failed and returned %d (0x%x).\n", rc, rc);
-   }
+	rc = icaRandomNumberGenerate(adapter_handle, sizeof(original),
+				     original);
+	if (rc != 0) {
+		printf("icaRandomNumberGenerate failed and returned %d (0x%x)"
+		       ".\n", rc, rc);
+		return rc;
+	}
+	original[0] = 0;
 
-   rc = icaRandomNumberGenerate(adapter_handle, sizeof original, original);
-   if (rc != 0) {
-      printf("icaRandomNumberGenerate failed and returned %d (0x%x).\n", rc, rc);
-   }
-   bzero(original, 3);
-   rc = icaRandomNumberGenerate(adapter_handle, sizeof regen_data, regen_data);
-   if (rc != 0) {
-      printf("icaRandomNumberGenerate failed and returned %d (0x%x).\n", rc, rc);
-   }
+	rc = icaRsaKeyGenerateModExpo(adapter_handle, key_bits, exponent_type,
+				      &length, &wockey, &length2, &wockey2);
+	if (rc != 0) {
+		printf("icaRsaKeyGenerateModExpo failed and returned %d (0x%x)"
+		       ".\n", rc, rc);
+		return rc;
+	}
 
-   length = sizeof wockey;
-   length2 = sizeof wockey2;
-   bzero(&wockey, sizeof wockey);
-   if (exponent_type == RSA_PUBLIC_FIXED) {
-      wockey.keyType = KEYTYPE_MODEXPO;
-      wockey.keyLength = sizeof wockey;
-      wockey.modulusBitLength = key_bits;
-      wockey.nLength = wockey.expLength = KEY_BYTES;
-      wockey.expOffset = SZ_HEADER_MODEXPO;
-      wockey.nOffset = wockey.expLength + wockey.expOffset;
-      rc = icaRandomNumberGenerate(adapter_handle, KEY_BYTES, wockey.keyRecord);
-      if (rc != 0) {
-         printf("icaRandomNumberGenerate failed and returned %d (0x%x).\n", rc, rc);
-      }
-      wockey.keyRecord[KEY_BYTES - 1] |= 1;
-/*      wockey.keyRecord[KEY_BYTES - 4] = 0x02;
-      wockey.keyRecord[KEY_BYTES - 3] = 0x90;
-      wockey.keyRecord[KEY_BYTES - 2] = 0xd7;
-      wockey.keyRecord[KEY_BYTES - 1] = 0x41;
-      wockey.keyRecord[KEY_BYTES - 1] |= 1; */
-/*      wockey.keyRecord[KEY_BYTES - 1] = 7; */
-   }
-   rc = icaRsaKeyGenerateModExpo(adapter_handle, key_bits, exponent_type,
-                                 &length, &wockey, &length2, &wockey2);
-   if (rc != 0) {
-      printf("icaRsaKeyGenerateModExpo failed and returned %d (0x%x).\n", rc, rc);
-   }
+	printf("Public key:\n");
+	dump_array((char *) wockey.keyRecord, 2 * KEY_BYTES);
+	printf("Private key:\n");
+	dump_array((char *) wockey2.keyRecord, 2 * KEY_BYTES);
 
-   printf("Public key:\n");
-   dump_array(wockey.keyRecord, 2 * KEY_BYTES);
-   printf("Private key:\n");
-   dump_array(wockey2.keyRecord, 2 * KEY_BYTES);
+	bzero(encrypted, KEY_BYTES);
+	length = KEY_BYTES;
+	printf("encrypt \n");
+	rc = icaRsaModExpo(adapter_handle, KEY_BYTES, original, &wockey,
+			   &length, encrypted);
+	if (rc != 0) {
+		printf("icaRsaModExpo failed and returned %d (0x%x).\n", rc, rc);
+		return rc;  
+	}
+	bzero(decrypted, KEY_BYTES);
+	length = KEY_BYTES;
+	printf("decrypt \n");
+	rc = icaRsaModExpo(adapter_handle, KEY_BYTES, encrypted, &wockey2,
+			   &length, decrypted);
+	if (rc != 0) {
+		printf("icaRsaModExpo failed and returned %d (0x%x).\n", rc,
+		       rc);
+		return rc;
+	}
 
-   bzero(encrypted, KEY_BYTES);
-   length = KEY_BYTES;
-   rc = icaRsaModExpo(adapter_handle, KEY_BYTES, original, &wockey, &length, encrypted);
-   if (rc != 0) {
-      printf("icaRsaModExpo failed and returned %d (0x%x).\n", rc, rc);
-   }
-   bzero(decrypted, KEY_BYTES);
-   length = KEY_BYTES;
-   rc = icaRsaModExpo(adapter_handle, KEY_BYTES, encrypted, &wockey2, &length, decrypted);
-   if (rc != 0) {
-      printf("icaRsaModExpo failed and returned %d (0x%x).\n", rc, rc);
-   }
+	printf("Original:\n");
+	dump_array((char *) original, KEY_BYTES);
+	printf("Result of encrypt:\n");
+	dump_array((char *) encrypted, KEY_BYTES);
+	printf("Result of decrypt:\n");
+	dump_array((char *) decrypted, KEY_BYTES);
+	if (memcmp(original, decrypted, KEY_BYTES) != 0) {
+		printf("This does not match the original plaintext.  Failure!\n");
+		icaCloseAdapter(adapter_handle);
+		return errno ? errno : -1;
+	} else {
+		printf("Success!  The key pair checks out.\n");
+		if (memcmp(original, encrypted, KEY_BYTES) == 0) {
+			printf("But the ciphertext equals the plaintext."
+			       "That can't be good.\n");
+			return -1;
+		}
+	}
+	fflush(stdout);
 
-   printf("Result of encrypt:\n");
-   dump_array(encrypted, KEY_BYTES);
-   printf("Result of decrypt:\n");
-   dump_array(decrypted, KEY_BYTES);
-   if (memcmp(original, decrypted, KEY_BYTES) != 0) {
-      printf("This does not match the original plaintext.  Failure!\n");
-      icaCloseAdapter(adapter_handle);
-      return errno ? errno : -1;
-   } else {
-      printf("Success!  The key pair checks out.\n");
-      if (memcmp(original, encrypted, KEY_BYTES) == 0) {
-         printf("But the ciphertext equals the plaintext.  That can't be good.\n");
-      }
-   }
-   fflush(stdout);
+	length = sizeof wockey;
+	length2 = sizeof crtkey;
+	bzero(&wockey, sizeof wockey);
+	wockey.expLength = sizeof(unsigned long);
+	if (exponent_type == RSA_PUBLIC_FIXED) {
+		wockey.keyType = KEYTYPE_MODEXPO;
+		wockey.keyLength = sizeof wockey;
+		wockey.modulusBitLength = key_bits;
+		wockey.nLength = KEY_BYTES;
+		wockey.expOffset = SZ_HEADER_MODEXPO;
+		wockey.expLength = sizeof (unsigned long);
+		wockey.nOffset = KEY_BYTES + wockey.expOffset;
+		rc = icaRandomNumberGenerate(adapter_handle, KEY_BYTES,
+					     wockey.keyRecord);
+		if (rc != 0) {
+			printf("icaRandomNumberGenerate failed and returned %d"
+			       "(0x%x).\n", rc, rc);
+			return rc;
+		}
+		wockey.keyRecord[wockey.expLength - 1] |= 1;
+	}
+	rc = icaRsaKeyGenerateCrt(adapter_handle, key_bits, exponent_type,
+				  &length, &wockey, &length2, &crtkey);
+	printf("wockey.modulusBitLength = %i, crtkey.modulusBitLength = %i"
+	       " \n", wockey.modulusBitLength, crtkey.modulusBitLength);
+	if (rc != 0) {
+		printf("icaRsaKeyGenerateCrt failed and returned %d (0x%x)"
+		       ".\n", rc, rc);
+		return rc;
+	}
 
-   length = sizeof wockey;
-   length2 = sizeof wockey2;
-   bzero(&wockey, sizeof wockey);
-   if (exponent_type == RSA_PUBLIC_FIXED) {
-      wockey.keyType = KEYTYPE_MODEXPO;
-      wockey.keyLength = sizeof wockey;
-      wockey.modulusBitLength = key_bits;
-      wockey.nLength = wockey.expLength = KEY_BYTES;
-      wockey.expOffset = SZ_HEADER_MODEXPO;
-      wockey.nOffset = wockey.expLength + wockey.expOffset;
-      rc = icaRandomNumberGenerate(adapter_handle, KEY_BYTES, wockey.keyRecord);
-      if (rc != 0) {
-         printf("icaRandomNumberGenerate failed and returned %d (0x%x).\n", rc, rc);
-      }
-      wockey.keyRecord[KEY_BYTES - 1] |= 1;
-/*      wockey.keyRecord[KEY_BYTES - 4] = 0x02;
-      wockey.keyRecord[KEY_BYTES - 3] = 0x90;
-      wockey.keyRecord[KEY_BYTES - 2] = 0xd7;
-      wockey.keyRecord[KEY_BYTES - 1] = 0x41;
-      wockey.keyRecord[KEY_BYTES - 1] |= 1; */
-/*      wockey.keyRecord[KEY_BYTES - 1] = 7; */
-   }
-   rc = icaRsaKeyRegenerateModExpo(adapter_handle, key_bits, exponent_type,
-                                   sizeof regen_data, regen_data,
-                                   &length, &wockey, &length2, &wockey2);
-   if (rc != 0) {
-      printf("icaRsaKeyRegenerateModExpo failed and returned %d (0x%x).\n", rc, rc);
-   }
+	printf("Public key:\n");
+	dump_array((char *) wockey.keyRecord, 2 * KEY_BYTES);
+	printf("Private key:\n");
+	dump_array((char *) crtkey.keyRecord, 5 * KEY_BYTES / 2 + 24);
 
-   printf("Public key:\n");
-   dump_array(wockey.keyRecord, 2 * KEY_BYTES);
-   printf("Private key:\n");
-   dump_array(wockey2.keyRecord, 2 * KEY_BYTES);
+	bzero(encrypted, KEY_BYTES);
+	length = KEY_BYTES;
+	rc = icaRsaModExpo(adapter_handle, KEY_BYTES, original, &wockey,
+			   &length, encrypted);
+	if (rc != 0)
+		printf("icaRsaModExpo failed and returned %d (0x%x).\n", rc, rc);
 
-   bzero(encrypted, KEY_BYTES);
-   length = KEY_BYTES;
-   rc = icaRsaModExpo(adapter_handle, KEY_BYTES, original, &wockey, &length, encrypted);
-   if (rc != 0) {
-      printf("icaRsaModExpo failed and returned %d (0x%x).\n", rc, rc);
-   }
-   bzero(decrypted, KEY_BYTES);
-   length = KEY_BYTES;
-   rc = icaRsaModExpo(adapter_handle, KEY_BYTES, encrypted, &wockey2, &length, decrypted);
-   if (rc != 0) {
-      printf("icaRsaModExpo failed and returned %d (0x%x).\n", rc, rc);
-   }
+	bzero(decrypted, KEY_BYTES);
+	length = KEY_BYTES;
+	rc = icaRsaCrt(adapter_handle, KEY_BYTES, encrypted, &crtkey, &length,
+		       decrypted);
+	if (rc != 0)
+		printf("icaRsaCrt failed and returned %d (0x%x).\n", rc, rc);
 
-   printf("Result of encrypt:\n");
-   dump_array(encrypted, KEY_BYTES);
-   printf("Result of decrypt:\n");
-   dump_array(decrypted, KEY_BYTES);
-   if (memcmp(original, decrypted, KEY_BYTES) != 0) {
-      printf("This does not match the original plaintext.  Failure!\n");
-      icaCloseAdapter(adapter_handle);
-      return errno ? errno : -1;
-   } else {
-      printf("Success!  The key pair checks out.\n");
-      if (memcmp(original, encrypted, KEY_BYTES) == 0) {
-         printf("But the ciphertext equals the plaintext.  That can't be good.\n");
-      }
-   }
-   fflush(stdout);
+	printf("Original:\n");
+	dump_array((char *) original, KEY_BYTES);
+	printf("Result of encrypt:\n");
+	dump_array((char *) encrypted, KEY_BYTES);
+	printf("Result of decrypt:\n");
+	dump_array((char *) decrypted, KEY_BYTES);
+	if (memcmp(original, decrypted, KEY_BYTES) != 0) {
+		printf("This does not match the original plaintext.  Failure!\n");
+		icaCloseAdapter(adapter_handle);
+		return errno ? errno : -1;
+	} else {
+		printf("Success!  The key pair checks out.\n");
+		if (memcmp(original, encrypted, KEY_BYTES) == 0) {
+			printf("But the ciphertext equals the plaintext.  That can't be good.\n");
+			return -1;
+		}
+	}
+	fflush(stdout);
 
-   length = sizeof wockey;
-   length2 = sizeof crtkey;
-   bzero(&wockey, sizeof wockey);
-   if (exponent_type == RSA_PUBLIC_FIXED) {
-      wockey.keyType = KEYTYPE_MODEXPO;
-      wockey.keyLength = sizeof wockey;
-      wockey.modulusBitLength = key_bits;
-      wockey.nLength = wockey.expLength = KEY_BYTES;
-      wockey.expOffset = SZ_HEADER_MODEXPO;
-      wockey.nOffset = wockey.expLength + wockey.expOffset;
-      rc = icaRandomNumberGenerate(adapter_handle, KEY_BYTES, wockey.keyRecord);
-      if (rc != 0) {
-         printf("icaRandomNumberGenerate failed and returned %d (0x%x).\n", rc, rc);
-      }
-      wockey.keyRecord[KEY_BYTES - 1] |= 1;
-/*      wockey.keyRecord[KEY_BYTES - 4] = 0x02;
-      wockey.keyRecord[KEY_BYTES - 3] = 0x90;
-      wockey.keyRecord[KEY_BYTES - 2] = 0xd7;
-      wockey.keyRecord[KEY_BYTES - 1] = 0x41;
-      wockey.keyRecord[KEY_BYTES - 1] |= 1; */
-/*      wockey.keyRecord[KEY_BYTES - 1] = 7; */
-   }
-   rc = icaRsaKeyGenerateCrt(adapter_handle, key_bits, exponent_type,
-                             &length, &wockey, &length2, &crtkey);
-   if (rc != 0) {
-      printf("icaRsaKeyGenerateCrt failed and returned %d (0x%x).\n", rc, rc);
-   }
-#if CRT_SIZE_CORRECTION_NEEDED
-   memcpy((unsigned char *) crtkey.keyRecord,
-          (unsigned char *) crtkey.keyRecord + 24, KEY_BYTES / 2 + 8);
-   memcpy((unsigned char *) crtkey.keyRecord + KEY_BYTES / 2 + 8,
-          (unsigned char *) crtkey.keyRecord + KEY_BYTES / 2 + 32, KEY_BYTES / 2);
-   memcpy((unsigned char *) crtkey.keyRecord + KEY_BYTES + 8,
-          (unsigned char *) crtkey.keyRecord + KEY_BYTES + 56, KEY_BYTES / 2 + 8);
-   memcpy((unsigned char *) crtkey.keyRecord + 3 * KEY_BYTES / 2 + 16,
-          (unsigned char *) crtkey.keyRecord + 3 * KEY_BYTES / 2 + 64, KEY_BYTES / 2);
-   memcpy((unsigned char *) crtkey.keyRecord + 2 * KEY_BYTES + 16,
-          (unsigned char *) crtkey.keyRecord + 2 * KEY_BYTES + 88, KEY_BYTES / 2 + 8);
-#endif
+	printf("TEST NEW API - MOD_EXPO\n");
+	rc = ica_close_adapter(adapter_handle);
+	printf("ica_close_adapter rc = %i\n", rc);
+	
+	rc = ica_open_adapter(&adapter_handle);
+	if (rc)
+		printf("Adapter not open\n");
+	else
+		printf("Adapter open\n");
 
-   printf("Public key:\n");
-   dump_array(wockey.keyRecord, 2 * KEY_BYTES);
-   printf("Private key:\n");
-   dump_array(crtkey.keyRecord, 5 * KEY_BYTES / 2 + 24);
+	ica_rsa_key_mod_expo_t modexpo_public_key;
+	unsigned char modexpo_public_n[KEY_BYTES];
+	bzero(modexpo_public_n, KEY_BYTES);
+	unsigned char modexpo_public_e[KEY_BYTES];	
+	bzero(modexpo_public_e, KEY_BYTES);
+	modexpo_public_key.modulus = modexpo_public_n;
+	modexpo_public_key.exponent = modexpo_public_e;
+	modexpo_public_key.key_length = KEY_BYTES;
+	if (exponent_type == RSA_PUBLIC_65537)
+		*(unsigned long*)((unsigned char *)modexpo_public_key.exponent +
+				modexpo_public_key.key_length -
+				sizeof(unsigned long)) = 65537;
+	if (exponent_type == RSA_PUBLIC_3)
+		*(unsigned long*)((unsigned char *)modexpo_public_key.exponent +
+				modexpo_public_key.key_length -
+				sizeof(unsigned long)) = 3;
 
-   bzero(encrypted, KEY_BYTES);
-   length = KEY_BYTES;
-   rc = icaRsaModExpo(adapter_handle, KEY_BYTES, original, &wockey, &length, encrypted);
-   if (rc != 0) {
-      printf("icaRsaModExpo failed and returned %d (0x%x).\n", rc, rc);
-   }
-   bzero(decrypted, KEY_BYTES);
-   length = KEY_BYTES;
-   rc = icaRsaCrt(adapter_handle, KEY_BYTES, encrypted, &crtkey, &length, decrypted);
-   if (rc != 0) {
-      printf("icaRsaCrt failed and returned %d (0x%x).\n", rc, rc);
-   }
+	ica_rsa_key_mod_expo_t modexpo_private_key;
+	unsigned char modexpo_private_n[KEY_BYTES];
+	bzero(modexpo_private_n, KEY_BYTES);
+	unsigned char modexpo_private_e[KEY_BYTES];	
+	bzero(modexpo_private_e, KEY_BYTES);
+	modexpo_private_key.modulus = modexpo_private_n;
+	modexpo_private_key.exponent = modexpo_private_e;
+	modexpo_private_key.key_length = KEY_BYTES;
 
-   printf("Result of encrypt:\n");
-   dump_array(encrypted, KEY_BYTES);
-   printf("Result of decrypt:\n");
-   dump_array(decrypted, KEY_BYTES);
-   if (memcmp(original, decrypted, KEY_BYTES) != 0) {
-      printf("This does not match the original plaintext.  Failure!\n");
-      icaCloseAdapter(adapter_handle);
-      return errno ? errno : -1;
-   } else {
-      printf("Success!  The key pair checks out.\n");
-      if (memcmp(original, encrypted, KEY_BYTES) == 0) {
-         printf("But the ciphertext equals the plaintext.  That can't be good.\n");
-      }
-   }
-   fflush(stdout);
+	rc = ica_rsa_key_generate_mod_expo(adapter_handle,
+					   key_bits,
+					   &modexpo_public_key,
+					   &modexpo_private_key);
+	if (rc)
+		printf("ica_rsa_key_generate_mod_expo rc = %i\n",rc);
 
-   length = sizeof wockey;
-   length2 = sizeof crtkey;
-   bzero(&wockey, sizeof wockey);
-   if (exponent_type == RSA_PUBLIC_FIXED) {
-      wockey.keyType = KEYTYPE_MODEXPO;
-      wockey.keyLength = sizeof wockey;
-      wockey.modulusBitLength = key_bits;
-      wockey.nLength = wockey.expLength = KEY_BYTES;
-      wockey.expOffset = SZ_HEADER_MODEXPO;
-      wockey.nOffset = wockey.expLength + wockey.expOffset;
-      rc = icaRandomNumberGenerate(adapter_handle, KEY_BYTES, wockey.keyRecord);
-      if (rc != 0) {
-         printf("icaRandomNumberGenerate failed and returned %d (0x%x).\n", rc, rc);
-      }
-      wockey.keyRecord[KEY_BYTES - 1] |= 1;
-/*      wockey.keyRecord[KEY_BYTES - 4] = 0x02;
-      wockey.keyRecord[KEY_BYTES - 3] = 0x90;
-      wockey.keyRecord[KEY_BYTES - 2] = 0xd7;
-      wockey.keyRecord[KEY_BYTES - 1] = 0x41;
-      wockey.keyRecord[KEY_BYTES - 1] |= 1; */
-/*      wockey.keyRecord[KEY_BYTES - 1] = 7; */
-   }
-   rc = icaRsaKeyRegenerateCrt(adapter_handle, key_bits, exponent_type,
-                               sizeof regen_data, regen_data,
-                               &length, &wockey, &length2, &crtkey);
-   if (rc != 0) {
-      printf("icaRsaKeyRegenerateCrt failed and returned %d (0x%x).\n", rc, rc);
-   }
-#if CRT_SIZE_CORRECTION_NEEDED
-   memcpy((unsigned char *) crtkey.keyRecord,
-          (unsigned char *) crtkey.keyRecord + 24, KEY_BYTES / 2 + 8);
-   memcpy((unsigned char *) crtkey.keyRecord + KEY_BYTES / 2 + 8,
-          (unsigned char *) crtkey.keyRecord + KEY_BYTES / 2 + 32, KEY_BYTES / 2);
-   memcpy((unsigned char *) crtkey.keyRecord + KEY_BYTES + 8,
-          (unsigned char *) crtkey.keyRecord + KEY_BYTES + 56, KEY_BYTES / 2 + 8);
-   memcpy((unsigned char *) crtkey.keyRecord + 3 * KEY_BYTES / 2 + 16,
-          (unsigned char *) crtkey.keyRecord + 3 * KEY_BYTES / 2 + 64, KEY_BYTES / 2);
-   memcpy((unsigned char *) crtkey.keyRecord + 2 * KEY_BYTES + 16,
-          (unsigned char *) crtkey.keyRecord + 2 * KEY_BYTES + 88, KEY_BYTES / 2 + 8);
-#endif
+	printf("Public key:\n");
+	dump_array((char *) (char *)modexpo_public_key.exponent, KEY_BYTES);
+	dump_array((char *) (char *)modexpo_public_key.modulus, KEY_BYTES);
+	printf("Private key:\n");
+	dump_array((char *) (char *)modexpo_private_key.exponent, KEY_BYTES);
+	dump_array((char *) (char *)modexpo_private_key.modulus, KEY_BYTES);
 
-   printf("Public key:\n");
-   dump_array(wockey.keyRecord, 2 * KEY_BYTES);
-   printf("Private key:\n");
-   dump_array(crtkey.keyRecord, 5 * KEY_BYTES / 2 + 24);
+	bzero(encrypted, KEY_BYTES);
+	length = KEY_BYTES;
+	printf("encrypt \n");
+	rc = ica_rsa_mod_expo(adapter_handle, original, &modexpo_public_key,
+			      encrypted);
 
-   bzero(encrypted, KEY_BYTES);
-   length = KEY_BYTES;
-   rc = icaRsaModExpo(adapter_handle, KEY_BYTES, original, &wockey, &length, encrypted);
-   if (rc != 0) {
-      printf("icaRsaModExpo failed and returned %d (0x%x).\n", rc, rc);
-   }
-   bzero(decrypted, KEY_BYTES);
-   length = KEY_BYTES;
-   rc = icaRsaCrt(adapter_handle, KEY_BYTES, encrypted, &crtkey, &length, decrypted);
-   if (rc != 0) {
-      printf("icaRsaCrt failed and returned %d (0x%x).\n", rc, rc);
-   }
+	if (rc != 0) {
+		printf("ica_rsa_mod_expo failed and returned %d (0x%x).\n", rc,
+		       rc);
+		return rc;
+	}
+	bzero(decrypted, KEY_BYTES);
+	length = KEY_BYTES;
+	printf("decrypt \n");
+	rc = ica_rsa_mod_expo(adapter_handle, encrypted, &modexpo_private_key,
+			      decrypted);
+	if (rc != 0) {
+		printf("ica_rsa_mod_expo failed and returned %d (0x%x).\n", rc,
+		       rc);
+		return rc;
+	}
 
-   printf("Result of encrypt:\n");
-   dump_array(encrypted, KEY_BYTES);
-   printf("Result of decrypt:\n");
-   dump_array(decrypted, KEY_BYTES);
-   if (memcmp(original, decrypted, KEY_BYTES) != 0) {
-      printf("This does not match the original plaintext.  Failure!\n");
-      icaCloseAdapter(adapter_handle);
-      return errno ? errno : -1;
-   } else {
-      printf("Success!  The key pair checks out.\n");
-      if (memcmp(original, encrypted, KEY_BYTES) == 0) {
-         printf("But the ciphertext equals the plaintext.  That can't be good.\n");
-      }
-   }
-   fflush(stdout);
+	printf("Original:\n");
+	dump_array((char *) original, KEY_BYTES);
+	printf("Result of encrypt:\n");
+	dump_array((char *) encrypted, KEY_BYTES);
+	printf("Result of decrypt:\n");
+	dump_array((char *) decrypted, KEY_BYTES);
+	if (memcmp(original, decrypted, KEY_BYTES) != 0) {
+		printf("This does not match the original plaintext.  Failure!\n");
+		return -1;
+	} else {
+		printf("Success!  The key pair checks out.\n");
+		if (memcmp(original, encrypted, KEY_BYTES) == 0) {
+			printf("But the ciphertext equals the plaintext.  That can't be good.\n");
+			return -1;
+		}
+	}
+	fflush(stdout);
 
-   icaCloseAdapter(adapter_handle);
-   return 0;
+	printf("TEST NEW API - CRT\n");
+	ica_rsa_key_mod_expo_t public_key;
+	ica_rsa_key_crt_t private_key;
+
+	unsigned char public_n[KEY_BYTES];	
+	bzero(public_n, KEY_BYTES);
+	unsigned char public_e[KEY_BYTES];	
+	bzero(public_e, KEY_BYTES);
+	public_key.modulus = public_n;
+	public_key.exponent = public_e;
+	public_key.key_length = KEY_BYTES;
+
+	unsigned char private_p[(key_bits + 7) / (8 * 2) + 8];
+	bzero(private_p, KEY_BYTES + 1);
+	unsigned char private_q[(key_bits + 7) / (8 * 2)];
+	bzero(private_q, KEY_BYTES);
+	unsigned char private_dp[(key_bits + 7) / (8 * 2) + 8];
+	bzero(private_dp, KEY_BYTES + 1);
+	unsigned char private_dq[(key_bits + 7) / (8 * 2)];
+	bzero(private_dq, KEY_BYTES);
+	unsigned char private_qInverse[(key_bits + 7) / (8 * 2) + 8];
+	bzero(private_qInverse, KEY_BYTES + 1);
+	private_key.p = private_p;
+	private_key.q = private_q;
+	private_key.dp = private_dp;
+	private_key.dq = private_dq;
+	private_key.qInverse = private_qInverse;
+	private_key.key_length = (key_bits + 7) / 8;
+
+	if (exponent_type == RSA_PUBLIC_65537)
+                *(unsigned long*)((unsigned char *)public_key.exponent +
+                                public_key.key_length -
+                                sizeof(unsigned long)) = 65537;
+        if (exponent_type == RSA_PUBLIC_3)
+                *(unsigned long*)((unsigned char *)public_key.exponent +
+                                public_key.key_length -
+                                sizeof(unsigned long)) = 3;
+	
+	rc = ica_rsa_key_generate_crt(adapter_handle, key_bits, &public_key,
+				      &private_key);
+	if (rc != 0) {
+		printf("ica_rsa_key_generate_crt failed and returned %d (0x%x)"
+		       ".\n", rc, rc);
+		return rc;
+	}
+	
+	printf("Public key:\n");
+	dump_array((char *) (char *)&public_key, 2 * KEY_BYTES);
+	printf("Private key:\n");
+	dump_array((char *) (char *)&private_key, 5 * KEY_BYTES / 2 + 24);
+
+	bzero(encrypted, KEY_BYTES);
+	length = KEY_BYTES;
+	rc = ica_rsa_mod_expo(adapter_handle, original, &public_key, encrypted);
+	if (rc != 0) {
+		printf("ica_rsa_mod_expo failed and returned %d (0x%x).\n",
+		       rc, rc);
+		return rc;
+	}
+	bzero(decrypted, KEY_BYTES);
+	length = KEY_BYTES;
+	rc = ica_rsa_crt(adapter_handle, encrypted, &private_key, decrypted);
+	if (rc != 0) {
+		printf("icaRsaCrt failed and returned %d (0x%x).\n", rc, rc);
+		return rc;
+	}
+
+	printf("Original:\n");
+	dump_array((char *) original, KEY_BYTES);
+	printf("Result of encrypt:\n");
+	dump_array((char *) encrypted, KEY_BYTES);
+	printf("Result of decrypt:\n");
+	dump_array((char *) decrypted, KEY_BYTES);
+	if (memcmp(original, decrypted, KEY_BYTES) != 0) {
+		printf("This does not match the original plaintext."
+		       "Failure!\n");
+	} else {
+		printf("Success!  The key pair checks out.\n");
+		if (memcmp(original, encrypted, KEY_BYTES) == 0) {
+			printf("But the ciphertext equals the plaintext."
+			       "That can't be good.\n");
+		}
+	}
+	fflush(stdout);
+	ica_close_adapter(adapter_handle);
+	return 0;
 }
 
 void dump_array(char *ptr, int size)
 {
-   char *ptr_end;
-   unsigned char *h;
-   int i = 1;
+	char *ptr_end;
+	unsigned char *h;
+	int i = 1;
 
-
-   h = ptr;
-   ptr_end = ptr + size;
-   while (h < (unsigned char *)ptr_end) {
-      printf("0x%02x ",(unsigned char ) *h);
-      h++;
-      if (i == 8) {
-         printf("\n");
-         i = 1;
-      } else {
-         ++i;
-      }
-   }
-   printf("\n");
+	h = ptr;
+	ptr_end = ptr + size;
+	while (h < (unsigned char *)ptr_end) {
+		printf("0x%02x ",(unsigned char ) *h);
+		h++;
+		if (i == 8) {
+			printf("\n");
+			i = 1;
+		} else {
+			++i;
+		}
+	}
+	printf("\n");
 }
 

@@ -1,5 +1,5 @@
 Name:          libica 
-Version:       1.3.9.1
+Version:       2.0
 Release:       1%{?dist}
 Summary:       Interface library to the ICA device driver 
 
@@ -12,8 +12,8 @@ BuildRoot:     %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 BuildRequires: autoconf automake libtool
 
 %description
-Interface library routines used by IBM modules to interface to the IBM
-eServer Cryptographic Accelerator (ICA).
+Interface library on Linux for IBM System z to utilize CPACF
+functions and cryptographic processors. 
 
 
 %package devel
@@ -22,8 +22,8 @@ Group:         Libraries/Crypto
 Requires:      libica = %{version}-%{release}, glibc-devel
 
 %description devel
-Interface library routines used by IBM modules to interface to the IBM
-eServer Cryptographic Accelerator (ICA).
+Interface library on Linux for IBM System z to utilize CPACF
+functions and cryptographic processors. 
 
 
 %prep
@@ -48,7 +48,7 @@ rm -rf $RPM_BUILD_ROOT
 
 %files
 %defattr(-,root,root,-)
-%doc LICENSE README INSTALL
+%doc LICENSE INSTALL
 %{_bindir}/*
 %attr(755,root,root) %{_libdir}/*
 
@@ -58,6 +58,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_includedir}/ica_api.h
 
 %changelog
+* Wed Feb 4 2009 Felix Beck <felix.beck@de.ibm.com
+- version 2.0
 * Fri Aug 4 2006 Daniel H Jones <danjones@us.ibm.com>
 - initial file created
-

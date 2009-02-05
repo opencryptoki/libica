@@ -1,7 +1,7 @@
 #                                               -*- Autoconf -*-
 # Process this file with autoconf to produce a configure script.
 
-AC_INIT(libica, 1.3.9.1, felix.beck@de.ibm.com)
+AC_INIT(libica, 2.0, felix.beck@de.ibm.com)
 
 cmdline_CFLAGS="$CFLAGS"
 
@@ -22,7 +22,9 @@ AC_PROG_LIBTOOL
 
 # Checks for header files.
 AC_HEADER_STDC
-AC_CHECK_HEADERS([fcntl.h memory.h stdlib.h string.h strings.h sys/ioctl.h unistd.h])
+AC_CHECK_HEADERS([fcntl.h memory.h stdlib.h string.h strings.h sys/ioctl.h unistd.h \
+		  errno.h stdio.h pthread.h semaphore.h openssl/sha.h openssl/aes.h \
+		  openssl/rand.h openssl/rsa.h linux/types.h sys/ioctl.h])
 case "$target" in
      *s390*)
           AC_CHECK_HEADERS(openssl/des.h)
@@ -53,10 +55,10 @@ CFLAGS="$cmdline_CFLAGS"
 
 case $target in
      *s390x*)
-          CFLAGS="$CFLAGS -D_LINUX_S390X_ -D_LINUX_S390_" 
+          CFLAGS="$CFLAGS -D_LINUX_S390X_ -D_LINUX_S390_ -Wall" 
           ;;
      *s390*)
-          CFLAGS="$CFLAGS -D_LINUX_S390_" 
+          CFLAGS="$CFLAGS -D_LINUX_S390_ -m31 -Wall" 
           ;;
 esac
 
