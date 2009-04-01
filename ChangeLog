@@ -1,3 +1,6 @@
+v2.0.1
+Add locking for shared memory segment, which is needed when icastats
+is linked dynamically against libica.
 v2.0
 Substitute software fallbacks with lowlevel OpenSSL function calls.
 Rewrite most of libica.

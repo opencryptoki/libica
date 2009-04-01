@@ -14,6 +14,7 @@
 #include <sys/types.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
+#include <sys/file.h>
 #include <fcntl.h>
 #include "include/icastats.h"
 
@@ -23,7 +24,8 @@ typedef struct statis_entry {
 } stats_entry_t;
 
 stats_entry_t *stats = 0;
-int stats_refcounter = 0;
+int *stats_ref_counter = 0;
+int stats_shm_handle = 0;
 
 void atomic_add(int *x, int i)
 {
@@ -40,34 +42,63 @@ void atomic_add(int *x, int i)
 
 int stats_mmap()
 {
+	/* Use flock to avoid races between open and close of shm by different
+	 * processes. Put reference counter into shm to check how much
+	 * processes are accesing the shm. Additionaly a global and a local
+	 * handle for the shm are used to prevend different threads from
+	 * overriding their shm handle one another.
+	 */
 	if (!stats) {
-		int stats_shm_handle = shm_open(STATS_SHM_ID, O_CREAT | O_RDWR,
-						S_IRUSR | S_IWUSR | S_IRGRP |
-						S_IWGRP | S_IROTH | S_IWOTH);
-		if (stats_shm_handle == -1)
+		int local_stats_shm_handle = shm_open(STATS_SHM_ID, O_CREAT | O_RDWR,
+		                            S_IRUSR | S_IWUSR | S_IRGRP |
+		                            S_IWGRP | S_IROTH | S_IWOTH);
+		if (local_stats_shm_handle == -1)
 			return -1;
-		if (ftruncate(stats_shm_handle, STATS_SHM_SIZE) == -1)
+		if (ftruncate(local_stats_shm_handle, STATS_SHM_SIZE) == -1)
 			return -1;
-		stats = (stats_entry_t *) mmap(NULL, STATS_SHM_SIZE, PROT_READ |
-					       PROT_WRITE, MAP_SHARED,
-					       stats_shm_handle, 0);
-		if (stats == MAP_FAILED) {
-			stats = 0;
+
+		if (flock(local_stats_shm_handle, LOCK_EX) == -1)
+			return -1;
+		if (stats_shm_handle != 0) {
+			flock(local_stats_shm_handle, LOCK_UN);
+			return 0;
+		}
+		stats_ref_counter = (int *) mmap(NULL, STATS_SHM_SIZE, PROT_READ |
+					         PROT_WRITE, MAP_SHARED,
+					         local_stats_shm_handle, 0);
+		if (stats_ref_counter == MAP_FAILED) {
+			stats_ref_counter = 0;
+			flock(local_stats_shm_handle, LOCK_UN);
 			return -1;
 		}
-	} else
-		atomic_add(&stats_refcounter, 1);
+		++(*stats_ref_counter);
+		stats = (stats_entry_t *) (stats_ref_counter + 1);
+		stats_shm_handle = local_stats_shm_handle;
+		flock(local_stats_shm_handle, LOCK_UN);
+	} else {
+		if (flock(stats_shm_handle, LOCK_EX) == -1)
+			return -1;
+		++(*stats_ref_counter);
+		flock(stats_shm_handle, LOCK_UN);
+	}
 
 	return 0;
 }
 
 void stats_munmap()
 {
-	if (--stats_refcounter == 0) {
-		munmap(stats, STATS_SHM_SIZE);
+	if (!stats)
+		return;
+
+	if (flock(stats_shm_handle, LOCK_EX) == -1)
+		return -1;
+	if (--(*stats_ref_counter) == 0) {
+		munmap(stats_ref_counter, STATS_SHM_SIZE);
 		shm_unlink(STATS_SHM_ID);
 		stats = 0;
 	}
+	else
+		flock(stats_shm_handle, LOCK_UN);
 }
 
 uint32_t stats_query(stats_fields_t field, int hardware)

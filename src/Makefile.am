@@ -10,11 +10,11 @@ libica_la_SOURCES = icalinux.c ica_api.c init.c icastats_shared.c \
 
 bin_PROGRAMS = icainfo icastats
 
-icainfo_LDFLAGS = -static -lica
+icainfo_LDADD = libica.la
 
 icainfo_SOURCES = icainfo.c
 
-icastats_LDFLAGS = -static -lica
+icastats_LDADD = libica.la
 
 icastats_SOURCES = icastats.c
 

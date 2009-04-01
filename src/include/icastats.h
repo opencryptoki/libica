@@ -35,7 +35,7 @@ typedef enum stats_fields {
 } stats_fields_t;
 
 #define STATS_SHM_ID "/libicai_stats"
-#define STATS_SHM_SIZE sizeof(stats_entry_t) * ICA_NUM_STATS
+#define STATS_SHM_SIZE (sizeof(stats_entry_t) * ICA_NUM_STATS + sizeof(int))
 
 extern int stats_mmap();
 extern void stats_munmap();
