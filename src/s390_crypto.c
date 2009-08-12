@@ -197,6 +197,23 @@ int s390_stckf_hw(void *buf)
 	return cc;
 }
 
+int s390_stcke_hw(void *buf)
+{
+	register int cc = 0;
+
+	asm volatile(".insn     s,0xb2780000,%0"
+		     : "=m" (*((unsigned long long *)buf)) : : "cc");
+	return cc;
+}
+
+inline int s390_stck(void *buf)
+{
+#ifdef _LINUX_S390X_
+	return s390_stckf_hw(buf);
+#endif
+	return s390_stcke_hw(buf);
+}
+
 static inline int __stfle(unsigned long long *list, int doublewords)
 {
         typedef struct { unsigned long long _[doublewords]; } addrtype;

@@ -1504,8 +1504,8 @@ unsigned int ica_3des_decrypt(unsigned int mode,
  * Pointer to a valid 16 byte initialization vector when using CBC mode.
  * @param key_length
  * Length of the AES key being used.
- * @param des_key
- * Pointer to a AES key.
+ * @param aes_key
+ * Pointer to an AES key.
  * @param output_data
  * Pointer to the buffer to contain the resulting encrypted data. Must be a
  * multiple of the cipher block and at least as big as the buffer for
@@ -1539,8 +1539,8 @@ unsigned int ica_aes_encrypt(unsigned int mode,
  * Pointer to a valid 16 byte initialization vector when using CBC mode.
  * @param key_length
  * Length of the AES key being used.
- * @param des_key
- * Pointer to a AES key.
+ * @param aes_key
+ * Pointer to an AES key.
  * @param output_data
  * Pointer to the buffer to contain the resulting decrypted data. Must be a
  * multiple of the cipher block and at least as big as the buffer for

@@ -162,9 +162,8 @@ int test_aes128_old_api(int mode)
 	bzero(key, sizeof(key));
 
 	unsigned int length = 64;
-	unsigned int to_next_block = 0;
-	unsigned char *decrypt = malloc(length + to_next_block);
-	unsigned char *encrypt = malloc(length + to_next_block);
+	unsigned char *decrypt = malloc(length);
+	unsigned char *encrypt = malloc(length);
 	unsigned char *original = malloc(length);
 
 	rc = ica_random_number_generate(length, original);
@@ -173,7 +172,7 @@ int test_aes128_old_api(int mode)
 		return rc;
 	}
 
-	rc = ica_random_number_generate(AES_KEY_LEN128, key);
+	rc = ica_random_number_generate(AES_KEY_LEN128, (unsigned char *) key);
 	if (rc) {
 		printf("ica_random_number_generate returned rc = %i\n", rc);
 		return rc;
@@ -182,7 +181,7 @@ int test_aes128_old_api(int mode)
 	i = length;
 	rc = icaAesEncrypt(adapter_handle, mode, length,
 			   original, &iv, AES_KEY_LEN128,
-			   (ICA_KEY_AES_SINGLE *)&key, &i, encrypt);
+			   (unsigned char *)key, &i, (unsigned char *)encrypt);
 	if (rc) {
 		printf("\nOriginal data:\n");
 		dump_array((char *) original, length);
@@ -198,17 +197,17 @@ int test_aes128_old_api(int mode)
 	}
 
 	bzero(iv, sizeof(iv));
-	i = length + to_next_block;
-	rc = icaAesDecrypt(adapter_handle, mode, length + to_next_block,
+	i = length;
+	rc = icaAesDecrypt(adapter_handle, mode, length,
 			   encrypt, &iv, AES_KEY_LEN128,
-			   (unsigned char *)&key, &i, decrypt);
+			   (unsigned char *)key, &i, (unsigned char *) decrypt);
 	if (rc) {
 		printf("\nOriginal data:\n");
 		dump_array((char *) original, length);
 		printf("KEY: \n");
 		dump_array((char *) key, AES_KEY_LEN128);
 		printf("\nEncrypted data:\n");
-		dump_array((char *) encrypt, length + to_next_block);
+		dump_array((char *) encrypt, length);
 		printf("icaAesDecrypt failed with errno %d (0x%x).\n", rc, rc);
 		goto free;	
 	}
@@ -219,9 +218,9 @@ int test_aes128_old_api(int mode)
 		printf("KEY: \n");
 		dump_array((char *) key, AES_KEY_LEN128);
 		printf("\nEncrypted data:\n");
-		dump_array((char *) encrypt, length + to_next_block);
+		dump_array((char *) encrypt, length);
 		printf("\nDecrypted data:\n");
-		dump_array((char *) decrypt, length + to_next_block);
+		dump_array((char *) decrypt, length);
 		printf("This does NOT match the original data.\n");
 		rc = -1;
 		goto free;
@@ -233,9 +232,189 @@ int test_aes128_old_api(int mode)
 		printf("KEY: \n");
 		dump_array((char *) key, AES_KEY_LEN128);
 		printf("\nEncrypted data:\n");
-		dump_array((char *) encrypt, length + to_next_block);
+		dump_array((char *) encrypt, length);
 		printf("\nDecrypted data:\n");
-		dump_array((char *) decrypt, length + to_next_block);
+		dump_array((char *) decrypt, length);
+		printf("decrypt and encrypt are the same\n");
+		rc = -1;
+		goto free;
+
+   	} else {
+		printf("Successful!\n");
+	}
+	free:
+		free(original);
+		free(encrypt);
+		free(decrypt);
+
+   return rc;
+}
+
+int test_aes128_new_api(int mode)
+{
+	ica_aes_vector_t iv;
+	unsigned char key[AES_KEY_LEN128];
+	int rc = 0;
+	unsigned char dec_text[sizeof(NIST_TEST_DATA)],
+	              enc_text[sizeof(NIST_TEST_DATA)];
+
+	bzero(dec_text, sizeof(dec_text));
+	bzero(enc_text, sizeof(enc_text));
+	bzero(iv, sizeof(iv));
+	bcopy(NIST_KEY1, key, sizeof(NIST_KEY1));
+
+	rc = ica_aes_encrypt(mode, sizeof(NIST_TEST_DATA), NIST_TEST_DATA, &iv,
+			     AES_KEY_LEN128, key, enc_text);
+	if (rc) {
+		printf("key \n");
+		dump_array((char *) key, sizeof(NIST_KEY1));
+		printf("\nOriginal data:\n");
+		dump_array((char *) NIST_TEST_DATA, sizeof(NIST_TEST_DATA));
+		printf("test iv\n");
+		dump_array((char *) &iv, sizeof(ica_aes_vector_t));
+		printf("key\n");
+		dump_array((char *) key, AES_KEY_LEN128);
+		printf("ica_aes_encrypt failed with errno %d (0x%x).\n", rc, rc);
+		return 1;
+	}
+
+	if (memcmp(enc_text, NIST_TEST_RESULT, sizeof(NIST_TEST_RESULT)) != 0) {
+		printf("key \n");
+		dump_array((char *) key, sizeof(NIST_KEY1));
+		printf("\nOriginal data:\n");
+		dump_array((char *) NIST_TEST_DATA, sizeof(NIST_TEST_DATA));
+		printf("test iv\n");
+		dump_array((char *) &iv, sizeof(ica_aes_vector_t));
+		printf("key\n");
+		dump_array((char *) key, AES_KEY_LEN128);
+		printf("\nEncrypted data:\n");
+		dump_array((char *) enc_text, sizeof(enc_text));
+		printf("This does NOT match the known result.\n");
+		return 1;
+	} else {
+		printf("Yep, it's what it should be.\n");
+	}
+
+	bzero(iv, sizeof(iv));
+	rc = ica_aes_decrypt(mode, sizeof(enc_text), enc_text, &iv,
+			     AES_KEY_LEN128, key, dec_text);
+	if (rc) {
+		printf("key \n");
+		dump_array((char *) key, sizeof(NIST_KEY1));
+		printf("\nOriginal data:\n");
+		dump_array((char *) NIST_TEST_DATA, sizeof(NIST_TEST_DATA));
+		printf("test iv\n");
+		dump_array((char *) &iv, sizeof(ica_aes_vector_t));
+		printf("key\n");
+		dump_array((char *) key, AES_KEY_LEN128);
+		printf("\nEncrypted data:\n");
+		dump_array((char *) enc_text, sizeof(enc_text));
+		printf("\nDecrypted data:\n");
+		dump_array((char *) dec_text, sizeof(dec_text));
+		printf("ica_aes_decrypt failed with errno %d (0x%x).\n", rc, rc);
+		return 1;
+	}
+
+	if (memcmp(dec_text, NIST_TEST_DATA, sizeof(NIST_TEST_DATA)) != 0) {
+		printf("This does NOT match the original data.\n");
+		return 1;
+	} else {
+		printf("Successful!\n");
+		if (!silent) {
+			printf("key \n");
+			dump_array((char *) key, sizeof(NIST_KEY1));
+			printf("\nOriginal data:\n");
+			dump_array((char *) NIST_TEST_DATA, sizeof(NIST_TEST_DATA));
+			printf("test iv\n");
+			dump_array((char *) &iv, sizeof(ica_aes_vector_t));
+			printf("key\n");
+			dump_array((char *) key, AES_KEY_LEN128);
+			printf("\nEncrypted data:\n");
+			dump_array((char *) enc_text, sizeof(enc_text));
+			printf("\nDecrypted data:\n");
+			dump_array((char *) dec_text, sizeof(dec_text));
+		}
+	}	
+
+// Test 2
+	
+	rc = 0;
+	bzero(dec_text, sizeof(dec_text));
+	bzero(enc_text, sizeof(enc_text));
+	bzero(iv, sizeof(iv));
+	bzero(key, sizeof(key));
+
+	unsigned int length = 64;
+	unsigned char *decrypt = malloc(length);
+	unsigned char *encrypt = malloc(length);
+	unsigned char *original = malloc(length);
+	ica_aes_key_len_128_t key2;
+
+	rc = ica_random_number_generate(length, original);
+	if (rc) {
+		printf("ica_random_number_generate returned rc = %i\n", rc);
+		return rc;
+	}
+
+	rc = ica_random_number_generate(AES_KEY_LEN128, (unsigned char *) &key2);
+	if (rc) {
+		printf("ica_random_number_generate returned rc = %i\n", rc);
+		return rc;
+	}
+
+	rc = ica_aes_encrypt(mode, length, original, &iv, AES_KEY_LEN128, (unsigned char *) &key2,
+			     (unsigned char *) encrypt);
+	if (rc) {
+		printf("\nOriginal data:\n");
+		dump_array((char *) original, length);
+		printf("KEY: \n");
+		dump_array((char *) &key2, AES_KEY_LEN128);
+		printf("ica_aes_encrypt failed with errno %d (0x%x).\n", rc, rc);
+		return rc;
+	}
+
+	if (memcmp(encrypt, original, length) == 0) {
+		printf("Encrypt and original are the same.\n");
+		return 1;
+	}
+
+	bzero(iv, sizeof(iv));
+	rc = ica_aes_decrypt(mode, length, encrypt, &iv, AES_KEY_LEN128,
+			     (unsigned char *) &key2, decrypt);
+	if (rc) {
+		printf("\nOriginal data:\n");
+		dump_array((char *) original, length);
+		printf("KEY: \n");
+		dump_array((char *) &key2, AES_KEY_LEN128);
+		printf("\nEncrypted data:\n");
+		dump_array((char *) encrypt, length);
+		printf("ica_aes_decrypt failed with errno %d (0x%x).\n", rc, rc);
+		goto free;	
+	}
+
+	if (memcmp(decrypt, original, length) != 0) {
+		printf("\nOriginal data:\n");
+		dump_array((char *) original, length);
+		printf("KEY: \n");
+		dump_array((char *) &key2, AES_KEY_LEN128);
+		printf("\nEncrypted data:\n");
+		dump_array((char *) encrypt, length);
+		printf("\nDecrypted data:\n");
+		dump_array((char *) decrypt, length);
+		printf("This does NOT match the original data.\n");
+		rc = -1;
+		goto free;
+	}
+
+	if(memcmp(decrypt, encrypt, length) == 0) {
+		printf("\nOriginal data:\n");
+		dump_array((char *) original, length);
+		printf("KEY: \n");
+		dump_array((char *) &key2, AES_KEY_LEN128);
+		printf("\nEncrypted data:\n");
+		dump_array((char *) encrypt, length);
+		printf("\nDecrypted data:\n");
+		dump_array((char *) decrypt, length);
 		printf("decrypt and encrypt are the same\n");
 		rc = -1;
 		goto free;
@@ -269,7 +448,7 @@ int main(int argc, char **argv)
 	int rc = 0;
 	int error_count = 0;
 	if (!mode) {
-		silent = 1;
+		silent = 0;
 	/* This is the standard loop that will perform all testcases */
 		mode = 2;
 		while (mode) {
@@ -280,6 +459,14 @@ int main(int argc, char **argv)
 			}
 			else
 				printf ("test_aes_old_api mode = %i finished successfuly \n", mode);
+
+			rc = test_aes128_new_api(mode);
+			if (rc) {
+				error_count++;
+				printf ("test_aes_new_api mode = %i failed \n", mode);
+			}
+			else
+				printf ("test_aes_new_api mode = %i finished successfuly \n", mode);
 
 			mode--;
 		}
@@ -294,6 +481,12 @@ int main(int argc, char **argv)
 			printf("test_aes_old_api mode = %i failed \n", mode);
 		else
 			printf("test_aes_old_api mode = %i finished successfuly \n", mode);
+
+		rc = test_aes128_new_api(mode);
+		if (rc)
+			printf ("test_aes_new_api mode = %i failed \n", mode);
+		else
+			printf ("test_aes_new_api mode = %i finished successfuly \n", mode);
 	}
 	return rc;
 }

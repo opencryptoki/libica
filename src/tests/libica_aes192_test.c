@@ -70,7 +70,7 @@ int test_aes192_old_api(int mode)
 	i = sizeof(enc_text);
 	rc = icaAesEncrypt(adapter_handle, mode, sizeof(NIST_TEST_DATA),
 			   NIST_TEST_DATA, &iv, AES_KEY_LEN192,
-			   (ICA_KEY_AES_SINGLE *)&key, &i, enc_text);
+			   (unsigned char *)&key, &i, enc_text);
 	if (rc) {
 		printf("\nOriginal data:\n");
 		dump_array((char*)NIST_TEST_DATA, sizeof(NIST_TEST_DATA));
@@ -97,7 +97,7 @@ int test_aes192_old_api(int mode)
 	i = sizeof(dec_text);
 	rc = icaAesDecrypt(adapter_handle, mode, sizeof(enc_text),
 			enc_text, &iv, AES_KEY_LEN192,
-			(ICA_KEY_AES_SINGLE *)&key, &i, dec_text);
+			(unsigned char *)&key, &i, dec_text);
 	if (rc != 0) {
 		printf("icaAesDecrypt failed with errno %d (0x%x).\n", rc, rc);
 		return 1;
@@ -110,6 +110,71 @@ int test_aes192_old_api(int mode)
 		printf("\nDecrypted data:\n");
 		dump_array((char*)dec_text, sizeof(dec_text));
 		printf("icaAesDecrypt returned an incorrect output data length, %u (0x%x).\n", i, i);
+		return 1;
+	}
+
+	if (memcmp(dec_text, NIST_TEST_DATA, sizeof(NIST_TEST_DATA)) != 0) {
+		printf("\nOriginal data:\n");
+		dump_array((char*)NIST_TEST_DATA, sizeof(NIST_TEST_DATA));
+		printf("\nEncrypted data:\n");
+		dump_array((char*)enc_text, sizeof(enc_text));
+		printf("\nDecrypted data:\n");
+		dump_array((char*)dec_text, sizeof(dec_text));
+		printf("This does NOT match the original data.\n");
+		return 1;
+	} else {
+		printf("Successful!\n");
+		if (!silent) {
+			printf("\nOriginal data:\n");
+			dump_array((char*)NIST_TEST_DATA, sizeof(NIST_TEST_DATA));
+			printf("\nEncrypted data:\n");
+			dump_array((char*)enc_text, sizeof(enc_text));
+			printf("\nDecrypted data:\n");
+			dump_array((char*)dec_text, sizeof(dec_text));
+		}
+	}
+
+	return 0;
+}
+
+int test_aes192_new_api(int mode)
+{
+	ica_aes_vector_t iv;
+	ica_aes_key_len_192_t key;
+	int rc = 0;
+	unsigned char dec_text[sizeof(NIST_TEST_DATA)],
+		      enc_text[sizeof(NIST_TEST_DATA)];
+
+	bzero(dec_text, sizeof(dec_text));
+	bzero(enc_text, sizeof(enc_text));
+	bzero(iv, sizeof(iv));
+	bcopy(NIST_KEY2, key, sizeof(NIST_KEY2));
+
+	rc = ica_aes_encrypt(mode, sizeof(NIST_TEST_DATA), NIST_TEST_DATA, &iv,
+			     AES_KEY_LEN192, (unsigned char *) &key, enc_text);
+	if (rc) {
+		printf("\nOriginal data:\n");
+		dump_array((char*)NIST_TEST_DATA, sizeof(NIST_TEST_DATA));
+		printf("ica_aes_encrypt failed with errno %d (0x%x).\n", rc, rc);
+		return rc;
+	}
+
+	if (memcmp(enc_text, NIST_TEST_RESULT, sizeof(NIST_TEST_RESULT)) != 0) {
+		printf("\nOriginal data:\n");
+		dump_array((char*)NIST_TEST_DATA, sizeof(NIST_TEST_DATA));
+		printf("\nEncrypted data:\n");
+		dump_array((char*)enc_text, sizeof(enc_text));
+		printf("This does NOT match the known result.\n");
+		return 1;
+	} else {
+		printf("Yep, it's what it should be.\n");
+	}
+
+	bzero(iv, sizeof(iv));
+	rc = ica_aes_decrypt(mode, sizeof(enc_text), enc_text, &iv,
+			     AES_KEY_LEN192, (unsigned char *) &key, dec_text);
+	if (rc != 0) {
+		printf("ica_aes_decrypt failed with errno %d (0x%x).\n", rc, rc);
 		return 1;
 	}
 
@@ -162,9 +227,15 @@ int main(int argc, char **argv)
 			if (rc) {
 				error_count++;
 				printf ("test_aes_old_api mode = %i failed \n", mode);
-			}
-			else
+			} else
 				printf ("test_aes_old_api mode = %i finished successfuly \n", mode);
+
+			rc = test_aes192_new_api(mode);
+			if (rc) {
+				error_count++;
+				printf ("test_aes_new_api mode = %i failed \n", mode);
+			} else
+				printf ("test_aes_new_api mode = %i finished successfuly \n", mode);
 
 			mode--;
 		}
@@ -180,6 +251,11 @@ int main(int argc, char **argv)
 			printf("test_aes_old_api mode = %i failed \n", mode);
 		else
 			printf("test_aes_old_api mode = %i finished successfuly \n", mode);
+		rc = test_aes192_new_api(mode);
+		if (rc)
+			printf ("test_aes_new_api mode = %i failed \n", mode);
+		else
+			printf ("test_aes_new_api mode = %i finished successfuly \n", mode);
 	}
 	return rc;
 }

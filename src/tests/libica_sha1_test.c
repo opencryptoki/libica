@@ -61,8 +61,9 @@ unsigned char FIPS_TEST_RESULT[NUM_FIPS_TESTS][LENGTH_SHA_HASH] =
 
 void dump_array(char *, int);
 
-int main(int argc, char **argv)
+int old_api_sha_test(void)
 {
+	printf("Test of old sha api\n");
   ICA_ADAPTER_HANDLE adapter_handle;
   SHA_CONTEXT ShaContext;
   int rc = 0, i = 0;
@@ -216,7 +217,134 @@ int main(int argc, char **argv)
 
   icaCloseAdapter(adapter_handle);
 
-  return 0;
+
+}
+
+int new_api_sha_test(void)
+{
+	printf("Test of new sha api\n");
+	sha_context_t sha_context;
+	int rc = 0, i = 0;
+	unsigned char input_data[1000000];
+	unsigned int  output_hash_length = LENGTH_SHA_HASH;
+	unsigned char output_hash[LENGTH_SHA_HASH];
+
+	for (i = 0; i < NUM_FIPS_TESTS; i++) {
+	// Test 2 is a special one, because we want to keep the size of the
+	// executable down, so we build it special, instead of using a static
+	if (i != 2)
+		memcpy(input_data, FIPS_TEST_DATA[i], FIPS_TEST_DATA_SIZE[i]);
+	else
+		memset(input_data, 'a', FIPS_TEST_DATA_SIZE[i]);
+
+	printf("\nOriginal data for test %d:\n", i);
+	dump_array(input_data, FIPS_TEST_DATA_SIZE[i]);
+
+	rc = ica_sha1(SHA_MSG_PART_ONLY, FIPS_TEST_DATA_SIZE[i], input_data,
+		      &sha_context, output_hash);
+
+	if (rc != 0) {
+		printf("icaSha1 failed with errno %d (0x%x).\n", rc, rc);
+		return rc;
+	}
+
+	printf("\nOutput hash for test %d:\n", i);
+	dump_array(output_hash, output_hash_length);
+	if (memcmp(output_hash, FIPS_TEST_RESULT[i], LENGTH_SHA_HASH) != 0)
+		printf("This does NOT match the known result.\n");
+	else
+		printf("Yep, it's what it should be.\n");
+	}
+
+	// This test is the same as test 2, except that we use the SHA_CONTEXT
+	// and break it into calls of 1024 bytes each.
+	printf("\nOriginal data for test 2(chunks = 1024) is calls of 1024"
+	       "'a's at a time\n");
+	i = FIPS_TEST_DATA_SIZE[2];
+	while (i > 0) {
+		unsigned int sha_message_part;
+		memset(input_data, 'a', 1024);
+
+		if (i == FIPS_TEST_DATA_SIZE[2])
+			sha_message_part = SHA_MSG_PART_FIRST;
+		else if (i <= 1024)
+			sha_message_part = SHA_MSG_PART_FINAL;
+		else
+			sha_message_part = SHA_MSG_PART_MIDDLE;
+
+		rc = ica_sha1(sha_message_part, (i < 1024) ? i : 1024,
+			      input_data, &sha_context, output_hash);
+
+		if (rc != 0) {
+			printf("ica_sha1 failed with errno %d (0x%x) on"
+			       " iteration %d.\n", rc, rc, i);
+			return rc;
+		}
+		i -= 1024;
+	}
+
+	printf("\nOutput hash for test 2(chunks = 1024):\n");
+	dump_array(output_hash, output_hash_length);
+	if (memcmp(output_hash, FIPS_TEST_RESULT[2], LENGTH_SHA_HASH) != 0)
+		printf("This does NOT match the known result.\n");
+	else
+		printf("Yep, it's what it should be.\n");
+
+	// This test is the same as test 2, except that we use the SHA_CONTEXT
+	// and break it into calls of 64 bytes each.
+	printf("\nOriginal data for test 2(chunks = 64) is calls of 64 'a's at"
+	       "a time\n");
+	i = FIPS_TEST_DATA_SIZE[2];
+	while (i > 0) {
+		unsigned int sha_message_part;
+		memset(input_data, 'a', 64);
+
+		if (i == FIPS_TEST_DATA_SIZE[2])
+			sha_message_part = SHA_MSG_PART_FIRST;
+		else if (i <= 64)
+			sha_message_part = SHA_MSG_PART_FINAL;
+		else
+			sha_message_part = SHA_MSG_PART_MIDDLE;
+
+		rc = ica_sha1(sha_message_part, (i < 64) ? i : 64, input_data,
+			      &sha_context, output_hash);
+
+		if (rc != 0) {
+			printf("ica_sha1 failed with errno %d (0x%x) on"
+			       " iteration %d.\n", rc, rc, i);
+			return rc;
+		}
+		i -= 64;
+	}
+
+	printf("\nOutput hash for test 2(chunks = 64):\n");
+	dump_array(output_hash, output_hash_length);
+	if (memcmp(output_hash, FIPS_TEST_RESULT[2], LENGTH_SHA_HASH) != 0)
+		printf("This does NOT match the known result.\n");
+	else
+	printf("Yep, it's what it should be.\n");
+
+	printf("\nAll SHA1 tests completed successfully\n");
+
+	return 0;
+}
+
+int main(int argc, char **argv)
+{
+	int rc = 0;
+
+	rc = old_api_sha_test();
+	if (rc) {
+		printf("old_api_sha_test failed with rc = %i\n", rc);
+		return rc;
+	}
+	rc = new_api_sha_test();
+	if (rc) {
+		printf("new_api_sha_test failed with rc = %i\n", rc);
+		return rc;
+	}
+
+	return 0;
 }
 
 void

@@ -140,6 +140,71 @@ int test_aes256_old_api(int mode)
 	return 0;
 }
 
+int test_aes256_new_api(int mode)
+{
+	ica_aes_vector_t iv;
+	unsigned char key[AES_KEY_LEN256];
+	int rc = 0;
+	unsigned char dec_text[sizeof(NIST_TEST_DATA)],
+		      enc_text[sizeof(NIST_TEST_DATA)];
+	unsigned int i;
+
+	bzero(dec_text, sizeof(dec_text));
+	bzero(enc_text, sizeof(enc_text));
+	bzero(iv, sizeof(iv));
+	bcopy(NIST_KEY3, key, sizeof(NIST_KEY3));
+
+	i = sizeof(enc_text);
+	rc = ica_aes_encrypt(mode, sizeof(NIST_TEST_DATA), NIST_TEST_DATA, &iv,
+			     AES_KEY_LEN256, key, enc_text);
+	if (rc) {
+		printf("ica_aes_encrypt failed with errno %d (0x%x).\n", rc, rc);
+		return 1;
+	}
+
+	if (memcmp(enc_text, NIST_TEST_RESULT, sizeof(NIST_TEST_RESULT)) != 0) {
+		printf("\nOriginal data:\n");
+		dump_array((char *) NIST_TEST_DATA, sizeof(NIST_TEST_DATA));
+		printf("\nEncrypted data:\n");
+		dump_array((char *) enc_text, sizeof(enc_text));
+		printf("This does NOT match the known result.\n");
+		return 1;
+	} else {
+		printf("Yep, it's what it should be.\n");
+	}
+
+	bzero(iv, sizeof(iv));
+	rc = ica_aes_decrypt(mode, sizeof(enc_text), enc_text, &iv,
+			     AES_KEY_LEN256, key, dec_text);
+	if (rc) {
+		printf("ica_aes_decrypt failed with errno %d (0x%x).\n", rc, rc);
+		return 1;
+	}
+
+	if (memcmp(dec_text, NIST_TEST_DATA, sizeof(NIST_TEST_DATA)) != 0) {
+		printf("\nOriginal data:\n");
+		dump_array((char *) NIST_TEST_DATA, sizeof(NIST_TEST_DATA));
+		printf("\nEncrypted data:\n");
+		dump_array((char *) enc_text, sizeof(enc_text));
+		printf("\nDecrypted data:\n");
+		dump_array((char *) dec_text, sizeof(dec_text));
+		printf("This does NOT match the original data.\n");
+		return 1;
+	} else {
+		if (!silent) {
+			printf("\nOriginal data:\n");
+			dump_array((char *) NIST_TEST_DATA, sizeof(NIST_TEST_DATA));
+			printf("\nEncrypted data:\n");
+			dump_array((char *) enc_text, sizeof(enc_text));
+			printf("\nDecrypted data:\n");
+			dump_array((char *) dec_text, sizeof(dec_text));
+		}
+		printf("Successful!\n");
+	}
+
+	return 0;
+}
+
 int main(int argc, char **argv)
 {
 	// Default mode is 0. ECB and CBC tests will be performed.
@@ -169,6 +234,14 @@ int main(int argc, char **argv)
 			else
 				printf ("test_aes_old_api mode = %i finished successfuly \n", mode);
 
+			rc = test_aes256_new_api(mode);
+			if (rc) {
+				error_count++;
+				printf ("test_aes_new_api mode = %i failed \n", mode);
+			}
+			else
+				printf ("test_aes_new_api mode = %i finished successfuly \n", mode);
+
 			mode--;
 		}
 		if (error_count)
@@ -183,7 +256,14 @@ int main(int argc, char **argv)
 			printf("test_aes_old_api mode = %i failed \n", mode);
 		else
 			printf("test_aes_old_api mode = %i finished successfuly \n", mode);
+
+		rc = test_aes256_new_api(mode);
+		if (rc)
+			printf("test_aes_new_api mode = %i failed \n", mode);
+		else
+			printf("test_aes_new_api mode = %i finished successfuly \n", mode);
 	}
+
 	return rc;
 }
 

@@ -32,10 +32,11 @@ void atomic_add(int *x, int i)
 	int old;
 	int new;
 	asm volatile ("	l	%0,%2\n"
-		      "LOOP:	lr	%1,%0\n"
+		      "0:	lr	%1,%0\n"
 		      "	ar	%1,%3\n"
 		      "	cs	%0,%1,%2\n"
-		      "	jl	LOOP":"=&d" (old), "=&d"(new), "=Q"(*x)
+		      "	jl	0b"
+		      :"=&d" (old), "=&d"(new), "=Q"(*x)
 		      :"d"(i), "Q"(*x)
 		      :"cc", "memory");
 }
@@ -91,7 +92,7 @@ void stats_munmap()
 		return;
 
 	if (flock(stats_shm_handle, LOCK_EX) == -1)
-		return -1;
+		return;
 	if (--(*stats_ref_counter) == 0) {
 		munmap(stats_ref_counter, STATS_SHM_SIZE);
 		shm_unlink(STATS_SHM_ID);

@@ -120,6 +120,69 @@ int test_des_old_api(int mode)
 	return 0;
 }
 
+int test_des_new_api(int mode)
+{
+	ica_des_vector_t iv;
+	ica_des_key_single_t key;
+	int rc = 0;
+	unsigned char dec_text[sizeof NIST_TEST_DATA],
+	              enc_text[sizeof NIST_TEST_DATA];
+
+	bzero(dec_text, sizeof dec_text);
+	bzero(enc_text, sizeof enc_text);
+	bzero(iv, sizeof iv);
+	bcopy(NIST_KEY1, key, sizeof NIST_KEY1);
+
+	rc = ica_des_encrypt(mode, sizeof NIST_TEST_DATA, NIST_TEST_DATA, &iv,
+			     &key, enc_text);
+	if (rc) {
+		printf("\nOriginal data:\n");
+		dump_array((char *) NIST_TEST_DATA, sizeof NIST_TEST_DATA);
+		printf("ica_des_encrypt failed with errno %d (0x%x).\n", rc, rc);
+		printf("\nEncrypted data:\n");
+		dump_array((char *) enc_text, sizeof enc_text);
+		return rc;
+	}
+
+	if (memcmp(enc_text, NIST_TEST_RESULT, sizeof NIST_TEST_RESULT) != 0) {
+		printf("This does NOT match the known result.\n");
+		return -1;
+	} else {
+		printf("Yep, it's what it should be.\n");
+	}	
+
+	bzero(iv, sizeof iv);
+	rc = ica_des_decrypt(mode, sizeof enc_text, enc_text, &iv, &key,
+			     dec_text);
+	if (rc) {
+		printf("\nOriginal data:\n");
+		dump_array((char *) NIST_TEST_DATA, sizeof NIST_TEST_DATA);
+		printf("ica_des_encrypt failed with errno %d (0x%x).\n", rc, rc);
+		printf("\nEncrypted data:\n");
+		dump_array((char *) enc_text, sizeof enc_text);
+		printf("\nDecrypted data:\n");
+		dump_array((char *) dec_text, sizeof dec_text);
+		printf("ica_des_decrypt failed with errno %d (0x%x).\n", rc, rc);
+		return rc;
+	}
+
+	if (memcmp(dec_text, NIST_TEST_DATA, sizeof NIST_TEST_DATA) != 0) {
+		printf("\nOriginal data:\n");
+		dump_array((char *) NIST_TEST_DATA, sizeof NIST_TEST_DATA);
+		printf("ica_des_encrypt failed with errno %d (0x%x).\n", rc, rc);
+		printf("\nEncrypted data:\n");
+		dump_array((char *) enc_text, sizeof enc_text);
+		printf("\nDecrypted data:\n");
+		dump_array((char *) dec_text, sizeof dec_text);
+		printf("This does NOT match the original data.\n");
+		return -1;
+	} else {
+		printf("Successful!\n");
+	}
+
+	return 0;
+}
+
 int main(int argc, char **argv)
 {
 	// Default mode is 0. ECB and CBC tests will be performed.
@@ -149,6 +212,14 @@ int main(int argc, char **argv)
 			else
 				printf ("test_des_old_api mode = %i finished successfuly \n", mode);
 
+			rc = test_des_new_api(mode);
+			if (rc) {
+				error_count++;
+				printf ("test_des_new_api mode = %i failed \n", mode);
+			}
+			else
+				printf ("test_des_new_api mode = %i finished successfuly \n", mode);
+
 			mode--;
 		}
 		if (error_count)
@@ -163,6 +234,12 @@ int main(int argc, char **argv)
 			printf("test_des_old_api mode = %i failed \n", mode);
 		else
 			printf("test_des_old_api mode = %i finished successfuly \n", mode);
+
+		rc = test_des_new_api(mode);
+		if (rc)
+			printf ("test_des_new_api mode = %i failed \n", mode);
+		else
+			printf ("test_des_new_api mode = %i finished successfuly \n", mode);
 	}
 	return rc;
 }

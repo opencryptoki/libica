@@ -98,13 +98,13 @@ static int s390_add_entropy(void)
 	int rc = 0;
 
 	for (K = 0; K < 16; K++) {
-		if ((rc = s390_stckf_hw(entropy + 0 * 8)))
+		if ((rc = s390_stck(entropy + 0 * 8)))
 			return EIO;
-		if ((rc = s390_stckf_hw(entropy + 1 * 8)))
+		if ((rc = s390_stck(entropy + 1 * 8)))
 			return EIO; 
-		if ((rc = s390_stckf_hw(entropy + 2 * 8)))
+		if ((rc = s390_stck(entropy + 2 * 8)))
 			return EIO;
-		if ((rc = s390_stckf_hw(entropy + 3 * 8)))
+		if ((rc = s390_stck(entropy + 3 * 8)))
 			return EIO;
 		if ((rc =
 		     s390_kmc(0x43, zPRNG_PB, entropy, entropy, sizeof(entropy))) < 0)
@@ -196,7 +196,7 @@ static int s390_prng_hw(unsigned char *random_bytes, unsigned int num_bytes)
 		num_bytes -= remainder;
 
 		for (i = 0; !rc && i < (num_bytes / 8); i++) {
-			rc = s390_stckf_hw(random_bytes + i * 8);
+			rc = s390_stck(random_bytes + i * 8);
 		}
 		if (!rc) {
 			rc = s390_kmc(S390_CRYPTO_PRNG, zPRNG_PB, random_bytes,
@@ -209,7 +209,7 @@ static int s390_prng_hw(unsigned char *random_bytes, unsigned int num_bytes)
 
 		// If there was a remainder, we'll use an internal buffer to handle it.
 		if (!rc && remainder) {
-			rc = s390_stckf_hw(last_dw);
+			rc = s390_stck(last_dw);
 			if (!rc) {
 				rc = s390_kmc(S390_CRYPTO_PRNG, zPRNG_PB, last_dw,
 					      last_dw, 8);

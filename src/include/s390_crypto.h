@@ -103,7 +103,7 @@ int s390_km(long func, void *param, unsigned char *dest,
 	    const unsigned char *src, long src_len);
 int s390_kmc(long func, void *param, unsigned char *dest,
 	     const unsigned char *src, long src_len);
-int s390_stckf_hw(void *buf);
+int s390_stck(void *buf);
 void s390_crypto_switches_init(void);
 
 #endif
