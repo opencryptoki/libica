@@ -1,3 +1,5 @@
+v2.0.2
+Bug fixes in asm, stcke for 31 bit, and fixes in programming samples
 v2.0.1
 Add locking for shared memory segment, which is needed when icastats
 is linked dynamically against libica.

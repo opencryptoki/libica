@@ -1,6 +1,6 @@
 Name:          libica 
 Version:       2.0
-Release:       1%{?dist}
+Release:       2%{?dist}
 Summary:       Interface library to the ICA device driver 
 
 Group:         Libraries/Crypto 
@@ -58,6 +58,8 @@ rm -rf $RPM_BUILD_ROOT
 %{_includedir}/ica_api.h
 
 %changelog
+* Wed Aug 12 2009 Felix Beck <felix.beck@de.ibm.com>
+- Bugfixes version 2.0.2
 * Wed Feb 4 2009 Felix Beck <felix.beck@de.ibm.com
 - version 2.0
 * Fri Aug 4 2006 Daniel H Jones <danjones@us.ibm.com>
