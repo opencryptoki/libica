@@ -1,3 +1,8 @@
+v2.0.3
+minor wording fix in icastats tool:
+  changed output wording from SHAxxx to SHA-xxx
+Bugfix for:
+  libica abends with illegal instuction when CPACF is disabled.
 v2.0.2
 Bug fixes in asm, stcke for 31 bit, and fixes in programming samples
 v2.0.1

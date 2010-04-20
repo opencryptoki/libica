@@ -16,11 +16,11 @@
 #include "include/icastats.h"
 
 const char *const STATS_DESC[ICA_NUM_STATS] = {
-	"SHA1",
-	"SHA224",
-	"SHA256",
-	"SHA384",
-	"SHA512",
+	"SHA-1",
+	"SHA-224",
+	"SHA-256",
+	"SHA-384",
+	"SHA-512",
 	"RANDOM",
 	"MOD EXPO",
 	"RSA CRT",

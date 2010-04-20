@@ -96,19 +96,22 @@ static int s390_add_entropy(void)
 	unsigned char entropy[4 * 8];
 	unsigned int K;
 	int rc = 0;
+	struct sigaction oldact;
+	sigset_t oldset;
+
+	if (begin_sigill_section(&oldact, &oldset) != 0)
+		return errno;
 
 	for (K = 0; K < 16; K++) {
-		if ((rc = s390_stck(entropy + 0 * 8)))
-			return EIO;
-		if ((rc = s390_stck(entropy + 1 * 8)))
-			return EIO; 
-		if ((rc = s390_stck(entropy + 2 * 8)))
-			return EIO;
-		if ((rc = s390_stck(entropy + 3 * 8)))
-			return EIO;
-		if ((rc =
-		     s390_kmc(0x43, zPRNG_PB, entropy, entropy, sizeof(entropy))) < 0)
-			return EIO;
+		if ((s390_stck(entropy + 0 * 8)) ||
+		    (s390_stck(entropy + 1 * 8)) ||
+		    (s390_stck(entropy + 2 * 8)) ||
+		    (s390_stck(entropy + 3 * 8)) ||
+		    (s390_kmc(0x43, zPRNG_PB, entropy, entropy,
+		     sizeof(entropy)) < 0)) {
+			rc = -1;
+			goto out;
+		}
 		memcpy(zPRNG_PB, entropy, sizeof(entropy));
 	}
 	int handle;
@@ -123,14 +126,15 @@ static int s390_add_entropy(void)
 			rc = s390_kmc(0x43, zPRNG_PB, seed, seed,
 				      sizeof(seed));
 		close(handle);
-		if (rc < 0)
-			return EIO;
-		else
+		if (rc >= 0)
 			memcpy(zPRNG_PB, seed, sizeof(seed));
 	}
-	if (rc > 0)
-		return 0;
-
+out:
+	if (rc >= 0)
+		rc = 0;
+	else
+		rc = EIO;
+	end_sigill_section(&oldact, &oldset);
 	return rc;
 }
 
