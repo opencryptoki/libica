@@ -27,6 +27,17 @@
 
 #include <stdio.h>
 
+/*
+ * On 31 bit systems we have to use the instruction STCKE while on 64 bit
+ * systems we can use STCKF. STCKE uses a 16 byte buffer while STCKF uses
+ * an 8 byte buffer.
+ */
+#ifdef _LINUX_S390X_
+#define STCK_BUFFER  8
+#else
+#define STCK_BUFFER 16
+#endif
+
 sem_t semaphore;
 
 /*
@@ -93,7 +104,7 @@ int s390_prng_init(void)
  */
 static int s390_add_entropy(void)
 {
-	unsigned char entropy[4 * 8];
+	unsigned char entropy[4 * STCK_BUFFER];
 	unsigned int K;
 	int rc = 0;
 	struct sigaction oldact;
@@ -103,16 +114,16 @@ static int s390_add_entropy(void)
 		return errno;
 
 	for (K = 0; K < 16; K++) {
-		if ((s390_stck(entropy + 0 * 8)) ||
-		    (s390_stck(entropy + 1 * 8)) ||
-		    (s390_stck(entropy + 2 * 8)) ||
-		    (s390_stck(entropy + 3 * 8)) ||
+		if ((s390_stck(entropy + 0 * STCK_BUFFER)) ||
+		    (s390_stck(entropy + 1 * STCK_BUFFER)) ||
+		    (s390_stck(entropy + 2 * STCK_BUFFER)) ||
+		    (s390_stck(entropy + 3 * STCK_BUFFER)) ||
 		    (s390_kmc(0x43, zPRNG_PB, entropy, entropy,
 		     sizeof(entropy)) < 0)) {
 			rc = -1;
 			goto out;
 		}
-		memcpy(zPRNG_PB, entropy, sizeof(entropy));
+		memcpy(zPRNG_PB, entropy, sizeof(zPRNG_PB));
 	}
 	int handle;
 	unsigned char seed[32];
@@ -148,7 +159,7 @@ int s390_prng(unsigned char *output_data, unsigned int output_length)
 {
 	int rc = 1;
 	int hardware = 1;
-	
+
 	if (prng_switch)
 		rc = s390_prng_hw(output_data, output_length);
 	if (rc) {
@@ -176,7 +187,7 @@ static int s390_prng_sw(unsigned char *output_data, unsigned int output_length)
 static int s390_prng_hw(unsigned char *random_bytes, unsigned int num_bytes)
 {
 	unsigned int i, remainder;
-	unsigned char last_dw[8];
+	unsigned char last_dw[STCK_BUFFER];
 	int rc = 0;
 
 	struct sigaction oldact;
@@ -199,8 +210,8 @@ static int s390_prng_hw(unsigned char *random_bytes, unsigned int num_bytes)
 		remainder = num_bytes % PRNG_BLK_SZ;
 		num_bytes -= remainder;
 
-		for (i = 0; !rc && i < (num_bytes / 8); i++) {
-			rc = s390_stck(random_bytes + i * 8);
+		for (i = 0; !rc && i < (num_bytes / STCK_BUFFER); i++) {
+			rc = s390_stck(random_bytes + i * STCK_BUFFER);
 		}
 		if (!rc) {
 			rc = s390_kmc(S390_CRYPTO_PRNG, zPRNG_PB, random_bytes,
@@ -216,7 +227,7 @@ static int s390_prng_hw(unsigned char *random_bytes, unsigned int num_bytes)
 			rc = s390_stck(last_dw);
 			if (!rc) {
 				rc = s390_kmc(S390_CRYPTO_PRNG, zPRNG_PB, last_dw,
-					      last_dw, 8);
+					      last_dw, STCK_BUFFER);
 				if (rc > 0) {
 					s390_byte_count += rc;
 					rc = 0;
