@@ -67,27 +67,22 @@ int s390_prng_init(void)
 {
 	sem_init(&semaphore, 0, 1);
 
-	struct sigaction oldact;
-	sigset_t oldset;
 	int rc = -1;
-	if (begin_sigill_section(&oldact, &oldset) == 0) {
-		int handle;
-		unsigned char seed[16];
-		handle = open("/dev/hwrng", O_RDONLY);
-		if (!handle)
-			handle = open("/dev/urandom", O_RDONLY);
-		if (handle) {
-			rc = read(handle, seed, sizeof(seed));
-		        if (rc != -1)
-				rc = s390_prng_seed(seed, sizeof(seed) /
-						    sizeof(long long));
-			close(handle);
-		} else
-			rc = ENODEV;
+	int handle;
+	unsigned char seed[16];
+	handle = open("/dev/hwrng", O_RDONLY);
+	if (!handle)
+		handle = open("/dev/urandom", O_RDONLY);
+	if (handle) {
+		rc = read(handle, seed, sizeof(seed));
+	        if (rc != -1)
+			rc = s390_prng_seed(seed, sizeof(seed) /
+					    sizeof(long long));
+		close(handle);
+	} else
+		rc = ENODEV;
 	// If the original seeding failed, we should try to stir in some
 	// entropy anyway (since we already put out a message).
-	}
-	end_sigill_section(&oldact, &oldset);
 	s390_byte_count = 0;
 
 	if (rc < 0)
@@ -107,11 +102,9 @@ static int s390_add_entropy(void)
 	unsigned char entropy[4 * STCK_BUFFER];
 	unsigned int K;
 	int rc = 0;
-	struct sigaction oldact;
-	sigset_t oldset;
 
-	if (begin_sigill_section(&oldact, &oldset) != 0)
-		return errno;
+	if (!prng_switch)
+		return ENOTSUP;
 
 	for (K = 0; K < 16; K++) {
 		if ((s390_stck(entropy + 0 * STCK_BUFFER)) ||
@@ -145,7 +138,6 @@ out:
 		rc = 0;
 	else
 		rc = EIO;
-	end_sigill_section(&oldact, &oldset);
 	return rc;
 }
 
@@ -190,12 +182,6 @@ static int s390_prng_hw(unsigned char *random_bytes, unsigned int num_bytes)
 	unsigned char last_dw[STCK_BUFFER];
 	int rc = 0;
 
-	struct sigaction oldact;
-	sigset_t oldset;
-
-	if ((rc = begin_sigill_section(&oldact, &oldset)) != 0)
-		return rc;
-
 	sem_wait(&semaphore);
 
 	/* Add some additional entropy when the byte count is reached.*/
@@ -239,7 +225,6 @@ static int s390_prng_hw(unsigned char *random_bytes, unsigned int num_bytes)
 			return EIO;
 
 	}
-	end_sigill_section(&oldact, &oldset);
 	sem_post(&semaphore);
 
 	return rc;
@@ -254,8 +239,8 @@ static int s390_prng_seed(void *srv, unsigned int count)
 {
 	struct sigaction oldact;
 	sigset_t oldset;
-	if (begin_sigill_section(&oldact, &oldset) != 0)
-		return errno;
+	if (!prng_switch)
+		return ENOTSUP;
 
 	unsigned int i;
 	int rc;
@@ -269,6 +254,5 @@ static int s390_prng_seed(void *srv, unsigned int count)
 	// Stir one last time.
 	rc = s390_add_entropy();
 
-	end_sigill_section(&oldact, &oldset);
 	return rc;
 }

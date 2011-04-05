@@ -25,20 +25,13 @@ int s390_des_ecb_hw(unsigned int function_code, unsigned int input_length,
 		    unsigned char *output_data)
 {
 	int rc = 0;
-	struct sigaction oldact;
-	sigset_t oldset;
-	if ((rc = begin_sigill_section(&oldact, &oldset)) == 0) {
-		rc = s390_km(function_code, keys, output_data, input_data,
-			     input_length);
+	rc = s390_km(function_code, keys, output_data, input_data,
+		     input_length);
 
-		end_sigill_section(&oldact, &oldset);
-		
-		if (rc >= 0)
-			return 0;
-		else
-			return EIO;
-	}
-	return rc;
+	if (rc >= 0)
+		return 0;
+	else
+		return EIO;
 }
 
 
@@ -109,8 +102,6 @@ static int s390_des_cbc_hw(unsigned int function_code, unsigned int input_length
 			   unsigned char *input_data, ica_des_vector_t *iv,
 			   unsigned char *keys, unsigned char *output_data)
 {
-	struct sigaction oldact;
-	sigset_t oldset;
 	struct {
 		ica_des_vector_t iv;
 		ica_des_key_triple_t keys;
@@ -122,17 +113,13 @@ static int s390_des_cbc_hw(unsigned int function_code, unsigned int input_length
 	memcpy(&key_buffer.iv, iv, sizeof(ica_des_vector_t));
 	memcpy(&key_buffer.keys, keys, key_size);
 
-	if ((rc = begin_sigill_section(&oldact, &oldset)) == 0) {
-		rc = s390_kmc(function_code, &key_buffer, output_data, input_data,
-			      input_length);
-		end_sigill_section(&oldact, &oldset);
-		if (rc >= 0) {
-			memcpy(iv, &key_buffer.iv, sizeof(ica_des_vector_t));
-			return 0;
-		} else
-			rc = EIO;
-	}
-	return rc;
+	rc = s390_kmc(function_code, &key_buffer, output_data, input_data,
+		      input_length);
+	if (rc >= 0) {
+		memcpy(iv, &key_buffer.iv, sizeof(ica_des_vector_t));
+		return 0;
+	} else
+		rc = EIO;
 }
 
 

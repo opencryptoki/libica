@@ -24,23 +24,13 @@ static int s390_aes_ecb_hw(unsigned int function_code, unsigned int input_length
 			   unsigned char *input_data, unsigned char *keys,
 			   unsigned char *output_data)
 {
-	struct sigaction oldact;
-	sigset_t oldset;
-
 	int rc = 0;
-	if ((rc = begin_sigill_section(&oldact, &oldset)) == 0) {
-
-		rc = s390_km(function_code, keys, output_data, input_data,
-			     input_length);
-
-		end_sigill_section(&oldact, &oldset);
-
-		if (rc >= 0)
-			return 0;
-		else
-			return EIO;
-	}
-	return rc;
+	rc = s390_km(function_code, keys, output_data, input_data,
+		     input_length);
+	if (rc >= 0)
+		return 0;
+	else
+		return EIO;
 }
 
 static int s390_aes_ecb_sw(unsigned int function_code, unsigned int input_length,
@@ -73,8 +63,6 @@ static int s390_aes_cbc_hw(unsigned int function_code,
 			   unsigned char *input_data, ica_aes_vector_t *iv,
 			   unsigned char *keys, unsigned char *output_data)
 {
-	struct sigaction oldact;
-	sigset_t oldset;
 	struct {
 		ica_aes_vector_t iv;
 		ica_aes_key_len_256_t keys;
@@ -87,12 +75,8 @@ static int s390_aes_cbc_hw(unsigned int function_code,
 	memcpy(&key_buffer.keys, keys, key_size);
 
 	int rc = 0;
-	if ((rc = begin_sigill_section(&oldact, &oldset)) != 0)
-		return rc;
-
 	rc = s390_kmc(function_code, &key_buffer,
 		      output_data, input_data, input_length);
-	end_sigill_section(&oldact, &oldset);
 
 	if (rc >= 0) {
 		memcpy(iv, &key_buffer.iv, sizeof(ica_aes_vector_t));

@@ -1,4 +1,7 @@
 v2.0.4
+Fix for performance improvement
+  Remove signal handler wrapping of crypto instructions.
+v2.0.4
 Fix for STCK buffer length
   Correctly adjust the STCK buffer length in the PRNG based on whether
   we are running in 31 or 64 bit.

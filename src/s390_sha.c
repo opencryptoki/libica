@@ -79,9 +79,6 @@ static int s390_sha_hw(unsigned char *iv, unsigned char *input_data,
 	 * this can be at most 128 byte for the hash plus 16 byte for the
 	 * stream length. */
         unsigned char shabuff[128 + 16];
-	struct sigaction oldact;
-        sigset_t oldset;
-
 	unsigned char *default_iv = sha_constants[sha_function].default_iv;
 	unsigned int hash_length = sha_constants[sha_function].hash_length;
 	unsigned int vector_length = sha_constants[sha_function].vector_length;
@@ -110,10 +107,6 @@ static int s390_sha_hw(unsigned char *iv, unsigned char *input_data,
         if ((message_part == SHA_MSG_PART_FIRST ||
 	     message_part == SHA_MSG_PART_MIDDLE) && (remnant != 0))
                 return EINVAL;
-
-        rc = begin_sigill_section(&oldact, &oldset);
-        if (rc)
-                return rc;
 
 	unsigned int hw_function_code;
 	hw_function_code = sha_constants[sha_function].hw_function_code;
@@ -153,8 +146,6 @@ static int s390_sha_hw(unsigned char *iv, unsigned char *input_data,
 		if (rc > 0)
 			rc = 0;
         }
-
-        end_sigill_section(&oldact, &oldset);
 
         if (rc == 0) {
                 memcpy((void *)output_data, shabuff, hash_length);
