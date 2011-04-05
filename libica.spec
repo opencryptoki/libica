@@ -1,6 +1,6 @@
 Name:          libica 
 Version:       2.0
-Release:       4%{?dist}
+Release:       5%{?dist}
 Summary:       Interface library to the ICA device driver 
 
 Group:         Libraries/Crypto 
