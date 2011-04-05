@@ -253,6 +253,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <getopt.h>
 #include "include/s390_crypto.h"
 
@@ -264,9 +265,9 @@ void print_version(void)
 	printf(CMD_NAME ": libica version " VERSION "\n" COPYRIGHT "\n");
 }
 
-void print_help(char *argv0)
+void print_help(char *cmd)
 {
-	printf("Usage: %s [OPTION]\n", argv0);
+	printf("Usage: %s [OPTION]\n", cmd);
 	printf
 	    ("Display a list of all CP Assist for Cryptographic Function (CPACF) operations\n"
 	     "supported by libica on this system.\n" "\n" "Options:\n"
@@ -322,18 +323,18 @@ int main(int argc, char **argv)
 			exit(0);
 			break;
 		case 'h':
-			print_help(argv[0]);
+			print_help(basename(argv[0]));
 			exit(1);
 		default:
 			fprintf(stderr, "Try '%s --help' for more"
-				" information.\n", argv[0]);
+				" information.\n", basename(argv[0]));
 			exit(1);
 		}
 	}
 	if (optind < argc) {
 		fprintf(stderr, "%s: invalid option.\n"
 			"Try '%s --help' for more information.\n",
-			argv[0], argv[0]);
+			argv[0], basename(argv[0]));
 		exit(1);
 	}
 
