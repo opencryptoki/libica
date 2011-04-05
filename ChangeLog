@@ -1,3 +1,6 @@
+v2.0.6
+Fix for tracker item 3202845.
+  Improve online help for icastats.
 v2.0.5
 Fix for performance improvement
   Remove signal handler wrapping of crypto instructions.
