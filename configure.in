@@ -1,7 +1,7 @@
 #                                               -*- Autoconf -*-
 # Process this file with autoconf to produce a configure script.
 
-AC_INIT(libica, 2.0.3, felix.beck@de.ibm.com)
+AC_INIT(libica, 2.0.5, hd@linux.vnet.ibm.com)
 
 cmdline_CFLAGS="$CFLAGS"
 
