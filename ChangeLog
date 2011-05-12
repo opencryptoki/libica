@@ -1,3 +1,8 @@
+v2.1.0
+- Introduce support for MSA4 extensions. New symmetric encryption modes:
+  CFB, CTR, OFB, XTS, CMAC
+- New API calls:
+  - ica_get_version(...)
 v2.0.6
 Fix for tracker item 3202845.
   Improve online help for icastats.

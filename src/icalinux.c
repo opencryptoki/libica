@@ -4,7 +4,6 @@
  * with this program.
  */
 
-/* (C) COPYRIGHT International Business Machines Corp. 2001,2005,2008,2009  */
 /**
  * Authors: Jon Grimm <jgrimm@us.ibm.com>
  *	    Amuche Chukudebelu
@@ -13,12 +12,14 @@
  *	    Ralph Wuerthner <ralph.wuerthner@de.ibm.com>
  *	    Felix Beck <felix.beck@de.ibm.com>
  *	    Christian Maaser <cmaaser@de.ibm.com>
+ *
+ * Copyright IBM Corp. 2001, 2005, 2008, 2009, 2011
  */
 
 #include <string.h>
 #include <errno.h>
 #include "ica_api.h"
-#include "include/s390_rsa.h"
+#include "s390_rsa.h"
 
 unsigned int icaOpenAdapter(unsigned int adapter_id,
 			    ica_adapter_handle_t *adapter_handle)

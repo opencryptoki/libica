@@ -1,7 +1,7 @@
 #                                               -*- Autoconf -*-
 # Process this file with autoconf to produce a configure script.
 
-AC_INIT(libica, 2.0.6, hd@linux.vnet.ibm.com)
+AC_INIT(libica, 2.1.0, hd@linux.vnet.ibm.com)
 
 cmdline_CFLAGS="$CFLAGS"
 
@@ -48,7 +48,6 @@ AC_PROG_GCC_TRADITIONAL
 AC_FUNC_MALLOC
 AC_FUNC_MEMCMP
 AC_FUNC_STAT
-AC_FUNC_STRNLEN
 AC_CHECK_FUNCS([bzero memset])
 
 CFLAGS="$cmdline_CFLAGS"

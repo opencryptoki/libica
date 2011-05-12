@@ -4,7 +4,7 @@
  * with this program.
  */
 
-/* (C) COPYRIGHT International Business Machines Corp. 2001, 2009          */
+/* Copyright IBM Corp. 2001, 2009, 2011 */
 #include <fcntl.h>
 #include <sys/errno.h>
 #include <stdio.h>
@@ -26,9 +26,9 @@ unsigned char NIST_TEST_RESULT[] =
 
 int silent = 1;
 
-void dump_array(char *ptr, int size)
+void dump_array(unsigned char *ptr, unsigned int size)
 {
-	char *ptr_end;
+	unsigned char *ptr_end;
 	unsigned char *h;
 	int i = 1;
 
@@ -67,10 +67,10 @@ int test_des_old_api(int mode)
 	                   NIST_TEST_DATA, &iv, &key, &i, enc_text);
 	if (rc) {
 		printf("\nOriginal data:\n");
-		dump_array((char *) NIST_TEST_DATA, sizeof NIST_TEST_DATA);
+		dump_array(NIST_TEST_DATA, sizeof NIST_TEST_DATA);
 		printf("icaDesEncrypt failed with errno %d (0x%x).\n", rc, rc);
 		printf("\nEncrypted data:\n");
-		dump_array((char *) enc_text, sizeof enc_text);
+		dump_array(enc_text, sizeof enc_text);
 		return rc;
 	}
 	if (i != sizeof enc_text) {
@@ -90,12 +90,12 @@ int test_des_old_api(int mode)
 	                   enc_text, &iv, &key, &i, dec_text);
 	if (rc) {
 		printf("\nOriginal data:\n");
-		dump_array((char *) NIST_TEST_DATA, sizeof NIST_TEST_DATA);
+		dump_array(NIST_TEST_DATA, sizeof NIST_TEST_DATA);
 		printf("icaDesEncrypt failed with errno %d (0x%x).\n", rc, rc);
 		printf("\nEncrypted data:\n");
-		dump_array((char *) enc_text, sizeof enc_text);
+		dump_array(enc_text, sizeof enc_text);
 		printf("\nDecrypted data:\n");
-		dump_array((char *) dec_text, sizeof dec_text);
+		dump_array(dec_text, sizeof dec_text);
 		printf("icaDesDecrypt failed with errno %d (0x%x).\n", rc, rc);
 		return rc;
 	}
@@ -105,12 +105,12 @@ int test_des_old_api(int mode)
 
 	if (memcmp(dec_text, NIST_TEST_DATA, sizeof NIST_TEST_DATA) != 0) {
 		printf("\nOriginal data:\n");
-		dump_array((char *) NIST_TEST_DATA, sizeof NIST_TEST_DATA);
+		dump_array(NIST_TEST_DATA, sizeof NIST_TEST_DATA);
 		printf("icaDesEncrypt failed with errno %d (0x%x).\n", rc, rc);
 		printf("\nEncrypted data:\n");
-		dump_array((char *) enc_text, sizeof enc_text);
+		dump_array(enc_text, sizeof enc_text);
 		printf("\nDecrypted data:\n");
-		dump_array((char *) dec_text, sizeof dec_text);
+		dump_array(dec_text, sizeof dec_text);
 		printf("This does NOT match the original data.\n");
 		return -1;
 	} else {
@@ -137,10 +137,10 @@ int test_des_new_api(int mode)
 			     &key, enc_text);
 	if (rc) {
 		printf("\nOriginal data:\n");
-		dump_array((char *) NIST_TEST_DATA, sizeof NIST_TEST_DATA);
+		dump_array(NIST_TEST_DATA, sizeof NIST_TEST_DATA);
 		printf("ica_des_encrypt failed with errno %d (0x%x).\n", rc, rc);
 		printf("\nEncrypted data:\n");
-		dump_array((char *) enc_text, sizeof enc_text);
+		dump_array(enc_text, sizeof enc_text);
 		return rc;
 	}
 
@@ -156,24 +156,24 @@ int test_des_new_api(int mode)
 			     dec_text);
 	if (rc) {
 		printf("\nOriginal data:\n");
-		dump_array((char *) NIST_TEST_DATA, sizeof NIST_TEST_DATA);
+		dump_array(NIST_TEST_DATA, sizeof NIST_TEST_DATA);
 		printf("ica_des_encrypt failed with errno %d (0x%x).\n", rc, rc);
 		printf("\nEncrypted data:\n");
-		dump_array((char *) enc_text, sizeof enc_text);
+		dump_array(enc_text, sizeof enc_text);
 		printf("\nDecrypted data:\n");
-		dump_array((char *) dec_text, sizeof dec_text);
+		dump_array(dec_text, sizeof dec_text);
 		printf("ica_des_decrypt failed with errno %d (0x%x).\n", rc, rc);
 		return rc;
 	}
 
 	if (memcmp(dec_text, NIST_TEST_DATA, sizeof NIST_TEST_DATA) != 0) {
 		printf("\nOriginal data:\n");
-		dump_array((char *) NIST_TEST_DATA, sizeof NIST_TEST_DATA);
+		dump_array(NIST_TEST_DATA, sizeof NIST_TEST_DATA);
 		printf("ica_des_encrypt failed with errno %d (0x%x).\n", rc, rc);
 		printf("\nEncrypted data:\n");
-		dump_array((char *) enc_text, sizeof enc_text);
+		dump_array(enc_text, sizeof enc_text);
 		printf("\nDecrypted data:\n");
-		dump_array((char *) dec_text, sizeof dec_text);
+		dump_array(dec_text, sizeof dec_text);
 		printf("This does NOT match the original data.\n");
 		return -1;
 	} else {

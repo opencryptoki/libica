@@ -8,14 +8,14 @@
  * Authors: Felix Beck <felix.beck@de.ibm.com>
  *	    Christian Maaser <cmaaser@de.ibm.com>
  *
- * Copyright IBM Corp. 2009
+ * Copyright IBM Corp. 2009, 2011
  */
 
 #ifndef S390_RSA_H
 #define S390_RSA_H
 
 #include <openssl/bn.h>
-#include "zcrypt.h"
+#include <asm/zcrypt.h>
 #include "ica_api.h"
 
 typedef struct ica_rsa_modexpo ica_rsa_modexpo_t;

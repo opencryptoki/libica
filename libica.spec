@@ -1,29 +1,29 @@
-Name:          libica 
-Version:       2.0
-Release:       6%{?dist}
-Summary:       Interface library to the ICA device driver 
+Name:          libica
+Version:       2.1.0
+Release:       1%{?dist}
+Summary:       Interface library to the ICA device driver
 
-Group:         Libraries/Crypto 
-License:       CPL 
-URL:           http://sourceforge.net/projects/opencryptoki 
-Source0:       %{name}-%{version}.tar.bz2 
+Group:         Libraries/Crypto
+License:       CPL
+URL:           http://sourceforge.net/projects/opencryptoki
+Source0:       %{name}-%{version}.tar.gz
 BuildRoot:     %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
-BuildRequires: autoconf automake libtool
+BuildRequires: autoconf automake libtool openssl-devel
 
 %description
 Interface library on Linux for IBM System z to utilize CPACF
-functions and cryptographic processors. 
+functions and cryptographic processors.
 
 
 %package devel
 Summary:       Interface library to the ICA device driver
-Group:         Libraries/Crypto 
+Group:         Libraries/Crypto
 Requires:      libica = %{version}-%{release}, glibc-devel
 
 %description devel
 Interface library on Linux for IBM System z to utilize CPACF
-functions and cryptographic processors. 
+functions and cryptographic processors.
 
 
 %prep
@@ -38,17 +38,20 @@ make %{?_smp_mflags}
 
 %install
 rm -rf $RPM_BUILD_ROOT
-make install DESTDIR=$RPM_BUILD_ROOT 
+make install DESTDIR=$RPM_BUILD_ROOT
 rm -f $RPM_BUILD_ROOT/%{_libdir}/*.la
 
 
 %clean
 rm -rf $RPM_BUILD_ROOT
 
+%post -p /sbin/ldconfig
+
+%postun -p /sbin/ldconfig
 
 %files
 %defattr(-,root,root,-)
-%doc LICENSE INSTALL
+%doc LICENSE INSTALL AUTHORS
 %{_bindir}/*
 %attr(755,root,root) %{_libdir}/*
 
@@ -58,6 +61,8 @@ rm -rf $RPM_BUILD_ROOT
 %{_includedir}/ica_api.h
 
 %changelog
+* Mon May 09 2011 Holger Dengler <hd@linux.vnet.ibm.com>
+- version v2.1.0
 * Tue Mar 05 2011 Holger Dengler <hd@linux.vnet.ibm.com>
 - Bugfix version 2.0.6
 * Tue Mar 05 2011 Holger Dengler <hd@linux.vnet.ibm.com>

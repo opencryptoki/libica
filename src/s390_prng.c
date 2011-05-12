@@ -10,22 +10,22 @@
  * Authors: Felix Beck <felix.beck@de.ibm.com>
  *	    Christian Maaser <cmaaser@de.ibm.com>
  *
- * Copyright IBM Corp. 2009
+ * Copyright IBM Corp. 2009, 2011
  */
 
+#include <stdio.h>
 #include <string.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <semaphore.h>
 #include <unistd.h>
 #include <sys/types.h>
-#include "ica_api.h"
-#include "include/init.h"
-#include "include/s390_prng.h"
-#include "include/s390_crypto.h"
-#include "include/icastats.h"
 
-#include <stdio.h>
+#include "ica_api.h"
+#include "init.h"
+#include "s390_prng.h"
+#include "s390_crypto.h"
+#include "icastats.h"
 
 /*
  * On 31 bit systems we have to use the instruction STCKE while on 64 bit
@@ -101,7 +101,7 @@ static int s390_add_entropy(void)
 {
 	unsigned char entropy[4 * STCK_BUFFER];
 	unsigned int K;
-	int rc = 0;
+	int rc = -1;
 
 	if (!prng_switch)
 		return ENOTSUP;
@@ -116,6 +116,7 @@ static int s390_add_entropy(void)
 			rc = -1;
 			goto out;
 		}
+		rc = 0;
 		memcpy(zPRNG_PB, entropy, sizeof(zPRNG_PB));
 	}
 	int handle;
@@ -180,7 +181,9 @@ static int s390_prng_hw(unsigned char *random_bytes, unsigned int num_bytes)
 {
 	unsigned int i, remainder;
 	unsigned char last_dw[STCK_BUFFER];
-	int rc = 0;
+	int rc = -1;
+
+	rc = 0;
 
 	sem_wait(&semaphore);
 
@@ -223,6 +226,8 @@ static int s390_prng_hw(unsigned char *random_bytes, unsigned int num_bytes)
 		}
 		if (rc < 0)
 			return EIO;
+		else
+			rc = 0;
 
 	}
 	sem_post(&semaphore);
@@ -237,13 +242,11 @@ static int s390_prng_hw(unsigned char *random_bytes, unsigned int num_bytes)
  */
 static int s390_prng_seed(void *srv, unsigned int count)
 {
-	struct sigaction oldact;
-	sigset_t oldset;
+	int rc = -1;
 	if (!prng_switch)
 		return ENOTSUP;
 
 	unsigned int i;
-	int rc;
 
 	// Add entropy using the source randomization value.
 	for (i = 0; i < count; i++) {

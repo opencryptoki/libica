@@ -6,18 +6,20 @@
 
 /**
  * Authors: Felix Beck <felix.beck@de.ibm.com>
+ * 	    Holger Dengler <hd@linux.vnet.ibm.com>
  *	    Christian Maaser <cmaaser@de.ibm.com>
  *
- * Copyright IBM Corp. 2009
+ * Copyright IBM Corp. 2009, 2011
  */
 
 #include <string.h>
 #include <errno.h>
 #include <openssl/sha.h>
-#include "include/s390_crypto.h"
-#include "include/s390_sha.h"
-#include "include/init.h"
-#include "include/icastats.h"
+
+#include "s390_crypto.h"
+#include "s390_sha.h"
+#include "init.h"
+#include "icastats.h"
 
 unsigned char SHA_1_DEFAULT_IV[] = {
 	0x67, 0x45, 0x23, 0x01, 0xef, 0xcd, 0xab, 0x89, 0x98, 0xba, 0xdc, 0xfe,
@@ -71,96 +73,97 @@ static int s390_sha_hw(unsigned char *iv, unsigned char *input_data,
 		       uint64_t *running_length_hi, kimd_functions_t sha_function)
 {
 	int rc = 0;
-        uint64_t sum_lo = 0, sum_hi = 0;
 
-        unsigned long remnant = 0;
-        int complete_blocks_length = 0;
+	uint64_t sum_lo = 0, sum_hi = 0;
+	unsigned long remnant = 0;
+	int complete_blocks_length = 0;
+
+	unsigned char *default_iv  = sha_constants[sha_function].default_iv;
+	unsigned int hash_length   = sha_constants[sha_function].hash_length;
+	unsigned int vector_length = sha_constants[sha_function].vector_length;
+
 	/* A internal buffer for the SHA hash and stream bit length. For SHA512
 	 * this can be at most 128 byte for the hash plus 16 byte for the
 	 * stream length. */
-        unsigned char shabuff[128 + 16];
-	unsigned char *default_iv = sha_constants[sha_function].default_iv;
-	unsigned int hash_length = sha_constants[sha_function].hash_length;
-	unsigned int vector_length = sha_constants[sha_function].vector_length;
-	
-        if (input_length) {
-		unsigned int block_length;
-		block_length = sha_constants[sha_function].block_length;
-                remnant = input_length % block_length;
-                complete_blocks_length = input_length - remnant;
-        }
+	unsigned char shabuff[128 + 16];
 
-        if (message_part == SHA_MSG_PART_ONLY ||
+	if (input_length) {
+		remnant = input_length % sha_constants[sha_function].block_length;
+		complete_blocks_length = input_length - remnant;
+	}
+
+	if (message_part == SHA_MSG_PART_ONLY ||
 	    message_part == SHA_MSG_PART_FIRST) {
-                memcpy(shabuff, default_iv, vector_length);
+		memcpy(shabuff, default_iv, vector_length);
 		*running_length_lo = 0;
 		if (running_length_hi)
 			*running_length_hi = 0;
 	}
-        else
-                memcpy(shabuff, (void *)iv, vector_length);
-	
-        sum_lo = *running_length_lo;
+	else
+		memcpy(shabuff, (void *)iv, vector_length);
+
+	sum_lo = *running_length_lo;
 	if(running_length_hi)
 		sum_hi = *running_length_hi;
 
-        if ((message_part == SHA_MSG_PART_FIRST ||
+	if ((message_part == SHA_MSG_PART_FIRST ||
 	     message_part == SHA_MSG_PART_MIDDLE) && (remnant != 0))
-                return EINVAL;
+		return EINVAL;
 
 	unsigned int hw_function_code;
 	hw_function_code = sha_constants[sha_function].hw_function_code;
-        if (complete_blocks_length) {
+	if (complete_blocks_length) {
 		rc = s390_kimd(hw_function_code, shabuff, input_data,
 			       complete_blocks_length);
-                if (rc > 0) {
+		if (rc > 0) {
 		/* Check for overflow in sum_lo */
 			sum_lo += rc;
 			if(sum_lo < *running_length_lo || sum_lo < rc)
 				sum_hi += 1;
 			rc = 0;
-                }
-        }
-	
+		}
+	}
+
 	if (rc == 0 && (message_part == SHA_MSG_PART_ONLY ||
 			message_part == SHA_MSG_PART_FINAL)) {
 		sum_lo += (uint64_t)remnant;
 		if(sum_lo < remnant)
 			sum_hi += 1;
-	
+
 		if(running_length_hi){
 			sum_hi = (sum_hi << 3) + (sum_lo >> (64 - 3));
 			sum_lo = sum_lo << 3;
 			memcpy(shabuff + vector_length,
 			       (unsigned char *)&sum_hi, sizeof(sum_hi));
 			memcpy(shabuff + vector_length + sizeof(sum_hi),
-		       	       (unsigned char *)&sum_lo, sizeof(sum_lo));
+			       (unsigned char *)&sum_lo, sizeof(sum_lo));
 		}
 		else {
 			sum_lo = sum_lo << 3;
 			memcpy(shabuff + vector_length,
 			       (unsigned char *)&sum_lo, sizeof(sum_lo));
 		}
-                rc = s390_klmd(hw_function_code, shabuff,
+		rc = s390_klmd(hw_function_code, shabuff,
 			       input_data + complete_blocks_length, remnant);
 		if (rc > 0)
 			rc = 0;
-        }
+	}
 
-        if (rc == 0) {
-                memcpy((void *)output_data, shabuff, hash_length);
-                if (message_part != SHA_MSG_PART_FINAL &&
+	if (rc == 0) {
+		memcpy((void *)output_data, shabuff, hash_length);
+		if (message_part != SHA_MSG_PART_FINAL &&
 		    message_part != SHA_MSG_PART_ONLY) {
-                        memcpy((void *)iv, shabuff, vector_length);
-                        *running_length_lo = sum_lo;
+			memcpy((void *)iv, shabuff, vector_length);
+			*running_length_lo = sum_lo;
 			if(running_length_hi)
 				*running_length_hi = sum_hi;
-                }
-        }
+		}
+	}
+
 	if (rc < 0)
 		return EIO;
 
-        return rc;
+	return rc;
 }
 
 static int s390_sha1_sw(unsigned char *iv, unsigned char *input_data,

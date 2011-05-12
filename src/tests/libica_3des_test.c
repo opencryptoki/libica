@@ -4,7 +4,7 @@
  * with this program.
  */
 
-/* (C) COPYRIGHT International Business Machines Corp. 2001, 2009          */
+/* Copyright IBM Corp. 2001, 2009, 2011 */
 #include <fcntl.h>
 #include <sys/errno.h>
 #include <stdio.h>
@@ -30,7 +30,26 @@ unsigned char NIST_TEST_RESULT[] =
 
 int silent = 1;
 
-void dump_array(caddr_t, int);
+void dump_array(unsigned char *ptr, unsigned int size)
+{
+	unsigned char *ptr_end;
+	unsigned char *h;
+	int i = 1;
+
+	h = ptr;
+	ptr_end = ptr + size;
+	while (h < (unsigned char *)ptr_end) {
+		printf("0x%02x ",(unsigned char ) *h);
+		h++;
+		if (i == 8) {
+			printf("\n");
+			i = 1;
+		} else {
+			++i;
+		}
+	}
+	printf("\n");
+}
 
 int test_3des_old_api(int mode)
 {
@@ -215,27 +234,5 @@ int main(int argc, char **argv)
 	}
 
 	return rc;
-}
-
-void dump_array(char *ptr, int size)
-{
-   char *ptr_end;
-   unsigned char *h;
-   int i = 1;
-
-
-   h = ptr;
-   ptr_end = ptr + size;
-   while (h < (unsigned char *)ptr_end) {
-      printf("0x%02x ",(unsigned char ) *h);
-      h++;
-      if (i == 8) {
-         printf("\n");
-         i = 1;
-      } else {
-         ++i;
-      }
-   }
-   printf("\n");
 }
 

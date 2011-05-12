@@ -4,6 +4,7 @@
  * with this program.
  */
 
+/* Copyright IBM Corp. 2005, 2009, 2011 */
 /* (C) COPYRIGHT International Business Machines Corp. 2005, 2009          */
 #include <fcntl.h>
 #include <sys/errno.h>
@@ -58,7 +59,34 @@ unsigned char FIPS_TEST_RESULT[NUM_FIPS_TESTS][LENGTH_SHA256_HASH] =
   },
 };
 
-void dump_array(char *, int);
+void dump_array(unsigned char *ptr, unsigned int size)
+{
+  unsigned char *ptr_end;
+  unsigned char *h;
+  int i = 1, trunc = 0;
+
+  if (size > 64) {
+    trunc = size - 64;
+    size = 64;
+  }
+  h = ptr;
+  ptr_end = ptr + size;
+  while (h < ptr_end) {
+    printf("0x%02x ", *h);
+    h++;
+    if (i == 8) {
+      if (h != ptr_end)
+        printf("\n");
+      i = 1;
+    } else {
+     ++i;
+    }
+  }
+  printf("\n");
+  if (trunc > 0)
+    printf("... %d bytes not printed\n", trunc);
+}
+
 
 int old_api_sha256_test(void)
 {
@@ -341,33 +369,3 @@ int main(int argc, char **argv)
 
 	return rc;	
 }
-
-void
-dump_array(char *ptr, int size)
-{
-  char *ptr_end;
-  char *h;
-  int i = 1, trunc = 0;
-
-  if (size > 64) {
-    trunc = size - 64;
-    size = 64;
-  }
-  h = ptr;
-  ptr_end = ptr + size;
-  while (h < ptr_end) {
-    printf("0x%02x ", *h);
-    h++;
-    if (i == 8) {
-      if (h != ptr_end)
-        printf("\n");
-      i = 1;
-    } else {
-     ++i;
-    }
-  }
-  printf("\n");
-  if (trunc > 0)
-    printf("... %d bytes not printed\n", trunc);
-}
-

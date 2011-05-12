@@ -4,7 +4,12 @@
  * with this program.
  */
 
-/* (C) COPYRIGHT International Business Machines Corp. 2001,2005,2009    */
+/*
+ * Authors(s): Ralph Wuerthner <rwuerthn@de.ibm.com>
+ *             Holger Dengler <hd@linux.vnet.ibm.com>
+ *
+ * Copyright IBM Corp. 2001, 2005, 2009, 2010, 2011
+ */
 
 #ifndef __ICA_API_H__
 #define __ICA_API_H__
@@ -28,6 +33,14 @@
 
 #define ica_adapter_handle_t int
 typedef ica_adapter_handle_t ICA_ADAPTER_HANDLE;
+#define DRIVER_NOT_LOADED -1
+
+/**
+ * Definitions to determine the direction of the symmetric
+ * encryption/decryption functions.
+ */
+#define ICA_ENCRYPT 1
+#define ICA_DECRYPT 0
 
 /**
  * @deprecated.
@@ -66,10 +79,14 @@ typedef ica_adapter_handle_t ICA_ADAPTER_HANDLE;
 #define KEYTYPE_PKCSCRT				2
 
 /**
- * Symetric encryption/decryption modes ECB & CBC
+ * Symetric encryption/decryption modes
  */
 #define MODE_ECB 		1
 #define MODE_CBC 		2
+#define MODE_CFB 		3
+#define MODE_OFB 		4
+#define MODE_CTR 		5
+#define MODE_XTS 		6
 
 /**
  * @deprecated
@@ -79,6 +96,12 @@ typedef ica_adapter_handle_t ICA_ADAPTER_HANDLE;
 #define MODE_DES_CBC		MODE_CBC
 #define MODE_AES_ECB		MODE_ECB
 #define MODE_AES_CBC		MODE_CBC
+
+/*
+ * Key length for DES/3DES encryption/decryption
+ */
+#define DES_KEY_LENGTH		(56/8)
+#define DES3_KEY_LENGTH		(168/8)
 
 /**
  * Key length for AES encryption/decryption
@@ -328,6 +351,39 @@ typedef unsigned char ica_aes_key_len_128_t[16];
 typedef unsigned char ica_aes_key_len_192_t[24];
 typedef unsigned char ica_aes_key_len_256_t[32];
 #define ica_aes_key_t ica_key_t
+
+/**
+ * Libica version information
+ */
+typedef struct {
+	unsigned int major_version;
+	unsigned int minor_version;
+	unsigned int fixpack_version;
+} libica_version_info;
+
+/**
+ * Definition of a mechanism type
+ **/
+typedef unsigned int libica_mechanism_type;
+
+/**
+ * Information for a particular crypto mechanism supported by libica.
+ * Key sizes are specified in bytes and do not apply to all supported
+ * mechanisms.
+ **/
+typedef struct {
+	unsigned int min_key_size;
+	unsigned int max_key_size;
+	unsigned int flags;
+} libica_mechanism_info;
+
+/**
+ * Definition for a particular crypto mechanism supported by libica.
+ **/
+typedef struct {
+	libica_mechanism_type mech_type;
+	libica_mechanism_info mech_info;
+} libica_mechanism_list_element;
 
 /**
  * @deprecated
@@ -1050,9 +1106,6 @@ unsigned int icaRandomNumberGenerate(ica_adapter_handle_t adapter_handle,
 struct mech_list_item;
 void generate_pkcs11_mech_list(struct mech_list_item *head);
 
-
-
-
 /*
  * NEW FUNCTION PROTOTYPES
  */
@@ -1362,6 +1415,8 @@ unsigned int ica_rsa_crt(ica_adapter_handle_t adapter_handle,
 			 unsigned char *output_data);
 
 /**
+ * @deprecated, use ica_des_ecb() or ica_des_cbc() instead.
+ *
  * Encrypt data using a single length DES key.
  * @param mode Specifies the operational mode and must be:
  *	       MODE_ECB - Use Electronic Code Book mode
@@ -1393,6 +1448,8 @@ unsigned int ica_des_encrypt(unsigned int mode,
 			     unsigned char *output_data);
 
 /**
+ * @deprecated, use ica_des_ecb() or ica_des_cbc() instead.
+ *
  * Decrypt data using a single length DES key.
  * @param mode
  * Specifies the operational mode and must be:
@@ -1425,6 +1482,8 @@ unsigned int ica_des_decrypt(unsigned int mode,
 			     unsigned char *output_data);
 
 /**
+ * @deprecated, use ica_3des_ecb() or ica_3des_cbc() instead.
+ *
  * Encrypt data using a triple length DES key.
  * @param mode
  * Specifies the operational mode and must be:
@@ -1457,6 +1516,8 @@ unsigned int ica_3des_encrypt(unsigned int mode,
 			      unsigned char *output_data);
 
 /**
+ * @deprecated, use ica_3des_ecb() or ica_3des_cbc() instead.
+ *
  * Decrypt data using a triple length DES key.
  * @param mode
  * Specifies the operational mode and must be:
@@ -1489,6 +1550,8 @@ unsigned int ica_3des_decrypt(unsigned int mode,
 			      unsigned char *output_data);
 
 /**
+ * @deprecated, use ica_aes_ecb() or ica_aes_cbc() instead.
+ *
  * Encrypt data using AES (key_length is 16, 24, or 32)
  * @param mode
  * Specifies the operational mode and must be:
@@ -1524,6 +1587,8 @@ unsigned int ica_aes_encrypt(unsigned int mode,
 			     unsigned char *output_data);
 
 /**
+ * @deprecated, use ica_aes_ecb() or ica_aes_cbc() instead.
+ *
  * Decrypt data using AES (key_length is 16, 24, or 32)
  * @param mode
  * Specifies the operational mode and must be:
@@ -1533,7 +1598,7 @@ unsigned int ica_aes_encrypt(unsigned int mode,
  * Specifies the byte length of the input data. Input data length has to be
  * a multiple of the AES block length, which is 16 bytes.
  * @param input_data
- * Pointer to the input data data to be decrypted. Must be a multiple of the
+ * Pointer to the input data to be decrypted. Must be a multiple of the
  * cipher block to use hw acceleration.
  * @param iv
  * Pointer to a valid 16 byte initialization vector when using CBC mode.
@@ -1557,5 +1622,926 @@ unsigned int ica_aes_decrypt(unsigned int mode,
 			     unsigned int key_length,
 			     unsigned char *aes_key,
 			     unsigned char *output_data);
+
+/**
+ * Encrypt or decrypt data with an DES key using Electronic Cook Book (ECB)
+ * mode as described in NIST Special Publication 800-38A Chapter 6.1.
+ *
+ * Required HW Support
+ * KM-DEA-192
+ *
+ * @param in_data
+ * Pointer to a readable buffer, that contains the message to be en/decrypted.
+ * The size of the message in bytes is data_length. The size of this buffer in
+ * bytes must be at least as big as data_length.
+ * @param out_data
+ * Pointer to a writeable buffer, that will contain the resulting en/decrypted
+ * message. The size of this buffer in bytes must be at least as big as
+ * data_length.
+ * @param data_length
+ * Length in bytes of the message to be en/decrypted, which resides at the
+ * beginning of in_data. data_length must be a multiple of the cipher block
+ * size (i.e. a multiple of 8 for DES).
+ * @param key
+ * Pointer to a valid DES key of 8 bytes length.
+ * @param direction
+ * 0 or 1:
+ * 0 Use the decrypt function.
+ * 1 Use the encrypt function.
+ *
+ * @return 0 on success
+ * EINVAL if at least one invalid parameter is given.
+ * EIO if the operation fails.
+ */
+unsigned int ica_des_ecb(const unsigned char *in_data, unsigned char *out_data,
+			 unsigned long data_length, const unsigned char *key,
+			 unsigned int direction);
+
+/**
+ * Encrypt or decrypt data with an DES key using Cipher Block Chaining (CBC)
+ * mode as described in NIST Special Publication 800-38A Chapter 6.2.
+ *
+ * Required HW Support
+ * KMC-DEA
+ *
+ * @param in_data
+ * Pointer to a readable buffer, that contains the message to be en/decrypted.
+ * The size of the message in bytes is data_length. The size of this buffer in
+ * bytes must be at least as big as data_length.
+ * @param out_data
+ * Pointer to a writable buffer, that will contain the resulting en/decrypted
+ * message. The size of this buffer in bytes must be at least as big as
+ * data_length.
+ * @param data_length
+ * Length in bytes of the message to be en/decrypted, which resides at the
+ * beginning of in_data. data_length must be a multiple of the cipher block
+ * size (i.e. a multiple of 8 for DES).
+ * @param key
+ * Pointer to a valid DES key of 8 bytes length.
+ * @param iv
+ * Pointer to a valid initialization vector of cipher block size bytes. This
+ * vector will be overwritten during the function. The result value in iv may
+ * be used as initialization vector for a chained ica_des_cbc call with the
+ * same key.
+ * @param direction
+ * 0 or 1:
+ * 0 Use the decrypt function.
+ * 1 Use the encrypt function.
+ *
+ * @return 0 on success
+ * EINVAL if at least one invalid parameter is given.
+ * EIO if the operation fails.
+ */
+unsigned int ica_des_cbc(const unsigned char *in_data, unsigned char *out_data,
+			 unsigned long data_length, const unsigned char *key,
+			 unsigned char *iv,
+			 unsigned int direction);
+
+/**
+ * Encrypt or decrypt data with an DES key using Cipher Feedback (CFB) mode as
+ * described in NIST Special Publication 800-38A Chapter 6.3.
+ *
+ * Required HW Support
+ * KMF-DEA
+ *
+ * @param in_data
+ * Pointer to a readable buffer, that contains the message to be en/decrypted.
+ * The size of the message in bytes is data_length. The size of this buffer in
+ * bytes must be at least as big as data_length.
+ * @param out_data
+ * Pointer to a writable buffer, that will contain the resulting en/decrypted
+ * message. The size of this buffer in bytes must be at least as big as
+ * data_length.
+ * @param data_length
+ * Length in bytes of the message to be en/decrypted, which resides at the
+ * beginning of in_data.
+ * @param key
+ * Pointer to a valid DES key of 8 bytes length.
+ * @param iv
+ * Pointer to a valid initialization vector of cipher block size bytes (8 bytes
+ * for DES). This vector will be overwritten during the function. The result
+ * value in iv may be used as initialization vector for a chained ica_des_cfb
+ * call with the same key if data_length in the preceding call is a multiple of
+ * lcfb.
+ * @param lcfb
+ * Length in bytes of the cipher feedback which is a value greater than or
+ * equal to 1 and less than or equal to the cipher block size (i.e. 8 for DES).
+ * @param direction
+ * 0 or 1:
+ * 0 Use the decrypt function.
+ * 1 Use the encrypt function.
+ *
+ * @return 0 on success
+ * EINVAL if at least one invalid parameter is given.
+ * EIO if the operation fails.
+ */
+unsigned int ica_des_cfb(const unsigned char *in_data, unsigned char *out_data,
+			 unsigned long data_length, const unsigned char *key,
+			 unsigned char *iv, unsigned int lcfb,
+			 unsigned int direction);
+
+/**
+ * Encrypt or decrypt data with an DES key using Counter (CTR) mode as
+ * described in NIST Special Publication 800-38A Chapter 6.5. With the counter
+ * mode each message block of size cipher block size (i.e. 8 bytes for DES) is
+ * combined with a counter value of the same size during encryption and
+ * decryption. Starting with an initial counter value to be combined with the
+ * first message block subsequent counter values to be combined with subsequent
+ * message blocks will be derived from preceding counter values by an increment
+ * function. The increment function used in ica_des_ctr is s an arithmetic
+ * increment without carry on the U least significant bytes in the counter
+ * where M is a parameter to ica_des_ctr.
+ *
+ * Required HW Support
+ * KMCTR-DEA
+ *
+ * @param in_data
+ * Pointer to a readable buffer, that contains the message to be en/decrypted.
+ * The size of the message in bytes is data_length. The size of this buffer in
+ * bytes must be at least as big as data_length.
+ * @param out_data
+ * Pointer to a writable buffer, that will contain the resulting en/decrypted
+ * message. The size of this buffer in bytes must be at least as big as
+ * data_length.
+ * @param data_length
+ * Length in bytes of the message to be en/decrypted, which resides at the
+ * beginning of in_data.
+ * @param key
+ * Pointer to a valid DES key of 8 bytes length.
+ * @param ctr
+ * Pointer to a readable and writable buffer of size cipher block size bytes.
+ * ctr contains an initialization value for a counter function and it will be
+ * replaced by a new value. That new value can be used as an initialization
+ * value for a counter function in a chained ica_des_ctr call with the same key
+ * if data_length used in the preceding call is a multiple of the cipher block
+ * size.
+ * @param ctr_width
+ * A number U between 1 and cipher block size. The value is used by the counter
+ * increment function which increments a counter value by incrementing without
+ * carry the least significant U bytes of the counter value.
+ * @param direction
+ * 0 or 1:
+ * 0 Use the decrypt function.
+ * 1 Use the encrypt function.
+ *
+ * @return 0 on success
+ * EINVAL if at least one invalid parameter is given.
+ * EIO if the operation fails.
+ */
+unsigned int ica_des_ctr(const unsigned char *in_data, unsigned char *out_data,
+			 unsigned long data_length,
+			 const unsigned char *key,
+			 unsigned char *ctr, unsigned int ctr_width,
+			 unsigned int direction);
+
+/**
+ * Encrypt or decrypt data with an DES key using Counter (CTR) mode as
+ * described in NIST Special Publication 800-38A, Chapter 6.5. With the counter
+ * mode each message block of size cipher block size is combined with a counter
+ * value of the same size during encryption and decryption. The ica_des_ctrlist
+ * function assumes that a list n of precomputed counter values is provided
+ * where n is the smallest integer that is less or equal to the message size
+ * divided by the cipher block size. This function allows to optimally exploit
+ * System z HW support for non-standard counter functions.
+ *
+ * Required HW Support
+ * KMCTR-DEA
+ *
+ * @param in_data
+ * Pointer to a readable buffer, that contains the message to be en/decrypted.
+ * The size of the message in bytes is data_length. The size of this buffer in
+ * bytes must be at least as big as data_length.
+ * @param out_data
+ * Pointer to a writable buffer, that will contain the resulting en/decrypted
+ * message. The size of this buffer in bytes must be at least as big as
+ * data_length.
+ * @param data_length
+ * Length in bytes of the message to be en/decrypted, which resides at the
+ * beginning of in_data. If data_length is a multiple of the cipher block size
+ * then calls of ica_des_ctrlist with the same key can be chained if ctrlist
+ * argument of the chained call contains a list of counters that follows the
+ * counters used in the first call and data_length used in the preceding call
+ * is a multiple of the cipher block size.
+ * @param key
+ * Pointer to a valid DES key of 8 bytes length.
+ * @param ctrlist
+ * Pointer to a readable buffer of that is both of size greater than or equal
+ * to data_length and a multiple of the cipher block size (i.e. 8 bytes for
+ * DES). ctrlist should contain a list of precomputed counter values of size
+ * cipher block size each.
+ * @param direction
+ * 0 or 1:
+ * 0 Use the decrypt function.
+ * 1 Use the encrypt function.
+ *
+ * @return 0 on success
+ * EINVAL if at least one invalid parameter is given.
+ * EIO if the operation fails.
+ */
+unsigned int ica_des_ctrlist(const unsigned char *in_data, unsigned char *out_data,
+			     unsigned long data_length,
+			     const unsigned char *key,
+			     const unsigned char *ctrlist,
+			     unsigned int direction);
+
+/**
+ * Encrypt or decrypt data with an DES key using Output Feedback (OFB) mode as
+ * described in NIST Special Publication 800-38A Chapter 6.4.
+ *
+ * Required HW Support
+ * KMO-DEA
+ *
+ * @param in_data
+ * Pointer to a readable buffer, that contains the message to be en/decrypted.
+ * The size of the message in bytes is data_length. The size of this buffer in
+ * bytes must be at least as big as data_length.
+ * @param out_data
+ * Pointer to a writable buffer, that contains the resulting en/decrypted
+ * message. The size of this buffer in bytes must be at least as big as
+ * data_length.
+ * @param data_length
+ * Length in bytes of the message to be en/decrypted, which resides at the
+ * beginning of in_data.
+ * @param key
+ * Pointer to a valid DES key of 8 bytes length.
+ * @param iv
+ * Pointer to a valid initialization vector of cipher block size bytes (8 bytes
+ * for DES). This vector will be overwritten during the function. If
+ * data_length is a multiple of the cipher block size (i.e. a multiple of 8 for
+ * DES) the result value in iv may be used as initialization vector for a
+ * chained ica_des_ofb call with the same key.
+ * @param direction
+ * 0 or 1:
+ * 0 Use the decrypt function.
+ * 1 Use the encrypt function.
+ *
+ * @return 0 on success
+ * EINVAL if at least one invalid parameter is given.
+ * EIO if the operation fails.
+ */
+unsigned int ica_des_ofb(const unsigned char *in_data, unsigned char *out_data,
+			 unsigned long data_length, const unsigned char *key,
+			 unsigned char *iv, unsigned int direction);
+
+/**
+ * Encrypt or decrypt data with an 3DES key using Electronic Cook Book (ECB)
+ * mode as described in NIST Special Publication 800-38A Chapter 6.1.
+ *
+ * Required HW Support
+ * KM-DEA-192
+ *
+ * @param in_data
+ * Pointer to a readable buffer, that contains the message to be en/decrypted.
+ * The size of the message in bytes is data_length. The size of this buffer in
+ * bytes must be at least as big as data_length.
+ * @param out_data
+ * Pointer to a writeable buffer, that will contain the resulting en/decrypted
+ * message. The size of this buffer in bytes must be at least as big as
+ * data_length.
+ * @param data_length
+ * Length in bytes of the message to be en/decrypted, which resides at the
+ * beginning of in_data. data_length must be a multiple of the cipher block
+ * size (i.e. a multiple of 8 for 3DES).
+ * @param key
+ * Pointer to a valid 3DES key of 24 bytes length.
+ * @param direction
+ * 0 or 1:
+ * 0 Use the decrypt function.
+ * 1 Use the encrypt function.
+ *
+ * @return 0 on success
+ * EINVAL if at least one invalid parameter is given.
+ * EIO if the operation fails.
+ */
+unsigned int ica_3des_ecb(const unsigned char *in_data, unsigned char *out_data,
+			  unsigned long data_length, const unsigned char *key,
+			  unsigned int direction);
+
+/**
+ * Encrypt or decrypt data with an 3DES key using Cipher Block Chaining (CBC)
+ * mode as described in NIST Special Publication 800-38A Chapter 6.2.
+ *
+ * Required HW Support
+ * KMC-TDEA-192
+ *
+ * @param in_data
+ * Pointer to a readable buffer, that contains the message to be en/decrypted.
+ * The size of the message in bytes is data_length. The size of this buffer in
+ * bytes must be at least as big as data_length.
+ * @param out_data
+ * Pointer to a writable buffer, that will contain the resulting en/decrypted
+ * message. The size of this buffer in bytes must be at least as big as
+ * data_length.
+ * @param data_length
+ * Length in bytes of the message to be en/decrypted, which resides at the
+ * beginning of in_data. data_length must be a multiple of the cipher block
+ * size (i.e. a multiple of 8 for 3DES).
+ * @param key
+ * Pointer to a valid 3DES key of 24 bytes length.
+ * @param iv
+ * Pointer to a valid initialization vector of cipher block size bytes. This
+ * vector will be overwritten during the function. The result value in iv may
+ * be used as initialization vector for a chained ica_3des_cbc call with the
+ * same key.
+ * @param direction
+ * 0 or 1:
+ * 0 Use the decrypt function.
+ * 1 Use the encrypt function.
+ *
+ * @return 0 on success
+ * EINVAL if at least one invalid parameter is given.
+ * EIO if the operation fails.
+ */
+unsigned int ica_3des_cbc(const unsigned char *in_data, unsigned char *out_data,
+			  unsigned long data_length, const unsigned char *key,
+			  unsigned char *iv,
+			  unsigned int direction);
+
+/**
+ * Encrypt or decrypt data with an 3DES key using Cipher Feedback (CFB) mode as
+ * described in NIST Special Publication 800-38A Chapter 6.3.
+ *
+ * Required HW Support
+ * KMF-TDEA-192
+ *
+ * @param in_data
+ * Pointer to a readable buffer, that contains the message to be en/decrypted.
+ * The size of the message in bytes is data_length. The size of this buffer in
+ * bytes must be at least as big as data_length.
+ * @param out_data
+ * Pointer to a writable buffer, that will contain the resulting en/decrypted
+ * message. The size of this buffer in bytes must be at least as big as
+ * data_length.
+ * @param data_length
+ * Length in bytes of the message to be en/decrypted, which resides at the
+ * beginning of in_data.
+ * @param key
+ * Pointer to a valid 3DES key of 24 bytes length.
+ * @param iv
+ * Pointer to a valid initialization vector of cipher block size bytes (8 bytes
+ * for 3DES). This vector will be overwritten during the function. The result
+ * value in iv may be used as initialization vector for a chained ica_3des_cfb
+ * call with the same key if data_length in the preceding call is a multiple of
+ * lcfb.
+ * @param lcfb
+ * Length in bytes of the cipher feedback which is a value greater than or
+ * equal to 1 and less than or equal to the cipher block size (i.e. 8 for
+ * 3DES).
+ * @param direction
+ * 0 or 1:
+ * 0 Use the decrypt function.
+ * 1 Use the encrypt function.
+ *
+ * @return 0 on success
+ * EINVAL if at least one invalid parameter is given.
+ * EIO if the operation fails.
+ */
+unsigned int ica_3des_cfb(const unsigned char *in_data, unsigned char *out_data,
+			  unsigned long data_length, const unsigned char *key,
+			  unsigned char *iv, unsigned int lcfb,
+			  unsigned int direction);
+
+/**
+ * Encrypt or decrypt data with an 3DES key using Counter (CTR) mode as
+ * described in NIST Special Publication 800-38A Chapter 6.5. With the counter
+ * mode each message block of size cipher block size (i.e. 8 bytes for 3DES) is
+ * combined with a counter value of the same size during encryption and
+ * decryption. Starting with an initial counter value to be combined with the
+ * first message block subsequent counter values to be combined with subsequent
+ * message blocks will be derived from preceding counter values by an increment
+ * function. The increment function used in ica_3des_ctr is s an arithmetic
+ * increment without carry on the U least significant bytes in the counter
+ * where M is a parameter to ica_3des_ctr.
+ *
+ * Required HW Support
+ * KMCTR-TDEA-192
+ *
+ * @param in_data
+ * Pointer to a readable buffer, that contains the message to be en/decrypted.
+ * The size of the message in bytes is data_length. The size of this buffer in
+ * bytes must be at least as big as data_length.
+ * @param out_data
+ * Pointer to a writable buffer, that will contain the resulting en/decrypted
+ * message. The size of this buffer in bytes must be at least as big as
+ * data_length.
+ * @param data_length
+ * Length in bytes of the message to be en/decrypted, which resides at the
+ * beginning of in_data.
+ * @param key
+ * Pointer to a valid 3DES key of 24 bytes length.
+ * @param ctr
+ * Pointer to a readable and writable buffer of size cipher block size bytes.
+ * ctr contains an initialization value for a counter function and it will be
+ * replaced by a new value. That new value can be used as an initialization
+ * value for a counter function in a chained ica_3des_ctr call with the same
+ * key if data_length used in the preceding call is a multiple of the cipher
+ * block size.
+ * @param ctr_width
+ * A number U between 1 and cipher block size. The value is used by the counter
+ * increment function which increments a counter value by incrementing without
+ * carry the least significant U bytes of the counter value.
+ * @param direction
+ * 0 or 1:
+ * 0 Use the decrypt function.
+ * 1 Use the encrypt function.
+ *
+ * @return 0 on success
+ * EINVAL if at least one invalid parameter is given.
+ * EIO if the operation fails.
+ */
+unsigned int ica_3des_ctr(const unsigned char *in_data, unsigned char *out_data,
+			  unsigned long data_length,
+			  const unsigned char *key,
+			  unsigned char *ctr, unsigned int ctr_width,
+			  unsigned int direction);
+
+/**
+ * Encrypt or decrypt data with an 3DES key using Counter (CTR) mode as
+ * described in NIST Special Publication 800-38A ,Chapter 6.5. With the counter
+ * mode each message block of size cipher block size is combined with a counter
+ * value of the same size during encryption and decryption. The
+ * ica_3des_ctrlist function assumes that a list n of precomputed counter
+ * values is provided where n is the smallest integer that is less or equal to
+ * the message size divided by the cipher block size. This function allows to
+ * optimally exploit System z HW support for non-standard counter functions.
+ *
+ * Required HW Support
+ * KMCTR-TDEA-192
+ *
+ * @param in_data
+ * Pointer to a readable buffer, that contains the message to be en/decrypted.
+ * The size of the message in bytes is data_length. The size of this buffer in
+ * bytes must be at least as big as data_length.
+ * @param out_data
+ * Pointer to a writable buffer, that will contain the resulting en/decrypted
+ * message. The size of this buffer in bytes must be at least as big as
+ * data_length.
+ * @param data_length
+ * Length in bytes of the message to be en/decrypted, which resides at the
+ * beginning of in_data. If data_length is a multiple of the cipher block size
+ * then calls of ica_3des_ctrlist with the same key can be chained if ctrlist
+ * argument of the chained call contains a list of counters that follows the
+ * counters used in the first call and data_length used in the preceding call
+ * is a multiple of the cipher block size.
+ * @param key
+ * Pointer to an 3DES key of 24 bytes length.
+ * @param ctrlist
+ * Pointer to a readable buffer of that is both of size greater than or equal
+ * to data_length and a multiple of the cipher block size (i.e. 8 bytes for
+ * 3DES). ctrlist should contain a list of precomputed counter values of size
+ * cipher block size each.
+ * @param direction
+ * 0 or 1:
+ * 0 Use the decrypt function.
+ * 1 Use the encrypt function.
+ *
+ * @return 0 on success
+ * EINVAL if at least one invalid parameter is given.
+ * EIO if the operation fails.
+ */
+unsigned int ica_3des_ctrlist(const unsigned char *in_data, unsigned char *out_data,
+			      unsigned long data_length,
+			      const unsigned char *key,
+			      const unsigned char *ctrlist,
+			      unsigned int direction);
+
+/**
+ * Encrypt or decrypt data with an 3DES key using Output Feedback (OFB) mode as
+ * described in NIST Special Publication 800-38A Chapter 6.4.
+ *
+ * Required HW Support
+ * KMO-TDEA-192
+ *
+ * @param in_data
+ * Pointer to a readable buffer, that contains the message to be en/decrypted.
+ * The size of the message in bytes is data_length. The size of this buffer in
+ * bytes must be at least as big as data_length.
+ * @param out_data
+ * Pointer to a writable buffer, that contains the resulting en/decrypted
+ * message. The size of this buffer in bytes must be at least as big as
+ * data_length.
+ * @param data_length
+ * Length in bytes of the message to be en/decrypted, which resides at the
+ * beginning of in_data.
+ * @param key
+ * Pointer to a valid 3DES key of 24 bytes length.
+ * @param iv
+ * Pointer to a valid initialization vector of cipher block size bytes (8 bytes
+ * for DES). This vector will be overwritten during the function. If
+ * data_length is a multiple of the cipher block size (i.e. a multiple of 8 for
+ * 3DES) the result value in iv may be used as initialization vector for a
+ * chained ica_3DES_ofb call with the same key.
+ * @param direction
+ * 0 or 1:
+ * 0 Use the decrypt function.
+ * 1 Use the encrypt function.
+ *
+ * @return 0 on success
+ * EINVAL if at least one invalid parameter is given.
+ * EIO if the operation fails.
+ */
+unsigned int ica_3des_ofb(const unsigned char *in_data, unsigned char *out_data,
+			  unsigned long data_length, const unsigned char *key,
+			  unsigned char *iv, unsigned int direction);
+
+/**
+ * Encrypt or decrypt data with an AES key using Electronic Cook Book (ECB)
+ * mode as described in NIST Special Publication 800-38A Chapter 6.1.
+ *
+ * Required HW Support
+ * KM-AES-128, KM-AES-192 or KM-AES-256
+ *
+ * @param in_data
+ * Pointer to a readable buffer, that contains the message to be en/decrypted.
+ * The size of the message in bytes is data_length. The size of this buffer in
+ * bytes must be at least as big as data_length.
+ * @param out_data
+ * Pointer to a writable buffer, that will contain the resulting en/decrypted
+ * message. The size of this buffer in bytes must be at least as big as
+ * data_length.
+ * @param data_length
+ * Length in bytes of the message to be en/decrypted, which resides at the
+ * beginning of in_data. data_length must be a multiple of the cipher block
+ * size (i.e. a multiple of 16 for AES).
+ * @param key
+ * Pointer to a valid AES key.
+ * @param key_length
+ * Length in bytes of the AES key. Supported sizes are 16, 24, and 32 for
+ * AES-128, AES-192 and AES-256 respectively. Therefore, you can use the
+ * macros: AES_KEY_LEN128, AES_KEY_LEN192, and AES_KEY_LEN256.
+ * @param direction
+ * 0 or 1:
+ * 0 Use the decrypt function.
+ * 1 Use the encrypt function.
+ *
+ * @return 0 on success
+ * EINVAL if at least one invalid parameter is given.
+ * EIO if the operation fails.
+ */
+unsigned int ica_aes_ecb(const unsigned char *in_data, unsigned char *out_data,
+			 unsigned long data_length, const unsigned char *key,
+			 unsigned int key_length,
+			 unsigned int direction);
+
+/**
+ * Encrypt or decrypt data with an AES key using Cipher Block Chaining (CBC)
+ * mode as described in NIST Special Publication 800-38A Chapter 6.2.
+ *
+ * Required HW Support
+ * KMC-AES-128, KMC-AES-192 or KMC-AES-256
+ *
+ * @param in_data
+ * Pointer to a readable buffer, that contains the message to be en/decrypted.
+ * The size of the message in bytes is data_length. The size of this buffer in
+ * bytes must be at least as big as data_length.
+ * @param out_data
+ * Pointer to a writable buffer, that will contain the resulting en/decrypted
+ * message. The size of this buffer in bytes must be at least as big as
+ * data_length.
+ * @param data_length
+ * Length in bytes of the message to be en/decrypted, which resides at the
+ * beginning of in_data. data_length must be a multiple of the cipher block
+ * size (i.e. a multiple of 16 for AES).
+ * @param key
+ * Pointer to a valid AES key.
+ * @param key_length
+ * Length in bytes of the AES key. Supported sizes are 16, 24, and 32 for
+ * AES-128, AES-192 and AES-256 respectively. Therefore, you can use the
+ * macros: AES_KEY_LEN128, AES_KEY_LEN192, and AES_KEY_LEN256.
+ * @param iv
+ * Pointer to a valid initialization vector of size chipher block size. This
+ * vector will be overwritten during the function. The result value in iv may
+ * be used as initialization vector for a chained ica_aes_cbc call with the
+ * same key.
+ * @param direction
+ * 0 or 1:
+ * 0 Use the decrypt function.
+ * 1 Use the encrypt function.
+ *
+ * @return 0 on success
+ * EINVAL if at least one invalid parameter is given.
+ * EIO if the operation fails.
+ */
+unsigned int ica_aes_cbc(const unsigned char *in_data, unsigned char *out_data,
+			 unsigned long data_length, const unsigned char *key,
+			 unsigned int key_length, unsigned char *iv,
+			 unsigned int direction);
+
+/**
+ * Encrypt or decrypt data with an AES key using Cipher Feedback (CFB) mode as
+ * described in NIST Special Publication 800-38A Chapter 6.3.
+ *
+ * Required HW Support
+ * KMF-AES-128, KMF-AES-192 or KMF-AES-256
+ *
+ * @param in_data
+ * Pointer to a readable buffer, that contains the message to be en/decrypted.
+ * The size of the message in bytes is data_length. The size of this buffer in
+ * bytes must be at least as big as data_length.
+ * @param out_data
+ * Pointer to a writable buffer, that will contain the resulting en/decrypted
+ * message. The size of this buffer in bytes must be at least as big as
+ * data_length.
+ * @param data_length
+ * Length in bytes of the message to be en/decrypted, which resides at the
+ * beginning of in_data.
+ * @param key
+ * Pointer to a valid AES key.
+ * @param key_length
+ * Length in bytes of the AES key. Supported sizes are 16, 24, and 32 for
+ * AES-128, AES-192 and AES-256 respectively. Therefore, you can use the
+ * macros: AES_KEY_LEN128, AES_KEY_LEN192, and AES_KEY_LEN256.
+ * @param iv
+ * Pointer to a valid initialization vector of cipher block size bytes (16
+ * bytes for AES). This vector will be overwritten during the function. The
+ * result value in iv may be used as initialization vector for a chained
+ * ica_aes_cfb call with the same key if data_length in the preceding call is a
+ * multiple of lcfb.
+ * @param lcfb
+ * Length in bytes of the cipher feedback which is a value greater than or
+ * equal to 1 and less than or equal to the cipher block size (i.e. 16 for
+ * AES).
+ * @param direction
+ * 0 or 1:
+ * 0 Use the decrypt function.
+ * 1 Use the encrypt function.
+ *
+ * @return 0 on success
+ * EINVAL if at least one invalid parameter is given.
+ * EIO if the operation fails.
+ */
+unsigned int ica_aes_cfb(const unsigned char *in_data, unsigned char *out_data,
+			 unsigned long data_length, const unsigned char *key,
+			 unsigned int key_length, unsigned char *iv, unsigned int lcfb,
+			 unsigned int direction);
+
+/**
+ * Encrypt or decrypt data with an AES key using Counter (CTR) mode as
+ * described in NIST Special Publication 800-38A Chapter 6.5. With the counter
+ * mode each message block of size cipher block size (i.e. 16 bytes for AES) is
+ * combined with a counter value of the same size during encryption and
+ * decryption. Starting with an initial counter value to be combined with the
+ * first message block subsequent counter values to be combined with subsequent
+ * message blocks will be derived from preceding counter values by an increment
+ * function. The increment function used in ica_aes_ctr is s an arithmetic
+ * increment without carry on the U least significant bytes in the counter
+ * where M is a parameter to ica_aes_ctr.
+ *
+ * Required HW Support
+ * KMCTR-AES-128, KMCTR-AES-192 or KMCTR-AES-256
+ *
+ * @param in_data
+ * Pointer to a readable buffer, that contains the message to be en/decrypted.
+ * The size of the message in bytes is data_length. The size of this buffer in
+ * bytes must be at least as big as data_length.
+ * @param out_data
+ * Pointer to a writable buffer, that will contain the resulting en/decrypted
+ * message. The size of this buffer in bytes must be at least as big as
+ * data_length.
+ * @param data_length
+ * Length in bytes of the message to be en/decrypted, which resides at the
+ * beginning of in_data.
+ * @param key
+ * Pointer to a valid AES key.
+ * @param key_length
+ * Length in bytes of the AES key. Supported sizes are 16, 24, and 32 for
+ * AES-128, AES-192 and AES-256 respectively. Therefore, you can use the
+ * macros: AES_KEY_LEN128, AES_KEY_LEN192, and AES_KEY_LEN256.
+ * @param ctr
+ * Pointer to a readable and writable buffer of size cipher block size bytes.
+ * ctr contains an initialization value for a counter function and it will be
+ * replaced by a new value. That new value can be used as an initialization
+ * value for a counter function in a chained ica_aes_ctr call with the same key
+ * if data_length used in the preceding call is a multiple of the cipher block
+ * size.
+ * @param ctr_width
+ * A number U between 1 and cipher block size. The value is used by the counter
+ * increment function which increments a counter value by incrementing without
+ * carry the least significant U bytes of the counter value.
+ * @param direction
+ * 0 or 1:
+ * 0 Use the decrypt function.
+ * 1 Use the encrypt function.
+ *
+ * @return 0 on success
+ * EINVAL if at least one invalid parameter is given.
+ * EIO if the operation fails.
+ */
+unsigned int ica_aes_ctr(const unsigned char *in_data, unsigned char *out_data,
+			 unsigned long data_length,
+			 const unsigned char *key, unsigned int key_length,
+			 unsigned char *ctr, unsigned int ctr_width,
+			 unsigned int direction);
+
+/**
+ * Encrypt or decrypt data with an AES key using Counter (CTR) mode as
+ * described in NIST Special Publication 800-38A ,Chapter 6.5. With the counter
+ * mode each message block of size cipher block size is combined with a counter
+ * value of the same size during encryption and decryption. The ica_aes_ctrlist
+ * function assumes that a list n of precomputed counter values is provided
+ * where n is the smallest integer that is less or equal to the message size
+ * divided by the cipher block size. This function allows to optimally exploit
+ * System z HW support for non-standard counter functions.
+ *
+ * Required HW Support
+ * KMCTR-AES-128, KMCTR-AES-192 or KMCTR-AES-256
+ *
+ * @param in_data
+ * Pointer to a readable buffer, that contains the message to be en/decrypted.
+ * The size of the message in bytes is data_length. The size of this buffer in
+ * bytes must be at least as big as data_length.
+ * @param out_data
+ * Pointer to a writable buffer, that will contain the resulting en/decrypted
+ * message. The size of this buffer in bytes must be at least as big as
+ * data_length.
+ * @param data_length
+ * Length in bytes of the message to be en/decrypted, which resides at the
+ * beginning of in_data. If data_length is a multiple of the cipher block size
+ * then calls of ica_aes_ctrlist with the same key can be chained if ctrlist
+ * argument of the chained call contains a list of counters that follows the
+ * counters used in the first call and data_length used in the preceding call
+ * is a multiple of the cipher block size.
+ * @param key
+ * Pointer to a valid AES key.
+ * @param key_length
+ * Length in bytes of the AES key. Supported sizes are 16, 24, and 32 for
+ * AES-128, AES-192 and AES-256 respectively. Therefore, you can use the
+ * macros: AES_KEY_LEN128, AES_KEY_LEN192, and AES_KEY_LEN256.
+ * @param ctrlist
+ * Pointer to a readable buffer of that is both of size greater than or equal
+ * to data_length and a multiple of the cipher block size (i.e. 16 bytes for
+ * AES). ctrlist should contain a list of precomputed counter values of size
+ * cipher block size each.
+ * @param direction
+ * 0 or 1:
+ * 0 Use the decrypt function.
+ * 1 Use the encrypt function.
+ *
+ * @return 0 on success
+ * EINVAL if at least one invalid parameter is given.
+ * EIO if the operation fails.
+ */
+unsigned int ica_aes_ctrlist(const unsigned char *in_data, unsigned char *out_data,
+			     unsigned long data_length,
+			     const unsigned char *key, unsigned int key_length,
+			     const unsigned char *ctrlist,
+			     unsigned int direction);
+
+/**
+ * Encrypt or decrypt data with an AES key using Output Feedback (OFB) mode as
+ * described in NIST Special Publication 800-38A Chapter 6.4.
+ *
+ * Required HW Support
+ * KMO-AES-128, KMO-AES-192 or KMO-AES-256
+ *
+ * @param in_data
+ * Pointer to a readable buffer, that contains the message to be en/decrypted.
+ * The size of the message in bytes is data_length. The size of this buffer in
+ * bytes must be at least as big as data_length.
+ * @param out_data
+ * Pointer to a writable buffer, that contains the resulting en/decrypted
+ * message. The size of this buffer in bytes must be at least as big as
+ * data_length.
+ * @param data_length
+ * Length in bytes of the message to be en/decrypted, which resides at the
+ * beginning of in_data.
+ * @param key
+ * Pointer to a valid AES key.
+ * @param key_length
+ * Length in bytes of the AES key. Supported sizes are 16, 24, and 32 for
+ * AES-128, AES-192 and AES-256 respectively. Therefore, you can use the
+ * macros: AES_KEY_LEN128, AES_KEY_LEN192, and AES_KEY_LEN256.
+ * @param iv
+ * Pointer to a valid 16 byte initialization vector. This vector will be
+ * overwritten during the function. If data_length is a multiple of the cipher
+ * block size (i.e. a multiple of 16 for AES) the result value in iv may be
+ * used as initialization vector for a chained ica_aes_ofb call with the same
+ * key.
+ * @param direction
+ * 0 or 1:
+ * 0 Use the decrypt function.
+ * 1 Use the encrypt function.
+ *
+ * @return 0 on success
+ * EINVAL if at least one invalid parameter is given.
+ * EIO if the operation fails.
+ */
+unsigned int ica_aes_ofb(const unsigned char *in_data, unsigned char *out_data,
+			 unsigned long data_length, const unsigned char *key,
+			 unsigned int key_length, unsigned char *iv,
+			 unsigned int direction);
+
+/**
+ * Authenticate data or verify the authenticity of data with an AES key using
+ * the Block Cipher Based Message Authentication Code (CMAC) mode as described
+ * in NIST Special Publication 800-38B. ica_aes_cmac can be used to
+ * authenticate or verify the authenticity of a complete message.
+ *
+ * Required HW Support
+ * KMAC-AES-128, KMAC-AES-192 or KMAC-AES-256
+ * PCC-Compute-Last_block-CMAC-Using-AES-128,
+ * PCC-Compute-Last_block-CMAC-Using-AES-192 or
+ * PCC-Compute-Last_block-CMAC-Using-AES-256
+ *
+ * @param message
+ * Pointer to a readable buffer of size greater than or equal to message_length
+ * bytes. It contains a message to be authenticated or of which the
+ * authenticity shall be verified.
+ * @param message_length
+ * Length in bytes of the message to be authenticated or verified.
+ * @param mac
+ * Pointer to a buffer of size greater than or equal to mac_length bytes. If
+ * direction is 1 the buffer must be writable and a message authentication code
+ * for the message in message of size mac_length bytes will be written to the
+ * buffer. If direction is 0 the buffer must be readable and contain a message
+ * authentication code that will be verified against the message in message
+ * @param mac_length
+ * Length in bytes of the message authentication code mac in bytes that is less
+ * than or equal to the cipher block size (I.e. 16 bytes for AES). It is
+ * recommended to use values greater than or equal to 8.
+ * @param key
+ * Pointer to a valid AES key.
+ * @param key_length
+ * Length in bytes of the AES key. Supported sizes are 16, 24, and 32 for
+ * AES-128, AES-192 and AES-256 respectively. Therefore, you can use the
+ * macros: AES_KEY_LEN128, AES_KEY_LEN192, and AES_KEY_LEN256.
+ * @param direction
+ * 0 or 1:
+ * 0 Verify message authentication code
+ * 1 Compute message authentication code for the message
+ *
+ * @return 0 on success
+ * EINVAL if at least one invalid parameter is given.
+ * EIO if the operation fails.
+ * EFAULT if direction is 0 and the verification of the message authentication code fails.
+ */
+unsigned int ica_aes_cmac(const unsigned char *message, unsigned long message_length,
+			  unsigned char *mac, unsigned int mac_length,
+			  const unsigned char *key, unsigned int key_length,
+			  unsigned int direction);
+
+/**
+ * Encrypt or decrypt data with an AES key using the XEX Tweakable Bloc Cipher
+ * with Ciphertext Stealing (XTS) mode as described in NIST Special Publication
+ * 800-38E and IEEE standard 1619-2007.
+ *
+ * Required HW Support
+ * KM-XTS-AES-128 or KM-XTS-AES-256
+ * PCC-Compute-XTS-Parameter-Using-AES-128 or
+ * PCC-Compute-XTS-Parameter-Using-AES-256
+ *
+ * @param in_data
+ * Pointer to a readable buffer, that contains the message to be en/decrypted.
+ * The size of the message in bytes is data_length. The size of this buffer in
+ * bytes must be at least as big as data_length.
+ * @param out_data
+ * Pointer to a writable buffer, that will contain the resulting en/decrypted
+ * message. The size of this buffer in bytes must be at least as big as
+ * data_length.
+ * @param data_length
+ * Length in bytes of the message to be en/decrypted, which resides at the
+ * beginning of in_data. The minimal value of data_length is cipher block size
+ * (i.e. a multiple of 16 for AES).
+ * @param key1
+ * Pointer to a buffer containing a valid AES key. key1 is used for the actual
+ * encryption of the message buffer combined some vector computed from the
+ * tweek value (Key1 in IEEE Std 1619-2007).
+ * @param key2
+ * Pointer to a buffer containing a valid AES key key2 is used to encrypt the
+ * tweak (Key2 in IEEE Std 1619-2007).
+ * @param key_length
+ * The length in bytes of the AES key. For XTS supported AES key sizes are 16
+ * and 32 for AES-128 and AES-256 respectively.
+ * @param tweak
+ * Pointer to a valid 16 byte tweak value (as in IEEE Std 1619-2007). This
+ * tweak will be overwritten during the function. If data_length is a multiple
+ * of the cipher block size the result value in tweak may be used as tweak
+ * value for a chained ica_aes_xts call with the same key pair.
+ * @param direction
+ * 0 or 1:
+ * 0 Use the decrypt function.
+ * 1 Use the encrypt function.
+ *
+ * @return 0 on success
+ * EINVAL if at least one invalid parameter is given.
+ * EIO if the operation fails.
+ */
+unsigned int ica_aes_xts(const unsigned char *in_data, unsigned char *out_data,
+			 unsigned long data_length,
+			 const unsigned char *key1, const unsigned char *key2,
+			 unsigned int key_length, unsigned char *tweak,
+			 unsigned int direction);
+
+/**
+ * Return libica version information.
+ * @param version_info
+ * Pointer to a libica_version_info structure. The structure will be
+ * filled with the current libica version information.
+ *
+ * @return 0 if version could be determined successfully
+ *         EIO if version could not be determined
+ *         EINVAL if parameter version_info is NULL
+ */
+unsigned int ica_get_version(libica_version_info *version_info);
 
 #endif /* __ICA_API_H__ */

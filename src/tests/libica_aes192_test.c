@@ -4,7 +4,7 @@
  * with this program.
  */
 
-/* (C) COPYRIGHT International Business Machines Corp. 2005, 2009          */
+/* Copyright IBM Corp. 2005, 2009, 2011 */
 #include <fcntl.h>
 #include <sys/errno.h>
 #include <stdio.h>
@@ -31,9 +31,9 @@ unsigned char NIST_TEST_RESULT[] = {
 
 int silent = 1;
 
-void dump_array(char *ptr, int size)
+void dump_array(unsigned char *ptr, unsigned int size)
 {
-	char *ptr_end;
+	unsigned char *ptr_end;
 	unsigned char *h;
 	int i = 1;
 
@@ -73,7 +73,7 @@ int test_aes192_old_api(int mode)
 			   (unsigned char *)&key, &i, enc_text);
 	if (rc) {
 		printf("\nOriginal data:\n");
-		dump_array((char*)NIST_TEST_DATA, sizeof(NIST_TEST_DATA));
+		dump_array((unsigned char*)NIST_TEST_DATA, sizeof(NIST_TEST_DATA));
 		printf("icaAesEncrypt failed with errno %d (0x%x).\n", rc, rc);
 		return rc;
 	}
@@ -84,9 +84,9 @@ int test_aes192_old_api(int mode)
 
 	if (memcmp(enc_text, NIST_TEST_RESULT, sizeof(NIST_TEST_RESULT)) != 0) {
 		printf("\nOriginal data:\n");
-		dump_array((char*)NIST_TEST_DATA, sizeof(NIST_TEST_DATA));
+		dump_array((unsigned char*)NIST_TEST_DATA, sizeof(NIST_TEST_DATA));
 		printf("\nEncrypted data:\n");
-		dump_array((char*)enc_text, sizeof(enc_text));
+		dump_array((unsigned char*)enc_text, sizeof(enc_text));
 		printf("This does NOT match the known result.\n");
 		return 1;
 	} else {
@@ -104,33 +104,33 @@ int test_aes192_old_api(int mode)
 	}
 	if (i != sizeof(dec_text)) {
 		printf("\nOriginal data:\n");
-		dump_array((char*)NIST_TEST_DATA, sizeof(NIST_TEST_DATA));
+		dump_array((unsigned char*)NIST_TEST_DATA, sizeof(NIST_TEST_DATA));
 		printf("\nEncrypted data:\n");
-		dump_array((char*)enc_text, sizeof(enc_text));
+		dump_array((unsigned char*)enc_text, sizeof(enc_text));
 		printf("\nDecrypted data:\n");
-		dump_array((char*)dec_text, sizeof(dec_text));
+		dump_array((unsigned char*)dec_text, sizeof(dec_text));
 		printf("icaAesDecrypt returned an incorrect output data length, %u (0x%x).\n", i, i);
 		return 1;
 	}
 
 	if (memcmp(dec_text, NIST_TEST_DATA, sizeof(NIST_TEST_DATA)) != 0) {
 		printf("\nOriginal data:\n");
-		dump_array((char*)NIST_TEST_DATA, sizeof(NIST_TEST_DATA));
+		dump_array((unsigned char*)NIST_TEST_DATA, sizeof(NIST_TEST_DATA));
 		printf("\nEncrypted data:\n");
-		dump_array((char*)enc_text, sizeof(enc_text));
+		dump_array((unsigned char*)enc_text, sizeof(enc_text));
 		printf("\nDecrypted data:\n");
-		dump_array((char*)dec_text, sizeof(dec_text));
+		dump_array((unsigned char*)dec_text, sizeof(dec_text));
 		printf("This does NOT match the original data.\n");
 		return 1;
 	} else {
 		printf("Successful!\n");
 		if (!silent) {
 			printf("\nOriginal data:\n");
-			dump_array((char*)NIST_TEST_DATA, sizeof(NIST_TEST_DATA));
+			dump_array((unsigned char*)NIST_TEST_DATA, sizeof(NIST_TEST_DATA));
 			printf("\nEncrypted data:\n");
-			dump_array((char*)enc_text, sizeof(enc_text));
+			dump_array((unsigned char*)enc_text, sizeof(enc_text));
 			printf("\nDecrypted data:\n");
-			dump_array((char*)dec_text, sizeof(dec_text));
+			dump_array((unsigned char*)dec_text, sizeof(dec_text));
 		}
 	}
 
@@ -154,16 +154,16 @@ int test_aes192_new_api(int mode)
 			     AES_KEY_LEN192, (unsigned char *) &key, enc_text);
 	if (rc) {
 		printf("\nOriginal data:\n");
-		dump_array((char*)NIST_TEST_DATA, sizeof(NIST_TEST_DATA));
+		dump_array((unsigned char*)NIST_TEST_DATA, sizeof(NIST_TEST_DATA));
 		printf("ica_aes_encrypt failed with errno %d (0x%x).\n", rc, rc);
 		return rc;
 	}
 
 	if (memcmp(enc_text, NIST_TEST_RESULT, sizeof(NIST_TEST_RESULT)) != 0) {
 		printf("\nOriginal data:\n");
-		dump_array((char*)NIST_TEST_DATA, sizeof(NIST_TEST_DATA));
+		dump_array((unsigned char*)NIST_TEST_DATA, sizeof(NIST_TEST_DATA));
 		printf("\nEncrypted data:\n");
-		dump_array((char*)enc_text, sizeof(enc_text));
+		dump_array((unsigned char*)enc_text, sizeof(enc_text));
 		printf("This does NOT match the known result.\n");
 		return 1;
 	} else {
@@ -180,22 +180,22 @@ int test_aes192_new_api(int mode)
 
 	if (memcmp(dec_text, NIST_TEST_DATA, sizeof(NIST_TEST_DATA)) != 0) {
 		printf("\nOriginal data:\n");
-		dump_array((char*)NIST_TEST_DATA, sizeof(NIST_TEST_DATA));
+		dump_array((unsigned char*)NIST_TEST_DATA, sizeof(NIST_TEST_DATA));
 		printf("\nEncrypted data:\n");
-		dump_array((char*)enc_text, sizeof(enc_text));
+		dump_array((unsigned char*)enc_text, sizeof(enc_text));
 		printf("\nDecrypted data:\n");
-		dump_array((char*)dec_text, sizeof(dec_text));
+		dump_array((unsigned char*)dec_text, sizeof(dec_text));
 		printf("This does NOT match the original data.\n");
 		return 1;
 	} else {
 		printf("Successful!\n");
 		if (!silent) {
 			printf("\nOriginal data:\n");
-			dump_array((char*)NIST_TEST_DATA, sizeof(NIST_TEST_DATA));
+			dump_array((unsigned char*)NIST_TEST_DATA, sizeof(NIST_TEST_DATA));
 			printf("\nEncrypted data:\n");
-			dump_array((char*)enc_text, sizeof(enc_text));
+			dump_array((unsigned char*)enc_text, sizeof(enc_text));
 			printf("\nDecrypted data:\n");
-			dump_array((char*)dec_text, sizeof(dec_text));
+			dump_array((unsigned char*)dec_text, sizeof(dec_text));
 		}
 	}
 

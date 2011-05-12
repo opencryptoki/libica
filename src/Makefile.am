@@ -6,7 +6,8 @@ libica_la_LDFLAGS = -release $(PACKAGE_VERSION) -lrt -lcrypto
 
 libica_la_SOURCES = icalinux.c ica_api.c init.c icastats_shared.c \
 		    s390_rsa.c s390_crypto.c s390_des.c \
-		    s390_aes.c s390_prng.c s390_sha.c opencryptoki_api.c
+		    s390_aes.c s390_prng.c s390_sha.c opencryptoki_api.c \
+		    s390_cmac.c s390_ctr.c
 
 bin_PROGRAMS = icainfo icastats
 

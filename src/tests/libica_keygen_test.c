@@ -18,7 +18,27 @@
 
 extern int errno;
 
-void dump_array(char *, int);
+void dump_array(char *ptr, int size)
+{
+	char *ptr_end;
+	char *h;
+	int i = 1;
+
+	h = ptr;
+	ptr_end = ptr + size;
+	while (h < ptr_end) {
+		printf("0x%02x ",(unsigned char ) *h);
+		h++;
+		if (i == 8) {
+			printf("\n");
+			i = 1;
+		} else {
+			++i;
+		}
+	}
+	printf("\n");
+}
+
 
 int main(int argc, char **argv)
 {
@@ -393,26 +413,5 @@ int main(int argc, char **argv)
 	fflush(stdout);
 	ica_close_adapter(adapter_handle);
 	return 0;
-}
-
-void dump_array(char *ptr, int size)
-{
-	char *ptr_end;
-	unsigned char *h;
-	int i = 1;
-
-	h = ptr;
-	ptr_end = ptr + size;
-	while (h < (unsigned char *)ptr_end) {
-		printf("0x%02x ",(unsigned char ) *h);
-		h++;
-		if (i == 8) {
-			printf("\n");
-			i = 1;
-		} else {
-			++i;
-		}
-	}
-	printf("\n");
 }
 

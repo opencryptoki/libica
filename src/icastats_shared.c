@@ -7,7 +7,7 @@
 /**
  * Authors: Christian Maaser <cmaaser@de.ibm.com>
  *
- * Copyright IBM Corp. 2009
+ * Copyright IBM Corp. 2009, 2011
  */
 
 #include <unistd.h>
@@ -16,7 +16,7 @@
 #include <sys/stat.h>
 #include <sys/file.h>
 #include <fcntl.h>
-#include "include/icastats.h"
+#include "icastats.h"
 
 typedef struct statis_entry {
 	uint32_t hardware;

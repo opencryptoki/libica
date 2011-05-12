@@ -15,7 +15,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <getopt.h>
-#include "include/icastats.h"
+#include <libgen.h>
+#include "icastats.h"
 
 #define CMD_NAME "icastats"
 #define COPYRIGHT "Copyright IBM Corp. 2009, 2010, 2011."
@@ -63,7 +64,9 @@ const char *const STATS_DESC[ICA_NUM_STATS] = {
 	"3DES ENC",
 	"3DES DEC",
 	"AES ENC",
-	"AES DEC"
+	"AES DEC",
+	"CMAC GEN",
+	"CMAC VER",
 };
 
 int main(int argc, char *argv[])

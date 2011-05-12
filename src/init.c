@@ -8,16 +8,17 @@
  * Authors: Felix Beck <felix.beck@de.ibm.com>
  *	    Christian Maaser <cmaaser@de.ibm.com>
  *
- * Copyright IBM Corp. 2001, 2009
+ * Copyright IBM Corp. 2001, 2009, 2011
  */
 
 #include <pthread.h>
 #include <stdlib.h>
 #include <openssl/rand.h>
-#include "include/init.h"
-#include "include/icastats.h"
-#include "include/s390_prng.h"
-#include "include/s390_crypto.h"
+
+#include "init.h"
+#include "icastats.h"
+#include "s390_prng.h"
+#include "s390_crypto.h"
 
 static pthread_key_t envq_key;
 static pthread_once_t envq_key_once = PTHREAD_ONCE_INIT;

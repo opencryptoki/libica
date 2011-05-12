@@ -11,14 +11,15 @@
  * Some parts of the content of this file have been moved from former
  * icalinux.c to this file.
  *
- * Copyright IBM Corp. 2009
+ * Copyright IBM Corp. 2009, 2011
  */
 
 #include <string.h>
 #include <errno.h>
 #include <openssl/rsa.h>
-#include "include/s390_rsa.h"
-#include "include/s390_prng.h"
+
+#include "s390_rsa.h"
+#include "s390_prng.h"
 
 static unsigned int mod_expo_sw(int arg_length, char *arg, int exp_length,
 				char *exp, int mod_length, char *mod,

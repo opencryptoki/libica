@@ -4,7 +4,7 @@
  * with this program.
  */
 
-/* (C) COPYRIGHT International Business Machines Corp. 2001, 2009          */
+/* Copyright IBM Corp. 2001, 2009, 2011 */
 
 #include <fcntl.h>
 #include <memory.h>
@@ -148,7 +148,27 @@ unsigned char Ciphertext[] =
 
 extern int errno;
 
-void dump_array(char *ptr, int size);
+void dump_array(unsigned char *ptr, unsigned int size)
+{
+   unsigned char *ptr_end;
+   unsigned char *h;
+   int i = 1;
+
+
+   h = ptr;
+   ptr_end = ptr + size;
+   while (h < (unsigned char *)ptr_end) {
+      printf("0x%02x ",(unsigned char ) *h);
+      h++;
+      if (i == 8) {
+         printf("\n");
+         i = 1;
+      } else {
+         ++i;
+      }
+   }
+   printf("\n");
+}
 
 int main()
 {
@@ -180,7 +200,7 @@ int main()
     wockey.nLength = sizeof(modulus1024);
     wockey.expLength = sizeof(pubkey1024);
 
-    key = wockey.keyRecord;
+    key = (caddr_t)wockey.keyRecord;
 
     bcopy(&pubkey1024, key, sizeof(pubkey1024));
     wockey.expOffset = key - (char *) &wockey;
@@ -194,12 +214,12 @@ int main()
 	
 	printf("wockey.modulusBitLength = %i\n", wockey.modulusBitLength);
     if ((i = icaRsaModExpo(adapter_handle, sizeof(A), A,
-                          &wockey, &length, my_result)) != 0) {
+                          &wockey, &length, (unsigned char *)my_result)) != 0) {
       printf("icaRsaModExpo failed and returned %d (0x%x).\n", i, i);
     }
 
     printf("\n\n\n\n\n result of encrypt with public key\n");
-    dump_array(my_result,sizeof(A));
+    dump_array((unsigned char *)my_result,sizeof(A));
     printf("Ciphertext \n");
     dump_array(Ciphertext,sizeof(A));
     if (memcmp(my_result,Ciphertext,sizeof(A))){
@@ -220,7 +240,7 @@ int main()
     my_result2 = (caddr_t)malloc(sizeof(A));
     bzero(my_result2,sizeof(A));
 
-    key = icakey.keyRecord;
+    key = (caddr_t)icakey.keyRecord;
     /*
      * Bp is copied into the key */
     bcopy(Bp,key,sizeof(Bp));
@@ -267,12 +287,12 @@ int main()
 	icakey.modulusBitLength = length * 8;
 	icakey.keyLength = length;
     if ((i = icaRsaCrt(adapter_handle, sizeof(Ciphertext), Ciphertext,
-                      &icakey, &length, my_result2)) != 0) {
+                      &icakey, &length, (unsigned char *)my_result2)) != 0) {
       printf("icaRsaCrt failed and returned %d (0x%x).\n", i, i);
     }
 
     printf("Result of decrypt\n");
-    dump_array(my_result2, sizeof(A));
+    dump_array((unsigned char *)my_result2, sizeof(A));
     printf("original data\n");
     dump_array(A, sizeof(A));
     if( memcmp(A,my_result2,sizeof(A)) != 0) {
@@ -287,24 +307,3 @@ int main()
    return 0;
 }
 
-void dump_array(char *ptr, int size)
-{
-   char *ptr_end;
-   unsigned char *h;
-   int i = 1;
-
-
-   h = ptr;
-   ptr_end = ptr + size;
-   while (h < (unsigned char *)ptr_end) {
-      printf("0x%02x ",(unsigned char ) *h);
-      h++;
-      if (i == 8) {
-         printf("\n");
-         i = 1;
-      } else {
-         ++i;
-      }
-   }
-   printf("\n");
-}

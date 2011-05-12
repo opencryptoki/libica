@@ -7,18 +7,35 @@
 /**
  * Authors: Felix Beck <felix.beck@de.ibm.com>
  *	    Christian Maaser <cmaaser@de.ibm.com>
+ *	    Holger Dengler <hd@linux.vnet.ibm.com>
  *
- * Copyright IBM Corp. 2009
+ * Copyright IBM Corp. 2009, 2010, 2011
  */
 
 #ifndef S390_DES_H
 #define S390_DES_H
-int s390_des_ecb(unsigned int fc, unsigned int input_length,
-		 unsigned char *input_data, unsigned char *keys,
-		 unsigned char *output_data);
-int s390_des_cbc(unsigned int fc, unsigned int input_length,
-		 unsigned char *input_data, ica_des_vector_t *iv,
-		 unsigned char *keys, unsigned char *output_data);
 
+#define DES_BLOCK_SIZE  8
+
+int s390_des_ecb(unsigned int fc, unsigned long data_length,
+		 const unsigned char *in_data, const unsigned char *key,
+		 unsigned char *out_data);
+int s390_des_cbc(unsigned int fc, unsigned long data_length,
+		 const unsigned char *in_data, unsigned char *iv,
+		 const unsigned char *key, unsigned char *out_data);
+int s390_des_cfb(unsigned int fc, unsigned long data_length,
+		 const unsigned char *in_data, unsigned char *iv,
+		 const unsigned char *key, unsigned char *out_data,
+		 unsigned int lcfb);
+int s390_des_ofb(unsigned int fc, unsigned long data_length,
+		 const unsigned char *in_data, unsigned char *iv,
+		 const unsigned char *key, unsigned char *out_data);
+int s390_des_ctr(unsigned int fc, const unsigned char *in_data,
+		 unsigned char *out_data, unsigned long data_length,
+		 const unsigned char *key, unsigned char *ctr,
+		 unsigned int ctr_width);
+int s390_des_ctrlist(unsigned int fc, unsigned long data_length,
+		     const unsigned char *in_data, const unsigned char *ctrlist,
+		     const unsigned char *keys, unsigned char *out_data);
 #endif
 
