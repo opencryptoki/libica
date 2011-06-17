@@ -36,6 +36,8 @@
 #define DEFAULT2_CRYPT_DEVICE "/dev/z90crypt"
 #define DEFAULT3_CRYPT_DEVICE "/dev/zcrypt"
 
+#define MAX_VERSION_LENGTH 16
+
 static unsigned int check_des_parms(unsigned int mode,
 				    unsigned long data_length,
 				    const unsigned char *in_data,
@@ -1044,48 +1046,51 @@ unsigned int ica_aes_cmac(const unsigned char *message, unsigned long message_le
 
 unsigned int ica_get_version(libica_version_info *version_info)
 {
-	/*
-	 * We expect the libica version information in the format x.y.z
-	 * defined in the macro VERSION as part of the build process.
-	 */
-#ifndef VERSION
-	return EIO;
-#endif
-
-	int length = strlen(VERSION);
+#ifdef VERSION
+	int length;
 	int rc;
-	int i = 1;
+	int i;
 	char *pch;
+	char *saveptr;
 
 	if (version_info == NULL) {
 		return EINVAL;
 	}
 
-	char buffer[length];
-	rc = sprintf(buffer, "%s", VERSION);
+	length = strnlen(VERSION, MAX_VERSION_LENGTH);
+	char buffer[length+1];
+
+	rc = snprintf(buffer, (length+1), "%s", VERSION);
 	if (rc <= 0) {
-		return 1;
+		return EIO;
 	}
 
-	pch = strtok(buffer, ".");
-
-	while (pch != NULL) {
-		if (i == 1)
+	for (pch = strtok_r(buffer, ".", &saveptr), i = 1;
+	     pch != NULL;
+	     pch = strtok_r(NULL, ".", &saveptr), i++)
+	{
+		switch(i) {
+		case 1:
 			version_info->major_version = atoi(pch);
-		if (i == 2)
+			break;
+		case 2:
 			version_info->minor_version = atoi(pch);
-		if (i == 3)
+			break;
+		case 3:
 			version_info->fixpack_version = atoi(pch);
-		if (i > 3)
-			return 1;
-
-		pch = strtok(NULL, ".");
-		i++;
+			break;
+		default:
+			return EIO;
+		}
 	}
 
-	if (i < 3) {
-		return 1;
-	}
+	if (i < 3)
+		return EIO;
 
 	return 0;
+#else
+	/* We expect the libica version information in the format x.y.z
+	 * defined in the macro VERSION as part of the build process. */
+	return EIO;
+#endif
 }
