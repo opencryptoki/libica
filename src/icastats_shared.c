@@ -6,6 +6,7 @@
 
 /**
  * Authors: Christian Maaser <cmaaser@de.ibm.com>
+ *          Holger Dengler <hd@linux.vnet.ibm.com>
  *
  * Copyright IBM Corp. 2009, 2011
  */
@@ -23,9 +24,11 @@ typedef struct statis_entry {
 	uint32_t software;
 } stats_entry_t;
 
-stats_entry_t *stats = 0;
-int *stats_ref_counter = 0;
-int stats_shm_handle = 0;
+#define NOT_INITIALIZED (-1)
+
+stats_entry_t *stats = NULL;
+volatile int *stats_ref_counter = NULL;
+volatile int stats_shm_handle = NOT_INITIALIZED;
 
 void atomic_add(int *x, int i)
 {
@@ -43,24 +46,32 @@ void atomic_add(int *x, int i)
 
 int stats_mmap()
 {
+	int local_stats_shm_handle;
 	/* Use flock to avoid races between open and close of shm by different
 	 * processes. Put reference counter into shm to check how much
 	 * processes are accesing the shm. Additionaly a global and a local
 	 * handle for the shm are used to prevend different threads from
 	 * overriding their shm handle one another.
+	 * Non-blocking flocks are used. This may end-up in disabled statistics
+	 * instead of locking each process using libica.
 	 */
-	if (!stats) {
-		int local_stats_shm_handle = shm_open(STATS_SHM_ID, O_CREAT | O_RDWR,
-		                            S_IRUSR | S_IWUSR | S_IRGRP |
-		                            S_IWGRP | S_IROTH | S_IWOTH);
-		if (local_stats_shm_handle == -1)
+	if (stats == NULL) {
+		local_stats_shm_handle = shm_open(STATS_SHM_ID, O_CREAT | O_RDWR,
+						  S_IRUSR | S_IWUSR | S_IRGRP |
+						  S_IWGRP | S_IROTH | S_IWOTH);
+		if (local_stats_shm_handle == NOT_INITIALIZED)
 			return -1;
 		if (ftruncate(local_stats_shm_handle, STATS_SHM_SIZE) == -1)
 			return -1;
-
-		if (flock(local_stats_shm_handle, LOCK_EX) == -1)
+		if (flock(local_stats_shm_handle, LOCK_EX | LOCK_NB) == -1)
 			return -1;
-		if (stats_shm_handle != 0) {
+
+		/* This barrier prohibits re-ordering of locking and
+		 * reference counting due to compiler optimizations. */
+		asm volatile ("" : : : "memory");
+
+		if (stats_shm_handle != NOT_INITIALIZED) {
+			/* Another process/thread won the race, give up. */
 			flock(local_stats_shm_handle, LOCK_UN);
 			return 0;
 		}
@@ -68,17 +79,22 @@ int stats_mmap()
 					         PROT_WRITE, MAP_SHARED,
 					         local_stats_shm_handle, 0);
 		if (stats_ref_counter == MAP_FAILED) {
-			stats_ref_counter = 0;
+			stats_ref_counter = NULL;
 			flock(local_stats_shm_handle, LOCK_UN);
 			return -1;
 		}
 		++(*stats_ref_counter);
-		stats = (stats_entry_t *) (stats_ref_counter + 1);
+		stats = (stats_entry_t *) (stats_ref_counter + sizeof(stats_ref_counter));
 		stats_shm_handle = local_stats_shm_handle;
 		flock(local_stats_shm_handle, LOCK_UN);
 	} else {
-		if (flock(stats_shm_handle, LOCK_EX) == -1)
+		if (flock(stats_shm_handle, LOCK_EX | LOCK_NB) == -1)
 			return -1;
+
+		/* This barrier prohibits re-ordering of locking and
+		 * reference counting due to compiler optimizations. */
+		asm volatile ("" : : : "memory");
+
 		++(*stats_ref_counter);
 		flock(stats_shm_handle, LOCK_UN);
 	}
@@ -88,13 +104,22 @@ int stats_mmap()
 
 void stats_munmap()
 {
-	if (!stats)
+	int tmp_handle;
+	if (stats == NULL)
 		return;
 
-	if (flock(stats_shm_handle, LOCK_EX) == -1)
+	if (flock(stats_shm_handle, LOCK_EX | LOCK_NB) == -1)
 		return;
+
+	/* This barrier prohibits re-ordering of locking and
+	 * reference counting due to compiler optimizations. */
+	asm volatile ("" : : : "memory");
+
 	if (--(*stats_ref_counter) == 0) {
-		munmap(stats_ref_counter, STATS_SHM_SIZE);
+		munmap((void *)stats_ref_counter, STATS_SHM_SIZE);
+		tmp_handle = stats_shm_handle;
+		stats_shm_handle = NOT_INITIALIZED;
+		flock(tmp_handle, LOCK_UN);
 		shm_unlink(STATS_SHM_ID);
 		stats = 0;
 	}
@@ -104,7 +129,7 @@ void stats_munmap()
 
 uint32_t stats_query(stats_fields_t field, int hardware)
 {
-	if (!stats)
+	if (stats == NULL)
 		return 0;
 
 	if (hardware)
@@ -115,7 +140,7 @@ uint32_t stats_query(stats_fields_t field, int hardware)
 
 void stats_increment(stats_fields_t field, int hardware)
 {
-	if (!stats)
+	if (stats == NULL)
 		return;
 
 	if (hardware)
@@ -127,6 +152,10 @@ void stats_increment(stats_fields_t field, int hardware)
 void stats_reset()
 {
 	unsigned int i;
+
+	if (stats == NULL)
+		return;
+
 	for (i = 0; i != ICA_NUM_STATS; ++i) {
 		stats[i].hardware = 0;
 		stats[i].software = 0;
