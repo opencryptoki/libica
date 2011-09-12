@@ -77,9 +77,9 @@ int main(int argc, char **argv)
 	if (argc > 1) {
 		key_bits = atoi(argv[1]);
 		if (key_bits > KEY_BYTES_MAX * 8) {
-			printf("The maximum key length is %d bits.",
+			printf("The maximum key length is %d bits.\n",
 			       KEY_BYTES_MAX * 8);
-			exit(0);
+			exit(1);
 		}
 		wockey.modulusBitLength = key_bits;
 		printf("Using %u-bit keys and ", key_bits);
@@ -101,9 +101,19 @@ int main(int argc, char **argv)
 				printf("a random exponent . . .\n");
 				break;
 			default:
-				break;
+				printf("Usage: %s <key_lenght_in_bits> <exponent_type>\n", argv[0]);
+				printf("<exponent_type>: 3, 65537 or r(andom)\n");
+				exit(1);
 			}
+		} else {
+			printf("Usage: %s <key_lenght_in_bits> <exponent_type>\n", argv[0]);
+			printf("<exponent_type>: 3, 65537 or r(andom)\n");
+			exit(1);
 		}
+	} else {
+		printf("Usage: %s <key_lenght_in_bits> <exponent_type>\n", argv[0]);
+		printf("<exponent_type>: 3, 65537 or r(andom)\n");
+		exit(1);
 	}
 
 	rc = icaRandomNumberGenerate(adapter_handle, sizeof(original),
