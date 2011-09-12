@@ -1112,7 +1112,8 @@ void generate_pkcs11_mech_list(struct mech_list_item *head);
 
 /**
  * Opens the specified adapter
- * @param adapter_handle Pointer to the file descriptor
+ * @param adapter_handle Pointer to the file descriptor for the adapter or
+ * to DRIVER_NOT_LOADED if opening the crypto adapter failed.
  *
  * @return 0 as long as a valid parameter is given.
  * EINVAL for invalid parameter.
@@ -1130,6 +1131,10 @@ unsigned int ica_close_adapter(ica_adapter_handle_t adapter_handle);
 
 /**
  * Generate a random number.
+ *
+ * Required HW Support
+ * KMC-PRNG
+ *
  * @param output_length
  * Specifies the byte length of the output_data buffer and the desired length
  * of the random number.
@@ -1146,6 +1151,10 @@ unsigned int ica_random_number_generate(unsigned int output_length,
 
 /**
  * Perform secure hash on input data using the SHA-1 algorithm.
+ *
+ * Required HW Support
+ * KIMD-SHA-1, or KLMD-SHA-1
+ *
  * @param message_part
  * The message chaining state. Must be one of the following:
  *	SHA_MSG_PART_ONLY   - A single hash operation
@@ -1158,9 +1167,14 @@ unsigned int ica_random_number_generate(unsigned int output_length,
  * @param input_data
  * Pointer to the input data data.
  * @param sha_context
- * Pointer to the SHA-1 context structure used to store the intermediate
- * values when chaining is used. The application must not modify the contents
- * of this structure when chaining is used.
+ * Pointer to the SHA-1 context structure used to store intermediate values
+ * needed when chaining is used. The contents are ignored for message part
+ * SHA_MSG_PART_ONLY and SHA_MSG_PART_FIRST. This structure must
+ * contain the returned value of the preceding call to ica_sha1 for message
+ * part SHA_MSG_PART_MIDDLE and SHA_MSG_PART_FINAL. For message part
+ * SHA_MSG_PART_FIRST and SHA_MSG_PART_FINAL, the returned value can
+ * be used for a chained call of ica_sha1. Therefore, the application must
+ * not modify the contents of this structure in between chained calls.
  * @param output_data
  * Pointer to the buffer to contain the resulting hash data. The resulting
  * output data will have a length of SHA_HASH_LENGTH. Make sure buffer has
@@ -1178,6 +1192,10 @@ unsigned int ica_sha1(unsigned int message_part,
 
 /**
  * Perform secure hash on input data using the SHA-224 algorithm.
+ *
+ * Required HW Support
+ * KIMD-SHA-256, or KLMD-SHA-256
+ *
  * @param message_part
  * The message chaining state. Must be one of the following:
  *	SHA_MSG_PART_ONLY   - A single hash operation
@@ -1190,10 +1208,16 @@ unsigned int ica_sha1(unsigned int message_part,
  * @param input_data
  * Pointer to the input data.
  * @param sha256_context
- * Pointer to the SHA-256 context structure used to store the intermediate
- * values when chaining is used. The application must not modify the contents
- * of this structure when chaining is used.
- * Note: Due to the algorithm used by SHA-224 a SHA-256 context must be used.
+ * Pointer to the SHA-256 context structure used to store intermediate values
+ * needed when chaining is used. The contents are ignored for message part
+ * SHA_MSG_PART_ONLY and SHA_MSG_PART_FIRST. This structure must
+ * contain the returned value of the preceding call to ica_sha224 for message
+ * part SHA_MSG_PART_MIDDLE and SHA_MSG_PART_FINAL. For message part
+ * SHA_MSG_PART_FIRST and SHA_MSG_PART_FINAL, the returned value can
+ * be used for a chained call of ica_sha224. Therefore, the application must
+ * not modify the contents of this structure in between chained calls.
+ * Note: Due to the algorithm used by SHA-224, a SHA-256 context must be
+ * used.
  * @param output_data
  * Pointer to the buffer to contain the resulting hash data. The resulting
  * output data will have a length of SHA224_HASH_LENGTH. Make sure buffer has
@@ -1211,6 +1235,10 @@ unsigned int ica_sha224(unsigned int message_part,
 
 /**
  * Perform secure hash on input data using the SHA-256 algorithm.
+ *
+ * Required HW Support
+ * KIMD-SHA-256, or KLMD-SHA-256
+ *
  * @param message_part
  * The message chaining state. Must be one of the following:
  *	SHA_MSG_PART_ONLY   - A single hash operation
@@ -1223,12 +1251,18 @@ unsigned int ica_sha224(unsigned int message_part,
  * @param input_data
  * Pointer to the input data.
  * @param sha256_context
- * Pointer to the SHA-256 context structure used to store the intermediate
- * values when chaining is used. The application must not modify the contents
- * of this structure when chaining is used.
- * Pointer to the buffer to contain the resulting hash data. The resulting
- * output data will have a length of SHA256_HASH_LENGTH. Make sure buffer has
- * at least this size.
+ * Pointer to the SHA-256 context structure used to store intermediate values
+ * needed when chaining is used. The contents are ignored for message part
+ * SHA_MSG_PART_ONLY and SHA_MSG_PART_FIRST. This structure must
+ * contain the returned value of the preceding call to ica_sha256 for message part
+ * SHA_MSG_PART_MIDDLE and SHA_MSG_PART_FINAL. For message part
+ * SHA_MSG_PART_FIRST and SHA_MSG_PART_FINAL, the returned value can
+ * be used for a chained call of ica_sha256. Therefore, the application must not
+ * modify the contents of this structure in between chained calls.
+ * @param output_data
+ * Pointer to the buffer to contain the resulting hash data. The resulting output
+ * data will have a length of SHA256_HASH_LENGTH. Make sure that the buffer
+ * has is at least this size.
  *
  * @return 0 if successful.
  * EINVAL if at least one invalid parameter is given
@@ -1242,6 +1276,10 @@ unsigned int ica_sha256(unsigned int message_part,
 
 /**
  * Perform secure hash on input data using the SHA-384 algorithm.
+ *
+ * Required HW Support
+ * KIMD-SHA-512, or KLMD-SHA-512
+ *
  * @param message_part
  * The message chaining state. Must be one of the following:
  *	SHA_MSG_PART_ONLY   - A single hash operation
@@ -1254,10 +1292,16 @@ unsigned int ica_sha256(unsigned int message_part,
  * @param input_data
  * Pointer to the input data.
  * @param sha512_context
- * Pointer to the SHA-512 context structure used to store the intermediate
- * values when chaining is used. The application must not modify the contents
- * of this structure when chaining is used.
- * Note: Due to the algorithm used by SHA-384 a SHA-512 context must be used.
+ * Pointer to the SHA-512 context structure used to store intermediate values
+ * needed when chaining is used. The contents are ignored for message part
+ * SHA_MSG_PART_ONLY and SHA_MSG_PART_FIRST. This structure must
+ * contain the returned value of the preceding call to ica_sha384 for message
+ * part SHA_MSG_PART_MIDDLE and SHA_MSG_PART_FINAL. For message part
+ * SHA_MSG_PART_FIRST and SHA_MSG_PART_FINAL, the returned value can
+ * be used for a chained call of ica_sha384. Therefore, the application must
+ * not modify the contents of this structure in between chained calls.
+ * Note: Due to the algorithm used by SHA-384, a SHA-512 context must be
+ * used.
  * @param output_data
  * Pointer to the buffer to contain the resulting hash data. The resulting
  * output data will have a length of SHA384_HASH_LENGTH. Make sure buffer has
@@ -1275,6 +1319,10 @@ unsigned int ica_sha384(unsigned int message_part,
 
 /**
  * Perform secure hash on input data using the SHA-512 algorithm.
+ *
+ * Required HW Support
+ * KIMD-SHA-512, or KLMD-SHA-512
+ *
  * @param message_part
  * The message chaining state. Must be one of the following:
  *	SHA_MSG_PART_ONLY   - A single hash operation
@@ -1287,9 +1335,14 @@ unsigned int ica_sha384(unsigned int message_part,
  * @param input_data
  * Pointer to the input data.
  * @param sha512_context
- * Pointer to the SHA-512 context structure used to store the intermediate
- * values when chaining is used. The application must not modify the contents
- * of this structure when chaining is used.
+ * Pointer to the SHA-512 context structure used to store intermediate values
+ * needed when chaining is used. The contents are ignored for message part
+ * SHA_MSG_PART_ONLY and SHA_MSG_PART_FIRST. This structuremust
+ * contain the returned value of the preceding call to ica_sha512 for message
+ * part SHA_MSG_PART_MIDDLE and SHA_MSG_PART_FINAL. For message part
+ * SHA_MSG_PART_FIRST and SHA_MSG_PART_FINAL, the returned value can
+ * be used for a chained call of ica_sha512. Therefore, the application must
+ * not modify the contents of this structure in between chained calls.
  * @param output_data
  * Pointer to the buffer to contain the resulting hash data. The resulting
  * output data will have a length of SHA512_HASH_LENGTH. Make sure buffer has
@@ -1733,6 +1786,7 @@ unsigned int ica_des_cbc(const unsigned char *in_data, unsigned char *out_data,
  *
  * @return 0 on success
  * EINVAL if at least one invalid parameter is given.
+ * EPERM if required hardware support is not available.
  * EIO if the operation fails.
  */
 unsigned int ica_des_cfb(const unsigned char *in_data, unsigned char *out_data,
@@ -1786,6 +1840,7 @@ unsigned int ica_des_cfb(const unsigned char *in_data, unsigned char *out_data,
  *
  * @return 0 on success
  * EINVAL if at least one invalid parameter is given.
+ * EPERM if required hardware support is not available.
  * EIO if the operation fails.
  */
 unsigned int ica_des_ctr(const unsigned char *in_data, unsigned char *out_data,
@@ -1836,6 +1891,7 @@ unsigned int ica_des_ctr(const unsigned char *in_data, unsigned char *out_data,
  *
  * @return 0 on success
  * EINVAL if at least one invalid parameter is given.
+ * EPERM if required hardware support is not available.
  * EIO if the operation fails.
  */
 unsigned int ica_des_ctrlist(const unsigned char *in_data, unsigned char *out_data,
@@ -1877,6 +1933,7 @@ unsigned int ica_des_ctrlist(const unsigned char *in_data, unsigned char *out_da
  *
  * @return 0 on success
  * EINVAL if at least one invalid parameter is given.
+ * EPERM if required hardware support is not available.
  * EIO if the operation fails.
  */
 unsigned int ica_des_ofb(const unsigned char *in_data, unsigned char *out_data,
@@ -1994,6 +2051,7 @@ unsigned int ica_3des_cbc(const unsigned char *in_data, unsigned char *out_data,
  *
  * @return 0 on success
  * EINVAL if at least one invalid parameter is given.
+ * EPERM if required hardware support is not available.
  * EIO if the operation fails.
  */
 unsigned int ica_3des_cfb(const unsigned char *in_data, unsigned char *out_data,
@@ -2047,6 +2105,7 @@ unsigned int ica_3des_cfb(const unsigned char *in_data, unsigned char *out_data,
  *
  * @return 0 on success
  * EINVAL if at least one invalid parameter is given.
+ * EPERM if required hardware support is not available.
  * EIO if the operation fails.
  */
 unsigned int ica_3des_ctr(const unsigned char *in_data, unsigned char *out_data,
@@ -2097,6 +2156,7 @@ unsigned int ica_3des_ctr(const unsigned char *in_data, unsigned char *out_data,
  *
  * @return 0 on success
  * EINVAL if at least one invalid parameter is given.
+ * EPERM if required hardware support is not available.
  * EIO if the operation fails.
  */
 unsigned int ica_3des_ctrlist(const unsigned char *in_data, unsigned char *out_data,
@@ -2138,6 +2198,7 @@ unsigned int ica_3des_ctrlist(const unsigned char *in_data, unsigned char *out_d
  *
  * @return 0 on success
  * EINVAL if at least one invalid parameter is given.
+ * EPERM if required hardware support is not available.
  * EIO if the operation fails.
  */
 unsigned int ica_3des_ofb(const unsigned char *in_data, unsigned char *out_data,
@@ -2268,6 +2329,7 @@ unsigned int ica_aes_cbc(const unsigned char *in_data, unsigned char *out_data,
  *
  * @return 0 on success
  * EINVAL if at least one invalid parameter is given.
+ * EPERM if required hardware support is not available.
  * EIO if the operation fails.
  */
 unsigned int ica_aes_cfb(const unsigned char *in_data, unsigned char *out_data,
@@ -2325,6 +2387,7 @@ unsigned int ica_aes_cfb(const unsigned char *in_data, unsigned char *out_data,
  *
  * @return 0 on success
  * EINVAL if at least one invalid parameter is given.
+ * EPERM if required hardware support is not available.
  * EIO if the operation fails.
  */
 unsigned int ica_aes_ctr(const unsigned char *in_data, unsigned char *out_data,
@@ -2379,6 +2442,7 @@ unsigned int ica_aes_ctr(const unsigned char *in_data, unsigned char *out_data,
  *
  * @return 0 on success
  * EINVAL if at least one invalid parameter is given.
+ * EPERM if required hardware support is not available.
  * EIO if the operation fails.
  */
 unsigned int ica_aes_ctrlist(const unsigned char *in_data, unsigned char *out_data,
@@ -2424,6 +2488,7 @@ unsigned int ica_aes_ctrlist(const unsigned char *in_data, unsigned char *out_da
  *
  * @return 0 on success
  * EINVAL if at least one invalid parameter is given.
+ * EPERM if required hardware support is not available.
  * EIO if the operation fails.
  */
 unsigned int ica_aes_ofb(const unsigned char *in_data, unsigned char *out_data,
@@ -2472,6 +2537,7 @@ unsigned int ica_aes_ofb(const unsigned char *in_data, unsigned char *out_data,
  *
  * @return 0 on success
  * EINVAL if at least one invalid parameter is given.
+ * EPERM if required hardware support is not available.
  * EIO if the operation fails.
  * EFAULT if direction is 0 and the verification of the message authentication code fails.
  */
@@ -2524,6 +2590,7 @@ unsigned int ica_aes_cmac(const unsigned char *message, unsigned long message_le
  *
  * @return 0 on success
  * EINVAL if at least one invalid parameter is given.
+ * EPERM if required hardware support is not available.
  * EIO if the operation fails.
  */
 unsigned int ica_aes_xts(const unsigned char *in_data, unsigned char *out_data,
