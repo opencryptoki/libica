@@ -1,3 +1,11 @@
+v2.1.1
+ Changes since Version 2.1.0:
+ - [PATCH] synchronize shared memory ref counting
+ - [PATCH] Fix result/error handling in testcase for ica_get_version()
+ - [PATCH] Fix temporary buffer allocation in ica_get_version()
+ - [UPDATE] Interface (API) description
+ - [PATCH] Fix commandline argument checking in RSA testcase
+ - [PATCH] Remove duplicate entry from target list
 v2.1.0
 - Introduce support for MSA4 extensions. New symmetric encryption modes:
   CFB, CTR, OFB, XTS, CMAC
