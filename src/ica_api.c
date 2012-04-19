@@ -31,6 +31,9 @@
 #include "s390_des.h"
 #include "s390_aes.h"
 #include "s390_cmac.h"
+#include "s390_cbccs.h"
+#include "s390_ccm.h"
+#include "s390_gcm.h"
 
 #define DEFAULT_CRYPT_DEVICE "/udev/z90crypt"
 #define DEFAULT2_CRYPT_DEVICE "/dev/z90crypt"
@@ -61,6 +64,11 @@ static unsigned int check_des_parms(unsigned int mode,
 		if (data_length & 0x07)
 			return EINVAL;
 		break;
+	case MODE_CBCCS:
+		if (iv == NULL)
+			return EINVAL;
+		if (data_length <= DES_BLOCK_SIZE)
+			return EINVAL;
 	case MODE_CFB:
 		if (iv == NULL)
 			return EINVAL;
@@ -110,6 +118,11 @@ static unsigned int check_aes_parms(unsigned int mode,
 		if (data_length & 0x0F)
 			return EINVAL;
 		break;
+	case MODE_CBCCS:
+		if (iv == NULL)
+			return EINVAL;
+		if (data_length <= AES_BLOCK_SIZE)
+			return EINVAL;
 	case MODE_CFB:
 		if (iv == NULL)
 			return EINVAL;
@@ -130,6 +143,11 @@ static unsigned int check_aes_parms(unsigned int mode,
 		if (data_length < AES_BLOCK_SIZE)
 			return EINVAL;
 		break;
+	case MODE_CCM:
+	case MODE_GCM:
+		if (iv == NULL)
+			return EINVAL;
+		break;
 	default:
 		/* unsupported mode */
 		return EINVAL;
@@ -138,17 +156,108 @@ static unsigned int check_aes_parms(unsigned int mode,
 	return 0;
 }
 
-static unsigned int check_cmac_parms(unsigned int key_length,
-				     unsigned int cbc_mac_length)
+static unsigned int check_cmac_parms(unsigned int block_size,
+				     const unsigned char *message, unsigned int message_length,
+				     unsigned char *mac, unsigned int mac_length,
+				     const unsigned char *keys, unsigned int key_length,
+				     unsigned char *iv)
 {
-	/* check for obvious errors in parms */
-	if ((( key_length != AES_KEY_LEN128 ) &&
-	     ( key_length != AES_KEY_LEN192 ) &&
-	     ( key_length != AES_KEY_LEN256 )) ||
-	    ( cbc_mac_length == 0 ) ||
-	    ( cbc_mac_length > AES_BLOCK_SIZE )
-	   )
+
+	if (keys == NULL)
 		return EINVAL;
+
+	if (mac == NULL) {		/* intermediate */
+		if (iv == NULL)
+			return EINVAL;
+
+		if (message_length % block_size)
+			return EINVAL;
+	}
+
+	if ((mac_length == 0) ||
+	    (mac_length > block_size))
+		return EINVAL;
+
+	if ((message_length != 0) &&
+	    (message == NULL))
+		return EINVAL;
+
+	switch (block_size) {
+	case DES_BLOCK_SIZE:
+		break;
+	case AES_BLOCK_SIZE:
+		if ((key_length != AES_KEY_LEN128) &&
+		    (key_length != AES_KEY_LEN192) &&
+		    (key_length != AES_KEY_LEN256))
+			return EINVAL;
+		break;
+	default:
+		return EINVAL;
+	}
+
+	return 0;
+}
+
+static unsigned int check_gcm_parms(unsigned long text_length,
+				    const unsigned char *aad,
+				    unsigned long aad_length,
+				    const unsigned char *tag, unsigned int tag_length,
+				    unsigned int iv_length)
+{
+	if ((text_length > S390_GCM_MAX_TEXT_LENGTH) ||
+	    (aad_length  > S390_GCM_MAX_AAD_LENGTH) ||
+	    (iv_length   > S390_GCM_MAX_IV_LENGTH) ||
+	    (iv_length == 0))
+		return EINVAL;
+
+	if (tag == NULL)
+		return EINVAL;
+
+	switch (tag_length) {
+	case 4:
+	case 8:
+	case 12:
+	case 13:
+	case 14:
+	case 15:
+	case 16:
+		break;
+	default:
+		return EINVAL;
+	}
+
+	return 0;
+}
+
+static unsigned int check_ccm_parms(unsigned long payload_length,
+				    const unsigned char *assoc_data,
+				    unsigned long assoc_data_length,
+				    const unsigned char *mac,
+				    unsigned int mac_length,
+				    unsigned int nonce_length)
+{
+	if ((payload_length == 0) && (assoc_data_length == 0))
+		return EINVAL;
+
+	if ((nonce_length > S390_CCM_MAX_NONCE_LENGTH) ||
+	    (nonce_length < S390_CCM_MIN_NONCE_LENGTH))
+		return EINVAL;
+
+	/* if nonce_length is equal S390_CCM_MIN_NONCE_LENGTH, payload_length
+	 * is only limited by the value range of its data type unsigned long
+	 * and need no further checking */
+	if ((nonce_length > S390_CCM_MIN_NONCE_LENGTH) &&
+	    (payload_length > ((1ul << (8*(15-nonce_length))))))
+		return EINVAL;
+
+	if (mac == NULL)
+		return EINVAL;
+
+	if ((mac_length > S390_CCM_MAX_MAC_LENGTH) ||
+	    (mac_length < S390_CCM_MIN_MAC_LENGTH) ||
+	    (mac_length % 2))
+		return EINVAL;
+
 	return 0;
 }
 
@@ -739,6 +848,19 @@ unsigned int ica_des_cbc(const unsigned char *in_data, unsigned char *out_data,
 			    in_data, iv, key, out_data);
 }
 
+unsigned int ica_des_cbc_cs(const unsigned char *in_data, unsigned char *out_data,
+			    unsigned long data_length,
+			    const unsigned char *key, unsigned char *iv,
+			    unsigned int direction, unsigned int variant)
+{
+	if (check_des_parms(MODE_CBCCS, data_length, in_data, iv, key, out_data))
+		return EINVAL;
+
+	return s390_des_cbccs(des_directed_fc(direction),
+			      in_data, out_data, data_length,
+			      key, iv, variant);
+}
+
 unsigned int ica_des_cfb(const unsigned char *in_data, unsigned char *out_data,
 			 unsigned long data_length, const unsigned char *key,
 			 unsigned char *iv, unsigned int lcfb,
@@ -798,6 +920,79 @@ unsigned int ica_des_ctrlist(const unsigned char *in_data, unsigned char *out_da
 				key, out_data);
 }
 
+unsigned int ica_des_cmac(const unsigned char *message, unsigned long message_length,
+			  unsigned char *mac, unsigned int mac_length,
+			  const unsigned char *key,
+			  unsigned int direction)
+{
+	return ica_des_cmac_last(message, message_length,
+				 mac, mac_length,
+				 key,
+				 NULL,
+				 direction);
+}
+
+unsigned int ica_des_cmac_intermediate(const unsigned char *message,
+				       unsigned long message_length,
+				       const unsigned char *key,
+				       unsigned char *iv)
+{
+	unsigned long function_code;
+	int rc;
+
+	if (check_cmac_parms(DES_BLOCK_SIZE,
+			     message, message_length,
+			     NULL, DES_BLOCK_SIZE,	/* no mac available (intermediate) */
+			     key, DES_BLOCK_SIZE,
+			     iv))
+		return EINVAL;
+
+	function_code = des_directed_fc(ICA_DECRYPT);
+	rc = s390_cmac(function_code, message, message_length,
+		       DES_BLOCK_SIZE, key,
+		       DES_BLOCK_SIZE, NULL,	/* no mac available (intermediate) */
+		       iv);
+
+	return rc;
+}
+
+unsigned int ica_des_cmac_last(const unsigned char *message, unsigned long message_length,
+			       unsigned char *mac, unsigned int mac_length,
+			       const unsigned char *key,
+			       unsigned char *iv,
+			       unsigned int direction)
+{
+	unsigned char tmp_mac[DES_BLOCK_SIZE];
+	unsigned long function_code;
+	int rc;
+
+	if (check_cmac_parms(DES_BLOCK_SIZE,
+			     message, message_length,
+			     mac, mac_length,
+			     key, DES_BLOCK_SIZE,
+			     iv))
+		return EINVAL;
+
+	function_code = des_directed_fc(direction);
+	if (direction) {
+		/* generate */
+		rc = s390_cmac(function_code, message, message_length,
+			       DES_BLOCK_SIZE, key, mac_length, mac, iv);
+		if (rc)
+			return rc;
+	} else {
+		/* verify */
+		rc = s390_cmac(function_code, message, message_length,
+			       DES_BLOCK_SIZE, key, mac_length, tmp_mac, iv);
+		if (rc)
+			return rc;
+		if (memcmp(tmp_mac, mac, mac_length))
+			return EFAULT;
+	}
+
+	return 0;
+}
+
 unsigned int ica_3des_ecb(const unsigned char *in_data, unsigned char *out_data,
 			  unsigned long data_length, const unsigned char *key,
 			  unsigned int direction)
@@ -819,6 +1014,19 @@ unsigned int ica_3des_cbc(const unsigned char *in_data, unsigned char *out_data,
 
 	return s390_des_cbc(tdes_directed_fc(direction), data_length,
 			    in_data, iv, key, out_data);
+}
+
+unsigned int ica_3des_cbc_cs(const unsigned char *in_data, unsigned char *out_data,
+			     unsigned long data_length,
+			     const unsigned char *key, unsigned char *iv,
+			     unsigned int direction, unsigned int variant)
+{
+	if (check_des_parms(MODE_CBCCS, data_length, in_data, iv, key, out_data))
+		return EINVAL;
+
+	return s390_des_cbccs(tdes_directed_fc(direction),
+			      in_data, out_data, data_length,
+			      key, iv, variant);
 }
 
 unsigned int ica_3des_cfb(const unsigned char *in_data, unsigned char *out_data,
@@ -880,6 +1088,79 @@ unsigned int ica_3des_ctrlist(const unsigned char *in_data, unsigned char *out_d
 				key, out_data);
 }
 
+unsigned int ica_3des_cmac(const unsigned char *message, unsigned long message_length,
+			   unsigned char *mac, unsigned int mac_length,
+			   const unsigned char *key,
+			   unsigned int direction)
+{
+	return ica_3des_cmac_last(message, message_length,
+				  mac, mac_length,
+				  key,
+				  NULL,
+				  direction);
+}
+
+unsigned int ica_3des_cmac_intermediate(const unsigned char *message,
+					unsigned long message_length,
+					const unsigned char *key,
+					unsigned char *iv)
+{
+	unsigned long function_code;
+	int rc;
+
+	if (check_cmac_parms(DES_BLOCK_SIZE,
+			     message, message_length,
+			     NULL, DES_BLOCK_SIZE,	/* no mac available (intermediate) */
+			     key, 3*DES_BLOCK_SIZE,
+			     iv))
+		return EINVAL;
+
+	function_code = tdes_directed_fc(ICA_DECRYPT);
+	rc = s390_cmac(function_code, message, message_length,
+		       3*DES_BLOCK_SIZE, key,
+		       DES_BLOCK_SIZE, NULL,	/* no mac available (intermediate) */
+		       iv);
+
+	return rc;
+}
+
+unsigned int ica_3des_cmac_last(const unsigned char *message, unsigned long message_length,
+				unsigned char *mac, unsigned int mac_length,
+				const unsigned char *key,
+				unsigned char *iv,
+				unsigned int direction)
+{
+	unsigned char tmp_mac[DES_BLOCK_SIZE];
+	unsigned long function_code;
+	int rc;
+
+	if (check_cmac_parms(DES_BLOCK_SIZE,
+			     message, message_length,
+			     mac, mac_length,
+			     key, 3*DES_BLOCK_SIZE,
+			     iv))
+		return EINVAL;
+
+	function_code = tdes_directed_fc(direction);
+	if (direction) {
+		/* generate */
+		rc = s390_cmac(function_code, message, message_length,
+			       3*DES_BLOCK_SIZE, key, mac_length, mac, iv);
+		if (rc)
+			return rc;
+	} else {
+		/* verify */
+		rc = s390_cmac(function_code, message, message_length,
+			       3*DES_BLOCK_SIZE, key, mac_length, tmp_mac, iv);
+		if (rc)
+			return rc;
+		if (memcmp(tmp_mac, mac, mac_length))
+			return EFAULT;
+	}
+
+	return 0;
+}
+
 unsigned int ica_aes_ecb(const unsigned char *in_data, unsigned char *out_data,
 			 unsigned long data_length, const unsigned char *key,
 			 unsigned int key_length,
@@ -906,6 +1187,22 @@ unsigned int ica_aes_cbc(const unsigned char *in_data, unsigned char *out_data,
 
 	function_code = aes_directed_fc(key_length, direction);
 	return s390_aes_cbc(function_code, data_length, in_data, iv, key, out_data);
+}
+
+unsigned int ica_aes_cbc_cs(const unsigned char *in_data, unsigned char *out_data,
+			    unsigned long data_length,
+			    const unsigned char *key, unsigned int key_length,
+			    unsigned char *iv,
+			    unsigned int direction, unsigned int variant)
+{
+	unsigned int function_code;
+	if (check_aes_parms(MODE_CBCCS, data_length, in_data, iv, key_length,
+			    key, out_data))
+		return EINVAL;
+
+	function_code = aes_directed_fc(key_length, direction);
+	return s390_aes_cbccs(function_code, in_data, out_data, data_length,
+			      key, key_length, iv, variant);
 }
 
 unsigned int ica_aes_cfb(const unsigned char *in_data, unsigned char *out_data,
@@ -1017,27 +1314,163 @@ unsigned int ica_aes_cmac(const unsigned char *message, unsigned long message_le
 			  const unsigned char *key, unsigned int key_length,
 			  unsigned int direction)
 {
+	return ica_aes_cmac_last(message, message_length,
+				 mac, mac_length,
+				 key, key_length,
+				 NULL,
+				 direction);
+}
+
+unsigned int ica_aes_cmac_intermediate(const unsigned char *message,
+				       unsigned long message_length,
+				       const unsigned char *key, unsigned int key_length,
+				       unsigned char *iv)
+{
+	unsigned long function_code;
+	int rc;
+
+	if (check_cmac_parms(AES_BLOCK_SIZE,
+			     message, message_length,
+			     NULL, AES_BLOCK_SIZE,	/* no mac available (intermediate) */
+			     key, key_length,
+			     iv))
+		return EINVAL;
+
+	function_code = aes_directed_fc(key_length, ICA_DECRYPT);
+	rc = s390_cmac(function_code, message, message_length,
+		       key_length, key,
+		       AES_BLOCK_SIZE, NULL,	/* no mac available (intermediate) */
+		       iv);
+
+	return rc;
+}
+
+unsigned int ica_aes_cmac_last(const unsigned char *message, unsigned long message_length,
+			       unsigned char *mac, unsigned int mac_length,
+			       const unsigned char *key, unsigned int key_length,
+			       unsigned char *iv,
+			       unsigned int direction)
+{
 	unsigned char tmp_mac[AES_BLOCK_SIZE];
 	unsigned long function_code;
 	int rc;
 
-	if (check_cmac_parms(key_length, mac_length))
+	if (check_cmac_parms(AES_BLOCK_SIZE,
+			     message, message_length,
+			     mac, mac_length,
+			     key, key_length,
+			     iv))
 		return EINVAL;
 
 	function_code = aes_directed_fc(key_length, direction);
 	if (direction) {
 		/* generate */
 		rc = s390_cmac(function_code, message, message_length,
-			       key_length, key, mac_length, mac);
+			       key_length, key, mac_length, mac, iv);
 		if (rc)
 			return rc;
 	} else {
 		/* verify */
 		rc = s390_cmac(function_code, message, message_length,
-			       key_length, key, mac_length, tmp_mac);
+			       key_length, key, mac_length, tmp_mac, iv);
 		if (rc)
 			return rc;
 		if (memcmp(tmp_mac, mac, mac_length))
+			return EFAULT;
+	}
+
+	return 0;
+}
+
+unsigned int ica_aes_ccm(unsigned char *payload, unsigned long payload_length,
+			 unsigned char *ciphertext_n_mac, unsigned int mac_length,
+			 const unsigned char *assoc_data, unsigned long assoc_data_length,
+			 const unsigned char *nonce, unsigned int nonce_length,
+			 const unsigned char *key, unsigned int key_length,
+			 unsigned int direction)
+{
+	unsigned char tmp_mac[AES_BLOCK_SIZE];
+	unsigned char *mac;
+	unsigned long function_code;
+	int rc;
+
+	if (check_aes_parms(MODE_CCM, payload_length, payload, nonce, key_length,
+			    key, ciphertext_n_mac))
+		return EINVAL;
+	if (check_ccm_parms(payload_length,
+			    assoc_data, assoc_data_length,
+			    ciphertext_n_mac + payload_length, mac_length,
+			    nonce_length))
+		return EINVAL;
+
+	function_code = aes_directed_fc(key_length, direction);
+	mac = (direction == ICA_ENCRYPT) ?
+		(unsigned char *)(ciphertext_n_mac + payload_length) :
+		tmp_mac;
+
+	rc = s390_ccm(function_code,
+		      payload, payload_length,
+		      ciphertext_n_mac,
+		      assoc_data, assoc_data_length,
+		      nonce, nonce_length,
+		      mac, mac_length,
+		      key);
+	if (rc)
+		return rc;
+
+	if (direction == ICA_DECRYPT) {
+		/* verify */
+		if (memcmp((unsigned char *)(ciphertext_n_mac + payload_length),
+			   tmp_mac, mac_length))
+			return EFAULT;
+	}
+
+	return 0;
+}
+
+unsigned int ica_aes_gcm(unsigned char *plaintext, unsigned long plaintext_length,
+			 unsigned char *ciphertext,
+			 const unsigned char *iv, unsigned int iv_length,
+			 const unsigned char *aad, unsigned long aad_length,
+			 unsigned char *tag, unsigned int tag_length,
+			 const unsigned char *key, unsigned int key_length,
+			 unsigned int direction)
+{
+	unsigned char tmp_tag[AES_BLOCK_SIZE];
+	unsigned long function_code;
+	int rc;
+
+	if (check_aes_parms(MODE_GCM, plaintext_length, plaintext, iv, key_length,
+			    key, ciphertext))
+		return EINVAL;
+	if (check_gcm_parms(plaintext_length, aad, aad_length, tag, tag_length, iv_length))
+		return EINVAL;
+
+	function_code = aes_directed_fc(key_length, direction);
+	if (direction) {
+		/* encrypt & generate */
+		rc = s390_gcm(function_code,
+			      plaintext, plaintext_length,
+			      ciphertext,
+			      iv, iv_length,
+			      aad, aad_length,
+			      tag, tag_length,
+			      key);
+		if (rc)
+			return rc;
+	} else {
+		/* decrypt & verify */
+		rc = s390_gcm(function_code,
+			      plaintext, plaintext_length,
+			      ciphertext,
+			      iv, iv_length,
+			      aad, aad_length,
+			      tmp_tag, AES_BLOCK_SIZE,
+			      key);
+		if (rc)
+			return rc;
+
+		if (memcmp(tmp_tag, tag, tag_length))
 			return EFAULT;
 	}
 

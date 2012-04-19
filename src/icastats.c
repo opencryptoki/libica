@@ -67,6 +67,12 @@ const char *const STATS_DESC[ICA_NUM_STATS] = {
 	"AES DEC",
 	"CMAC GEN",
 	"CMAC VER",
+	"CCM ENC",
+	"CCM DEC",
+	"CCM AUTH",
+	"GCM ENC",
+	"GCM DEC",
+	"GCM AUTH",
 };
 
 int main(int argc, char *argv[])

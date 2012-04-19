@@ -17,7 +17,8 @@
 int s390_cmac(unsigned long fc,
 	      const unsigned char *message, unsigned long message_length,
 	      unsigned int key_length, const unsigned char *key,
-	      unsigned int cmac_length, unsigned char *cmac);
+	      unsigned int cmac_length, unsigned char *cmac,
+	      unsigned char *iv);
 
 #endif
 

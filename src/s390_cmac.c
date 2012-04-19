@@ -20,57 +20,160 @@
 #include "init.h"
 #include "s390_crypto.h"
 #include "s390_aes.h"
+#include "s390_des.h"
 #include "s390_cmac.h"
 
-#define block_size 16
+#define PARM_BLOCK_SIZE 72
+
+/*
+struct cmac_des_parm_block{
+	uint8_t ml;
+	unsigned char reserved[7];
+	unsigned char message[DES_BLOCK_SIZE];
+	ica_des_vector_t iv;
+	unsigned char keys[3*DES_BLOCK_SIZE];
+} __attribute__((packed));
+
+struct cmac_aes_parm_block {
+	uint8_t ml;
+	unsigned char reserved[7];
+	unsigned char message[AES_BLOCK_SIZE];
+	ica_aes_vector_t iv;
+	ica_aes_key_len_256_t keys;
+} __attribute__((packed));
+
+static inline void parm_block_lookup_init2(struct parm_block_lookup *lookup,
+					   unsigned char *base,
+					   unsigned int block_size)
+{
+	lookup->block_size = block_size;
+	lookup->base = base;
+
+	switch (block_size) {
+	case DES_BLOCK_SIZE: {
+		struct cmac_des_parm_block *tmp = (struct cmac_des_parm_block *)&base;
+		lookup->ml      = &(tmp->ml);
+		lookup->message = tmp->message;
+		lookup->iv      = tmp->iv;
+		lookup->keys    = (unsigned char *)tmp->keys;
+		break; }
+	case AES_BLOCK_SIZE:
+	default: {
+		struct cmac_aes_parm_block *tmp = (struct cmac_aes_parm_block *)&base;
+		lookup->ml      = &(tmp->ml);
+		lookup->message = tmp->message;
+		lookup->iv      = tmp->iv;
+		lookup->keys    = tmp->keys;
+		break; }
+	}
+}
+*/
+
+typedef unsigned char parm_block_t[PARM_BLOCK_SIZE];
+
+struct parm_block_lookup {
+	unsigned int block_size;
+	unsigned char *base;
+	uint8_t       *ml;
+	unsigned char *message;
+	unsigned char *iv;
+	unsigned char *keys;
+};
+
+static inline void parm_block_lookup_init(struct parm_block_lookup *lookup,
+					  parm_block_t base,
+					  unsigned int block_size)
+{
+	lookup->block_size = block_size;
+	lookup->base       = base;
+	lookup->ml         = (uint8_t *)base;
+	lookup->message    = (unsigned char *)(base + 8);
+	lookup->iv         = (unsigned char *)(lookup->message + block_size);
+	lookup->keys       = (unsigned char *)(lookup->iv + block_size);
+}
+
+static unsigned int fc_block_size(unsigned int fc)
+{
+	unsigned int rc;
+
+	switch(fc) {
+	case S390_CRYPTO_DEA_ENCRYPT:
+	case S390_CRYPTO_TDEA_128_ENCRYPT:
+	case S390_CRYPTO_TDEA_192_ENCRYPT:
+		rc = DES_BLOCK_SIZE;
+		break;
+	case S390_CRYPTO_AES_128_ENCRYPT:
+	case S390_CRYPTO_AES_192_ENCRYPT:
+	case S390_CRYPTO_AES_256_ENCRYPT:
+	default:
+		rc = AES_BLOCK_SIZE;
+		break;
+	}
+
+	return rc;
+}
 
 static int s390_cmac_hw(unsigned long fc,
 			const unsigned char *message,
 			unsigned long message_length,
 			unsigned int  key_size, const unsigned char *key,
-			unsigned int cmac_length, unsigned char *cmac)
+			unsigned int cmac_length, unsigned char *cmac,
+			unsigned char *iv)
 {
-	struct {
-		unsigned int ml :8;   /* 8 bit unsigned message length */
-		unsigned char reserved[7];
-		unsigned char message[AES_BLOCK_SIZE];
-		ica_aes_vector_t iv;
-		ica_aes_key_len_256_t keys;
-	} __attribute__((packed)) aes_parm_block;
+	parm_block_t parm_block;
+	struct parm_block_lookup pb_lookup;
 	unsigned int length_tail;
 	unsigned long length_head;
 	int rc;
 
 	/* CMAC uses encrypt function code for generate and verify. */
 	fc &= S390_CRYPTO_FUNCTION_MASK;
-	memset(&aes_parm_block, 0, sizeof(aes_parm_block));
-	memcpy(&(aes_parm_block.keys), key, key_size);
+	memset(parm_block, 0, sizeof(parm_block));
 
-	if (message_length) {
-		length_tail = message_length % AES_BLOCK_SIZE;
-		if (length_tail)
-			length_head = message_length - length_tail;
-		else {
-			length_head = message_length - AES_BLOCK_SIZE;
-			length_tail = AES_BLOCK_SIZE;
+	parm_block_lookup_init(&pb_lookup, parm_block, fc_block_size(fc));
+	memcpy(pb_lookup.keys, key, key_size);
+
+	/* copy iv into param block, if available (intermediate) */
+	if (iv != NULL)
+		memcpy(pb_lookup.iv, iv, pb_lookup.block_size);
+
+
+	if (cmac == NULL) {
+		/* intermediate */
+		rc = s390_kmac(fc, pb_lookup.iv, message, message_length);
+		if (rc < 0)
+			return rc;
+
+		/* rescue iv for chained calls (intermediate) */
+		memcpy(iv, pb_lookup.iv, pb_lookup.block_size);
+	} else {
+		if (message_length) {
+			length_tail = message_length % pb_lookup.block_size;
+			if (length_tail)
+				length_head = message_length - length_tail;
+			else {
+				length_head = message_length - pb_lookup.block_size;
+				length_tail = pb_lookup.block_size;
+			}
+
+			if (length_head) {
+				rc = s390_kmac(fc, pb_lookup.iv,
+					       message, length_head);
+				if (rc < 0)
+					return EIO;
+			}
+
+			*pb_lookup.ml = length_tail * 8;	/* message length in bits */
+			memcpy(pb_lookup.message, message + length_head, length_tail);
 		}
+		/* calculate final block (last/full) */
+		rc = s390_pcc(fc, pb_lookup.base);
+		if (rc < 0)
+			return EIO;
 
-		if (length_head) {
-			rc = s390_kmac(fc, &(aes_parm_block.iv),
-				       message, length_head);
-			if (rc < 0)
-				return EIO;
-		}
-
-		aes_parm_block.ml = length_tail * 8;	/* message length in bits */
-		memcpy(&(aes_parm_block.message), message + length_head, length_tail);
+		memcpy(cmac, pb_lookup.iv, cmac_length);
 	}
 
-	rc = s390_pcc(fc, &aes_parm_block);
-	if (rc < 0)
-		return EIO;
-
-	memcpy(cmac, &(aes_parm_block.iv), cmac_length);
 	return 0;
 }
 
@@ -78,7 +181,8 @@ inline int s390_cmac(unsigned long fc,
 		     const unsigned char *message,
 		     unsigned long message_length,
 		     unsigned int  key_length, const unsigned char *key,
-		     unsigned int  mac_length, unsigned char *mac)
+		     unsigned int  mac_length, unsigned char *mac,
+		     unsigned char *iv)
 {
 	int hardware = 1;
 	int rc;
@@ -87,7 +191,8 @@ inline int s390_cmac(unsigned long fc,
 		rc = s390_cmac_hw(s390_msa4_functions[fc].hw_fc,
 				  message, message_length,
 				  key_length, key,
-				  mac_length, mac);
+				  mac_length, mac,
+				  iv);
 	else {
 		hardware = 0;
 		return EPERM;

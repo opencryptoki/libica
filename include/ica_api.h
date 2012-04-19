@@ -87,6 +87,16 @@ typedef ica_adapter_handle_t ICA_ADAPTER_HANDLE;
 #define MODE_OFB 		4
 #define MODE_CTR 		5
 #define MODE_XTS 		6
+#define MODE_GCM		7
+#define MODE_CBCCS		8
+#define MODE_CCM		9
+
+/**
+ * CBC Ciphertext Stealing variants
+ */
+#define ICA_CBCCS_VARIANT1	1
+#define ICA_CBCCS_VARIANT2	2
+#define ICA_CBCCS_VARIANT3	3
 
 /**
  * @deprecated
@@ -1751,6 +1761,68 @@ unsigned int ica_des_cbc(const unsigned char *in_data, unsigned char *out_data,
 			 unsigned int direction);
 
 /**
+ * Encrypt or decrypt data with an DES key using Cipher Block Chaining with
+ * Ciphertext Stealing (CBC-CS) mode as described in NIST Special Publication
+ * 800-38A Chapter 6.2 and the Addendum to NIST Special Publication 800-38A on
+ * Recommendation for Block Cipher Modes of Operation: Three Variants of
+ * Ciphertext Stealing for CBC Moder:
+ * ica_des_cbc_cs may be used to encrypt or decrypt the last chunk of a
+ * message consisting of multiple chunks where all but the last chunk are
+ * encrypted or decrypted by chained calls to ica_des_cbc and the resulting
+ * iv of the last call to ica_des_cbc is fed into the iv of the ica_des_cbc_cs
+ * call provided the chunk is greater than cipher block size (greater than
+ * 8 bytes for DES).
+ *
+ * Required HW Support
+ * KMC-DEA
+ *
+ * @param in_data
+ * Pointer to a readable buffer, that contains the message to be en/decrypted.
+ * The size of the message in bytes is data_length. The size of this buffer
+ * in bytes must be at least as big as data_length.
+ * @param out_data
+ * Pointer to a writable buffer, that will contain the resulting en/decrypted
+ * message. The size of this buffer in bytes must be at least as big as
+ * data_length.
+ * @param data_length
+ * Length in bytes of the message to be en/decrypted, which resides at the
+ * beginning of in_data. data_length must be greater than or equal to the
+ * cipher block size (i.e. a multiple of 8 bytes for DES).
+ * @param key
+ * Pointer to a valid DES key of 8 bytes length.
+ * @param iv
+ * Pointer to a valid initialization vector of cipher block size bytes.
+ * This vector will be overwritten during the function. For variant equals 1
+ * or variant equals 2 the result value in iv may be used as initialization
+ * vector for a chained ica_des_cbc call with the same key if data_length is
+ * a multiple of the cipher block size.
+ * @param direction
+ * 0 or 1:
+ * 0 Use the decrypt function.
+ * 1 Use the encrypt function.
+ * @param variant
+ * 1 Use variant CBC-CS1 of the Addendum to NIST Special Publication 800-38A
+ *   to encrypt or decrypt the message: keep last two blocks in order.
+ * 2 Use variant CBC-CS2 of the Addendum to NIST Special Publication 800-38A
+ *   to encrypt or decrypt the message: switch order of the last two blocks
+ *   if data_length is not a multiple of the cipher block size (i.e. a
+ *   multiple of 8 for DES).
+ * 3 Use variant CBC-CS3 of the Addendum to NIST Special Publication 800-38A
+ *   to encrypt or decrypt the message: always switch order of the last two
+ *   blocks.
+ *
+ * @return 0 on success
+ * EINVAL if at least one invalid parameter is given.
+ * EPERM if required hardware support is not available.
+ * EIO if the operation fails.
+ */
+unsigned int ica_des_cbc_cs(const unsigned char *in_data, unsigned char *out_data,
+			    unsigned long data_length, const unsigned char *key,
+			    unsigned char *iv,
+			    unsigned int direction,
+			    unsigned int variant);
+
+/**
  * Encrypt or decrypt data with an DES key using Cipher Feedback (CFB) mode as
  * described in NIST Special Publication 800-38A Chapter 6.3.
  *
@@ -1941,6 +2013,152 @@ unsigned int ica_des_ofb(const unsigned char *in_data, unsigned char *out_data,
 			 unsigned char *iv, unsigned int direction);
 
 /**
+ * Authenticate data or verify the authenticity of data with an DES key using
+ * the Block Cipher Based Message Authetication Code (CMAC) mode as described
+ * in NIST Special Publication 800-38B. ica_des_cmac can be used to
+ * authenticate or verify the authenticity of a complete message.
+ *
+ * Required HW Support
+ * KMAC-DEA
+ * PCC-Compute-Last_block-CMAC-Using-DEA
+ *
+ * @param message
+ * Pointer to a readable buffer of size greater than or equal to message_length
+ * bytes. It contains a message  to be authenticated or of which the
+ * authenticity shall be verified.
+ * @param message_length
+ * Length in bytes of the message to be authenticated or verified.
+ * @param mac
+ * Pointer to a buffer of size greater than or equal to mac_length bytes. If
+ * direction is 1 the buffer must be writable and a message authentication code
+ * for the message in message of size mac_length bytes will be written to the
+ * buffer. If direction is 0 the buffer must be readable and contain a message
+ * authentication code that will be verified against the message in message.
+ * @param mac_length
+ * Length in bytes of the message authentication code mac in bytes that is less
+ * than or equal to the cipher block size (i.e. 8 bytes for DES). It is
+ * recommended to use values greater than or equal to 8.
+ * @param key
+ * Pointer to a valid DES key of 8 bytes length.
+ * @param direction
+ * 0 or 1:
+ * 0 Verify message authentication code
+ * 1 Compute message authentication code for the message
+ *
+ * @return 0 on success
+ * EINVAL if at least one invalid parameter is given.
+ * EPERM if required hardware support is not available.
+ * EIO if the operation fails.
+ * EFAULT if direction is 0 and the verification of the message authentication
+ * code fails.
+ */
+unsigned int ica_des_cmac(const unsigned char *message, unsigned long message_length,
+			  unsigned char *mac, unsigned int mac_length,
+			  const unsigned char *key,
+			  unsigned int direction);
+
+/**
+ * Authenticate data or verify the authenticity of data with an DES key using
+ * the Block Cipher Based Message Authentication Code (CMAC) mode as described
+ * in NIST Special Publication 800-38B.
+ * ica_des_cmc_intermediate and ica_des_cmac_last can be used when the message
+ * to be authenticated or to be verfied using CMAC is supplied in multiple
+ * chunks. ica_des_cmac_intermediate is used to process all but the last
+ * chunk. All message chunks to preprocessed by ica_des_cmac_intermediate
+ * must have a size that is a multiple of the cipher block size (i.e a
+ * multiple of 8 bytes for DES).
+ * Note: ica_des_cmac_intermediate has no direction argument it can be used
+ * during an authentication and during authenticity verification.
+ *
+ * Required HW Support
+ * KMAC-DEA
+ *
+ * @param message
+ * Pointer to a readable buffer of size greater than or equal to
+ * message_length bytes. It contains a non final part of a message which
+ * shall be authenticated or of which the authenticity shall be verified.
+ * @param message_length
+ * Length in bytes of the message part in message. It must be a multiple
+ * of the cipher block size.
+ * @param key
+ * Pointer to a valid DES key of 8 bytes length.
+ * @param iv
+ * Pointer to a valid  initialization vector of size cipher block size (i.e.
+ * 8 bytes for DES). For the first message part it must be set to a string
+ * of zeros. For processing the n-th message part it must be the resulting iv
+ * value of the ica_des_cmac_intermediate applied to the (n-1)-th message
+ * part. This vector will be overwritten during the function. The result value
+ * in iv may be used as initialization vector for a chained call to
+ * ica_des_cmac_initermediate or to ica_des_cmac_last with the same key.
+ *
+ * @return 0 on success
+ * EINVAL if at least one invalid parameter is given.
+ * EPERM if required hardware support is not available.
+ * EIO if the operation fails.
+ */
+unsigned int ica_des_cmac_intermediate(const unsigned char *message,
+				       unsigned long message_length,
+				       const unsigned char *key,
+				       unsigned char *iv);
+
+/**
+ * Authenticate data or verify the authenticity of data with an DES key using
+ * the Block Cipher Based Message Authentication Code (CMAC) mode as described
+ * in NIST Special Publication 800-38B.
+ * ica_des_cmac_last can be used to authenticate or verify the authenticity of
+ * a complete message or of the final part of a message for which all
+ * preceding parts were preprocessed with ica_des_cmac_intermediate.
+ *
+ * Required HW Support
+ * KMAC-DEA,
+ * PCC-Compute-Last_block-CMAC-Using-DEA
+ *
+ * @param message
+ * Pointer to a readable buffer of size greater than or equal to message_length
+ * bytes. It contains a message or the final part of a message to be
+ * authenticated or of which the authenticity shall be verified.
+ * @param message_length
+ * Length in bytes of the message to be authenticated or verified.
+ * @param mac
+ * Pointer to a buffer of size greater than or equal to mac_length bytes.
+ * If direction is 1 the buffer must be writable and a message authentication
+ * code for the message in message of size mac_length bytes will be written to
+ * the buffer.
+ * If direction is 0 the buffer must be readable and contain a message
+ * authentication code that will be verified against the message in message.
+ * @param mac_length
+ * Length in bytes of the message authentication code mac in bytes that is less
+ * than or equal to the cipher block size (i.e. 8 bytes for DES). It is
+ * recommended to use values greater than or equal to 8.
+ * @param key
+ * Pointer to a valid DES key of 8 bytes length.
+ * @param iv
+ * Pointer to a valid initialization vector of size cipher block size. If iv is
+ * NULL message is assumed to be the complete message to be processed.
+ * Otherwise message is the final part of a composite message to be processed
+ * and iv contains the output vector resulting from processing all previous
+ * parts with chained calls to ica_aes_cmac_intermediate, i.e. the value
+ * returned in iv of the ica_des_cmac_intermediate call applied to the
+ * penultimate message part.
+ * @param direction
+ * 0 or 1:
+ * 0 Verify message authentication code
+ * 1 Compute message authentication code for the message
+ *
+ * @return 0 on success
+ * EINVAL if at least one invalid parameter is given.
+ * EPERM if required hardware support is not available.
+ * EIO if the operation fails.
+ * EFAULT if direction is 0 and the verification of the message authentication
+ * code fails.
+ */
+unsigned int ica_des_cmac_last(const unsigned char *message, unsigned long message_length,
+			       unsigned char *mac, unsigned int mac_length,
+			       const unsigned char *key,
+			       unsigned char *iv,
+			       unsigned int direction);
+
+/**
  * Encrypt or decrypt data with an 3DES key using Electronic Cook Book (ECB)
  * mode as described in NIST Special Publication 800-38A Chapter 6.1.
  *
@@ -2013,6 +2231,68 @@ unsigned int ica_3des_cbc(const unsigned char *in_data, unsigned char *out_data,
 			  unsigned long data_length, const unsigned char *key,
 			  unsigned char *iv,
 			  unsigned int direction);
+
+/**
+ * Encrypt or decrypt data with an 3DES key using Cipher Block Chaining with
+ * Ciphertext Stealing (CBC-CS) mode as described in NIST Special Publication
+ * 800-38A Chapter 6.2 and the Addendum to NIST Special Publication 800-38A on
+ * "Recommendation for Block Cipher Modes of Operation: Three Variants of
+ * Ciphertext Stealing for CBC Mode":
+ * ica_3des_cbc_cs may be used to encrypt o decrypt the last chunk of a
+ * message consisting of multiple chunks where all but the last chunk are
+ * encrypted or decrypted by chained calls to ica_3des_cbc and the resulting
+ * iv of the last call to ica_3des_cbc is fed into the iv of the
+ * ica_3des_cbc_cs call provided the chunc is greater than cipher block size
+ * (greater than 8 bytes for 3DES).
+ *
+ * Required HW Support
+ * KMC-TDEA-192
+ *
+ * @param in_data
+ * Pointer to a readable buffer, that contains the message to be en/decrypted.
+ * The size of the message in bytes is data_length. The size of this buffer
+ * in bytes must be at least as big as data_length.
+ * @param out_data
+ * Pointer to a writable buffer, that will contain the resulting en/decrypted
+ * message. The size of this buffer in bytes must be at least as big as
+ * data_length.
+ * @param data_length
+ * Length in bytes of the message to be en/decrypted, which resides at the
+ * beginning of in_data. data_length must be greater than or equal to the
+ * cipher block size (i.e. a multiple of 8 bytes for 3DES).
+ * @param key
+ * Pointer to a valid 3DES key of 24 bytes length.
+ * @param iv
+ * Pointer to a valid initialization vector of cipher block size bytes. This
+ * vector will be overwritten during the function. For variant equals 1 or
+ * variant equals 2 the result value in iv may be used as initialization vector
+ * for a chained ica_3des_cbc call with the same key if data_length is a
+ * multiple of the cipher block size.
+ * @param direction
+ * 0 or 1:
+ * 0 Use the decrypt function.
+ * 1 Use the encrypt function.
+ * @param variant
+ * 1 Use variant CBC-CS1 of the Addendum to NIST Special Publication 800-38A
+ *   to encrypt or decrypt the message: keep last two blocks in order.
+ * 2 Use variant CBC-CS2 of the Addendum to NIST Special Publication 800-38A
+ *   to encrypt or decrypt the message: switch order of the last two blocks
+ *   if data_length is not a multiple of the cipher block size (i.e. a
+ *   multiple of 8 for DES).
+ * 3 Use variant CBC-CS3 of the Addendum to NIST Special Publication 800-38A
+ *   to encrypt or decrypt the message: always switch order of the last two
+ *   blocks.
+ *
+ * @return 0 on success
+ * EINVAL if at least one invalid parameter is given.
+ * EPERM if required hardware support is not available.
+ * EIO if the operation fails.
+ */
+unsigned int ica_3des_cbc_cs(const unsigned char *in_data, unsigned char *out_data,
+			     unsigned long data_length,
+			     const unsigned char *key,
+			     unsigned char *iv,
+			     unsigned int direction, unsigned int variant);
 
 /**
  * Encrypt or decrypt data with an 3DES key using Cipher Feedback (CFB) mode as
@@ -2206,6 +2486,152 @@ unsigned int ica_3des_ofb(const unsigned char *in_data, unsigned char *out_data,
 			  unsigned char *iv, unsigned int direction);
 
 /**
+ * Authenticate data or verify the authenticity of data with an 3DES key
+ * using the Block Cipher Based Message Authetication Code (CMAC) mode as
+ * described in NIST Special Publication 800-38B.
+ * ica_3des_cmac can be used to authenticate or verify the authenticity of a
+ * complete message.
+ *
+ * Required HW Support
+ * KMAC-TDEA-192
+ * PCC-Compute-Last_block-CMAC-Using-TDEA-192
+ *
+ * @param message
+ * Pointer to a readable buffer of size greater than or equal to
+ * message_length bytes. It contains a message  to be authenticated or of
+ * which the authenticity shall be verified.
+ * @param message_length
+ * Length in bytes of the message to be authenticated or verified.
+ * @param mac
+ * Pointer to a buffer of size greater than or equal to mac_length bytes.
+ * If direction is 1 the buffer must be writable and a message authentication
+ * code for the message in message of size mac_length bytes will be written to
+ * the buffer.
+ * If direction is 0 the buffer must be readable and contain a message
+ * authentication code that will be verified against the message in message.
+ * @param mac_length
+ * Length in bytes of the message authentication code mac in bytes that is less
+ * than or equal to the cipher block size (i.e. 8 bytes for TDES). It is
+ * recommended to use values greater than or equal to 8.
+ * @param key
+ * Pointer to a valid 3DES key of 24 bytes length.
+ * @param direction
+ * 0 or 1:
+ * 0 Verify message authentication code
+ * 1 Compute message authentication code for the message
+ *
+ * @return 0 on success
+ * EINVAL if at least one invalid parameter is given.
+ * EPERM if required hardware support is not available.
+ * EIO if the operation fails.
+ * EFAULT if direction is 0 and the verification of the message authentication
+ * code fails.
+ */
+unsigned int ica_3des_cmac(const unsigned char *message, unsigned long message_length,
+			   unsigned char *mac, unsigned int mac_length,
+			   const unsigned char *key,
+			   unsigned int direction);
+
+/**
+ * Authenticate data or verify the authenticity of data with an 3DES key using
+ * the Block Cipher Based Message Authentication Code (CMAC) mode as described
+ * in NIST Special Publication 800-38B.
+ * ica_3des_cmc_intermediate and ica_3des_cmac_last can be used when the
+ * message to be authenticated or to be verfied using CMAC is supplied in
+ * multiple chunks. ica_3des_cmac_intermediate is used to process all but the
+ * last chunk. All message chunks to preprocessed by
+ * ica_3des_cmac_intermediate must have a size that is a multiple of the
+ * cipher block size (i.e a multiple of 8 bytes for 3DES).
+ * Note: ica_3des_cmac_intermediate has no direction argument it can be used
+ * during an authentication and during authenticity verification.
+ *
+ * Required HW Support
+ * KMAC-TDEA-192,
+ *
+ * @param message
+ * Pointer to a readable buffer of size greater than or equal to message_length
+ * bytes. It contains a non final part of a message which shall be
+ * authenticated or of which the authenticity shall be verified.
+ * @param message_length
+ * Length in bytes of the message part in message. It must be a multiple of the
+ * cipher block size.
+ * @param key
+ * Pointer to a valid 3DES key of 24 bytes length.
+ * @param iv
+ * Pointer to a valid initialization vector of size cipher block size
+ * (i.e. 8 bytes for 3DES). For the first message part it must be set to a
+ * string of zeros. For processing the n-th message part it must be the
+ * resulting iv value of the ica_3des_cmac_intermediate applied to the
+ * (n-1)-th message part. This vector will be overwritten during the function.
+ * The result value in iv may be used as initialization vector for a chained
+ * call to ica_3des_cmac_initermediate or to ica_3des_cmac_last with the same key.
+ *
+ * @return 0 on success
+ * EINVAL if at least one invalid parameter is given.
+ * EPERM if required hardware support is not available.
+ * EIO if the operation fails.
+ */
+unsigned int ica_3des_cmac_intermediate(const unsigned char *message, unsigned long message_length,
+					const unsigned char *key,
+					unsigned char *iv);
+
+/**
+ * Authenticate data or verify the authenticity of data with an 3DES key using
+ * the Block Cipher Based Message Authentication Code (CMAC) mode as described
+ * in NIST Special Publication 800-38B.
+ * ica_3des_cmac_last can be used to authenticate or verify the authenticity
+ * of a complete message or of the final part of a message for which all
+ * preceding parts were preprocessed with ica_3des_cmac_intermediate.
+ *
+ * Required HW Support
+ * KMAC-TDEA-192,
+ * PCC-Compute-Last_block-CMAC-Using-TDEA-192
+ *
+ * @param message
+ * Pointer to a readable buffer of size greater than or equal to message_length
+ * bytes. It contains a message or the final part of a message to be
+ * authenticated or of which the authenticity shall be verified.
+ * @param message_length
+ * Length in bytes of the message to be authenticated or verified.
+ * @param mac
+ * Pointer to a buffer of size greater than or equal to mac_length bytes.
+ * If direction is 1 the buffer must be writable and a message authentication
+ * code for the message in message of size mac_length bytes will be written to
+ * the buffer.
+ * If direction is 0 the buffer must be readable and contain a message
+ * authentication code that will be verified against the message in message.
+ * @param mac_length
+ * Length in bytes of the message authentication code mac in bytes that is
+ * less than or equal to the cipher block size (I.e. 8 bytes for DES). It is
+ * recommended to use values greater than or equal to 8.
+ * @param key
+ * Pointer to a valid  3DES key of 24 bytes length.
+ * @param iv
+ * Pointer to a valid initialization vector of size cipher block size. If iv
+ * is NULL message is assumed to be the complete message to be processed.
+ * Otherwise message is the final part of a composite message to be processed
+ * and iv contains the output vector resulting from processing all previous
+ * parts with chained calls to ica_3des_cmac_intermediate, i.e. the value
+ * returned in iv of the ica_3des_cmac_intermediate call applied to the
+ * penultimate message part.
+ * @param direction
+ * 0 or 1:
+ * 0 Verify message authentication code
+ * 1 Compute message authentication code for the message
+ *
+ * @return 0 on success
+ * EINVAL if at least one invalid parameter is given.
+ * EPERM if required hardware support is not available.
+ * EIO if the operation fails.
+ * EFAULT if direction is 0 and the verification of the message authentication
+ * code fails.
+ */
+unsigned int ica_3des_cmac_last(const unsigned char *message, unsigned long message_length,
+				unsigned char *mac, unsigned int mac_length,
+				const unsigned char *key, unsigned char *iv,
+				unsigned int direction);
+
+/**
  * Encrypt or decrypt data with an AES key using Electronic Cook Book (ECB)
  * mode as described in NIST Special Publication 800-38A Chapter 6.1.
  *
@@ -2287,6 +2713,73 @@ unsigned int ica_aes_cbc(const unsigned char *in_data, unsigned char *out_data,
 			 unsigned long data_length, const unsigned char *key,
 			 unsigned int key_length, unsigned char *iv,
 			 unsigned int direction);
+
+/**
+ * Encrypt or decrypt data with an AES key using Cipher Block Chaining with
+ * Ciphertext Stealing (CBC-CS) mode as described in NIST Special Publication
+ * 800-38A Chapter 6.2 and the Addendum to NIST Special Publication 800-38A on
+ * "Recommendation for Block Cipher Modes of Operation: Three Variants of
+ * Ciphertext Stealing for CBC Mode":
+ * ica_aes_cbc_cs may be used to encrypt or decrypt the last chunk of a
+ * message consisting of multiple chunks where all but the last chunk are
+ * encrypted or decrypted by chained calls to ica_aes_cbc and the resulting
+ * iv of the last call to ica_aes_cbc is fed into the iv of the
+ * ica_aes_cbc_cs call provided the chunk is greater than cipher block size
+ * (greater than 16 bytes for AES).
+ *
+ * Required HW Support
+ * KMC-AES-128, KMC-AES-192 or KMC-AES-256
+ *
+ * @param in_data
+ * Pointer to a readable buffer, that contains the message to be en/decrypted.
+ * The size of the message in bytes is data_length. The size of this buffer
+ * in bytes must be at least as big as data_length.
+ * @param out_data
+ * Pointer to a writable buffer, that will contain the resulting en/decrypted
+ * message. The size of this buffer in bytes must be at least as big as
+ * data_length.
+ * @param data_length
+ * Length in bytes of the message to be en/decrypted, which resides at the
+ * beginning of in_data. data_length must be greater than or equal to the
+ * cipher block size (i.e. a multiple of 16 bytes for AES).
+ * @param key
+ * Pointer to a valid AES key.
+ * @param key_length
+ * Length in bytes of the AES key. Supported sizes are 16, 24, and 32 for
+ * AES-128, AES-192 and AES-256 respectively. Therefore, you can use the
+ * macros:
+ * AES_KEY_LEN128, AES_KEY_LEN192, and AES_KEY_LEN256.
+ * @param iv
+ * Pointer to a valid initialization vector of cipher block size bytes. This
+ * vector will be overwritten during the function. For variant equals 1 or
+ * variant equals 2 the result value in iv may be used as initialization vector
+ * for a chained ica_aes_cbc call with the same key if data_length is a
+ * multiple of the cipher block size.
+ * @param direction
+ * 0 or 1:
+ * 0 Use the decrypt function.
+ * 1 Use the encrypt function.
+ * @param variant
+ * 1 Use variant CBC-CS1 of the Addendum to NIST Special Publication 800-38A
+ *   to encrypt or decrypt the message: keep last two blocks in order.
+ * 2 Use variant CBC-CS2 of the Addendum to NIST Special Publication 800-38A
+ *   to encrypt or decrypt the message: switch order of the last two blocks
+ *   if data_length is not a multiple of the cipher block size (i.e. a
+ *   multiple of 8 for DES).
+ * 3 Use variant CBC-CS3 of the Addendum to NIST Special Publication 800-38A
+ *   to encrypt or decrypt the message: always switch order of the last two
+ *   blocks.
+ *
+ * @return 0 on success
+ * EINVAL if at least one invalid parameter is given.
+ * EPERM if required hardware support is not available.
+ * EIO if the operation fails.
+ */
+unsigned int ica_aes_cbc_cs(const unsigned char *in_data, unsigned char *out_data,
+			    unsigned long data_length,
+			    const unsigned char *key, unsigned int key_length,
+			    unsigned char *iv,
+			    unsigned int direction, unsigned int variant);
 
 /**
  * Encrypt or decrypt data with an AES key using Cipher Feedback (CFB) mode as
@@ -2547,6 +3040,118 @@ unsigned int ica_aes_cmac(const unsigned char *message, unsigned long message_le
 			  unsigned int direction);
 
 /**
+ * Authenticate data or verify the authenticity of data with an AES key using
+ * the Block Cipher Based Message Authentication Code (CMAC) mode as described
+ * in NIST Special Publication 800-38B.
+ * ica_aes_cmc_intermediate and ica_aes_cmac_last can be used when the message
+ * to be authenticated or to be verfied using CMAC is supplied in multiple
+ * chunks. ica_aes_cmac_intermediate is used to process all but the last
+ * chunk. All message chunks to preprocessed by ica_aes_cmac_intermediate
+ * must have a size that is a multiple of the cipher block size (i.e. a
+ * multiple of 16 bytes for AES).
+ * Note: ica_aes_cmac_intermediate has no direction argument it can be used
+ * during an authentication and during authenticity verification.
+ *
+ * Required HW Support
+ * KMAC-AES-128, KMAC-AES-192 or KMAC-AES-256
+ *
+ * @param message
+ * Pointer to a readable buffer of size greater than or equal to message_length
+ * bytes. It contains a non final part of a message which shall be
+ * authenticated or of which the authenticity shall be verified.
+ * @param message_length
+ * Length in bytes of the message part in message. It must be a multiple of
+ * the cipher block size.
+ * @param key
+ * Pointer to a valid AES key.
+ * @param key_length
+ * Length in bytes of the AES key. Supported sizes are 16, 24, and 32 for
+ * AES-128, AES-192 and AES-256 respectively. Therefore, you can use the
+ * macros: AES_KEY_LEN128, AES_KEY_LEN192, and AES_KEY_LEN256.
+ * @param iv
+ * Pointer to a valid  initialization vector of size cipher block size (i.e.
+ * 16 bytes for AES). For the first message part it must be set to a string
+ * of zeros. For processing the n-th message part it must be the resulting iv
+ * value of the ica_aes_cmac_intermediate applied to the (n-1)-th message
+ * part. This vector will be overwritten during the function.
+ * The result value in iv may be used as initialization vector for a chained
+ * call to ica_aes_cmac_initermediate or to ica_aes_cmac_last with the
+ * same key.
+ *
+ * @return 0 on success
+ * EINVAL if at least one invalid parameter is given.
+ * EPERM if required hardware support is not available.
+ * EIO if the operation fails.
+ */
+unsigned int ica_aes_cmac_intermediate(const unsigned char *message,
+				       unsigned long message_length,
+				       const unsigned char *key, unsigned int key_length,
+				       unsigned char *iv);
+
+/**
+ * Authenticate data or verify the authenticity of data with an AES key using
+ * the Block Cipher Based Message Authentication Code (CMAC) mode as
+ * described in NIST Special Publication 800-38B.
+ * ica_aes_cmac_last can be used to authenticate or verify the authenticity of
+ * a complete message or of the final part of a message for which all
+ * preceding parts were preprocessed with ica_aes_cmac_intermediate.
+ *
+ * Required HW Support
+ * KMAC-AES-128, KMAC-AES-192 or KMAC-AES-256
+ * PCC-Compute-Last_block-CMAC-Using-AES-128,
+ * PCC-Compute-Last_block-CMAC-Using-AES-192 or
+ * PCC-Compute-Last_block-CMAC-Using-AES-256.
+ *
+ * @param message
+ * Pointer to a readable buffer of size greater than or equal to message_length
+ * bytes. It contains a message or the final part of a message to be
+ * authenticated or of which the authenticity shall be verified.
+ * @param message_length
+ * Length in bytes of the message to be authenticated or verified.
+ * @param mac
+ * Pointer to a buffer of size greater than or equal to mac_length bytes.
+ * If direction is 1 the buffer must be writable and a message authentication
+ * code for the message in message of size mac_length bytes will be written to
+ * the buffer.
+ * If direction is 0 the buffer must be readable and contain a message
+ * authentication code that will be verified against the message in message.
+ * @param mac_length
+ * Length in bytes of the message authentication code mac in bytes that is less
+ * than or equal to the cipher block size (I.e. 16 bytes for AES). It is
+ * recommended to use values greater than or equal to 8.
+ * @param key
+ * Pointer to a valid AES key.
+ * @param key_length
+ * Length in bytes of the AES key. Supported sizes are 16, 24, and 32 for
+ * AES-128, AES-192 and AES-256 respectively. Therefore, you can use the
+ * macros: AES_KEY_LEN128, AES_KEY_LEN192, and AES_KEY_LEN256.
+ * @param iv
+ * Pointer to a valid initialization vector of size cipher block size. If iv
+ * is NULL message is assumed to be the complete message to be processed.
+ * Otherwise message is the final part of a composite message to be processed
+ * and iv contains the output vector resulting from processing all previous
+ * parts with chained calls to ica_aes_cmac_intermediate, i.e. the value
+ * returned in iv of the ica_aes_cmac_intermediate call applied to the
+ * penultimate message part.
+ * @param direction
+ * 0 or 1:
+ * 0 Verify message authentication code
+ * 1 Compute message authentication code for the message
+ *
+ * @return 0 on success
+ * EINVAL if at least one invalid parameter is given.
+ * EPERM if required hardware support is not available.
+ * EIO if the operation fails.
+ * EFAULT if direction is 0 and the verification of the message authentication
+ * code fails.
+ */
+unsigned int ica_aes_cmac_last(const unsigned char *message, unsigned long message_length,
+			       unsigned char *mac, unsigned int mac_length,
+			       const unsigned char *key, unsigned int key_length,
+			       unsigned char *iv,
+			       unsigned int direction);
+
+/**
  * Encrypt or decrypt data with an AES key using the XEX Tweakable Bloc Cipher
  * with Ciphertext Stealing (XTS) mode as described in NIST Special Publication
  * 800-38E and IEEE standard 1619-2007.
@@ -2597,6 +3202,163 @@ unsigned int ica_aes_xts(const unsigned char *in_data, unsigned char *out_data,
 			 unsigned long data_length,
 			 const unsigned char *key1, const unsigned char *key2,
 			 unsigned int key_length, unsigned char *tweak,
+			 unsigned int direction);
+
+/**
+ * Encrypt and authenticate or decrypt data and check authenticity of data with
+ * an AES key using Counter with Cipher Block Chaining Message Authentication
+ * Code (CCM) mode as described in NIST Special Publication 800-38C.
+ * Formatting and counter functions are implemented according to
+ * NIST 800-38C Appendix A.
+ *
+ * Required HW Support
+ * KMCTR-AES-128, KMCTR-AES-192 or KMCTR-AES-256
+ * KMAC-AES-128, KMAC-AES-192 or KMAC-AES-256
+ *
+ * @param payload
+ * Pointer to a buffer of size greater than or equal to payload_length bytes.
+ * If direction equals 1 the payload buffer must be readable and contain a
+ * payload message of size payload_length that will be encrypted.
+ * If direction equals 0 the payload buffer must be writable. If the
+ * authentication verification succeeds the decrypted message in the most
+ * significant payload_length bytes of ciphertext_n_mac will be written to
+ * the buffer otherwise the contents of the buffer will be undefined.
+ * @param payload_length
+ * Length in bytes of the message to be en/decrypted, it may be 0 unless
+ * assoc_data_length is 0.
+ * @param ciphertext_n_mac
+ * Pointer to a buffer of size greater than or equal to payload_length plus
+ * mac_length bytes.
+ * If direction equals 1 then the buffer must be writable and the encrypted
+ * message from payload followed by the message authentication code for the
+ * nonce, the payload and associated data will be written to that buffer.
+ * If direction equals 0 then the buffer is readable and contains an encrypted
+ * message of length payload_length followed by a message authentication code
+ * of length mac_length.
+ * @param mac_length
+ * Length in bytes of the message authentication code in bytes.
+ * Valid values are 4, 6, 8, 10, 12, 16.
+ * @param assoc_data
+ * Pointer to a readable buffer of size greater than or equal to
+ * assoc_data_length bytes. The associated data in the most significant
+ * assoc_data_lenght bytes is subject to the authentication code computation
+ * but will not be encrypted.
+ * @param assoc_data_length
+ * Length of the associated data in assoc_data. It may be 0 unless
+ * payload_length is 0.
+ * @param nonce
+ * Pointer to readable buffer of size greater than or equal to nonce_length
+ * bytes that contains a nonce of size nonce_length bytes.
+ * @param nonce_length
+ * Length of the nonce in nonce in bytes. Valid values a greater than 6 and
+ * less than 14.
+ * @param key
+ * Pointer to a valid  AES key.
+ * @param key_length
+ * Length in bytes of the AES key. Supported sizes are 16, 24, and 32 for
+ * AES-128, AES-192 and AES-256 respectively. Therefore, you can use the
+ * macros: AES_KEY_LEN128, AES_KEY_LEN192, and AES_KEY_LEN256.
+ * @param direction
+ * 0 or 1:
+ * 0 Verify message authentication code and decrypt encrypted payload.
+ * 1 Encrypt payload and compute message authentication code for the nonce,
+ * the associated data and the payload.
+ *
+ * @return 0 on success
+ * EINVAL if at least one invalid parameter is given.
+ * EPERM if required hardware support is not available.
+ * EIO if the operation fails.
+ * EFAULT if direction is 0 and the verification of the message authentication
+ * code fails.
+ */
+unsigned int ica_aes_ccm(unsigned char *payload, unsigned long payload_length,
+			 unsigned char *ciphertext_n_mac, unsigned int mac_length,
+			 const unsigned char *assoc_data, unsigned long assoc_data_length,
+			 const unsigned char *nonce, unsigned int nonce_length,
+			 const unsigned char *key, unsigned int key_length,
+			 unsigned int direction);
+
+/**
+ * Encrypt and authenticate or decrypt data and check authenticity data with
+ * an AES key using the Galois/Counter (GCM) mode as described in NIST Special
+ * Publication 800-38D.
+ * If no message needs to be encrypted or decrypted and only authentication or
+ * authentication checks are requested then this method implements the GMAC
+ * mode.
+ *
+ * Required HW Support
+ * KM-AES-128, KM-AES-192 or KM-AES-256
+ * KIMD-GHASH
+ * KMCTR-AES-128, KMCTR_AES-192 or KMCTR-AES-256
+ *
+ * @param plaintext
+ * Pointer to a buffer of size greater than or equal to plaintext_length bytes.
+ * If direction equals 1 the plaintext buffer must be readable and contain a
+ * payload message of size plaintext_length that will be encrypted.
+ * If direction equals 0 the plaintext buffer must be writable. If the
+ * authentication verification succeeds  the decrypted message in the most
+ * significant plaintext_length bytes of ciphertext will be written to the
+ * buffer otherwise the contents of the buffer will be undefined.
+ * @param plaintext_length
+ * Length in bytes of the message to be en/decrypted. It must be equal or
+ * greater than 0 and less than (2^36)-32.
+ * @param ciphertext
+ * Pointer to a buffer of size greater than or equal to plaintext_length
+ * bytes.
+ * If direction equals 1 then the buffer must be writable and the encrypted
+ * message from plaintext will be written to that buffer.
+ * If direction equals 0 then the buffer is readable and contains an encrypted
+ * message of length plaintext_length.
+ * @param iv
+ * Pointer to a readable buffer of size greater than or equal to iv_length
+ * bytes, that contains an initialization vector of size iv_length.
+ * @param iv_length
+ * Length in bytes of the initialization vector in iv. It must be greater
+ * than 0 and less than 2^61. A length of 12 is recommended.
+ * @param aad
+ * Pointer to a readable buffer of size greater than or equal to aad_length
+ * bytes. The additional authenticated data in the most significant aad_length
+ * bytes is subject to the authentication code computation but will not be
+ * encrypted.
+ * @param aad_length
+ * Length in bytes of the additional authenticated data in aad. It must be
+ * equal or greater than 0 and less than 2^61.
+ * @param tag
+ * Pointer to a buffer of size greater than or equal to tag_length bytes.
+ * If direction is 1 the buffer must be writable and a message authentication
+ * code for the additional authenticated data in aad and the plain text in
+ * plaintext of size tag_length bytes will be written to the buffer.
+ * If direction is 0 the buffer must be readable and contain a message
+ * authentication code that will be verified against the additional
+ * authenticated data in aad and decrypted cipher text from ciphertext.
+ * @param tag_length
+ * Length in bytes of the message authentication code tag in bytes.
+ * Valid values are 4, 8, 12, 13, 14, 15, 16.
+ * @param key
+ * Pointer to a valid AES key.
+ * @param key_length
+ * Length in bytes of the AES key. Supported sizes are 16, 24, and 32 for
+ * AES-128, AES-192 and AES-256 respectively. Therefore, you can use the
+ * macros: AES_KEY_LEN128, AES_KEY_LEN192, and AES_KEY_LEN256.
+ * @param direction
+ * 0 or 1:
+ * 0 Verify message authentication code and decrypt encrypted payload.
+ * 1 Encrypt payload and compute message authentication code for the additional
+ * authenticated data and the payload.
+ *
+ * @return 0 on success
+ * EINVAL if at least one invalid parameter is given.
+ * EPERM if required hardware support is not available.
+ * EIO if the operation fails.
+ * EFAULT if direction is 0 and the verification of the message authentication
+ * code fails.
+ */
+unsigned int ica_aes_gcm(unsigned char *plaintext, unsigned long plaintext_length,
+			 unsigned char *ciphertext,
+			 const unsigned char *iv, unsigned int iv_length,
+			 const unsigned char *aad, unsigned long aad_length,
+			 unsigned char *tag, unsigned int tag_length,
+			 const unsigned char *key, unsigned int key_length,
 			 unsigned int direction);
 
 /**
