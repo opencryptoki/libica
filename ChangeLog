@@ -1,3 +1,10 @@
+v2.2.0
+ Introduce support for more MSA4 extensions.
+ New symetric encryption modes:
+ - CBC-CS (DES, TDES, AES-[128|192|256])
+ - CMAC (DES, TDES, AES-[128|192|256])
+ - CCM (AES-[128|192|256])
+ - GCM (AES-[128|256])
 v2.1.1
  Changes since Version 2.1.0:
  - [PATCH] synchronize shared memory ref counting
