@@ -20,7 +20,8 @@ TARGETS = libica_des_test libica_3des_test \
 	  libica_des_cbc_test libica_3des_cbc_test \
 	  libica_des_ecb_test libica_cbccs_test libica_3des_ecb_test \
 	  libica_des_ofb_test libica_3des_ofb_test \
-	  libica_get_version
+	  libica_get_version \
+      libica_get_functionlist
 
 all: $(TARGETS)
 

@@ -7,8 +7,9 @@
 /*
  * Authors(s): Ralph Wuerthner <rwuerthn@de.ibm.com>
  *             Holger Dengler <hd@linux.vnet.ibm.com>
+ *             Ingo Tuchscherer <ingo.tuchscherer@linux.vnet.ibm.com>
  *
- * Copyright IBM Corp. 2001, 2005, 2009, 2010, 2011
+ * Copyright IBM Corp. 2001, 2005, 2009, 2010, 2011, 2013
  */
 
 #ifndef __ICA_API_H__
@@ -394,6 +395,26 @@ typedef struct {
 	libica_mechanism_type mech_type;
 	libica_mechanism_info mech_info;
 } libica_mechanism_list_element;
+
+/*
+ * internal specification for a specific crypto mechanism supported by libica
+ **/
+typedef struct {
+        unsigned int mech_mode_id;
+	    unsigned int type;
+        unsigned int id;
+        unsigned int flags;
+        unsigned int property;
+} libica_func_list_element_int;
+
+/*
+ * external specification for a specific crypto mechanism supported by libica
+ **/
+typedef struct {
+        unsigned int mech_mode_id;
+        unsigned int flags;
+        unsigned int property;
+} libica_func_list_element;
 
 /**
  * @deprecated
@@ -3372,5 +3393,35 @@ unsigned int ica_aes_gcm(unsigned char *plaintext, unsigned long plaintext_lengt
  *         EINVAL if parameter version_info is NULL
  */
 unsigned int ica_get_version(libica_version_info *version_info);
+
+/**
+ * Function that returns a list of crypto mechanisms supported by libica.
+ * @param pmech_list
+ *    Pointer to an array of libica_func_list_element
+ *    If NULL, the API will return the number of elements to allocate
+ *    in the @mech_list_len parameter.
+ *    If not NULL, libica will assume @mech_list is an array that has
+ *    @num elements.
+ *    On success, @mech_list will be filled out with the supported libica
+ *    crypto mechanisms.
+ * @param pmech_list_len
+ *    number of list entries
+ *    On input, pointer to the number of elements allocated in the 
+ *    @mech_list array.
+ *    On output, @mech_list_len will contain the number of items copied to
+ *    the @mech_list array, or the number of items libica would have returned
+ *    in case the @mech_list parameter is set to NULL.
+ * @return
+ *    0 on success
+ *    EINVAL if at least one invalid parameter is given
+ *
+ *   A typical usage scenario would be that an exploiter makes a first call to
+ *   ica_get_functionlist() with @mech_list set to NULL in order to determine
+ *   the number of elements to allocate. This is followed by a second call to
+ *   ica_get_functionlist() with a valid pointer @list to an array of
+ *   libica_func_list_element structures with @mech_list_len elements.
+ */       
+unsigned int ica_get_functionlist(libica_func_list_element *pmech_list, 
+					unsigned int *pmech_list_len);
 
 #endif /* __ICA_API_H__ */

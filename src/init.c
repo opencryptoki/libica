@@ -6,7 +6,8 @@
 
 /**
  * Authors: Felix Beck <felix.beck@de.ibm.com>
- *	    Christian Maaser <cmaaser@de.ibm.com>
+ *	        Christian Maaser <cmaaser@de.ibm.com>
+ * 	        Ingo Tuchscherer <ingo.tuchscherer.linux.vnet.ibm.com>
  *
  * Copyright IBM Corp. 2001, 2009, 2011
  */
@@ -91,6 +92,8 @@ void __attribute__ ((constructor)) icainit(void)
 	s390_crypto_switches_init();
 
 	s390_prng_init();
+
+	s390_initialize_functionlist();	
 
 	openssl_init();
 

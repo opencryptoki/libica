@@ -13,15 +13,16 @@
  *	       Felix Beck <felix.beck@de.ibm.com>
  *	       Christian Maaser <cmaaser@de.ibm.com>
  *	       Holger Dengler <hd@linux.vnet.ibm.com>
+ *	       Ingo Tuchscherer <ingo.tuchscherer.linux.vnet.ibm.com>
  *
- * Copyright IBM Copr. 2007, 2009, 2011
+ * Copyright IBM Copr. 2007, 2009, 2011, 2013
  */
 
 #include <stdint.h>
 #include <fcntl.h>
 #include <string.h>
 #include <stdio.h>
-
+#include <errno.h>
 #include "s390_crypto.h"
 #include "init.h"
 
@@ -485,5 +486,176 @@ void s390_crypto_switches_init(void)
 		msa = read_cpuinfo();
 
 	set_switches(msa);
+}
+
+/*
+ * The first field represents the mechanism ID.
+ * The second field represents the function family type (category), 
+ * The third filed represents the function code.
+ * This function code will be used later to check if HW support 
+ * is available and modifies the SW/HW-support-flag.
+ * SHW - static hardware support (CPACF) 
+ * DHW - dynamic hardware support (crypto adapter)
+ * SW  - software support
+ * Bit field flags: [0|0|0|0|0|SHW|DHW|SW]
+ * The last filed represent the property flags
+ */
+libica_func_list_element_int icaList[] = {
+ {SHA1,   KIMD, SHA_1  		, ICA_FLAG_SW, 0},
+ {SHA224, KIMD, SHA_256		, ICA_FLAG_SW, 0},
+ {SHA256, KIMD, SHA_256		, ICA_FLAG_SW, 0},
+ {SHA384, KIMD, SHA_512		, ICA_FLAG_SW, 0},
+ {SHA512, KIMD, SHA_512		, ICA_FLAG_SW, 0},
+
+ {DES_ECB,      KMC,  DEA_ENCRYPT, ICA_FLAG_SW, 0},
+ {DES_CBC,      KMC,  DEA_ENCRYPT, ICA_FLAG_SW, 0},
+ {DES_CBC_CS,   MSA4, DEA_ENCRYPT, 0, 0},
+ {DES_OFB,      MSA4, DEA_ENCRYPT, 0, 0},
+ {DES_CFB,      MSA4, DEA_ENCRYPT, 0, 0},
+ {DES_CTR,      MSA4, DEA_ENCRYPT, 0, 0},
+ {DES_CTRLST,   MSA4, DEA_ENCRYPT, 0, 0},
+ {DES_CBC_MAC,  MSA4, DEA_ENCRYPT, 0, 0},					// CPACF only (MSA4)
+ {DES_CMAC,     MSA4, DEA_ENCRYPT, 0, 0},					// CPACF only (MSA4)
+ //{DES_KEY_GEN,  MSA4, DEA_ENCRYPT, 0, 0},					// CPACF only (MSA4)
+ 
+ {DES3_ECB,     KMC,  TDEA_192_ENCRYPT, ICA_FLAG_SW, 0},
+ {DES3_CBC,     KMC,  TDEA_192_ENCRYPT, ICA_FLAG_SW, 0},
+ {DES3_CBC_CS,  MSA4, TDEA_192_ENCRYPT,           0, 0},
+ {DES3_OFB,     MSA4, TDEA_192_ENCRYPT,           0, 0},
+ {DES3_CFB,     MSA4, TDEA_192_ENCRYPT, 	  	  0, 0},
+ {DES3_CTR,     MSA4, TDEA_192_ENCRYPT,           0, 0},
+ {DES3_CTRLST,  MSA4, TDEA_192_ENCRYPT,           0, 0},
+ {DES3_CBC_MAC, MSA4, TDEA_192_ENCRYPT,           0, 0},
+ {DES3_CMAC,    MSA4, TDEA_192_ENCRYPT,           0, 0},
+ //{DES3_KEY_GEN, MSA4, TDEA_192_ENCRYPT,           0, 0},
+  
+ {AES_ECB,      KMC,  AES_128_ENCRYPT, ICA_FLAG_SW, 0}, 
+ {AES_CBC,      KMC,  AES_128_ENCRYPT, ICA_FLAG_SW, 0},
+ {AES_CBC_CS,   MSA4, AES_128_ENCRYPT,           0, 0},
+ {AES_OFB,      MSA4, AES_128_ENCRYPT,           0, 0},
+ {AES_CFB,      MSA4, AES_128_ENCRYPT,           0, 0},
+ {AES_CTR,      MSA4, AES_128_ENCRYPT,           0, 0},
+ {AES_CTRLST,   MSA4, AES_128_ENCRYPT,           0, 0},
+ {AES_CBC_MAC,  MSA4, AES_128_ENCRYPT,           0, 0},
+ {AES_CMAC,     MSA4, AES_128_ENCRYPT,           0, 0},
+ //{AES_KEY_GEN,     MSA4, AES_128_ENCRYPT,        0, 0},
+ {AES_CCM,      MSA4, AES_128_ENCRYPT, 	         0, 0},
+ {AES_GCM,      MSA4, AES_128_ENCRYPT,           0, 0},
+ {AES_XTS,      MSA4, AES_128_XTS_ENCRYPT,       0, 0},
+ {P_RNG,    		ADAPTER, 0, ICA_FLAG_SHW | ICA_FLAG_SW, 0},	// SHW (CPACF) + SW
+ {RSA_ME, 		ADAPTER, 0, ICA_FLAG_DHW | ICA_FLAG_SW, 0x0F},	// DHW (CEX) + SW / 512,1024,2048, 4096 bit key length
+ {RSA_CRT, 		ADAPTER, 0, ICA_FLAG_DHW | ICA_FLAG_SW, 0x0F},	// DHW (CEX) + SW / 512,1024,2048, 4096 bit key length
+ {RSA_KEY_GEN_ME,  	ADAPTER, 0, ICA_FLAG_SW, 		0},	// SW (openssl)
+ {RSA_KEY_GEN_CRT, 	ADAPTER, 0, ICA_FLAG_SW, 		0},	// SW (openssl)
+
+/* available for the MSA4 instruction */
+/* available for the RSA instruction */
+ 
+};
+
+/*
+ * initializes the libica function list
+ * Query s390_xxx_functions for each algorithm to check 
+ * CPACF support and update the corresponding SHW-flags.
+ */
+int s390_initialize_functionlist() {
+
+  unsigned int list_len = (sizeof(icaList)/sizeof(libica_func_list_element_int)), x;
+
+  for (x=0; x<=list_len; x++) {
+  	switch (icaList[x].type) {
+	case KIMD:
+		icaList[x].flags = icaList[x].flags | 
+		((*s390_kimd_functions[icaList[x].id].enabled)? 4: 0);
+  	break;
+	case KMC:
+		icaList[x].flags = icaList[x].flags | 
+		((*s390_kmc_functions[icaList[x].id].enabled)? 4: 0);
+		if (icaList[x].id == AES_128_ENCRYPT) { // check for the maximum size
+                  if (*s390_kmc_functions[icaList[AES_256_ENCRYPT].id].enabled)
+                        icaList[x].property = icaList[x].property | 4; // 256 bit
+                  if (*s390_kmc_functions[icaList[AES_192_ENCRYPT].id].enabled)
+			icaList[x].property = icaList[x].property | 2; // 192 bit
+                  if (*s390_kmc_functions[icaList[AES_128_ENCRYPT].id].enabled) 
+                        icaList[x].property = icaList[x].property | 1; // 128 bit
+		}
+  	break;
+	case MSA4:
+		icaList[x].flags = icaList[x].flags | 
+		((*s390_msa4_functions[icaList[x].id].enabled)? 4: 0);
+                  if (icaList[x].id == AES_128_ENCRYPT) { // check for the maximum size
+                  	if (*s390_msa4_functions[icaList[AES_256_ENCRYPT].id].enabled)
+                       	 	icaList[x].property = icaList[x].property | 4; // 256 bit
+                  	if (*s390_msa4_functions[icaList[AES_192_ENCRYPT].id].enabled)
+                        	icaList[x].property = icaList[x].property | 2; // 192 bit 
+                  	if (*s390_msa4_functions[icaList[AES_128_ENCRYPT].id].enabled)
+                        	icaList[x].property = icaList[x].property | 1; // 128 bit
+                  }
+                  else if (icaList[x].id == AES_128_XTS_ENCRYPT) { // check for the maximum size
+                  	if      (*s390_msa4_functions[icaList[AES_256_XTS_ENCRYPT].id].enabled)
+                        	icaList[x].property = icaList[x].property | 2; // 256 bit
+                  	if (*s390_msa4_functions[icaList[AES_128_XTS_ENCRYPT].id].enabled)
+                        	icaList[x].property = icaList[x].property | 1; // 128 bit
+                }
+  	break;
+	default:
+	break;
+	}
+  }
+  return 0;
+}
+
+/**
+ * Function that returns a list of crypto mechanisms supported by libica.
+ * @param pmech_list
+ *    Pointer to an array of libica_func_list_element
+ *    If NULL, the API will return the number of elements to allocate
+ *    in the @pmech_list_len parameter.
+ *    If not NULL, libica will assume @pmech_list is an array that has
+ *    @pmech_list_len elements.
+ *    On success, @pmech_list will be filled out with the supported libica
+ *    crypto mechanisms.
+ * @param pmech_list_len
+ *    number of list entries
+ *    On input, pointer to the number of elements allocated in the 
+ *    @pmech_list array.
+ *    On output, @pmech_list_len will contain the number of items copied to
+ *    the @pmech_list array, or the number of items libica would have returned
+ *    in case the @pmech_list parameter is set to NULL.
+ * 
+ * @return
+ *    0 on success
+ *    EINVAL if at least one invalid parameter is given
+ *
+ *   A typical usage scenario would be that an exploiter makes a first call to
+ *   ica_get_functionlist() with @pmech_list set to NULL in order to determine
+ *   the number of elements to allocate. This is followed by a second call to
+ *   ica_get_functionlist() with a valid pointer @pmech_list to an array of
+ *   libica_func_list_element structures with @pmech_list_len elements.
+ */
+int s390_get_functionlist(libica_func_list_element *pmech_list, 
+                                      unsigned int *pmech_list_len) {
+  int x;
+  
+  if (!pmech_list_len) {
+	return EINVAL;
+  }
+
+  if (!pmech_list) {
+        *pmech_list_len = sizeof(icaList)/sizeof(libica_func_list_element_int);
+	return 0;
+  }
+  else if (*pmech_list_len < 
+          (sizeof(icaList)/sizeof(libica_func_list_element_int)) ) {
+	return EINVAL;
+  }
+ 
+  for (x=0; x<*pmech_list_len; x++) {
+      pmech_list[x].mech_mode_id = icaList[x].mech_mode_id;
+      pmech_list[x].flags        = icaList[x].flags;
+      pmech_list[x].property     = icaList[x].property;
+  }
+ 
+  return 0;
 }
 

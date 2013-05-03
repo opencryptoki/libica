@@ -13,16 +13,68 @@
  *	       Felix Beck <felix.beck@de.ibm.com>
  *	       Christian Maaser <cmaaser@de.ibm.com>
  *	       Holger Dengler <hd@linux.vnet.ibm.com>
+ *	       Ingo Tuchscherer <ingo.tuchscherer.linux.vnet.ibm.com>
  *
- * Copyright IBM Corp. 2007, 2009, 2011
+ * Copyright IBM Corp. 2007, 2009, 2011, 2013
  */
-
+#include <ica_api.h>
 #ifndef S390_CRYPTO_H
 #define S390_CRYPTO_H
 
 #define S390_CRYPTO_TEST_MASK(mask, function) \
 	(((unsigned char *)(mask))[((function) & 0x7F) >> 3] & \
         (0x80 >> ((function) & 0x07)))
+
+#define KM   	1
+#define KMC  	2
+#define KIMD 	3
+#define MSA4 	4
+#define ADAPTER 5
+
+#define ICA_FLAG_SHW 4 // symmetric operation support (CPACF)
+#define ICA_FLAG_DHW 2 // asymmetric operation supported (crypto-card)
+#define ICA_FLAG_SW  1 // software implementation 
+
+#define SHA1	  	1
+#define SHA224	  	2
+#define SHA256	  	3
+#define SHA384	  	4
+#define SHA512	  	5
+#define DES_ECB   	20
+#define DES_CBC   	21
+#define DES_CBC_CS 	22
+#define DES_OFB   	23
+#define DES_CFB  	24
+#define DES_CTR  	25
+#define DES_CTRLST  	26
+#define DES_CBC_MAC  	27
+#define DES_CMAC  	28
+#define DES3_ECB 	41
+#define DES3_CBC 	42
+#define DES3_CBC_CS 	43
+#define DES3_OFB 	44
+#define DES3_CFB 	45
+#define DES3_CTR 	46
+#define DES3_CTRLST 	47
+#define DES3_CBC_MAC 	48
+#define DES3_CMAC 	49
+#define AES_ECB  	60
+#define AES_CBC  	61
+#define AES_CBC_CS  	62
+#define AES_OFB  	63
+#define AES_CFB  	64
+#define AES_CTR  	65
+#define AES_CTRLST  	66
+#define AES_CBC_MAC  	67
+#define AES_CMAC  	68
+#define AES_CCM  	69
+#define AES_GCM  	70
+#define AES_XTS  	71
+#define P_RNG	  	80
+#define RSA_ME  	90
+#define RSA_CRT  	91
+#define RSA_KEY_GEN_ME 	92
+#define RSA_KEY_GEN_CRT	93
 
 enum s390_crypto_instruction {
 	S390_CRYPTO_DIRECTION_MASK = 0x80,
@@ -102,6 +154,7 @@ typedef enum {
 	AES_192_DECRYPT,
 	AES_256_ENCRYPT,
 	AES_256_DECRYPT,
+/* XTS belongs to the KM family */
 	AES_128_XTS_ENCRYPT,
 	AES_128_XTS_DECRYPT,
 	AES_256_XTS_ENCRYPT,
@@ -142,6 +195,8 @@ int s390_kmac(unsigned long func, void *param, const unsigned char *src,
 int s390_stck(void *buf);
 void s390_crypto_switches_init(void);
 inline int s390_pcc(unsigned long func, void *param);
-
+int s390_initialize_functionlist(void);
+int s390_get_functionlist(libica_func_list_element *pmech_list, 
+                                      unsigned int *pmech_list_len);
 #endif
 

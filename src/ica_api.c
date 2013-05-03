@@ -9,8 +9,9 @@
  *	    Christian Maaser <cmaaser@de.ibm.com>
  *	    Rainer Wolafka <rwolafka@de.ibm.com>
  *	    Holger Dengler <hd@linux.vnet.ibm.com>
+ *	    Ingo Tuchscherer <ingo.tuchscherer@linux.vnet.ibm.com>
  *
- * Copyright IBM Corp. 2009, 2010, 2011
+ * Copyright IBM Corp. 2009, 2010, 2011, 2013
  */
 
 #define __USE_GNU
@@ -1526,4 +1527,10 @@ unsigned int ica_get_version(libica_version_info *version_info)
 	 * defined in the macro VERSION as part of the build process. */
 	return EIO;
 #endif
+}
+
+unsigned int ica_get_functionlist(libica_func_list_element *pmech_list,
+					  unsigned int *pmech_list_len)
+{
+	return s390_get_functionlist(pmech_list, pmech_list_len);
 }

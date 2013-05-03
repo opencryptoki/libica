@@ -1,3 +1,6 @@
+v2.3.0
+ Changes since Version 2.2.0:
+ - Introduced new API to recieve list of supported algorithms
 v2.2.0
  Introduce support for more MSA4 extensions.
  New symetric encryption modes:
