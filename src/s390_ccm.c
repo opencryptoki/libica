@@ -68,7 +68,7 @@ static inline unsigned int fc_to_key_length(unsigned int function_code)
 static inline void __compute_meta_b0(const unsigned char *nonce,
 				     unsigned long nonce_length,
 				     unsigned long assoc_data_length,
-				     unsigned long payload_length,
+				     uint64_t payload_length,
 				     unsigned long mac_length,
 				     unsigned char *meta_b0)
 {
@@ -122,7 +122,7 @@ static inline void __compute_initial_ctr(const unsigned char *nonce,
 
 static inline unsigned int __auth_assoc_data(unsigned int function_code,
 					     const unsigned char *assoc_data,
-					     unsigned long assoc_data_length,
+					     uint64_t assoc_data_length,
 					     const unsigned char *key,
 					     unsigned int key_length,
 					     unsigned char *iv)
@@ -138,11 +138,11 @@ static inline unsigned int __auth_assoc_data(unsigned int function_code,
 	unsigned long tail_length;
 
 	/* preparing first block of assoc_data */
-	if (assoc_data_length < ((1ul << 16)-(1ul << 8))) {
+	if (assoc_data_length < ((1ull << 16)-(1ull << 8))) {
 		meta.small.length = assoc_data_length;
 		meta_data = meta.small.data;
 		meta_data_length = sizeof(meta.small.data);
-	} else if (assoc_data_length < (1ul << 32)) {
+	} else if (assoc_data_length < (1ull << 32)) {
 		meta.medium.prefix[0] = 0xff;
 		meta.medium.prefix[1] = 0xfe;
 		meta.medium.length = assoc_data_length;
@@ -213,7 +213,7 @@ static inline unsigned int __auth_assoc_data(unsigned int function_code,
 
 static unsigned int s390_ccm_authenticate(unsigned int function_code,
 					  const unsigned char *payload,
-					  unsigned long payload_length,
+					  uint64_t payload_length,
 					  const unsigned char *assoc_data,
 					  unsigned long assoc_data_length,
 					  const unsigned char *nonce,
