@@ -248,7 +248,7 @@ static unsigned int check_ccm_parms(unsigned long payload_length,
 	 * is only limited by the value range of its data type unsigned long
 	 * and need no further checking */
 	if ((nonce_length > S390_CCM_MIN_NONCE_LENGTH) &&
-	    (payload_length > ((1ul << (8*(15-nonce_length))))))
+	    (payload_length > ((1ull << (8*(15-nonce_length))))))
 		return EINVAL;
 
 	if (mac == NULL)
