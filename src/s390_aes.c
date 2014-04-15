@@ -343,8 +343,8 @@ inline int s390_aes_ofb(unsigned int fc, unsigned long data_length,
 		memcpy(rest_in_data, in_data + tmp_data_length,
 		       rest_data_length);
 
-		rc = __s390_aes_ofb(fc, rest_data_length,
-				    in_data + tmp_data_length,
+		rc = __s390_aes_ofb(fc, AES_BLOCK_SIZE,
+				    rest_in_data,
 				    iv, key, rest_out_data);
 		if (rc)
 			return rc;
