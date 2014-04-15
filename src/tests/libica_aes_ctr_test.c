@@ -14,6 +14,7 @@
 #include "ica_api.h"
 
 #define NR_TESTS 7
+#define NR_RANDOM_TESTS 1000
 
 /* CTR data - 1 for AES128 */
 unsigned char NIST_KEY_CTR_E1[] = {
@@ -589,37 +590,66 @@ int main(int argc, char **argv)
 	// Default mode is 0. ECB,CBC and CFQ tests will be performed.
 	unsigned int silent = 0;
 	unsigned int endless = 0;
+	int i = 0;
+	int rc = 0;
+	int error_count = 0;
+	int iteration;
+	unsigned int data_length = 1;
+	unsigned int iv_length = sizeof(ica_aes_vector_t);
+	unsigned int rdata;
+
 	if (argc > 1) {
 		if (strstr(argv[1], "silent"))
 			silent = 1;
 		if (strstr(argv[1], "endless"))
 			endless = 1;
 	}
-	int rc = 0;
-	int error_count = 0;
-	int iteration;
-	if (!endless)
-	for(iteration = 1; iteration <= NR_TESTS; iteration++)	{
-		rc = kat_aes_ctr(iteration, silent);
-		if (rc) {
-			printf("kat_aes_ctr failed with rc = %i\n", rc);
-			error_count++;
-		} else
-			printf("kat_aes_ctr finished successfuly\n");
 
-	}
-	int i = 0;
-	if (endless)
-	while (1) {
-		printf("i = %i\n",i);
+	if (!endless) {
+
+		// not endless mode
+		// run the verification tests with known test vectors
+		for(iteration = 1; iteration <= NR_TESTS; iteration++)	{
+			rc = kat_aes_ctr(iteration, silent);
+			if (rc) {
+				printf("kat_aes_ctr failed with rc = %i\n", rc);
+				error_count++;
+			} else
+				printf("kat_aes_ctr finished successfuly\n");
+		}
+		// run random tests
 		silent = 1;
-		rc = random_aes_ctr(i, silent, 320, 320);
-		if (rc) {
-			printf("kat_aes_ctr failed with rc = %i\n", rc);
-			return rc;
-		} else
-			printf("kat_aes_ctr finished successfuly\n");
-		i++;
+		for(iteration = 1; iteration <= NR_RANDOM_TESTS; iteration++) {
+			rc = random_aes_ctr(iteration, silent, data_length, iv_length);
+			if (rc) {
+				printf("random_aes_ctr failed with rc = %i\n", rc);
+				error_count++;
+			} else
+				printf("random_aes_ctr finished successfuly\n");
+			// add a value between 1 and 8 to data_length
+			if (ica_random_number_generate(sizeof(rdata), (unsigned char*) &rdata)) {
+				printf("ica_random_number_generate failed with errnor = %i\n",
+				       errno);
+				exit(1);
+			}
+			data_length += (rdata % 8) + 1;
+		}
+
+	} else {
+
+		// endless mode
+		while (1) {
+			printf("i = %i\n",i);
+			silent = 1;
+			rc = random_aes_ctr(i, silent, 320, 320);
+			if (rc) {
+				printf("random_aes_ctr failed with rc = %i\n", rc);
+				return rc;
+			} else
+				printf("random_aes_ctr finished successfuly\n");
+			i++;
+		}
+
 	}
 
 	if (error_count)

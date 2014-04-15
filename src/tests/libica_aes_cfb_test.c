@@ -795,33 +795,37 @@ int main(int argc, char **argv)
 	unsigned int data_length = 1;
 	unsigned int lcfb = 1;
 	unsigned int j;
+	unsigned int rdata;
 	for(iteration = 1; iteration <= NR_RANDOM_TESTS; iteration++)	{
 		for (j = 1; j <= 3; j++) {
 			int silent = 1;
 			if (!(data_length % lcfb)) {
-			rc = random_aes_cfb(iteration, silent, data_length, lcfb);
-			if (rc) {
-				printf("random_aes_cfb failed with rc = %i\n", rc);
-				error_count++;
-			} else
-				printf("random_aes_cfb finished successfuly\n");
+				rc = random_aes_cfb(iteration, silent, data_length, lcfb);
+				if (rc) {
+					printf("random_aes_cfb failed with rc = %i\n", rc);
+					error_count++;
+				} else
+					printf("random_aes_cfb finished successfuly\n");
 			}
 			switch (j) {
-				case 1:
-					lcfb = 1;
-					break;
-				case 2:
-					lcfb = 8;
-					break;
-				case 3:
-					lcfb = 16;
-					break;
+			case 1:
+				lcfb = 1;
+				break;
+			case 2:
+				lcfb = 8;
+				break;
+			case 3:
+				lcfb = 16;
+				break;
 			}
 		}
-		if (data_length == 1)
-			data_length = 8;
-		else
-			data_length += 8;
+		// add a value between 1 and 8 to data_length
+		if (ica_random_number_generate(sizeof(rdata), (unsigned char*) &rdata)) {
+			printf("ica_random_number_generate failed with errnor = %i\n",
+			       errno);
+			exit(1);
+		}
+		data_length += (rdata % 8) + 1;
 	}
 	if (error_count)
 		printf("%i testcases failed\n", error_count);

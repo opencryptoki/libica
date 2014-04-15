@@ -152,44 +152,50 @@ int random_des_cfb(int iteration, int silent, unsigned int data_length,
 
 int main(int argc, char **argv)
 {
+	int rc = 0;
+	int error_count = 0;
+	int iteration;
 	unsigned int silent = 0;
 	unsigned int endless = 0;
+	unsigned int rdata;
+	unsigned int data_length = 1;
+	unsigned int lcfb = 1;
+	unsigned int j;
+
 	if (argc > 1) {
 		if (strstr(argv[1], "silent"))
 			silent = 1;
 		if (strstr(argv[1], "endless"))
 			endless = 1;
 	}
-	int rc = 0;
-	int error_count = 0;
-	int iteration;
-	unsigned int data_length = 1;
-	unsigned int lcfb = 1;
-	unsigned int j;
+
 	for(iteration = 1; iteration <= NR_RANDOM_TESTS; iteration++)	{
 		for (j = 1; j <= 2; j++) {
 			int silent = 1;
 			if (!(data_length % lcfb)) {
-			rc = random_des_cfb(iteration, silent, data_length, lcfb);
-			if (rc) {
-				printf("random_des_cfb failed with rc = %i\n", rc);
-				error_count++;
-			} else
-				printf("random_des_cfb finished successfuly\n");
+				rc = random_des_cfb(iteration, silent, data_length, lcfb);
+				if (rc) {
+					printf("random_des_cfb failed with rc = %i\n", rc);
+					error_count++;
+				} else
+					printf("random_des_cfb finished successfuly\n");
 			}
 			switch (j) {
-				case 1:
-					lcfb = 1;
-					break;
-				case 2:
-					lcfb = 8;
-					break;
+			case 1:
+				lcfb = 1;
+				break;
+			case 2:
+				lcfb = 8;
+				break;
 			}
 		}
-		if (data_length == 1)
-			data_length = 8;
-		else
-			data_length += 8;
+		// add a value between 1 and 8 to data_length
+		if (ica_random_number_generate(sizeof(rdata), (unsigned char*) &rdata)) {
+			printf("ica_random_number_generate failed with errnor = %i\n",
+			       errno);
+			exit(1);
+		}
+		data_length += (rdata % 8) + 1;
 	}
 	if (error_count)
 		printf("%i testcases failed\n", error_count);

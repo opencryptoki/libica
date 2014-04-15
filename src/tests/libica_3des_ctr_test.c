@@ -13,7 +13,7 @@
 #include <stdlib.h> 
 #include "ica_api.h"
 
-#define NR_RANDOM_TESTS 100
+#define NR_RANDOM_TESTS 1000
 
 void dump_array(unsigned char *ptr, unsigned int size)
 {
@@ -51,10 +51,9 @@ void dump_ctr_data(unsigned char *iv, unsigned int iv_length,
 	dump_array(output_data, data_length);
 }
 
-int random_3des_ctr(int iteration, int silent, unsigned int data_length)
+int random_3des_ctr(int iteration, int silent, unsigned int data_length, unsigned int iv_length)
 {
 	unsigned int key_length = sizeof(ica_des_key_triple_t);
-	unsigned int iv_length = data_length;
 	if (data_length % sizeof(ica_des_vector_t))
 		iv_length = sizeof(ica_des_vector_t);
 
@@ -134,22 +133,25 @@ int main(int argc, char **argv)
 {
 	unsigned int silent = 0;
 	unsigned int endless = 0;
+	unsigned int data_length = 1;
+	unsigned int iv_length = sizeof(ica_des_vector_t);
+	unsigned int rdata;
+	int error_count = 0;
+	int i = 0;
+	int rc = 0;
+
 	if (argc > 1) {
 		if (strstr(argv[1], "silent"))
 			silent = 1;
 		if (strstr(argv[1], "endless"))
 			endless = 1;
 	}
-	int rc = 0;
-	int error_count = 0;
-	int i = 0;
-	unsigned int data_length = sizeof(ica_des_key_triple_t);
 
 	if (endless) {
 		silent = 1;
 		while (1) {
 			printf("i = %i\n",i);
-			rc = random_3des_ctr(i, silent, 320);
+			rc = random_3des_ctr(i, silent, 320, iv_length);
 			if (rc) {
 				printf("kat_3des_ctr failed with rc = %i\n",
 					rc);
@@ -159,28 +161,21 @@ int main(int argc, char **argv)
 			i++;
 		}
 	} else {
+		silent = 1;
 		for (i = 1; i < NR_RANDOM_TESTS; i++) {
-			rc = random_3des_ctr(i, silent, data_length);
+			rc = random_3des_ctr(i, silent, data_length, data_length);
                 	if (rc) {
-				printf("random_3des_ctr failed with rc = %i\n",
-				       rc);
+				printf("random_3des_ctr failed with rc = %i\n", rc);
 				error_count++;
 			} else
-				printf("random_3des_ctr finished "
-					"successfuly\n");
-			if (!(data_length % sizeof(ica_des_key_triple_t))) {
-       		 /* Always when the full block size is reached use a
-		  * counter with the same size as the data */
-	        		rc = random_3des_ctr(i, silent, data_length);
-		        	if (rc) {
-		        	        printf("random_3des_ctr failed with "
-					       "rc = %i\n", rc);
-		        	        error_count++;
-		        	} else
-					printf("random_3des_ctr finished "
-						"successfuly\n");
+				printf("random_3des_ctr finished successfuly\n");
+			// add a value between 1 and 8 to data_length
+			if (ica_random_number_generate(sizeof(rdata), (unsigned char*) &rdata)) {
+				printf("ica_random_number_generate failed with errnor = %i\n",
+				       errno);
+				exit(1);
 			}
-			data_length++;
+			data_length += (rdata % 8) + 1;
 		}
 	}
 

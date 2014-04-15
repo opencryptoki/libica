@@ -503,15 +503,18 @@ int kat_aes_ofb(int iteration, int silent)
 
 int main(int argc, char **argv)
 {
+	int rc = 0;
+	int error_count = 0;
+	int iteration;
+	unsigned int rdata;
+	unsigned int data_length = 1;
 	unsigned int silent = 0;
+
 	if (argc > 1) {
 		if (strstr(argv[1], "silent"))
 			silent = 1;
 	}
-	int rc = 0;
-	int error_count = 0;
-	int iteration;
-	unsigned int data_length = sizeof(ica_aes_vector_t);
+
 	for(iteration = 1; iteration <= NR_TESTS; iteration++)	{
 		rc = kat_aes_ofb(iteration, silent);
 		if (rc) {
@@ -521,6 +524,7 @@ int main(int argc, char **argv)
 			printf("kat_aes_ofb finished successfuly\n");
 
 	}
+
 	for(iteration = 1; iteration <= NR_RANDOM_TESTS; iteration++)	{
 		int silent = 1;
 		rc = random_aes_ofb(iteration, silent, data_length);
@@ -530,7 +534,13 @@ int main(int argc, char **argv)
 			goto out;
 		} else
 			printf("random_aes_ofb finished successfuly\n");
-		data_length += sizeof(ica_aes_vector_t);
+		// add a value between 1 and 8 to data_length
+		if (ica_random_number_generate(sizeof(rdata), (unsigned char*) &rdata)) {
+			printf("ica_random_number_generate failed with errnor = %i\n",
+			       errno);
+			exit(1);
+		}
+		data_length += (rdata % 8) + 1;
 	}
 
 out:

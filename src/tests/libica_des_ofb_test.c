@@ -156,7 +156,8 @@ int main(int argc, char **argv)
 	int rc = 0;
 	int error_count = 0;
 	int iteration;
-	unsigned int data_length = sizeof(ica_des_vector_t);
+	unsigned int rdata;
+	unsigned int data_length = 1;
 	for(iteration = 1; iteration <= NR_RANDOM_TESTS; iteration++)	{
 		int silent = 1;
 		rc = random_des_ofb(iteration, silent, data_length);
@@ -166,7 +167,13 @@ int main(int argc, char **argv)
 			goto out;
 		} else
 			printf("random_des_ofb finished successfuly\n");
-		data_length += sizeof(ica_des_vector_t);
+		// add a value between 1 and 8 to data_length
+		if (ica_random_number_generate(sizeof(rdata), (unsigned char*) &rdata)) {
+			printf("ica_random_number_generate failed with errnor = %i\n",
+			       errno);
+			exit(1);
+		}
+		data_length += (rdata % 8) + 1;
 	}
 out:
 	if (error_count)
