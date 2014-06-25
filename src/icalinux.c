@@ -18,6 +18,7 @@
 
 #include <string.h>
 #include <errno.h>
+#include <stdint.h>
 #include "ica_api.h"
 #include "s390_rsa.h"
 

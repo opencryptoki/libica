@@ -21,6 +21,7 @@
 #include <stdlib.h>
 #include <sys/ioctl.h>
 #include <errno.h>
+#include <stdint.h>
 #include <linux/types.h>
 
 #include "ica_api.h"

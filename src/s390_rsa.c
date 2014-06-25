@@ -16,6 +16,7 @@
 
 #include <string.h>
 #include <errno.h>
+#include <stdint.h>
 #include <openssl/rsa.h>
 
 #include "s390_rsa.h"
