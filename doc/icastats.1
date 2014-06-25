@@ -1,0 +1,122 @@
+.\" icastats man page source
+.\"
+.\" use
+.\"   groff -man -Tutf8 icastats.1
+.\" or
+.\"   nroff -man icastats.1
+.\" to process this source
+.\"
+.TH ICASTATS 1 2013-12-06 IBM "icaststats user manual"
+.SH NAME
+icastats \- display statistic data for the libica cryptographic functions
+.SH SYNOPSIS
+.B icastats
+[-v | --version] [-h | --help] [--reset-all | -R] [--reset | -r]
+[--delete-all |-D] [--delete | -d] [--all | -A] [--summary | -S] [[-U |
+--user] <username>]
+.SH DESCRIPTION
+.B icastats
+displays statistic data about the usage of cryptographic functions provided by
+libica.
+.br
+Libica is a cryptografic library supporting SHA, RSA, DES and AES in
+different modes of operations. The invocation of each call to all the
+cryptographic functions is tracked with individual counters which can be
+displayed and maintained with icastats.
+.br
+Here is a sample output:
+.P
+.nf
+ function     |       # hardware      |      # software
+--------------+-----------------------+-------------------------
+              |     ENC   CRYPT   DEC |      ENC  CRYPT    DEC
+--------------|-----------------------|-------------------------
+        SHA-1 |             0         |             0
+      SHA-224 |             0         |             0
+      SHA-256 |             0         |             0
+      SHA-384 |             0         |             0
+      SHA-512 |             0         |             0
+        P_RNG |             0         |             0
+       RSA-ME |             0         |             0
+      RSA-CRT |             0         |             0
+      DES ECB |          0           0|          0           0
+      DES CBC |          0           0|          0           0
+   DES CBC CS |          0           0|          0           0
+      DES OFB |          0           0|          0           0
+      DES CFB |          0           0|          0           0
+      DES CTR |          0           0|          0           0
+   DES CTRLST |          0           0|          0           0
+  DES CBC MAC |          0           0|          0           0
+     DES CMAC |          0           0|          0           0
+     3DES ECB |          0           0|          0           0
+     3DES CBC |          0           0|          0           0
+  3DES CBC CS |          0           0|          0           0
+     3DES OFB |          0           0|          0           0
+     3DES CFB |          0           0|          0           0
+     3DES CTR |          0           0|          0           0
+ 3DES CTRLIST |          0           0|          0           0
+ 3DES CBC MAC |          0           0|          0           0
+    3DES CMAC |          0           0|          0           0
+      AES ECB |          0           0|          0           0
+      AES CBC |          0           0|          0           0
+   AES CBC CS |          0           0|          0           0
+      AES OFB |          0           0|          0           0
+      AES CFB |          0           0|          0           0
+      AES CTR |          0           0|          0           0
+  AES CTRLIST |          0           0|          0           0
+  AES CBC MAC |          0           0|          0           0
+     AES CMAC |          0           0|          0           0
+      AES CCM |          0           0|          0           0
+      AES GCM |          0           0|          0           0
+      AES XTS |          0           0|          0           0
+     CCM AUTH |          0           0|          0           0
+.fi
+.P
+For each cryptographic function the table shows the number of invocations
+where hardware support was involved or the libica fall back implementation
+in software was used. For the cipering methods the invocation counter is
+further divided into encrypt and decrypt operation counter values.
+.P
+All the counter values are stored and maintained in one shared memory page
+for each user. This memory area is created automatically with the first run
+of icastats and persists until it is explicit removed (see the -d option)
+or system shutdown. This also means that the statistical data shown with
+icastats is on a per user base and only the root user is able to see and
+maintain the collection of statistic data from libica at system scope.
+.SH OPTIONS
+.IP "-v or --version"
+show libica version and copyright
+.IP "-h or --help"
+display this help and exit
+.IP "-R or --reset-all"
+reset the statistic data for each user that has a shared memory segment to
+zero (only root user)
+.IP "-r or --reset"
+reset the statistic data for the current user to zero
+.IP "-D or --delete-all"
+delete all shared memory segments from all users which have a icastats shared
+memory segment (only root user)
+.IP "-d or --delete"
+delete the libica shared memory area for the current user
+.IP "-A or --all"
+show libica statistic data for each user in the system where a shared
+memory area exists in multiple tables (only root user)
+.IP "-S or --summary"
+show libica statistic data for each user in the system where a shared
+memory area exists in one table accumulating all the per user counter
+values (only root user)
+.IP "-U <username> or --user <username>"
+show statistic values from the give user (only root user)
+.SH FILES
+.nf
+/shm/dev/icastats_<userid>
+.fi
+.SH RETURN VALUE
+.IP 1
+unsupported or unknown argument, argument which requires root privileges
+given but not root user, failures at creating or attaching to the shared
+memory area ...
+.IP 0
+normal and sucessful program execution
+.SH SEE ALSO
+icainfo (1)
