@@ -62,6 +62,8 @@ rm -rf $RPM_BUILD_ROOT
 %{_includedir}/ica_api.h
 
 %changelog
+* Tue Jun 17 2014 Ingo Tuchscherer <ingo.tuchscherer@linux.vnet.ibm.com>
+- Version v2.4.0
 * Wed Mar 20 2013 Ingo Tuchscherer <ingo.tuchscherer@linux.vnet.ibm.com>
 - Version v2.3.0
 * Mon Feb 13 2012 Holger Dengler <hd@linux.vnet.ibm.com>
