@@ -611,18 +611,18 @@ unsigned int ica_rsa_mod_expo(ICA_ADAPTER_HANDLE adapter_handle,
 	rb.b_key = (char *)rsa_key->exponent;
 	rb.n_modulus = (char *)rsa_key->modulus;
 
-	int hardware = 0;
+	int hardware = ALGO_SW;
 	if (adapter_handle == DRIVER_NOT_LOADED)
 		rc = rsa_mod_expo_sw(&rb);
 	else {
 		rc = ioctl(adapter_handle, ICARSAMODEXPO, &rb);
 		if (!rc)
-			hardware = 1;
+			hardware = ALGO_HW;
 		else
 			rc = rsa_mod_expo_sw(&rb);
 	}
 	if (rc == 0)
-		stats_increment(ICA_STATS_RSA_MODEXPO, hardware);
+		stats_increment(ICA_STATS_RSA_ME, hardware, ENCRYPT);
 
 	return rc;
 }
@@ -651,18 +651,18 @@ unsigned int ica_rsa_crt(ICA_ADAPTER_HANDLE adapter_handle,
 	rb.bq_key = (char *)rsa_key->dq;
 	rb.u_mult_inv = (char *)rsa_key->qInverse;
 
-	int hardware = 0;
+	int hardware = ALGO_SW;
 	if (adapter_handle == DRIVER_NOT_LOADED)
 		rc = rsa_crt_sw(&rb);
 	else {
 		rc = ioctl(adapter_handle, ICARSACRT, &rb);
 		if(!rc)
-			hardware = 1;
+			hardware = ALGO_HW;
 		else
 			rc = rsa_crt_sw(&rb);
 	}	
 	if (rc == 0)
-		stats_increment(ICA_STATS_RSA_CRT, hardware);
+		stats_increment(ICA_STATS_RSA_CRT, hardware, ENCRYPT);
 
 	return rc;
 }
@@ -955,6 +955,8 @@ unsigned int ica_des_cmac_intermediate(const unsigned char *message,
 		       DES_BLOCK_SIZE, NULL,	/* no mac available (intermediate) */
 		       iv);
 
+	if(!rc)
+		stats_increment(ICA_STATS_DES_CMAC, ALGO_HW, ICA_DECRYPT);
 	return rc;
 }
 
@@ -982,6 +984,8 @@ unsigned int ica_des_cmac_last(const unsigned char *message, unsigned long messa
 			       DES_BLOCK_SIZE, key, mac_length, mac, iv);
 		if (rc)
 			return rc;
+		else
+			stats_increment(ICA_STATS_DES_CMAC, ALGO_HW, direction);
 	} else {
 		/* verify */
 		rc = s390_cmac(function_code, message, message_length,
@@ -990,6 +994,8 @@ unsigned int ica_des_cmac_last(const unsigned char *message, unsigned long messa
 			return rc;
 		if (memcmp(tmp_mac, mac, mac_length))
 			return EFAULT;
+		else
+			stats_increment(ICA_STATS_DES_CMAC, ALGO_HW, direction);
 	}
 
 	return 0;
@@ -1123,6 +1129,8 @@ unsigned int ica_3des_cmac_intermediate(const unsigned char *message,
 		       DES_BLOCK_SIZE, NULL,	/* no mac available (intermediate) */
 		       iv);
 
+	if (!rc)
+		stats_increment(ICA_STATS_3DES_CMAC, ALGO_HW, DECRYPT);
 	return rc;
 }
 
@@ -1150,6 +1158,8 @@ unsigned int ica_3des_cmac_last(const unsigned char *message, unsigned long mess
 			       3*DES_BLOCK_SIZE, key, mac_length, mac, iv);
 		if (rc)
 			return rc;
+		else
+			stats_increment(ICA_STATS_3DES_CMAC, ALGO_HW, direction);
 	} else {
 		/* verify */
 		rc = s390_cmac(function_code, message, message_length,
@@ -1158,6 +1168,8 @@ unsigned int ica_3des_cmac_last(const unsigned char *message, unsigned long mess
 			return rc;
 		if (memcmp(tmp_mac, mac, mac_length))
 			return EFAULT;
+		else
+			stats_increment(ICA_STATS_3DES_CMAC, ALGO_HW, direction);
 	}
 
 	return 0;
@@ -1344,6 +1356,8 @@ unsigned int ica_aes_cmac_intermediate(const unsigned char *message,
 		       AES_BLOCK_SIZE, NULL,	/* no mac available (intermediate) */
 		       iv);
 
+	if (!rc)
+		stats_increment(ICA_STATS_AES_CMAC, ALGO_HW, ICA_DECRYPT);
 	return rc;
 }
 
@@ -1371,6 +1385,8 @@ unsigned int ica_aes_cmac_last(const unsigned char *message, unsigned long messa
 			       key_length, key, mac_length, mac, iv);
 		if (rc)
 			return rc;
+		else
+			stats_increment(ICA_STATS_AES_CMAC, ALGO_HW, direction);
 	} else {
 		/* verify */
 		rc = s390_cmac(function_code, message, message_length,
@@ -1379,6 +1395,8 @@ unsigned int ica_aes_cmac_last(const unsigned char *message, unsigned long messa
 			return rc;
 		if (memcmp(tmp_mac, mac, mac_length))
 			return EFAULT;
+		else
+			stats_increment(ICA_STATS_AES_CMAC, ALGO_HW, direction);
 	}
 
 	return 0;

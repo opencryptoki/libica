@@ -5,7 +5,8 @@ LIBS = -L../.libs
 INCLUDE = -I. -I../../include
 CC = gcc
 
-TARGETS = libica_des_test libica_3des_test \
+TARGETS = icastats_test \
+	  libica_des_test libica_3des_test \
 	  libica_aes128_test libica_aes192_test libica_aes256_test \
 	  libica_sha1_test \
 	  libica_sha256_test \

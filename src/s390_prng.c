@@ -151,15 +151,15 @@ out:
 int s390_prng(unsigned char *output_data, unsigned int output_length)
 {
 	int rc = 1;
-	int hardware = 1;
+	int hardware = ALGO_HW;
 
 	if (prng_switch)
 		rc = s390_prng_hw(output_data, output_length);
 	if (rc) {
 		rc = s390_prng_sw(output_data, output_length);
-		hardware = 0;
+		hardware = ALGO_SW;
 	}
-	stats_increment(ICA_STATS_RNG, hardware);
+	stats_increment(ICA_STATS_PRNG, hardware, ENCRYPT);
 	return rc;
 }
 

@@ -348,9 +348,9 @@ int s390_sha1(unsigned char *iv, unsigned char *input_data,
 	if (rc) {
 		rc = s390_sha1_sw(iv, input_data, input_length, output_data,
 				  message_part, running_length);
-		stats_increment(ICA_STATS_SHA1, 0);
+		stats_increment(ICA_STATS_SHA1, ALGO_SW, ENCRYPT);
 	} else
-		stats_increment(ICA_STATS_SHA1, 1);
+		stats_increment(ICA_STATS_SHA1, ALGO_HW, ENCRYPT);
 
 	return rc;
 }
@@ -366,9 +366,9 @@ int s390_sha224(unsigned char *iv, unsigned char *input_data,
 	if (rc) {
 		rc = s390_sha224_sw(iv, input_data, input_length, output_data,
 				  message_part, running_length);
-		stats_increment(ICA_STATS_SHA224, 0);
+		stats_increment(ICA_STATS_SHA224, ALGO_SW, ENCRYPT);
 	} else
-		stats_increment(ICA_STATS_SHA224, 1);
+		stats_increment(ICA_STATS_SHA224, ALGO_HW, ENCRYPT);
 
 	return rc;
 }
@@ -384,9 +384,9 @@ int s390_sha256(unsigned char *iv, unsigned char *input_data,
 	if (rc) {
 		rc = s390_sha256_sw(iv, input_data, input_length, output_data,
 				    message_part, running_length);
-		stats_increment(ICA_STATS_SHA256, 0);
+		stats_increment(ICA_STATS_SHA256, ALGO_SW, ENCRYPT);
 	} else
-		stats_increment(ICA_STATS_SHA256, 1);
+		stats_increment(ICA_STATS_SHA256, ALGO_HW, ENCRYPT);
 
 	return rc;
 }
@@ -404,9 +404,9 @@ int s390_sha384(unsigned char *iv, unsigned char *input_data,
 		rc = s390_sha384_sw(iv, input_data, input_length, output_data,
 				    message_part, running_length_lo,
 				    running_length_hi);
-		stats_increment(ICA_STATS_SHA384, 0);
+		stats_increment(ICA_STATS_SHA384, ALGO_SW, ENCRYPT);
 	} else
-		stats_increment(ICA_STATS_SHA384, 1);
+		stats_increment(ICA_STATS_SHA384, ALGO_HW, ENCRYPT);
 
 	return rc;
 }
@@ -425,9 +425,9 @@ int s390_sha512(unsigned char *iv, unsigned char *input_data,
 		rc = s390_sha512_sw(iv, input_data, input_length, output_data,
 				    message_part, running_length_lo,
 				    running_length_hi);
-		stats_increment(ICA_STATS_SHA512, 0);
+		stats_increment(ICA_STATS_SHA512, ALGO_SW, ENCRYPT);
 	} else
-		stats_increment(ICA_STATS_SHA512, 1);
+		stats_increment(ICA_STATS_SHA512, ALGO_HW, ENCRYPT);
 
 	return rc;
 }

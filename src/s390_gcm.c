@@ -225,7 +225,7 @@ int s390_gcm(unsigned int function_code,
 	if (!msa4_switch)
 		return EPERM;
 
-	hardware = 1;
+	hardware = ALGO_HW;
 
 	/* calculate subkey H */
 	rc = s390_aes_ecb(UNDIRECTED_FC(function_code),
@@ -250,7 +250,7 @@ int s390_gcm(unsigned int function_code,
 		if (rc)
 			return rc;
 
-		stats_increment(ICA_STATS_GCM_DECRYPT, hardware);
+		stats_increment(ICA_STATS_AES_GCM, hardware, DECRYPT);
 	} else {
 		/* encrypt */
 		rc = s390_aes_ctr(UNDIRECTED_FC(function_code),
@@ -259,7 +259,7 @@ int s390_gcm(unsigned int function_code,
 		if (rc)
 			return rc;
 
-		stats_increment(ICA_STATS_GCM_ENCRYPT, hardware);
+		stats_increment(ICA_STATS_AES_GCM, hardware, ENCRYPT);
 	}
 
 	/* generate authentication tag */
@@ -269,7 +269,7 @@ int s390_gcm(unsigned int function_code,
 	if (rc)
 		return rc;
 
-	stats_increment(ICA_STATS_GCM_AUTH, hardware);
+	stats_increment(ICA_STATS_AES_GCM_AUTH, hardware, ENCRYPT);
 
 	/* encrypt tag */
 	return s390_aes_ctr(UNDIRECTED_FC(function_code),

@@ -299,7 +299,7 @@ unsigned int s390_ccm(unsigned int function_code,
 	unsigned int hardware;
 	unsigned int rc;
 
-	hardware = 1;
+	hardware = ALGO_HW;
 
 	/* compute initial counter */
 	__compute_initial_ctr(nonce, nonce_length, payload_length, initial_ctr);
@@ -319,7 +319,7 @@ unsigned int s390_ccm(unsigned int function_code,
 			if (rc)
 				return rc;
 
-			stats_increment(ICA_STATS_CCM_DECRYPT, hardware);
+			stats_increment(ICA_STATS_AES_CCM, hardware, DECRYPT);
 		} else {
 			/*encrypt */
 			rc = s390_aes_ctr(UNDIRECTED_FC(function_code),
@@ -328,7 +328,7 @@ unsigned int s390_ccm(unsigned int function_code,
 			if (rc)
 				return rc;
 
-			stats_increment(ICA_STATS_CCM_ENCRYPT, hardware);
+			stats_increment(ICA_STATS_AES_CCM, hardware, ENCRYPT);
 		}
 	}
 

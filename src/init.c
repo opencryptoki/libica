@@ -12,9 +12,14 @@
  * Copyright IBM Corp. 2001, 2009, 2011
  */
 
+#define _GNU_SOURCE
+#include <errno.h>
+#include <unistd.h>
 #include <pthread.h>
 #include <stdlib.h>
+#include <string.h>
 #include <openssl/rand.h>
+#include <syslog.h>
 
 #include "init.h"
 #include "icastats.h"
@@ -79,7 +84,8 @@ void openssl_init(void)
 {
 	static const int random_data_length = 64;
 	unsigned char random_data[random_data_length];
-	s390_prng(random_data, random_data_length);
+	/* Counts PRNG statistic! */
+	s390_prng(random_data, random_data_length); 
 	RAND_seed(random_data, random_data_length);
 }
 
@@ -87,20 +93,25 @@ void openssl_init(void)
  * in initialization */
 void __attribute__ ((constructor)) icainit(void)
 {
-	stats_mmap();
+	if(strcmp(program_invocation_name, "icastats")){
+		if(stats_mmap(-1) == -1){
+			syslog(LOG_INFO, "The application failed to save statistic\
+		       			  data to the shared memory segment icastats_%6d.\
+		       			  Giving up on statistics!", geteuid());
+		}
 
-	s390_crypto_switches_init();
+		s390_crypto_switches_init();
 
-	s390_prng_init();
+		s390_prng_init();
 
-	s390_initialize_functionlist();	
+		s390_initialize_functionlist();	
 
-	openssl_init();
-
+		openssl_init();
+	}
 }
 
-void __attribute__ ((destructor)) icafini(void)
+void __attribute__ ((destructor)) icaexit(void)
 {
-	stats_munmap();
+	stats_munmap(SHM_CLOSE);
 }
 

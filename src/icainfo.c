@@ -8,10 +8,12 @@
  * Display a list of all CP Assist for Cryptographic Function (CPACF)
  * operations supported by libica on a system.
  *
- * Authors(s): Ralph Wuerthner <rwuerthn@de.ibm.com>
- * 	       Holger Dengler <hd@linux.vnet.ibm.com>
+ * Author(s): Ralph Wuerthner <rwuerthn@de.ibm.com>
+ * 	      Holger Dengler <hd@linux.vnet.ibm.com>
+ * 	      Benedikt Klotz <benedikt.klotz@de.ibm.com>
+ * 	      Ingo Tuchscherer <ingo.tuchscherer@de.ibm.com>
  *
- * Copyright IBM Corp. 2007, 2011
+ * Copyright IBM Corp. 2007, 2011, 2014
  */
 
 #include <stdio.h>
@@ -19,10 +21,15 @@
 #include <string.h>
 #include <getopt.h>
 #include <libgen.h>
+#include <unistd.h>
+#include <dirent.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <errno.h>
 #include "s390_crypto.h"
 
 #define CMD_NAME "icainfo"
-#define COPYRIGHT "Copyright IBM Corp. 2007."
+#define COPYRIGHT "Copyright IBM Corp. 2007, 2014."
 
 void print_version(void)
 {
@@ -33,11 +40,12 @@ void print_help(char *cmd)
 {
 	printf("Usage: %s [OPTION]\n", cmd);
 	printf
-	    ("Display a list of all CP Assist for Cryptographic Function (CPACF) operations\n"
-	     "supported by libica on this system.\n" "\n" "Options:\n"
-	     " -q, --quiet    output supported operations list only\n"
-	     " -v, --version  output version information and exit\n"
-	     " -h, --help     display this help text and exit\n");
+	    ("Display a list of all CP Assist for Cryptographic Function "
+	     "(CPACF)\noperations supported by libica on this system.\n"
+	     "\n" "Options:\n"
+	     " -q, --quiet    show list of supported operations only\n"
+	     " -v, --version  show version information\n"
+	     " -h, --help     display this help text\n");
 }
 
 #define getopt_string "qvh"
@@ -48,41 +56,126 @@ static struct option getopt_long_options[] = {
 	{0, 0, 0, 0}
 };
 
-struct crypto_function {
-	char *desc;
-	int code;
+
+struct crypt_pair {
+	char *name;
+	int algo_id;
 };
 
-struct crypto_function kimd_functions[] = {
-	{"SHA-1:", S390_CRYPTO_SHA_1},
-	{"SHA-256:", S390_CRYPTO_SHA_256},
-	{"SHA-512:", S390_CRYPTO_SHA_512},
-	{NULL, 0}
+static struct crypt_pair crypt_map[] = {
+	{"SHA-1", SHA1},
+        {"SHA-224", SHA224},
+        {"SHA-256", SHA256},
+        {"SHA-384", SHA384},
+        {"SHA-512", SHA512},
+        {"P_RNG", P_RNG},
+        {"RSA ME", RSA_ME},
+        {"RSA CRT", RSA_CRT},
+        {"DES ECB", DES_ECB},
+        {"DES CBC", DES_CBC},
+        {"DES CBC CS", DES_CBC_CS},
+        {"DES OFB", DES_OFB},
+        {"DES CFB", DES_CFB},
+        {"DES CTR", DES_CTR},
+        {"DES CTRLST", DES_CTRLST},
+        {"DES CBC MAC", DES_CBC_MAC},
+        {"DES CMAC", DES_CMAC},
+        {"3DES ECB", DES3_ECB},
+        {"3DES CBC", DES3_CBC},
+        {"3DES CBC CS", DES3_CBC_CS},
+        {"3DES OFB", DES3_OFB},
+        {"3DES CFB", DES3_OFB},
+        {"3DES CTR", DES3_CTR},
+        {"3DES CTRLIST", DES3_CTRLST},
+        {"3DES CBC MAC", DES3_CBC_MAC},
+        {"3DES CMAC", DES3_CMAC},
+        {"AES ECB", AES_ECB},
+        {"AES CBC", AES_CBC},
+        {"AES CBC CS", AES_CBC_CS},
+        {"AES OFB", AES_OFB},
+        {"AES CFB", AES_CFB},
+        {"AES CTR", AES_CTR},
+        {"AES CTRLST", AES_CTRLST},
+        {"AES CBC MAC", AES_CBC_MAC},
+        {"AES CMAC", AES_CMAC},
+        {"AES CCM", AES_CCM},
+        {"AES GCM", AES_GCM},
+        {"AES XTS", AES_XTS},
+	{NULL,0}
 };
 
-struct crypto_function kmc_functions[] = {
-	{"DES:", S390_CRYPTO_DEA_ENCRYPT},
-	{"TDES-128:", S390_CRYPTO_TDEA_128_ENCRYPT},
-	{"TDES-192:", S390_CRYPTO_TDEA_192_ENCRYPT},
-	{"AES-128:", S390_CRYPTO_AES_128_ENCRYPT},
-	{"AES-192:", S390_CRYPTO_AES_192_ENCRYPT},
-	{"AES-256:", S390_CRYPTO_AES_256_ENCRYPT},
-	{"PRNG:", S390_CRYPTO_PRNG},
-	{NULL, 0}
-};
 
-struct crypto_function kmac_functions[] = {
-	{"CCM-AES-128:", S390_CRYPTO_AES_128_ENCRYPT},
-	{"CMAC-AES-128:", S390_CRYPTO_AES_128_ENCRYPT},
-	{"CMAC-AES-192:", S390_CRYPTO_AES_192_ENCRYPT},
-	{"CMAC-AES-256:", S390_CRYPTO_AES_256_ENCRYPT},
-	{NULL, 0}
-};
+int is_crypto_card_loaded()
+{
+	DIR* sysDir;
+	FILE *file;
+	char dev[PATH_MAX] = "/sys/devices/ap/";
+	struct dirent *direntp;
+	char *type = NULL;
+	size_t size;
+	char c;
+
+	if ((sysDir = opendir(dev)) == NULL )
+		return 0;
+
+	while((direntp = readdir(sysDir)) != NULL){
+		if(strstr(direntp->d_name, "card") != 0){
+			snprintf(dev, PATH_MAX, "/sys/devices/ap/%s/type",
+			 	 direntp->d_name); 
+
+			if ((file = fopen(dev, "r")) == NULL){
+	                        closedir(sysDir);
+                                return 0;
+			}
+		
+			if (getline(&type, &size, file) == -1){
+				fclose(file);
+				closedir(sysDir);
+				return 0;
+			}
+					
+ 			/* ignore \n
+			 * looking for CEX??A and CEX??C
+			 * Skip type CEX??P cards
+ 			 */
+			if (type[strlen(type)-2] == 'P'){
+				free(type);
+				type = NULL;
+			        fclose(file);
+                        	continue;
+			}
+			free(type);
+			type = NULL;
+			fclose(file);
+
+			snprintf(dev, PATH_MAX, "/sys/devices/ap/%s/online",
+				direntp->d_name);
+			if ((file = fopen(dev, "r")) == NULL){
+				closedir(sysDir);
+				return 0;
+			}
+			if((c = fgetc(file)) == '1'){
+				fclose(file);
+				return 1;
+			}
+			fclose(file);
+		}
+	}
+	closedir(sysDir);
+	return 0;
+}	
+	
+
 
 int main(int argc, char **argv)
 {
-	unsigned char mask[16];
-	int rc, index, n, quiet = 0;
+	int quiet = 0;	
+	int rc;
+	int index = 0;
+
+    unsigned int mech_len;
+    libica_func_list_element *pmech_list = NULL;
+	int flag;	
 
 	while ((rc = getopt_long(argc, argv, getopt_string,
 				 getopt_long_options, &index)) != -1) {
@@ -112,31 +205,57 @@ int main(int argc, char **argv)
 
 	if (!quiet)
 		printf("The following CP Assist for Cryptographic Function "
-		       "(CPACF) operations are\nsupported by libica on this "
+		       "(CPACF) \noperations are supported by libica on this "
 		       "system:\n");
-	s390_kimd(S390_CRYPTO_QUERY, &mask, NULL, 0);
-	for (n = 0; kimd_functions[n].desc != NULL; n++) {
-		printf("%-14s", kimd_functions[n].desc);
-		if (S390_CRYPTO_TEST_MASK(mask, kimd_functions[n].code))
-			printf("yes\n");
-		else
-			printf("no\n");
+
+	if (ica_get_functionlist(NULL, &mech_len) != 0){
+		perror("get_functionlist: ");
+		return EXIT_FAILURE;
 	}
-	s390_kmc(S390_CRYPTO_QUERY, &mask, NULL, NULL, 0);
-	for (n = 0; kmc_functions[n].desc != NULL; n++) {
-		printf("%-14s", kmc_functions[n].desc);
-		if (S390_CRYPTO_TEST_MASK(mask, kmc_functions[n].code))
-			printf("yes\n");
-		else
-			printf("no\n");
+	pmech_list = malloc(sizeof(libica_func_list_element)*mech_len);
+	if (ica_get_functionlist(pmech_list, &mech_len) != 0){
+		perror("get_functionlist: ");
+		free(pmech_list);
+		return EXIT_FAILURE;
 	}
-	s390_kmac(S390_CRYPTO_QUERY, &mask, NULL, 0);
-	for (n = 0; kmac_functions[n].desc != NULL; n++) {
-		printf("%-14s", kmac_functions[n].desc);
-		if (S390_CRYPTO_TEST_MASK(mask, kmac_functions[n].code))
-			printf("yes\n");
-		else
-			printf("no\n");
+
+	flag = is_crypto_card_loaded();
+
+	#define CELL_SIZE 3
+
+	int i, j;
+	printf(" function      | # hardware | #software\n");
+	printf("---------------+------------+--------------\n");
+	for(i = 0;crypt_map[i].algo_id;i++){
+		for(j=0;j<mech_len;j++){
+			if(crypt_map[i].algo_id == pmech_list[j].mech_mode_id){
+				if(flag){
+					printf("%14s |    %*s     |     %*s\n", 
+						crypt_map[i].name,
+						CELL_SIZE,
+						pmech_list[j].flags &
+						(ICA_FLAG_SHW | ICA_FLAG_DHW)
+						? "yes" : "no",		
+						CELL_SIZE,	
+						pmech_list[j].flags & ICA_FLAG_SW
+						? "yes" : "no");
+				} else{
+                                        printf("%14s |    %*s     |     %*s\n",
+                                                crypt_map[i].name,
+						CELL_SIZE,
+                                                (pmech_list[j].flags &
+                                                ICA_FLAG_SHW)
+                                                ? "yes" : "no",
+						CELL_SIZE,
+                                                pmech_list[j].flags & ICA_FLAG_SW
+                                                ? "yes" : "no");
+	
+				}
+				break;		
+			}
+
+		}
 	}
-	return 0;
+	free(pmech_list);
+	return EXIT_SUCCESS;
 }

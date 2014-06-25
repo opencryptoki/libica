@@ -51,29 +51,29 @@ static inline int __s390_des_ctrlist(unsigned int fc, unsigned long data_length,
 				     unsigned char *out_data)
 {
 	int rc = EPERM;
-	int hardware = 1;
+	int hardware = ALGO_HW;
 
 	if (*s390_msa4_functions[fc].enabled)
 		rc = s390_ctr_hw(s390_msa4_functions[fc].hw_fc,
 				 data_length, in_data, key,
 				 out_data, ctrlist);
 	if (rc) {
-		hardware = 0;
+		hardware = ALGO_SW;
 		return rc;
 	}
 	switch (s390_msa4_functions[fc].hw_fc & S390_CRYPTO_FUNCTION_MASK) {
 	case S390_CRYPTO_DEA_ENCRYPT:
-		stats_increment((s390_msa4_functions[fc].hw_fc &
-				S390_CRYPTO_DIRECTION_MASK) ==
-				0 ? ICA_STATS_DES_ENCRYPT :
-				ICA_STATS_DES_DECRYPT, hardware);
+		stats_increment(ICA_STATS_DES_CTRLST, hardware,
+				(s390_msa4_functions[fc].hw_fc &
+                                S390_CRYPTO_DIRECTION_MASK) ==
+                                0 ?ENCRYPT: DECRYPT);
 		break;
 	case S390_CRYPTO_TDEA_128_ENCRYPT:
 	case S390_CRYPTO_TDEA_192_ENCRYPT:
-		stats_increment((s390_msa4_functions[fc].hw_fc &
-				S390_CRYPTO_DIRECTION_MASK) ==
-				0 ? ICA_STATS_3DES_ENCRYPT :
-				ICA_STATS_3DES_DECRYPT, hardware);
+		stats_increment(ICA_STATS_3DES_CTRLST, hardware,
+				(s390_msa4_functions[fc].hw_fc &
+                                S390_CRYPTO_DIRECTION_MASK) ==
+                                0 ?ENCRYPT: DECRYPT);
 		break;
 	}
 	return rc;
@@ -86,20 +86,20 @@ static inline int __s390_aes_ctrlist(unsigned int fc, unsigned long data_length,
 				     unsigned char *out_data)
 {
 	int rc = EPERM;
-	int hardware = 1;
+	int hardware = ALGO_HW;
 
 	if (*s390_msa4_functions[fc].enabled)
 		rc = s390_ctr_hw(s390_msa4_functions[fc].hw_fc,
 				 data_length, in_data, key,
 				 out_data, ctrlist);
 	if (rc) {
-		hardware = 0;
+		hardware = ALGO_SW;
 		return rc;
 	}
-	stats_increment((s390_msa4_functions[fc].hw_fc &
-			 S390_CRYPTO_DIRECTION_MASK) == 0 ?
-			 ICA_STATS_AES_ENCRYPT : ICA_STATS_AES_DECRYPT,
-			hardware);
+	stats_increment(ICA_STATS_AES_CTRLST, hardware,
+			 (s390_msa4_functions[fc].hw_fc &
+                         S390_CRYPTO_DIRECTION_MASK) ==
+                         0 ?ENCRYPT:DECRYPT);
 	return rc;
 }
 

@@ -318,6 +318,11 @@ unsigned int rsa_mod_expo_sw(ica_rsa_modexpo_t *pMex)
 		return errno;
         }
 
+	/* check if modulus value > data value */
+	if ((memcmp(pMex->n_modulus, pMex->inputdata,
+		    pMex->inputdatalength)) <= 0)
+		return EINVAL;
+
         rc = mod_expo_sw(pMex->inputdatalength, pMex->inputdata,
                        pMex->inputdatalength, pMex->b_key,
                        pMex->inputdatalength, pMex->n_modulus,
@@ -445,6 +450,8 @@ unsigned int rsa_crt_sw(ica_rsa_modexpo_crt_t * pCrt)
 	int short_length = 0;
 	int orig_outl;
 	BN_CTX *ctx = NULL;
+
+	
 
 	short_length = pCrt->inputdatalength / 2;
 	long_length = short_length + 8;

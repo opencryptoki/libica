@@ -7,19 +7,25 @@
 /*
  * Authors(s): Christian Maaser <cmaaser@de.ibm.com>
  *             Holger Dengler <hd@linux.vnet.ibm.com>
+ *             Benedikt Klotz <benedikt.klotz@de.ibm.com>
+ *             Ingo Tuchscherer <ingo.tuchscherer@de.ibm.com>
  *
- * Copyright IBM Corp. 2009, 2010, 2011
+ * Copyright IBM Corp. 2009, 2010, 2011, 2014
  */
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
 #include <string.h>
+#include <ctype.h>
 #include <getopt.h>
+#include <pwd.h>
+#include <errno.h>
 #include <libgen.h>
 #include "icastats.h"
 
 #define CMD_NAME "icastats"
-#define COPYRIGHT "Copyright IBM Corp. 2009, 2010, 2011."
+#define COPYRIGHT "Copyright IBM Corp. 2009, 2010, 2011, 2014."
 
 void print_version(void)
 {
@@ -31,59 +37,124 @@ void print_help(char *cmd)
 	printf("Usage: %s [OPTION]\n\n", cmd);
 	printf("This command is used to indicate whether libica uses hardware or works with\n"
 	       "software fallbacks. It shows also which specific functions of libica are used.\n"
-	       "All counters are not persistent and will be set to zero, if the last process\n"
-	       "unloads the libica library.\n"
 	       "\n"
 	       "Options:\n"
-	       " -r, --reset    sets the function counters to zero and exit\n"
-	       " -v, --version  output version information and exit\n"
-	       " -h, --help     displays help information for the command and exit\n");
+	       " -r, --reset         set the own function counters to zero.\n"
+	       " -R, --reset-all     reset the statistsics from all users. (only root user)\n"
+	       " -d, --delete        delete your own statistics.\n"
+	       " -D, --delete-all    delete the statistics from all users. (only allowed for root user)\n"
+	       " -u, --user <userid> show the statistics from one user. (only allowd for root user).\n"
+	       " -S, --summary       show the accumulated statistics from alle users\n"
+	       " -A, --all	     show the statistic tables from all users. Needs root rights\n"
+	       " -v, --version       output version information\n"
+	       " -h, --help          display help information for the command\n");
 }
 
-#define getopt_string "rvh"
+#define getopt_string "rRdDu:SAvh"
 static struct option getopt_long_options[] = {
 	{"reset", 0, 0, 'r'},
+	{"reset-all", 0, 0, 'R'},
+	{"delete", 0, 0, 'd'},
+	{"delete-all", 0, 0, 'D'},
+	{"user", required_argument, 0, 'u'},
+	{"summary", 0, 0, 'S'},
+	{"all", 0, 0, 'A'},
 	{"version", 0, 0, 'v'},
 	{"help", 0, 0, 'h'},
 	{0, 0, 0, 0}
 };
 
-
-
 const char *const STATS_DESC[ICA_NUM_STATS] = {
-	"SHA-1",
-	"SHA-224",
-	"SHA-256",
-	"SHA-384",
-	"SHA-512",
-	"RANDOM",
-	"MOD EXPO",
-	"RSA CRT",
-	"DES ENC",
-	"DES DEC",
-	"3DES ENC",
-	"3DES DEC",
-	"AES ENC",
-	"AES DEC",
-	"CMAC GEN",
-	"CMAC VER",
-	"CCM ENC",
-	"CCM DEC",
-	"CCM AUTH",
-	"GCM ENC",
-	"GCM DEC",
-	"GCM AUTH",
+	STAT_STRINGS
 };
+
+
+
+#define CELL_SIZE 10
+void print_stats(stats_entry_t *stats)
+{
+	printf(" function     |          # hardware      |       # software\n");
+        printf("--------------+--------------------------+-------------------------\n");
+        printf("              |       ENC    CRYPT   DEC |        ENC    CRYPT   DEC\n");
+        printf("--------------|--------------------------|-------------------------\n");
+        unsigned int i;
+        for (i = 0; i < ICA_NUM_STATS; ++i){
+        	if(i<=ICA_STATS_RSA_CRT){
+                	printf(" %12s |      %*d          |       %*d\n",
+                               STATS_DESC[i],
+			       CELL_SIZE,
+                               stats[i].enc.hw,
+			       CELL_SIZE,
+                               stats[i].enc.sw);
+                } else{
+                	printf(" %12s |%*d     %*d |%*d    %*d\n",
+			       STATS_DESC[i],
+			       CELL_SIZE,
+                               stats[i].enc.hw,
+			       CELL_SIZE,
+                               stats[i].dec.hw,
+			       CELL_SIZE,
+                               stats[i].enc.sw,
+			       CELL_SIZE,
+                               stats[i].dec.sw);
+
+               }
+        }
+}
+
+
+
 
 int main(int argc, char *argv[])
 {
-	int rc, index, reset = 0;
+	int rc = 0;
+	int index = 0;
+	int reset = 0;
+	int delete = 0;
+	int sum = 0;
+	int user = -1;
+	int all = 0;
+	struct passwd *pswd;
 
 	while ((rc = getopt_long(argc, argv, getopt_string,
 				 getopt_long_options, &index)) != -1) {
 		switch (rc) {
 		case 'r':
 			reset = 1;
+			break;
+		case 'R':
+			if(geteuid() != 0){
+				fprintf(stderr,"You have no rights to reset all shared memory"
+                                	"segments!\n");
+				return EXIT_FAILURE;
+			}
+			reset = 2;
+			break;
+		case 'd':
+			delete = 1;
+			break;
+		case 'D':
+                        if(geteuid() != 0){
+                                fprintf(stderr,"You have no rights to delete all shared memory"
+                                        "segments!\n");
+                                return EXIT_FAILURE;
+                        }
+
+			delete = 2;
+			break;
+		case 'u':
+			if((pswd = getpwnam(optarg)) == NULL){
+				fprintf(stderr, "The username %s is not known"
+					"on this system.\n", optarg );
+				return EXIT_FAILURE;
+			}
+			user = pswd->pw_uid;
+			break;
+		case 'S':
+			sum = 1;
+			break;
+		case 'A':
+			all = 1;
 			break;
 		case 'v':
 			print_version();
@@ -96,36 +167,89 @@ int main(int argc, char *argv[])
 			fprintf(stderr,
 				"Try '%s --help' for more information.\n",
 				basename(argv[0]));
-			exit(1);
+			return EXIT_FAILURE;
 		}
 	}
 
-	if (optind < argc) {
-		fprintf(stderr, "%s: invalid option.\n"
-		        "Try '%s --help' for more information.\n",
-		        argv[0], basename(argv[0]));
-		exit(1);
+        if (optind < argc) {
+                fprintf(stderr, "%s: invalid option.\n\
+                        Try '%s --help' for more information.\n",
+                        argv[0], basename(argv[0]));
+                return EXIT_FAILURE;
+        }
+	
+	if(delete == 2){
+		if(delete_all() == -1){
+			perror("deleteall: ");
+			return EXIT_FAILURE;	
+		}
+		return EXIT_SUCCESS;
+	} else if(delete){
+		stats_mmap(user);
+		stats_munmap(SHM_DESTROY);
+		return EXIT_SUCCESS;
 	}
+	if(all){
+		char *usr;
+		stats_entry_t *entries;
+		while((usr = get_next_usr()) != NULL){
+			if((entries = malloc(sizeof(stats_entry_t)*ICA_NUM_STATS)) == NULL){
+				perror("malloc: ");
+				return EXIT_FAILURE;
+			}
+			get_stats_data(entries);;
+			printf("user: %s\n", usr);
+			print_stats(entries);
+			free(entries);
+		}
+		if (errno != 0){
+			perror("get_next_usr: ");
+			return EXIT_FAILURE;
+		}
+		return EXIT_SUCCESS;
+	}		
+	
+	if (sum){
+		stats_entry_t *entries;
+		if((entries = malloc(sizeof(stats_entry_t)*ICA_NUM_STATS)) == NULL){
+                	perror("malloc: ");
+                        return EXIT_FAILURE;
+                }
 
-	if (stats_mmap() != 0) {
+		if(!get_stats_sum(entries)){
+			perror("get_stats_sum: ");
+			return EXIT_FAILURE;
+                }
+		print_stats(entries);
+		return EXIT_SUCCESS;
+			
+				
+	}
+	
+	if(reset == 2){
+		while(get_next_usr() != NULL)
+			stats_reset();
+		return EXIT_SUCCESS;
+
+	}
+	/* Need to open shm before it can be reseted */
+	if (stats_mmap(user)) {
 		fprintf(stderr, "Could not map shared memory region to local "
 			"address space.");
-		exit(1);
+		return EXIT_FAILURE;
 	}
 
 	if (reset) {
 		stats_reset();
-	} else {
-		printf(" function | # hardware | # software \n");
-		printf("----------+------------+------------\n");
-		unsigned int i;
-		for (i = 0; i != ICA_NUM_STATS; ++i) {
-			printf(" %8s |%11d |%11d \n", STATS_DESC[i], stats_query(i, 1),
-			stats_query(i, 0));
+	} else{
+		stats_entry_t *stats;
+		if((stats = malloc(sizeof(stats_entry_t)*ICA_NUM_STATS)) == NULL){
+			perror("malloc: ");
+			return EXIT_FAILURE;
 		}
+		get_stats_data(stats);
+		print_stats(stats);
+	
 	}
-
-	stats_munmap();
-
-	return 0;
+	return EXIT_SUCCESS;
 }

@@ -141,6 +141,7 @@ static int s390_cmac_hw(unsigned long fc,
 	if (cmac == NULL) {
 		/* intermediate */
 		rc = s390_kmac(fc, pb_lookup.iv, message, message_length);
+		memset(pb_lookup.keys, 0, key_size);
 		if (rc < 0)
 			return rc;
 
@@ -159,8 +160,10 @@ static int s390_cmac_hw(unsigned long fc,
 			if (length_head) {
 				rc = s390_kmac(fc, pb_lookup.iv,
 					       message, length_head);
-				if (rc < 0)
+				if (rc < 0) {
+					memset(pb_lookup.keys, 0, key_size);
 					return EIO;
+                                }
 			}
 
 			*pb_lookup.ml = length_tail * 8;	/* message length in bits */
@@ -168,6 +171,7 @@ static int s390_cmac_hw(unsigned long fc,
 		}
 		/* calculate final block (last/full) */
 		rc = s390_pcc(fc, pb_lookup.base);
+		memset(pb_lookup.keys, 0, key_size);
 		if (rc < 0)
 			return EIO;
 
@@ -184,7 +188,7 @@ inline int s390_cmac(unsigned long fc,
 		     unsigned int  mac_length, unsigned char *mac,
 		     unsigned char *iv)
 {
-	int hardware = 1;
+	int hardware = ALGO_HW;
 	int rc;
 
 	if (*s390_msa4_functions[fc].enabled)
@@ -194,17 +198,9 @@ inline int s390_cmac(unsigned long fc,
 				  mac_length, mac,
 				  iv);
 	else {
-		hardware = 0;
+		hardware = ALGO_SW;
 		return EPERM;
 	}
-
-	if (rc)
-		return rc;
-
-	stats_increment((s390_msa4_functions[fc].hw_fc &
-			S390_CRYPTO_DIRECTION_MASK) == 0 ?
-			ICA_STATS_CMAC_GENERATE : ICA_STATS_CMAC_VERIFY,
-			hardware);
 
 	return rc;
 }

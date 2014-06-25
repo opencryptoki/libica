@@ -108,6 +108,51 @@ typedef ica_adapter_handle_t ICA_ADAPTER_HANDLE;
 #define MODE_AES_ECB		MODE_ECB
 #define MODE_AES_CBC		MODE_CBC
 
+#define ICA_FLAG_SHW 4 /* static hardware support (symmetric ops - CPACF) */
+#define ICA_FLAG_DHW 2 /* dynamic hardware support (asymmetric ops - CEX) */
+#define ICA_FLAG_SW  1 /* software implementation (fallback / backup) */
+
+#define SHA1            1
+#define SHA224          2
+#define SHA256          3
+#define SHA384          4
+#define SHA512          5
+#define DES_ECB         20
+#define DES_CBC         21
+#define DES_CBC_CS      22
+#define DES_OFB         23
+#define DES_CFB         24
+#define DES_CTR         25
+#define DES_CTRLST      26
+#define DES_CBC_MAC     27
+#define DES_CMAC        28
+#define DES3_ECB        41
+#define DES3_CBC        42
+#define DES3_CBC_CS     43
+#define DES3_OFB        44
+#define DES3_CFB        45
+#define DES3_CTR        46
+#define DES3_CTRLST     47
+#define DES3_CBC_MAC    48
+#define DES3_CMAC       49
+#define AES_ECB         60
+#define AES_CBC         61
+#define AES_CBC_CS      62
+#define AES_OFB         63
+#define AES_CFB         64
+#define AES_CTR         65
+#define AES_CTRLST      66
+#define AES_CBC_MAC     67
+#define AES_CMAC        68
+#define AES_CCM         69
+#define AES_GCM         70
+#define AES_XTS         71
+#define P_RNG           80
+#define RSA_ME          90
+#define RSA_CRT         91
+#define RSA_KEY_GEN_ME  92
+#define RSA_KEY_GEN_CRT 93
+
 /*
  * Key length for DES/3DES encryption/decryption
  */
@@ -400,20 +445,20 @@ typedef struct {
  * internal specification for a specific crypto mechanism supported by libica
  **/
 typedef struct {
-        unsigned int mech_mode_id;
-	    unsigned int type;
-        unsigned int id;
-        unsigned int flags;
-        unsigned int property;
+	unsigned int mech_mode_id;
+	unsigned int type;
+	unsigned int id;
+	unsigned int flags;
+	unsigned int property;
 } libica_func_list_element_int;
 
 /*
  * external specification for a specific crypto mechanism supported by libica
  **/
 typedef struct {
-        unsigned int mech_mode_id;
-        unsigned int flags;
-        unsigned int property;
+	unsigned int mech_mode_id;
+	unsigned int flags;
+	unsigned int property;
 } libica_func_list_element;
 
 /**

@@ -51,12 +51,11 @@ void dump_ctr_data(unsigned char *iv, unsigned int iv_length,
 	dump_array(output_data, data_length);
 }
 
-int random_3des_ctr(int iteration, int silent, unsigned int data_length, unsigned int iv_length)
+int random_3des_ctr(int iteration, int silent, unsigned int data_length)
 {
 	unsigned int key_length = sizeof(ica_des_key_triple_t);
-	if (data_length % sizeof(ica_des_vector_t))
-		iv_length = sizeof(ica_des_vector_t);
-
+	unsigned int iv_length = sizeof(ica_des_vector_t);
+	
 	printf("Test Parameters for iteration = %i\n", iteration);
 	printf("key length = %i, data length = %i, iv length = %i\n",
 	       key_length, data_length, iv_length);
@@ -134,7 +133,6 @@ int main(int argc, char **argv)
 	unsigned int silent = 0;
 	unsigned int endless = 0;
 	unsigned int data_length = 1;
-	unsigned int iv_length = sizeof(ica_des_vector_t);
 	unsigned int rdata;
 	int error_count = 0;
 	int i = 0;
@@ -151,7 +149,7 @@ int main(int argc, char **argv)
 		silent = 1;
 		while (1) {
 			printf("i = %i\n",i);
-			rc = random_3des_ctr(i, silent, 320, iv_length);
+			rc = random_3des_ctr(i, silent, 320);
 			if (rc) {
 				printf("kat_3des_ctr failed with rc = %i\n",
 					rc);
@@ -163,7 +161,7 @@ int main(int argc, char **argv)
 	} else {
 		silent = 1;
 		for (i = 1; i < NR_RANDOM_TESTS; i++) {
-			rc = random_3des_ctr(i, silent, data_length, data_length);
+			rc = random_3des_ctr(i, silent, data_length);
                 	if (rc) {
 				printf("random_3des_ctr failed with rc = %i\n", rc);
 				error_count++;

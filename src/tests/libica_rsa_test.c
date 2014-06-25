@@ -14,7 +14,9 @@
 #include <strings.h>
 #include "ica_api.h"
 
-unsigned char pubkey1024[] =
+#define RSA_BYTE_LENGHT 128
+
+unsigned char e[] =
                   { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
                     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
                     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
@@ -32,7 +34,7 @@ unsigned char pubkey1024[] =
                     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
                     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x03 };
 
-unsigned char modulus1024[] =
+unsigned char n[] =
                   { 0xec, 0x51, 0xab, 0xa1, 0xf8, 0x40, 0x2c, 0x08,
                     0x2e, 0x24, 0x52, 0x2e, 0x3c, 0x51, 0x6d, 0x98,
                     0xad, 0xee, 0xc7, 0x7d, 0x00, 0xaf, 0xe1, 0xa8,
@@ -50,9 +52,7 @@ unsigned char modulus1024[] =
                     0x9e, 0x3f, 0x8a, 0x50, 0xf1, 0x0a, 0x59, 0x4a,
                     0xc3, 0x59, 0x4b, 0xf6, 0xbb, 0xc9, 0xa5, 0x93 };
 
-
-
-unsigned char Bp[] =
+unsigned char dp[] =
                   { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
                     0xa7, 0xcf, 0xa2, 0x18, 0x2c, 0xa9, 0xb4, 0xb9,
                     0xf5, 0x9e, 0xc9, 0x04, 0x16, 0xd9, 0xa6, 0x8b,
@@ -63,7 +63,7 @@ unsigned char Bp[] =
                     0x81, 0x65, 0x3b, 0x3c, 0x95, 0x9e, 0x79, 0x75,
                     0xe4, 0x93, 0x50, 0xf1, 0x88, 0x6b, 0xc1, 0x87 };
 
-unsigned char Bq[] =
+unsigned char dq[] =
                   { 0xa0, 0x3a, 0x18, 0xa4, 0x1c, 0x3c, 0x49, 0x09,
                     0xd0, 0x84, 0x4a, 0x8c, 0x7c, 0xce, 0xdf, 0x9e,
                     0x90, 0x7d, 0xc4, 0xca, 0x7e, 0x2d, 0x3d, 0xbc,
@@ -73,7 +73,7 @@ unsigned char Bq[] =
                     0xd9, 0xa2, 0xac, 0x49, 0xcc, 0x76, 0x9c, 0xd8,
                     0x4c, 0x59, 0x5e, 0x38, 0xd2, 0x85, 0xd3, 0x3b };
 
-unsigned char Np[] =
+unsigned char p[] =
                   { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
                     0xfb, 0xb7, 0x73, 0x24, 0x42, 0xfe, 0x8f, 0x16,
                     0xf0, 0x6e, 0x2d, 0x86, 0x22, 0x46, 0x79, 0xd1,
@@ -84,7 +84,7 @@ unsigned char Np[] =
                     0xc2, 0x17, 0xd8, 0xda, 0xe0, 0x6d, 0xb6, 0x30,
                     0xd6, 0xdc, 0xf9, 0x6a, 0x4c, 0xa1, 0xa2, 0x4b };
 
-unsigned char Nq[] =
+unsigned char q[] =
                   { 0xf0, 0x57, 0x24, 0xf6, 0x2a, 0x5a, 0x6d, 0x8e,
                     0xb8, 0xc6, 0x6f, 0xd2, 0xbb, 0x36, 0x4f, 0x6d,
                     0xd8, 0xbc, 0xa7, 0x2f, 0xbd, 0x43, 0xdc, 0x9a,
@@ -94,7 +94,7 @@ unsigned char Nq[] =
                     0x46, 0x74, 0x02, 0x6e, 0xb2, 0xb1, 0xeb, 0x44,
                     0x72, 0x86, 0x0d, 0x55, 0x3b, 0xc8, 0xbc, 0xd9 };
 
-unsigned char U[] =
+unsigned char qinv[] =
                   { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
                     0x83, 0xf1, 0xca, 0x06, 0x58, 0x4a, 0x04, 0x5e,
                     0x96, 0xb5, 0x30, 0x32, 0x40, 0x36, 0x48, 0xb9,
@@ -105,12 +105,7 @@ unsigned char U[] =
                     0x36, 0x6e, 0x1c, 0xbe, 0x8a, 0x14, 0xb1, 0x85,
                     0x39, 0x74, 0x7c, 0x25, 0xd8, 0xa4, 0x4f, 0xde };
 
-
-
-
-unsigned char R[128];
-
-unsigned char A[] =
+unsigned char input_data[] =
                   { 0x00, 0x02, 0x08, 0x68, 0x30, 0x9a, 0x32, 0x08,
                     0x57, 0xb0, 0x28, 0xaa, 0x76, 0x30, 0x3d, 0x84,
                     0x5f, 0x92, 0x0d, 0x8e, 0x34, 0xe0, 0xd5, 0xcc,
@@ -128,32 +123,53 @@ unsigned char A[] =
                     0x54, 0x55, 0x56, 0x57, 0x58, 0x59, 0x5a, 0x5b,
                     0x5c, 0x5d, 0x5e, 0x5f, 0x60, 0x61, 0x62, 0x63 };
 
-unsigned char Ciphertext[] =
+unsigned char ciphertext[] =
                   { 0xb2, 0xb2, 0x82, 0xd7, 0x2c, 0x6f, 0x53, 0x29,
                     0xee, 0x4c, 0xd1, 0x77, 0xb7, 0x13, 0xf3, 0x1c,
                     0x51, 0x60, 0xd8, 0xa9, 0x4e, 0x52, 0x72, 0x43,
                     0x29, 0xfa, 0x51, 0xaa, 0xd8, 0xbc, 0x31, 0x21,
-                    0xe0, 0xac, 0x9b, 0x4e, 0x0, 0x94, 0xac, 0x91,
+                    0xe0, 0xac, 0x9b, 0x4e, 0x00, 0x94, 0xac, 0x91,
                     0x7f, 0x1e, 0xfd, 0xfb, 0x1c, 0xfa, 0xa8, 0xe8,
-                    0x56, 0x5a, 0x1, 0x17, 0xf1, 0x5f, 0x1, 0xba,
+                    0x56, 0x5a, 0x01, 0x17, 0xf1, 0x5f, 0x01, 0xba,
                     0xcd, 0x77, 0xa1, 0x8c, 0x74, 0x8a, 0xef, 0xfa,
                     0x64, 0x58, 0x79, 0x13, 0xaa, 0x54, 0x13, 0x2b,
-                    0xaa, 0xe7, 0xc3, 0x50, 0x3b, 0x69, 0x3b, 0xb,
-                    0x9a, 0xa9, 0x9d, 0x15, 0x8a, 0x6, 0x45, 0x71,
+                    0xaa, 0xe7, 0xc3, 0x50, 0x3b, 0x69, 0x3b, 0x0b,
+                    0x9a, 0xa9, 0x9d, 0x15, 0x8a, 0x06, 0x45, 0x71,
                     0x40, 0x7a, 0x80, 0x85, 0x4a, 0xbe, 0x68, 0x48,
                     0x6c, 0xe6, 0xdd, 0x96, 0xb0, 0xdc, 0xf4, 0x23,
                     0xa8, 0xea, 0x21, 0x9f, 0xbc, 0x6b, 0x15, 0xa4,
                     0x87, 0x6e, 0x93, 0x56, 0xae, 0xa7, 0x17, 0x4e,
-                    0xd7, 0x14, 0xe4, 0x69, 0x4, 0xd5, 0x2e, 0x62 };
+                    0xd7, 0x14, 0xe4, 0x69, 0x04, 0xd5, 0x2e, 0x62 };
 
 extern int errno;
+
+static int handle_ica_error(int rc, char *message)
+{
+        printf("Error in %s: ", message);
+        switch (rc) {
+                case 0:
+                  printf("OK\n");
+                  break;
+                case EINVAL:
+                  printf("Incorrect parameter.\n");
+                  break;
+                case EPERM:
+                  printf("Operation not permitted by Hardware.\n");
+                  break;
+                case EIO:
+                  printf("I/O error.\n");
+                  break;
+                default:
+                  perror("");
+        }
+        return rc;
+}
 
 void dump_array(unsigned char *ptr, unsigned int size)
 {
    unsigned char *ptr_end;
    unsigned char *h;
    int i = 1;
-
 
    h = ptr;
    ptr_end = ptr + size;
@@ -172,138 +188,66 @@ void dump_array(unsigned char *ptr, unsigned int size)
 
 int main()
 {
-   ICA_ADAPTER_HANDLE	adapter_handle;
-   ICA_KEY_RSA_CRT	icakey;
-   ICA_KEY_RSA_MODEXPO	wockey;
-   caddr_t		key;
-   caddr_t		my_result;
-   caddr_t		my_result2;
-   /* icaRsaModExpo_t	rsawoc; */
-   int			i;
-   unsigned int		length;
+   ica_adapter_handle_t	adapter_handle;
+   unsigned char*	my_result;
+   unsigned char*	my_result2;
+   int			rc;
 
-   i = icaOpenAdapter(0, &adapter_handle);
-   if (i != 0) {
-      printf("icaOpenAdapter failed and returned %d (0x%x), errno=%d\n", i, i, errno);
-      return i;
+   rc = ica_open_adapter(&adapter_handle);
+   if (rc != 0) {
+      printf("ica_open_adapter failed and returned %d (0x%x).\n", rc, rc);
    }
 
     /*
      * encrypt with public key
      */
+    printf("modulus size = %ld\n", (long)sizeof(n));
 
-    printf("modulus size = %ld\n", (long)sizeof(modulus1024));
-    bzero(&wockey, sizeof(wockey));
-    wockey.keyType = KEYTYPE_MODEXPO;
-    wockey.keyLength = sizeof(ICA_KEY_RSA_MODEXPO);
-    wockey.modulusBitLength = sizeof(modulus1024) * 8;
-    wockey.nLength = sizeof(modulus1024);
-    wockey.expLength = sizeof(pubkey1024);
+    my_result =  malloc(sizeof(input_data));
+    bzero(my_result, sizeof(input_data));
 
-    key = (caddr_t)wockey.keyRecord;
+    my_result2 = malloc(sizeof(input_data));
+    bzero(my_result2,sizeof(input_data));
 
-    bcopy(&pubkey1024, key, sizeof(pubkey1024));
-    wockey.expOffset = key - (char *) &wockey;
-    key += sizeof(pubkey1024);
-    bcopy(&modulus1024, key, sizeof(modulus1024));
-    wockey.nOffset = key - (char *) &wockey;
-
-    my_result = (caddr_t) malloc(sizeof(A));
-    bzero(my_result, sizeof(A));
-    length = sizeof(A);
-	
-	printf("wockey.modulusBitLength = %i\n", wockey.modulusBitLength);
-    if ((i = icaRsaModExpo(adapter_handle, sizeof(A), A,
-                          &wockey, &length, (unsigned char *)my_result)) != 0) {
-      printf("icaRsaModExpo failed and returned %d (0x%x).\n", i, i);
-    }
+    ica_rsa_key_mod_expo_t mod_expo_key = {RSA_BYTE_LENGHT, n, e};
+    rc = ica_rsa_mod_expo(adapter_handle, input_data, &mod_expo_key, my_result);
+    if (rc)
+       exit(handle_ica_error(rc, "ica_rsa_key_mod_expo"));
 
     printf("\n\n\n\n\n result of encrypt with public key\n");
-    dump_array((unsigned char *)my_result,sizeof(A));
+    dump_array((unsigned char *)my_result,sizeof(input_data));
     printf("Ciphertext \n");
-    dump_array(Ciphertext,sizeof(A));
-    if (memcmp(my_result,Ciphertext,sizeof(A))){
+    dump_array(ciphertext,sizeof(input_data));
+    if (memcmp(my_result,ciphertext,sizeof(input_data))){
        printf("Ciphertext mismatch\n");
        return 0;
     } else {
        printf("ENCRYPT WORKED\n");
     }
 
-    bzero(&icakey, sizeof(icakey));
-
-     /* Card level CRT operation */
-    icakey.keyType = KEYTYPE_PKCSCRT;
-    icakey.keyLength = sizeof(ICA_KEY_RSA_CRT);
-    icakey.modulusBitLength = sizeof(modulus1024)*8;
-
-
-    my_result2 = (caddr_t)malloc(sizeof(A));
-    bzero(my_result2,sizeof(A));
-
-    key = (caddr_t)icakey.keyRecord;
     /*
-     * Bp is copied into the key */
-    bcopy(Bp,key,sizeof(Bp));
-    icakey.dpLength = sizeof(Bp);
-    icakey.dpOffset =  key - (char *)&icakey;
-    key += sizeof(Bp);
-    /*
-     * Bq is copied into the key */
-    bcopy(Bq,key,sizeof(Bq));
-    icakey.dqLength = sizeof(Bq);
-    icakey.dqOffset =  key - (char *)&icakey;
-    key += sizeof(Bq);
-    /*
-     * Np is copied into the key */
-    bcopy(Np,key,sizeof(Np));
-    icakey.pLength = sizeof(Np);
-    icakey.pOffset =  key - (char *)&icakey;
-    key += sizeof(Np);
-    /*
-     * Nq is copied into the key */
-    bcopy(Nq,key,sizeof(Nq));
-    icakey.qLength = sizeof(Nq);
-    icakey.qOffset =  key - (char *)&icakey;
-    key += sizeof(Nq);
-    /*
-     * U is copied into the key */
-    bcopy(U,key,sizeof(U));
-    icakey.qInvLength = sizeof(U);
-    icakey.qInvOffset =  key - (char *)&icakey;
-    key += sizeof(U);
-
-/*    printf("size of Bp=%d\n",sizeof(Bp));
-    printf("size of Bq=%d\n",sizeof(Bq));
-    printf("size of Np=%d\n",sizeof(Np));
-    printf("size of Nq=%d\n",sizeof(Nq));
-    printf("size of U=%d\n",sizeof(U));
-    printf("size of R=%d\n",sizeof(R));
-
-    printf("icakey  private Key record\n");
-    dump_array(&icakey,sizeof(ICA_KEY_RSA_CRT)); */
-
-
-    length = sizeof(Ciphertext);
-	icakey.modulusBitLength = length * 8;
-	icakey.keyLength = length;
-    if ((i = icaRsaCrt(adapter_handle, sizeof(Ciphertext), Ciphertext,
-                      &icakey, &length, (unsigned char *)my_result2)) != 0) {
-      printf("icaRsaCrt failed and returned %d (0x%x).\n", i, i);
-    }
+     * decrypt with private key
+     */
+    ica_rsa_key_crt_t crt_key = {RSA_BYTE_LENGHT, p, q, dp, dq, qinv};
+    rc = ica_rsa_crt(adapter_handle, ciphertext, &crt_key, my_result2);
+    if(rc)
+    	exit(handle_ica_error(rc, "ica_rsa_crt"));
 
     printf("Result of decrypt\n");
-    dump_array((unsigned char *)my_result2, sizeof(A));
+    dump_array((unsigned char *)my_result2, sizeof(input_data));
     printf("original data\n");
-    dump_array(A, sizeof(A));
-    if( memcmp(A,my_result2,sizeof(A)) != 0) {
+    dump_array(input_data, sizeof(input_data));
+    if( memcmp(input_data,my_result2,sizeof(input_data)) != 0) {
       printf("Results do not match.  Failure!\n");
       return -1;
     } else {
       printf("Results match!\n");
     }
 
-   icaCloseAdapter(adapter_handle);
-
+   rc = ica_open_adapter(&adapter_handle);
+   if (rc != 0) {
+      printf("ica_close_adapter failed and returned %d (0x%x).\n", rc, rc);
+   }
    return 0;
 }
 
