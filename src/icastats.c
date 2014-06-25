@@ -91,7 +91,7 @@ int main(int argc, char *argv[])
 			break;
 		case 'h':
 			print_help(basename(argv[0]));
-			exit(1);
+			exit(0);
 		default:
 			fprintf(stderr,
 				"Try '%s --help' for more information.\n",
@@ -110,7 +110,7 @@ int main(int argc, char *argv[])
 	if (stats_mmap() != 0) {
 		fprintf(stderr, "Could not map shared memory region to local "
 			"address space.");
-		return 1;
+		exit(1);
 	}
 
 	if (reset) {
