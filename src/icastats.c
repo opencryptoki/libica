@@ -125,7 +125,7 @@ int main(int argc, char *argv[])
 		case 'R':
 			if(geteuid() != 0){
 				fprintf(stderr,"You have no rights to reset all shared memory"
-                                	"segments!\n");
+                                	" segments!\n");
 				return EXIT_FAILURE;
 			}
 			reset = 2;
@@ -136,7 +136,7 @@ int main(int argc, char *argv[])
 		case 'D':
                         if(geteuid() != 0){
                                 fprintf(stderr,"You have no rights to delete all shared memory"
-                                        "segments!\n");
+                                        " segments!\n");
                                 return EXIT_FAILURE;
                         }
 
@@ -145,7 +145,7 @@ int main(int argc, char *argv[])
 		case 'U':
 			if((pswd = getpwnam(optarg)) == NULL){
 				fprintf(stderr, "The username %s is not known"
-					"on this system.\n", optarg );
+					" on this system.\n", optarg );
 				return EXIT_FAILURE;
 			}
 			user = pswd->pw_uid;
