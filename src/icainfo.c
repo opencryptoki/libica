@@ -43,14 +43,12 @@ void print_help(char *cmd)
 	    ("Display a list of all CP Assist for Cryptographic Function "
 	     "(CPACF)\noperations supported by libica on this system.\n"
 	     "\n" "Options:\n"
-	     " -q, --quiet    show list of supported operations only\n"
 	     " -v, --version  show version information\n"
 	     " -h, --help     display this help text\n");
 }
 
 #define getopt_string "qvh"
 static struct option getopt_long_options[] = {
-	{"quiet", 0, 0, 'q'},
 	{"version", 0, 0, 'v'},
 	{"help", 0, 0, 'h'},
 	{0, 0, 0, 0}
@@ -169,7 +167,6 @@ int is_crypto_card_loaded()
 
 int main(int argc, char **argv)
 {
-	int quiet = 0;	
 	int rc;
 	int index = 0;
 
@@ -180,9 +177,6 @@ int main(int argc, char **argv)
 	while ((rc = getopt_long(argc, argv, getopt_string,
 				 getopt_long_options, &index)) != -1) {
 		switch (rc) {
-		case 'q':
-			quiet = 1;
-			break;
 		case 'v':
 			print_version();
 			exit(0);
@@ -203,10 +197,8 @@ int main(int argc, char **argv)
 		exit(1);
 	}
 
-	if (!quiet)
-		printf("The following CP Assist for Cryptographic Function "
-		       "(CPACF) \noperations are supported by libica on this "
-		       "system:\n");
+	printf("The following CP Assist for Cryptographic Function (CPACF) \n"
+	       "operations are supported by libica on this system:\n");
 
 	if (ica_get_functionlist(NULL, &mech_len) != 0){
 		perror("get_functionlist: ");
