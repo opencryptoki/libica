@@ -12,19 +12,21 @@
 #include <string.h>
 #include "ica_api.h"
 
-#define NUM_FIPS_TESTS 3
+#define NUM_FIPS_TESTS 4
 
 unsigned char FIPS_TEST_DATA[NUM_FIPS_TESTS][64] = {
-  // Test 0: "abc"
+  // Test 0: NULL
+  { 0x00 },
+  // Test 1: "abc"
   { 0x61,0x62,0x63 },
-  // Test 1: "abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq"
+  // Test 2: "abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq"
   {
 0x61,0x62,0x63,0x64,0x62,0x63,0x64,0x65,0x63,0x64,0x65,0x66,0x64,0x65,0x66,0x67,
 0x65,0x66,0x67,0x68,0x66,0x67,0x68,0x69,0x67,0x68,0x69,0x6a,0x68,0x69,0x6a,0x6b,
 0x69,0x6a,0x6b,0x6c,0x6a,0x6b,0x6c,0x6d,0x6b,0x6c,0x6d,0x6e,0x6c,0x6d,0x6e,0x6f,
 0x6d,0x6e,0x6f,0x70,0x6e,0x6f,0x70,0x71,
   },
-  // Test 2: 1,000,000 'a' -- don't actually use this... see the special case
+  // Test 3: 1,000,000 'a' -- don't actually use this... see the special case
   // in the loop below.
   {
 0x61,
@@ -32,27 +34,34 @@ unsigned char FIPS_TEST_DATA[NUM_FIPS_TESTS][64] = {
 };
 
 unsigned int FIPS_TEST_DATA_SIZE[NUM_FIPS_TESTS] = {
-  // Test 0: "abc"
+  // Test 0: NULL
+  0,
+  // Test 1: "abc"
   3,
-  // Test 1: "abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq"
+  // Test 2: "abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq"
   56,
-  // Test 2: 1,000,000 'a'
+  // Test 3: 1,000,000 'a'
   1000000,
 };
 
 unsigned char FIPS_TEST_RESULT[NUM_FIPS_TESTS][LENGTH_SHA_HASH] =
 {
-  // Hash for test 0: "abc"
+  // Hash for test 0: NULL
+  {
+0xda,0x39,0xa3,0xee,0x5e,0x6b,0x4b,0x0d,0x32,0x55,0xbf,0xef,0x95,0x60,0x18,0x90,
+0xaf,0xd8,0x07,0x09,
+  },
+  // Hash for test 1: "abc"
   {
 0xA9,0x99,0x3E,0x36,0x47,0x06,0x81,0x6A,0xBA,0x3E,0x25,0x71,0x78,0x50,0xC2,0x6C,
 0x9C,0xD0,0xD8,0x9D,
   },
-  // Hash for test 1: "abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq"
+  // Hash for test 2: "abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq"
   {
 0x84,0x98,0x3E,0x44,0x1C,0x3B,0xD2,0x6E,0xBA,0xAE,0x4A,0xA1,0xF9,0x51,0x29,0xE5,
 0xE5,0x46,0x70,0xF1,
   },
-  // Hash for test 2: 1,000,000 'a'
+  // Hash for test 3: 1,000,000 'a'
   {
 0x34,0xAA,0x97,0x3C,0xD4,0xC4,0xDA,0xA4,0xF6,0x1E,0xEB,0x2B,0xDB,0xAD,0x27,0x31,
 0x65,0x34,0x01,0x6F,
@@ -104,9 +113,9 @@ int old_api_sha_test(void)
   }
 
   for (i = 0; i < NUM_FIPS_TESTS; i++) {
-    // Test 2 is a special one, because we want to keep the size of the
+    // Test 3 is a special one, because we want to keep the size of the
     // executable down, so we build it special, instead of using a static
-    if (i != 2)
+    if (i != 3)
       memcpy(input_data, FIPS_TEST_DATA[i], FIPS_TEST_DATA_SIZE[i]);
     else
       memset(input_data, 'a', FIPS_TEST_DATA_SIZE[i]);
@@ -147,15 +156,15 @@ int old_api_sha_test(void)
     }
   }
 
-  // This test is the same as test 2, except that we use the SHA_CONTEXT and
+  // This test is the same as test 3, except that we use the SHA_CONTEXT and
   // break it into calls of 1024 bytes each.
-  printf("\nOriginal data for test 2(chunks = 1024) is calls of 1024 'a's at a time\n");
-  i = FIPS_TEST_DATA_SIZE[2];
+  printf("\nOriginal data for test 3(chunks = 1024) is calls of 1024 'a's at a time\n");
+  i = FIPS_TEST_DATA_SIZE[3];
   while (i > 0) {
     unsigned int shaMessagePart;
     memset(input_data, 'a', 1024);
 
-    if (i == FIPS_TEST_DATA_SIZE[2])
+    if (i == FIPS_TEST_DATA_SIZE[3])
       shaMessagePart = SHA_MSG_PART_FIRST;
     else if (i <= 1024)
       shaMessagePart = SHA_MSG_PART_FINAL;
@@ -185,23 +194,23 @@ int old_api_sha_test(void)
     return 2;
   }
 
-  printf("\nOutput hash for test 2(chunks = 1024):\n");
+  printf("\nOutput hash for test 3(chunks = 1024):\n");
   dump_array(output_hash, output_hash_length);
-  if (memcmp(output_hash, FIPS_TEST_RESULT[2], LENGTH_SHA_HASH) != 0) {
+  if (memcmp(output_hash, FIPS_TEST_RESULT[3], LENGTH_SHA_HASH) != 0) {
      printf("This does NOT match the known result.\n");
   } else {
      printf("Yep, it's what it should be.\n");
   }
 
-  // This test is the same as test 2, except that we use the SHA_CONTEXT and
+  // This test is the same as test 3, except that we use the SHA_CONTEXT and
   // break it into calls of 64 bytes each.
-  printf("\nOriginal data for test 2(chunks = 64) is calls of 64 'a's at a time\n");
-  i = FIPS_TEST_DATA_SIZE[2];
+  printf("\nOriginal data for test 3(chunks = 64) is calls of 64 'a's at a time\n");
+  i = FIPS_TEST_DATA_SIZE[3];
   while (i > 0) {
     unsigned int shaMessagePart;
     memset(input_data, 'a', 64);
 
-    if (i == FIPS_TEST_DATA_SIZE[2])
+    if (i == FIPS_TEST_DATA_SIZE[3])
       shaMessagePart = SHA_MSG_PART_FIRST;
     else if (i <= 64)
       shaMessagePart = SHA_MSG_PART_FINAL;
@@ -231,9 +240,9 @@ int old_api_sha_test(void)
     return 2;
   }
 
-  printf("\nOutput hash for test 2(chunks = 64):\n");
+  printf("\nOutput hash for test 3(chunks = 64):\n");
   dump_array(output_hash, output_hash_length);
-  if (memcmp(output_hash, FIPS_TEST_RESULT[2], LENGTH_SHA_HASH) != 0) {
+  if (memcmp(output_hash, FIPS_TEST_RESULT[3], LENGTH_SHA_HASH) != 0) {
      printf("This does NOT match the known result.\n");
   } else {
      printf("Yep, it's what it should be.\n");
@@ -256,9 +265,9 @@ int new_api_sha_test(void)
 	unsigned char output_hash[LENGTH_SHA_HASH];
 
 	for (i = 0; i < NUM_FIPS_TESTS; i++) {
-	// Test 2 is a special one, because we want to keep the size of the
+	// Test 3 is a special one, because we want to keep the size of the
 	// executable down, so we build it special, instead of using a static
-	if (i != 2)
+	if (i != 3)
 		memcpy(input_data, FIPS_TEST_DATA[i], FIPS_TEST_DATA_SIZE[i]);
 	else
 		memset(input_data, 'a', FIPS_TEST_DATA_SIZE[i]);
@@ -282,16 +291,16 @@ int new_api_sha_test(void)
 		printf("Yep, it's what it should be.\n");
 	}
 
-	// This test is the same as test 2, except that we use the SHA_CONTEXT
+	// This test is the same as test 3, except that we use the SHA_CONTEXT
 	// and break it into calls of 1024 bytes each.
-	printf("\nOriginal data for test 2(chunks = 1024) is calls of 1024"
+	printf("\nOriginal data for test 3(chunks = 1024) is calls of 1024"
 	       "'a's at a time\n");
-	i = FIPS_TEST_DATA_SIZE[2];
+	i = FIPS_TEST_DATA_SIZE[3];
 	while (i > 0) {
 		unsigned int sha_message_part;
 		memset(input_data, 'a', 1024);
 
-		if (i == FIPS_TEST_DATA_SIZE[2])
+		if (i == FIPS_TEST_DATA_SIZE[3])
 			sha_message_part = SHA_MSG_PART_FIRST;
 		else if (i <= 1024)
 			sha_message_part = SHA_MSG_PART_FINAL;
@@ -309,23 +318,23 @@ int new_api_sha_test(void)
 		i -= 1024;
 	}
 
-	printf("\nOutput hash for test 2(chunks = 1024):\n");
+	printf("\nOutput hash for test 3(chunks = 1024):\n");
 	dump_array(output_hash, output_hash_length);
-	if (memcmp(output_hash, FIPS_TEST_RESULT[2], LENGTH_SHA_HASH) != 0)
+	if (memcmp(output_hash, FIPS_TEST_RESULT[3], LENGTH_SHA_HASH) != 0)
 		printf("This does NOT match the known result.\n");
 	else
 		printf("Yep, it's what it should be.\n");
 
-	// This test is the same as test 2, except that we use the SHA_CONTEXT
+	// This test is the same as test 3, except that we use the SHA_CONTEXT
 	// and break it into calls of 64 bytes each.
-	printf("\nOriginal data for test 2(chunks = 64) is calls of 64 'a's at"
+	printf("\nOriginal data for test 3(chunks = 64) is calls of 64 'a's at"
 	       "a time\n");
-	i = FIPS_TEST_DATA_SIZE[2];
+	i = FIPS_TEST_DATA_SIZE[3];
 	while (i > 0) {
 		unsigned int sha_message_part;
 		memset(input_data, 'a', 64);
 
-		if (i == FIPS_TEST_DATA_SIZE[2])
+		if (i == FIPS_TEST_DATA_SIZE[3])
 			sha_message_part = SHA_MSG_PART_FIRST;
 		else if (i <= 64)
 			sha_message_part = SHA_MSG_PART_FINAL;
@@ -343,9 +352,9 @@ int new_api_sha_test(void)
 		i -= 64;
 	}
 
-	printf("\nOutput hash for test 2(chunks = 64):\n");
+	printf("\nOutput hash for test 3(chunks = 64):\n");
 	dump_array(output_hash, output_hash_length);
-	if (memcmp(output_hash, FIPS_TEST_RESULT[2], LENGTH_SHA_HASH) != 0)
+	if (memcmp(output_hash, FIPS_TEST_RESULT[3], LENGTH_SHA_HASH) != 0)
 		printf("This does NOT match the known result.\n");
 	else
 	printf("Yep, it's what it should be.\n");
