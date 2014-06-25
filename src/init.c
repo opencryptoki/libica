@@ -95,9 +95,7 @@ void __attribute__ ((constructor)) icainit(void)
 {
 	if(strcmp(program_invocation_name, "icastats")){
 		if(stats_mmap(-1) == -1){
-			syslog(LOG_INFO, "The application failed to save statistic\
-		       			  data to the shared memory segment icastats_%6d.\
-		       			  Giving up on statistics!", geteuid());
+			syslog(LOG_INFO, "failed to create or access shared memory segment.");
 		}
 
 		s390_crypto_switches_init();

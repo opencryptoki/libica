@@ -35,28 +35,28 @@ void print_version(void)
 void print_help(char *cmd)
 {
 	printf("Usage: %s [OPTION]\n\n", cmd);
-	printf("This command is used to indicate whether libica uses hardware or works with\n"
-	       "software fallbacks. It shows also which specific functions of libica are used.\n"
+	printf("This command is used to indicate whether libica uses hardware crypto functions or\n"
+	       "software fallbacks. It provides an overview of the algorithms with modes of operation.\n"
 	       "\n"
 	       "Options:\n"
 	       " -r, --reset         set the own function counters to zero.\n"
-	       " -R, --reset-all     reset the statistsics from all users. (only root user)\n"
+	       " -R, --reset-all     reset the statistsics from all users. (root user only)\n"
 	       " -d, --delete        delete your own statistics.\n"
-	       " -D, --delete-all    delete the statistics from all users. (only allowed for root user)\n"
-	       " -u, --user <userid> show the statistics from one user. (only allowd for root user).\n"
-	       " -S, --summary       show the accumulated statistics from alle users\n"
-	       " -A, --all	     show the statistic tables from all users. Needs root rights\n"
+	       " -D, --delete-all    delete the statistics from all users. (root user only)\n"
+	       " -U, --user <userid> show the statistics from one user. (root user only)\n"
+	       " -S, --summary       show the accumulated statistics from alle users. (root user only)\n"
+	       " -A, --all	     show the statistic tables from all users. (root user only)\n"
 	       " -v, --version       output version information\n"
-	       " -h, --help          display help information for the command\n");
+	       " -h, --help          display help information\n");
 }
 
-#define getopt_string "rRdDu:SAvh"
+#define getopt_string "rRdDU:SAvh"
 static struct option getopt_long_options[] = {
 	{"reset", 0, 0, 'r'},
 	{"reset-all", 0, 0, 'R'},
 	{"delete", 0, 0, 'd'},
 	{"delete-all", 0, 0, 'D'},
-	{"user", required_argument, 0, 'u'},
+	{"user", required_argument, 0, 'U'},
 	{"summary", 0, 0, 'S'},
 	{"all", 0, 0, 'A'},
 	{"version", 0, 0, 'v'},
@@ -76,7 +76,7 @@ void print_stats(stats_entry_t *stats)
 	printf(" function     |          # hardware      |       # software\n");
         printf("--------------+--------------------------+-------------------------\n");
         printf("              |       ENC    CRYPT   DEC |        ENC    CRYPT   DEC\n");
-        printf("--------------|--------------------------|-------------------------\n");
+        printf("--------------+--------------------------+-------------------------\n");
         unsigned int i;
         for (i = 0; i < ICA_NUM_STATS; ++i){
         	if(i<=ICA_STATS_RSA_CRT){
@@ -142,7 +142,7 @@ int main(int argc, char *argv[])
 
 			delete = 2;
 			break;
-		case 'u':
+		case 'U':
 			if((pswd = getpwnam(optarg)) == NULL){
 				fprintf(stderr, "The username %s is not known"
 					"on this system.\n", optarg );
@@ -235,7 +235,7 @@ int main(int argc, char *argv[])
 	/* Need to open shm before it can be reseted */
 	if (stats_mmap(user)) {
 		fprintf(stderr, "Could not map shared memory region to local "
-			"address space.");
+			"address space.\n");
 		return EXIT_FAILURE;
 	}
 
