@@ -232,7 +232,7 @@ void check_icastats(int algo_id, char *stat)
 
 	hw = check_hw(algo_id);
 	
- 	sprintf(awk, "icastats | awk -e '{ if($0~\"%s\") if(NR>12) print $%d,$%d;\
+	sprintf(awk, "icastats | awk '{ if($0~\"%s\") if(NR>12) print $%d,$%d;\
 					   else print $%d,-1\
 					 }'",
 		stat, hw?4:7, hw?5:8, hw?3:5);
