@@ -20,7 +20,6 @@
 #include <ctype.h>
 #include <getopt.h>
 #include <pwd.h>
-#include <errno.h>
 #include <libgen.h>
 #include "icastats.h"
 
@@ -201,10 +200,6 @@ int main(int argc, char *argv[])
 			printf("user: %s\n", usr);
 			print_stats(entries);
 			free(entries);
-		}
-		if (errno != 0){
-			perror("get_next_usr: ");
-			return EXIT_FAILURE;
 		}
 		return EXIT_SUCCESS;
 	}		
