@@ -74,13 +74,13 @@ Here is a sample output:
 .P
 For each cryptographic function the table shows the number of invocations
 where hardware support was involved or the libica fall back implementation
-in software was used. For the cipering methods the invocation counter is
+in software was used. For the ciphering methods the invocation counter is
 further divided into encrypt and decrypt operation counter values.
 .P
 All the counter values are stored and maintained in one shared memory page
 for each user. This memory area is created automatically with the first run
-of icastats and persists until it is explicit removed (see the -d option)
-or system shutdown. This also means that the statistical data shown with
+of icastats and persists until it is explicitly removed (see the -d option)
+or system shut down. This also means that the statistical data shown with
 icastats is on a per user base and only the root user is able to see and
 maintain the collection of statistic data from libica at system scope.
 .SH OPTIONS
@@ -94,7 +94,7 @@ zero (only root user)
 .IP "-r or --reset"
 reset the statistic data for the current user to zero
 .IP "-D or --delete-all"
-delete all shared memory segments from all users which have a icastats shared
+delete all shared memory segments from all users who have an icastats shared
 memory segment (only root user)
 .IP "-d or --delete"
 delete the libica shared memory area for the current user
@@ -106,7 +106,7 @@ show libica statistic data for each user in the system where a shared
 memory area exists in one table accumulating all the per user counter
 values (only root user)
 .IP "-U <username> or --user <username>"
-show statistic values from the give user (only root user)
+show statistic values from the given user (only root user)
 .SH FILES
 .nf
 /shm/dev/icastats_<userid>
