@@ -148,7 +148,7 @@ inline int s390_aes_ecb(unsigned int fc, unsigned long data_length,
 	stats_increment(ICA_STATS_AES_ECB,
 			hardware,
 			(s390_kmc_functions[fc].hw_fc &
-                         S390_CRYPTO_DIRECTION_MASK) == 0 ?
+			S390_CRYPTO_DIRECTION_MASK) == 0 ?
 			ENCRYPT:DECRYPT);
 	return rc;
 }
@@ -159,7 +159,7 @@ inline int s390_aes_cbc(unsigned int fc, unsigned long data_length,
 {
 	int rc = 1;
 	int hardware = ALGO_HW;
-	
+
 	if (*s390_kmc_functions[fc].enabled)
 		rc = s390_aes_cbc_hw(s390_kmc_functions[fc].hw_fc,
 				     data_length, in_data, iv, key,
@@ -172,7 +172,7 @@ inline int s390_aes_cbc(unsigned int fc, unsigned long data_length,
 	}
 	stats_increment(ICA_STATS_AES_CBC,
 			hardware, (s390_kmc_functions[fc].hw_fc &
-                         S390_CRYPTO_DIRECTION_MASK) == 0 ?ENCRYPT:DECRYPT);
+			S390_CRYPTO_DIRECTION_MASK) == 0 ?ENCRYPT:DECRYPT);
 	return rc;
 }
 
@@ -215,6 +215,7 @@ static inline int __s390_aes_cfb(unsigned int fc, unsigned long data_length,
 {
 	int rc = 1;
 	int hardware = ALGO_HW;
+
 	if (*s390_msa4_functions[fc].enabled)
 		rc = s390_aes_cfb_hw(s390_msa4_functions[fc].hw_fc,
 				     data_length, in_data, iv, key,
@@ -224,10 +225,10 @@ static inline int __s390_aes_cfb(unsigned int fc, unsigned long data_length,
 		return EPERM;
 	}
 
-        stats_increment(ICA_STATS_AES_CFB, hardware,
-                        (s390_kmc_functions[fc].hw_fc &
-                         S390_CRYPTO_DIRECTION_MASK) == 0 ?
-                        ENCRYPT:DECRYPT);
+	stats_increment(ICA_STATS_AES_CFB, hardware,
+			(s390_kmc_functions[fc].hw_fc &
+			S390_CRYPTO_DIRECTION_MASK) == 0 ?
+			ENCRYPT:DECRYPT);
 
 	return rc;
 }
@@ -259,7 +260,7 @@ inline int s390_aes_cfb(unsigned int fc, unsigned long data_length,
 		memcpy(rest_in_data, in_data + tmp_data_length,
 		       rest_data_length);
 
-		rc = __s390_aes_cfb(fc, rest_data_length,
+		rc = __s390_aes_cfb(fc, AES_BLOCK_SIZE,
 				    rest_in_data,
 				    iv, key, rest_out_data, lcfb);
 		if (rc)
@@ -321,10 +322,10 @@ static inline int __s390_aes_ofb(unsigned int fc, unsigned long input_length,
 		return rc;
 	}
 
-        stats_increment(ICA_STATS_AES_OFB, hardware,
-                        (s390_kmc_functions[fc].hw_fc &
-                         S390_CRYPTO_DIRECTION_MASK) == 0 ?
-                        ENCRYPT:DECRYPT);
+	stats_increment(ICA_STATS_AES_OFB, hardware,
+			(s390_kmc_functions[fc].hw_fc &
+			S390_CRYPTO_DIRECTION_MASK) == 0 ?
+			ENCRYPT:DECRYPT);
 	return rc;
 }
 
@@ -570,8 +571,8 @@ inline int s390_aes_xts(unsigned int fc, unsigned long data_length,
 	}
 
 	stats_increment(ICA_STATS_AES_XTS, hardware,
-                        (s390_kmc_functions[fc].hw_fc &
-                         S390_CRYPTO_DIRECTION_MASK) == 0 ?
-                        ENCRYPT:DECRYPT);
+			(s390_kmc_functions[fc].hw_fc &
+			S390_CRYPTO_DIRECTION_MASK) == 0 ?
+			ENCRYPT:DECRYPT);
 	return rc;
 }
