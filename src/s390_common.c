@@ -22,19 +22,7 @@
 #include "s390_crypto.h"
 #include "s390_aes.h"
 #include "s390_des.h"
-#include "s390_aux.h"
 #include "s390_common.h"
-
-typedef struct {
-	u_int64_t upper_half;
-	u_int64_t lower_half;
-} ctr128_t;
-
-static inline void __inc(ctr128_t *ctr)
-{
-	if (!(++(ctr->lower_half)))
-		(ctr->upper_half)++;
-}
 
 void ctr_inc_block(unsigned char *iv, unsigned int block_size,
 		   unsigned int ctr_width, unsigned char *ctrlist,
@@ -83,22 +71,5 @@ void ctr_inc_single(unsigned char *iv, unsigned int block_size,
 	// update iv for chaining
 	memcpy_r_allign(iv, block_size, (void *)&tmp_ctr, sizeof(tmp_ctr), ctr_byte_width);
 }
-
-inline void memcpy_r_allign(void *dest, int dest_bs,
-			    void *src, int src_bs, int size)
-{
-	memcpy(dest + (dest_bs - size), src + (src_bs - size), size);
-}
-
-inline void block_xor(unsigned char dest[],
-		      unsigned char a[], unsigned char b[],
-		      unsigned int length)
-{
-	unsigned int i;
-	for (i = 0; i < length; i++) {
-		dest[i] = a[i] ^ b[i];
-	}
-}
-
 
 

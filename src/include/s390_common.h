@@ -9,6 +9,7 @@
  *
  * Copyright IBM Corp. 2011
  */
+#include <sys/types.h>
 
 #ifndef S390_COMMON_H
 #define S390_COMMON_H
@@ -22,12 +23,31 @@ void ctr_inc_block(unsigned char *iv, unsigned int block_size,
 void ctr_inc_single(unsigned char *iv, unsigned int block_size,
 		    unsigned int ctr_width);
 
-inline void memcpy_r_allign(void *dest, int dest_bs,
-		     void *src, int src_bs, int size);
+static inline void memcpy_r_allign(void *dest, int dest_bs,
+			    void *src, int src_bs, int size)
+{
+	memcpy(dest + (dest_bs - size), src + (src_bs - size), size);
+}
 
-inline void block_xor(unsigned char dest[],
+static inline void block_xor(unsigned char dest[],
 		      unsigned char a[], unsigned char b[],
-		      unsigned int length);
+		      unsigned int length)
+{
+	unsigned int i;
+	for (i = 0; i < length; i++) {
+		dest[i] = a[i] ^ b[i];
+	}
+}
 
+typedef struct {
+	u_int64_t upper_half;
+	u_int64_t lower_half;
+} ctr128_t;
+
+static inline void __inc(ctr128_t *ctr)
+{
+	if (!(++(ctr->lower_half)))
+		(ctr->upper_half)++;
+}
 #endif /* S390_COMMON_H */
 

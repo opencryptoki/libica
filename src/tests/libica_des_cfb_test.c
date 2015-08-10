@@ -156,7 +156,6 @@ int main(int argc, char **argv)
 	int error_count = 0;
 	int iteration;
 	unsigned int silent = 0;
-	unsigned int endless = 0;
 	unsigned int rdata;
 	unsigned int data_length = 1;
 	unsigned int lcfb = 1;
@@ -165,13 +164,10 @@ int main(int argc, char **argv)
 	if (argc > 1) {
 		if (strstr(argv[1], "silent"))
 			silent = 1;
-		if (strstr(argv[1], "endless"))
-			endless = 1;
 	}
 
 	for(iteration = 1; iteration <= NR_RANDOM_TESTS; iteration++)	{
 		for (j = 1; j <= 2; j++) {
-			int silent = 1;
 			if (!(data_length % lcfb)) {
 				rc = random_des_cfb(iteration, silent, data_length, lcfb);
 				if (rc) {

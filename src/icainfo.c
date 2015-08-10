@@ -61,11 +61,11 @@ struct crypt_pair {
 };
 
 static struct crypt_pair crypt_map[] = {
-	{"SHA-1", SHA1},
-        {"SHA-224", SHA224},
-        {"SHA-256", SHA256},
-        {"SHA-384", SHA384},
-        {"SHA-512", SHA512},
+	{"SHA-1", SHA__1},
+        {"SHA-224", SHA__224},
+        {"SHA-256", SHA__256},
+        {"SHA-384", SHA__384},
+        {"SHA-512", SHA__512},
         {"P_RNG", P_RNG},
         {"RSA ME", RSA_ME},
         {"RSA CRT", RSA_CRT},
@@ -169,9 +169,8 @@ int main(int argc, char **argv)
 {
 	int rc;
 	int index = 0;
-
-    unsigned int mech_len;
-    libica_func_list_element *pmech_list = NULL;
+	unsigned int mech_len;
+	libica_func_list_element *pmech_list = NULL;
 	int flag;	
 
 	while ((rc = getopt_long(argc, argv, getopt_string,

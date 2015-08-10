@@ -54,7 +54,7 @@ void dump_array(unsigned char *ptr, unsigned int size)
 
 int test_aes192_old_api(int mode)
 {
-	ICA_ADAPTER_HANDLE adapter_handle;
+	ICA_ADAPTER_HANDLE adapter_handle = 0;
 	ICA_AES_VECTOR iv;
 	ICA_KEY_AES_LEN192 key;
 	int rc = 0;

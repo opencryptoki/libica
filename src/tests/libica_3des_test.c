@@ -53,7 +53,7 @@ void dump_array(unsigned char *ptr, unsigned int size)
 
 int test_3des_old_api(int mode)
 {
-	ica_adapter_handle_t adapter_handle;
+	ica_adapter_handle_t adapter_handle = 0;
 	ica_des_vector_t iv;
 	ica_des_key_triple_t key;
 	int rc = 0;

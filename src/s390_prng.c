@@ -40,15 +40,19 @@
 
 sem_t semaphore;
 
+
+union zprng_pb_t {
+	unsigned char ch[32];
+	uint64_t uint;
+};
+
 /*
  * Parameter block for the KMC(PRNG) instruction.
  */
-unsigned char zPRNG_PB[32] = {
-	0x0F, 0x2B, 0x8E, 0x63, 0x8C, 0x8E, 0xD2, 0x52, 0x64, 0xB7, 0xA0, 0x7B,
-	0x75, 0x28, 0xB8, 0xF4,
-	0x75, 0x5F, 0xD2, 0xA6, 0x8D, 0x97, 0x11, 0xFF, 0x49, 0xD8, 0x23, 0xF3,
-	0x7E, 0x21, 0xEC, 0xA0,
-};
+union zprng_pb_t zPRNG_PB = {{0x0F, 0x2B, 0x8E, 0x63, 0x8C, 0x8E, 0xD2, 0x52,
+			      0x64, 0xB7, 0xA0, 0x7B, 0x75, 0x28, 0xB8, 0xF4,
+			      0x75, 0x5F, 0xD2, 0xA6, 0x8D, 0x97, 0x11, 0xFF,
+			      0x49, 0xD8, 0x23, 0xF3, 0x7E, 0x21, 0xEC, 0xA0}};
 
 unsigned int s390_prng_limit = 4096;
 unsigned long s390_byte_count;
@@ -70,6 +74,7 @@ int s390_prng_init(void)
 	int rc = -1;
 	int handle;
 	unsigned char seed[16];
+
 	handle = open("/dev/hwrng", O_RDONLY);
 	if (!handle)
 		handle = open("/dev/urandom", O_RDONLY);
@@ -111,13 +116,13 @@ static int s390_add_entropy(void)
 		    (s390_stck(entropy + 1 * STCK_BUFFER)) ||
 		    (s390_stck(entropy + 2 * STCK_BUFFER)) ||
 		    (s390_stck(entropy + 3 * STCK_BUFFER)) ||
-		    (s390_kmc(0x43, zPRNG_PB, entropy, entropy,
-		     sizeof(entropy)) < 0)) {
+		    (s390_kmc(0x43, zPRNG_PB.ch, entropy, entropy, 
+			      sizeof(entropy)) < 0)) {
 			rc = -1;
 			goto out;
 		}
 		rc = 0;
-		memcpy(zPRNG_PB, entropy, sizeof(zPRNG_PB));
+		memcpy(zPRNG_PB.ch, entropy, sizeof(zPRNG_PB.ch));
 	}
 	int handle;
 	unsigned char seed[32];
@@ -128,11 +133,11 @@ static int s390_add_entropy(void)
         if (handle > 0) {
 		rc = read(handle, seed, sizeof(seed));
 		if (rc != -1)
-			rc = s390_kmc(0x43, zPRNG_PB, seed, seed,
+			rc = s390_kmc(0x43, zPRNG_PB.ch, seed, seed,
 				      sizeof(seed));
 		close(handle);
 		if (rc >= 0)
-			memcpy(zPRNG_PB, seed, sizeof(seed));
+			memcpy(zPRNG_PB.ch, seed, sizeof(seed));
 	}
 out:
 	if (rc >= 0)
@@ -203,7 +208,7 @@ static int s390_prng_hw(unsigned char *random_bytes, unsigned int num_bytes)
 			rc = s390_stck(random_bytes + i * STCK_BUFFER);
 		}
 		if (!rc) {
-			rc = s390_kmc(S390_CRYPTO_PRNG, zPRNG_PB, random_bytes,
+			rc = s390_kmc(S390_CRYPTO_PRNG, zPRNG_PB.ch, random_bytes,
 				      random_bytes, num_bytes);
 			if (rc > 0) {
 				s390_byte_count += rc;
@@ -215,7 +220,7 @@ static int s390_prng_hw(unsigned char *random_bytes, unsigned int num_bytes)
 		if (!rc && remainder) {
 			rc = s390_stck(last_dw);
 			if (!rc) {
-				rc = s390_kmc(S390_CRYPTO_PRNG, zPRNG_PB, last_dw,
+				rc = s390_kmc(S390_CRYPTO_PRNG, zPRNG_PB.ch, last_dw,
 					      last_dw, STCK_BUFFER);
 				if (rc > 0) {
 					s390_byte_count += rc;
@@ -243,19 +248,18 @@ static int s390_prng_hw(unsigned char *random_bytes, unsigned int num_bytes)
 static int s390_prng_seed(void *srv, unsigned int count)
 {
 	int rc = -1;
+	unsigned int i;
+
 	if (!prng_switch)
 		return ENOTSUP;
 
-	unsigned int i;
-
 	// Add entropy using the source randomization value.
 	for (i = 0; i < count; i++) {
-		*((uint64_t *) zPRNG_PB) ^= *((uint64_t *) srv + i * 8);
+		zPRNG_PB.uint ^= *((uint64_t *) srv + i * 8);
 		if ((rc = s390_add_entropy()))
 			break;
 	}
 	// Stir one last time.
 	rc = s390_add_entropy();
-
 	return rc;
 }

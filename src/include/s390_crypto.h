@@ -132,27 +132,319 @@ s390_supported_function_t s390_kmc_functions[PRNG + 1];
 s390_supported_function_t s390_msa4_functions[AES_256_XTS_DECRYPT + 1];
 s390_supported_function_t s390_kimd_functions[GHASH + 1];
 
-int s390_kimd(unsigned long func, void *param, const unsigned char *src,
-	      long src_len);
-int s390_klmd(unsigned long func, void *param, const unsigned char *src,
-	      long src_len);
-int s390_km(unsigned long func, void *param, unsigned char *dest,
-	    const unsigned char *src, long src_len);
-int s390_kmctr(unsigned long func, void *param, unsigned char *dest,
-	       unsigned char *src, long src_len, unsigned char *counter);
-int s390_kmc(unsigned long func, void *param, unsigned char *dest,
-	     const unsigned char *src, long src_len);
-int s390_kmo(unsigned long func, void *param, unsigned char *dest,
-	     const unsigned char *src, long src_len);
-int s390_kmf(unsigned long func, void *param, unsigned char *dest,
-	     const unsigned char *src, long src_len, unsigned int *lcfb);
-int s390_kmac(unsigned long func, void *param, const unsigned char *src,
-	      long src_len);
-int s390_stck(void *buf);
 void s390_crypto_switches_init(void);
-inline int s390_pcc(unsigned long func, void *param);
-int s390_initialize_functionlist(void);
-int s390_get_functionlist(libica_func_list_element *pmech_list, 
-                                      unsigned int *pmech_list_len);
+
+/**
+ * s390_pcc:
+ * @func: the function code passed to KM; see s390_kmc_func
+ * @param: address of parameter block; see POP for details on each func
+ *
+ * Executes the PCC operation of the CPU.
+ *
+ * Returns -1 for failure, 0 for the query func, number of processed
+ * bytes for encryption/decryption funcs
+ */
+static inline int s390_pcc(unsigned long func, void *param)
+{
+	register long __func asm("0") = func;
+	register void *__param asm("1") = param;
+
+	asm volatile (
+		"0: .long 0xb92c0000 \n"
+		"	brc	1, 0b \n"
+		:
+		: "d"(__func), "a"(__param)
+		: "cc", "memory");
+	return 0;
+}
+
+/**
+ * s390_kmac:
+ * @func: the function code passed to KMAC; see s390_kmac_func
+ * @param: address of parameter block; see POP for details on each func
+ * @src: address of source memory area
+ * @src_len: length of src operand in bytes
+ *
+ * Executes the KMAC (COMPUTE MESSAGE AUTHENTICATION CODE) operation of the CPU.
+ *
+ * Returns -1 for failure, 0 for the query func, number of processed
+ * bytes for encryption/decryption funcs
+ */
+static inline int s390_kmac(unsigned long func, void *param,
+                    const unsigned char *src, long src_len)
+{
+	register long __func asm("0") = func;
+	register void *__param asm("1") = param;
+	register const unsigned char *__src asm("2") = src;
+	register long __src_len asm("3") = src_len;
+
+	asm volatile (
+		"0:     .insn   rre, 0xb91e0000,%0,%0 \n"
+		"       brc     1, 0b \n"
+		: "+a"(__src), "+d"(__src_len)
+		: "d"(__func), "a"(__param)
+		: "cc", "memory");
+	return func ? src_len - __src_len : __src_len;
+}
+
+/**
+ * s390_kmctr:
+ * @func: the function code passed to KMCTR; see s390_km_func
+ * @param: address of parameter block; see POP for details on each func
+ * @dest: address of destination memory area
+ * @src: address of source memory area
+ * @src_len: length of src operand in bytes
+ *
+ * Executes the KMCTR (CIPHER MESSAGE WITH COUNTER) operation of the CPU.
+ *
+ * Returns -1 for failure, 0 for the query func, number of processed
+ * bytes for encryption/decryption funcs
+ */
+static inline int s390_kmctr(unsigned long func, void *param, unsigned char *dest,
+		      const unsigned char *src, long src_len,
+		      unsigned char *counter)
+{
+	register long __func asm("0") = func;
+	register void *__param asm("1") = param;
+	register const unsigned char *__src asm("2") = src;
+	register long __src_len asm("3") = src_len;
+	register unsigned char *__dest asm("4") = dest;
+	register unsigned char *__ctr asm("6") = counter;
+
+	asm volatile(
+		"0:	.insn	rrf,0xb92d0000,%2,%0,%3,0 \n"
+		"1:	brc	1,0b \n"
+		: "+a" (__src), "+d" (__src_len), "+a" (__dest), "+a" (__ctr)
+		: "d" (__func), "a" (__param)
+		: "cc", "memory");
+
+	return func ? src_len - __src_len : __src_len;
+}
+
+/**
+ * s390_kmf:
+ * @func: the function code passed to KMF; see s390_kmf_func
+ * @param: address of parameter block; see POP for details on each func
+ * @dest: address of destination memory area
+ * @src: address of source memory area
+ * @src_len: length of src operand in bytes
+ *
+ * Executes the KMF (CIPHER MESSAGE) operation of the CPU.
+ *
+ * Returns -1 for failure, 0 for the query func, number of processed
+ * bytes for encryption/decryption funcs
+ */
+static inline int s390_kmf(unsigned long func, void *param, unsigned char *dest,
+		   const unsigned char *src, long src_len, unsigned int *lcfb)
+{
+	register long __func asm("0") = ((*lcfb & 0x000000ff) << 24) | func;
+	register void *__param asm("1") = param;
+	register const unsigned char *__src asm("2") = src;
+	register long __src_len asm("3") = src_len;
+	register unsigned char *__dest asm("4") = dest;
+
+	asm volatile (
+		"0:	.insn	rre,0xb92a0000,%2,%0 \n"
+		"	brc	1,0b \n"
+		: "+a"(__src), "+d"(__src_len), "+a"(__dest)
+		: "d"(__func), "a"(__param)
+		: "cc", "memory");
+
+	return func ? src_len - __src_len : __src_len;
+}
+
+/**
+ * s390_kmo:
+ * @func: the function code passed to KMO; see s390_kmc_func
+ * @param: address of parameter block; see POP for details on each func
+ * @dest: address of destination memory area
+ * @src: address of source memory area
+ * @src_len: length of src operand in bytes
+ *
+ * Executes the KMO (CIPHER MESSAGE WITH CHAINING) operation of the CPU.
+ *
+ * Returns -1 for failure, 0 for the query func, number of processed
+ * bytes for encryption/decryption funcs
+ */
+static inline int s390_kmo(unsigned long func, void *param, unsigned char *dest,
+		    const unsigned char *src, long src_len)
+{
+	register long __func asm("0") = func;
+	register void *__param asm("1") = param;
+	register const unsigned char *__src asm("2") = src;
+	register long __src_len asm("3") = src_len;
+	register unsigned char *__dest asm("4") = dest;
+
+	asm volatile (
+		"0:	.insn	rre, 0xb92b0000,%2,%0 \n"
+		"	brc	1, 0b \n"
+		: "+a"(__src), "+d"(__src_len), "+a"(__dest)
+		: "d"(__func), "a"(__param)
+		: "cc", "memory");
+
+	return func ? src_len - __src_len : __src_len;
+}
+
+/**
+ * s390_km:
+ * @func: the function code passed to KM; see s390_km_func
+ * @param: address of parameter block; see POP for details on each func
+ * @dest: address of destination memory area
+ * @src: address of source memory area
+ * @src_len: length of src operand in bytes
+ *
+ * Executes the KM (CIPHER MESSAGE) operation of the CPU.
+ *
+ * Returns -1 for failure, 0 for the query func, number of processed
+ * bytes for encryption/decryption funcs
+ */
+static inline int s390_km(unsigned long func, void *param, unsigned char *dest,
+		   const unsigned char *src, long src_len)
+{
+	register long __func asm("0") = func;
+	register void *__param asm("1") = param;
+	register const unsigned char *__src asm("2") = src;
+	register long __src_len asm("3") = src_len;
+	register unsigned char *__dest asm("4") = dest;
+
+	asm volatile (
+		"0:	.insn	rre,0xb92e0000,%2,%0 \n"	/* KM opcode */
+		"	brc	1,0b \n"	/* handle partial completion */
+		: "+a"(__src), "+d"(__src_len), "+a"(__dest)
+		: "d"(__func), "a"(__param)
+		: "cc", "memory");
+
+	return func ? src_len - __src_len : __src_len;
+}
+
+/**
+ * s390_kmc:
+ * @func: the function code passed to KM; see s390_kmc_func
+ * @param: address of parameter block; see POP for details on each func
+ * @dest: address of destination memory area
+ * @src: address of source memory area
+ * @src_len: length of src operand in bytes
+ *
+ * Executes the KMC (CIPHER MESSAGE WITH CHAINING) operation of the CPU.
+ *
+ * Returns -1 for failure, 0 for the query func, number of processed
+ * bytes for encryption/decryption funcs
+ */
+static inline int s390_kmc(unsigned long func, void *param, unsigned char *dest,
+		    const unsigned char *src, long src_len)
+{
+	register long __func asm("0") = func;
+	register void *__param asm("1") = param;
+	register const unsigned char *__src asm("2") = src;
+	register long __src_len asm("3") = src_len;
+	register unsigned char *__dest asm("4") = dest;
+
+	asm volatile (
+		"0:	.insn	rre, 0xb92f0000,%2,%0 \n"	/* KMC opcode */
+		"	brc	1, 0b \n"	/* handle partial completion */
+		: "+a"(__src), "+d"(__src_len), "+a"(__dest)
+		: "d"(__func), "a"(__param)
+		: "cc", "memory");
+
+	return func ? src_len - __src_len : __src_len;
+}
+
+/**
+ * s390_kimd:
+ * @func: the function code passed to KM; see s390_kimd_func
+ * @param: address of parameter block; see POP for details on each func
+ * @src: address of source memory area
+ * @src_len: length of src operand in bytes
+ *
+ * Executes the KIMD (COMPUTE INTERMEDIATE MESSAGE DIGEST) operation
+ * of the CPU.
+ *
+ * Returns -1 for failure, 0 for the query func, number of processed
+ * bytes for digest funcs
+ */
+static inline int s390_kimd(unsigned long func, void *param,
+		     const unsigned char *src, long src_len)
+{
+	register long __func asm("0") = func;
+	register void *__param asm("1") = param;
+	register const unsigned char *__src asm("2") = src;
+	register long __src_len asm("3") = src_len;
+
+	asm volatile (
+		"0:	.insn	rre,0xb93e0000,%0,%0 \n"	/* KIMD opcode */
+		"	brc	1,0b \n"	/* handle partial completion */
+		: "+a"(__src), "+d"(__src_len)
+		: "d"(__func), "a"(__param)
+		: "cc", "memory");
+
+	return func ? src_len - __src_len : __src_len;
+}
+
+/**
+ * s390_klmd:
+ * @func: the function code passed to KM; see s390_klmd_func
+ * @param: address of parameter block; see POP for details on each func
+ * @src: address of source memory area
+ * @src_len: length of src operand in bytes
+ *
+ * Executes the KLMD (COMPUTE LAST MESSAGE DIGEST) operation of the CPU.
+ *
+ * Returns -1 for failure, 0 for the query func, number of processed
+ * bytes for digest funcs
+ */
+static inline int s390_klmd(unsigned long func, void *param, const unsigned char *src,
+		     long src_len)
+{
+	register long __func asm("0") = func;
+	register void *__param asm("1") = param;
+	register const unsigned char *__src asm("2") = src;
+	register long __src_len asm("3") = src_len;
+
+	asm volatile (
+		"0:	.insn	rre,0xb93f0000,%0,%0 \n" /* KLMD opcode */
+		"	brc	1,0b \n"	/* handle partial completion */
+		: "+a"(__src), "+d"(__src_len)
+		: "d"(__func), "a"(__param)
+		: "cc", "memory");
+
+	return func ? src_len - __src_len : __src_len;
+}
+
+static inline int s390_stckf_hw(void *buf)
+{
+	register int cc = 0;
+
+	asm volatile(".insn     s,0xb27c0000,%0"
+		     : "=Q" (*((unsigned long long *)buf)) : : "cc");
+	return cc;
+}
+
+static inline int s390_stcke_hw(void *buf)
+{
+	register int cc = 0;
+
+	asm volatile(".insn     s,0xb2780000,%0"
+		     : "=Q" (*((unsigned long long *)buf)) : : "cc");
+	return cc;
+}
+
+static inline int s390_stck(void *buf)
+{
+#ifdef _LINUX_S390X_
+	return s390_stckf_hw(buf);
+#endif
+	return s390_stcke_hw(buf);
+}
+
+static inline int __stfle(unsigned long long *list, int doublewords)
+{
+        typedef struct { unsigned long long _[doublewords]; } addrtype;
+        register unsigned long __nr asm("0") = doublewords - 1;
+
+        asm volatile(".insn s,0xb2b00000,%0" /* stfle */
+                     : "=m" (*(addrtype *) list), "+d" (__nr) : : "cc");
+        return __nr + 1;
+}
+
 #endif
 

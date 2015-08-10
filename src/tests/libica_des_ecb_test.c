@@ -141,7 +141,6 @@ int main(int argc, char **argv)
 	int iteration;
 	unsigned int data_length = sizeof(ica_des_vector_t);
 	for(iteration = 1; iteration <= NR_RANDOM_TESTS; iteration++)	{
-		int silent = 1;
 		rc = random_des_ecb(iteration, silent, data_length);
 		if (rc) {
 			printf("random_des_ecb failed with rc = %i\n", rc);

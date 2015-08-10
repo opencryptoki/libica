@@ -1,0 +1,41 @@
+#!/bin/bash
+
+# Libica test suite
+#
+# Test output will be stored in suite.out
+#
+
+./icastats_test > ./suite.out
+./libica_3des_cbc_test silent >> ./suite.out
+./libica_3des_cfb_test silent >> ./suite.out
+./libica_3des_ctr_test silent >> ./suite.out
+./libica_3des_ecb_test silent >> ./suite.out
+./libica_3des_ofb_test silent >> ./suite.out
+./libica_3des_test silent >> ./suite.out
+./libica_aes128_test silent >> ./suite.out
+./libica_aes192_test silent >> ./suite.out
+./libica_aes256_test silent >> ./suite.out
+./libica_aes_cbc_test silent >> ./suite.out
+./libica_aes_cfb_test silent >> ./suite.out
+./libica_aes_ctr_test silent >> ./suite.out
+./libica_aes_ecb_test silent >> ./suite.out
+./libica_aes_gcm_test silent >> ./suite.out
+./libica_aes_ofb_test silent >> ./suite.out
+./libica_aes_xts_test silent >> ./suite.out
+./libica_cbccs_test silent >> ./suite.out
+./libica_ccm_test silent >> ./suite.out
+./libica_cmac_test silent >> ./suite.out
+./libica_des_cbc_test silent >> ./suite.out
+./libica_des_cfb_test silent >> ./suite.out
+./libica_des_ctr_test silent >> ./suite.out
+./libica_des_ecb_test silent >> ./suite.out
+./libica_des_ofb_test silent >> ./suite.out
+./libica_des_test silent >> ./suite.out
+./libica_get_functionlist >> ./suite.out
+./libica_get_version >> ./suite.out
+./libica_keygen_test >> ./suite.out
+./libica_rng_test >> ./suite.out
+./libica_rsa_test >> ./suite.out
+./libica_sha1_test >> ./suite.out
+./libica_sha256_test >> ./suite.out
+./test_mech_list >> ./suite.out

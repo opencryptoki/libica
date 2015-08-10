@@ -772,12 +772,9 @@ int random_aes_cfb(int iteration, int silent, unsigned int data_length,
 int main(int argc, char **argv)
 {
 	unsigned int silent = 0;
-	unsigned int endless = 0;
 	if (argc > 1) {
 		if (strstr(argv[1], "silent"))
 			silent = 1;
-		if (strstr(argv[1], "endless"))
-			endless = 1;
 	}
 	int rc = 0;
 	int error_count = 0;
@@ -798,7 +795,6 @@ int main(int argc, char **argv)
 	unsigned int rdata;
 	for(iteration = 1; iteration <= NR_RANDOM_TESTS; iteration++)	{
 		for (j = 1; j <= 3; j++) {
-			int silent = 1;
 			if (!(data_length % lcfb)) {
 				rc = random_aes_cfb(iteration, silent, data_length, lcfb);
 				if (rc) {

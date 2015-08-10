@@ -55,7 +55,7 @@ void dump_array(unsigned char *ptr, unsigned int size)
 
 int test_aes256_old_api(int mode)
 {
-	ICA_ADAPTER_HANDLE adapter_handle;
+	ICA_ADAPTER_HANDLE adapter_handle = 0;
 	ICA_AES_VECTOR iv;
 	ICA_KEY_AES_LEN256 key;
 	int rc = 0;
@@ -147,14 +147,12 @@ int test_aes256_new_api(int mode)
 	int rc = 0;
 	unsigned char dec_text[sizeof(NIST_TEST_DATA)],
 		      enc_text[sizeof(NIST_TEST_DATA)];
-	unsigned int i;
 
 	bzero(dec_text, sizeof(dec_text));
 	bzero(enc_text, sizeof(enc_text));
 	bzero(iv, sizeof(iv));
 	bcopy(NIST_KEY3, key, sizeof(NIST_KEY3));
 
-	i = sizeof(enc_text);
 	rc = ica_aes_encrypt(mode, sizeof(NIST_TEST_DATA), NIST_TEST_DATA, &iv,
 			     AES_KEY_LEN256, key, enc_text);
 	if (rc) {

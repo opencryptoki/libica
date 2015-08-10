@@ -448,7 +448,6 @@ unsigned int rsa_crt_sw(ica_rsa_modexpo_crt_t * pCrt)
 	int rc = 0;
 	int long_length = 0;
 	int short_length = 0;
-	int orig_outl;
 	BN_CTX *ctx = NULL;
 
 	
@@ -545,8 +544,6 @@ unsigned int rsa_crt_sw(ica_rsa_modexpo_crt_t * pCrt)
 			     long_length, pCrt->np_prime,
 			     &temp_length, temp, ctx)) != 0)
 		goto err;
-
-	orig_outl = pCrt->outputdatalength;
 
 	if ((rc = mul_sw(temp_length, temp,
 			short_length, pCrt->nq_prime,

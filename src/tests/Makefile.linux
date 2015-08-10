@@ -2,7 +2,7 @@
 #OPTS = -O0 -g -Wall -m31 -D_LINUX_S390_
 OPTS = -O0 -g -Wall -D_LINUX_S390_
 LIBS = -L../.libs
-INCLUDE = -I. -I../../include
+INCLUDE = -I. -I../include -I../../include
 CC = gcc
 
 TARGETS = icastats_test \

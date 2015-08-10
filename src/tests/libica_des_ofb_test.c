@@ -159,7 +159,6 @@ int main(int argc, char **argv)
 	unsigned int rdata;
 	unsigned int data_length = 1;
 	for(iteration = 1; iteration <= NR_RANDOM_TESTS; iteration++)	{
-		int silent = 1;
 		rc = random_des_ofb(iteration, silent, data_length);
 		if (rc) {
 			printf("random_des_ofb failed with rc = %i\n", rc);

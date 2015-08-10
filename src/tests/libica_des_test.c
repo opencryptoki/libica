@@ -49,7 +49,7 @@ void dump_array(unsigned char *ptr, unsigned int size)
 
 int test_des_old_api(int mode)
 {
-	ica_adapter_handle_t adapter_handle;
+	ica_adapter_handle_t adapter_handle = 0;
 	ICA_DES_VECTOR iv;
 	ICA_KEY_DES_SINGLE key;
 	int rc = 0;

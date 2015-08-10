@@ -160,7 +160,6 @@ int main(int argc, char **argv)
 	int iteration;
 	unsigned int data_length = sizeof(ica_des_vector_t);
 	for(iteration = 1; iteration <= NR_RANDOM_TESTS; iteration++)	{
-		int silent = 1;
 		rc = random_3des_cbc(iteration, silent, data_length);
 		if (rc) {
 			printf("random_3des_cbc failed with rc = %i\n", rc);

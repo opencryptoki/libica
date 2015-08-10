@@ -56,7 +56,7 @@ void dump_array(unsigned char *ptr, unsigned int size)
 
 int test_aes128_old_api(int mode)
 {
-	ICA_ADAPTER_HANDLE adapter_handle;
+	ICA_ADAPTER_HANDLE adapter_handle = 0;
 	ICA_AES_VECTOR iv;
 	ICA_KEY_AES_LEN128 key;
 	int rc = 0;
@@ -447,6 +447,7 @@ int main(int argc, char **argv)
 	}
 	int rc = 0;
 	int error_count = 0;
+
 	if (!mode) {
 		silent = 0;
 	/* This is the standard loop that will perform all testcases */

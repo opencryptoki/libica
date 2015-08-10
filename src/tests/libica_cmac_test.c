@@ -132,6 +132,11 @@ unsigned char expected_cmac[12][16] = {{
 	0x05, 0x6c, 0x31, 0x54, 0x10}
 };
 
+unsigned int ica_aes_cmac_chaining(unsigned char *, unsigned long,
+				   unsigned char *, unsigned int,
+				   unsigned char *, unsigned int,
+				   unsigned int);
+
 unsigned int i = 0;
 
 void dump_array(unsigned char *ptr, unsigned int size)

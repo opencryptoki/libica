@@ -161,7 +161,7 @@ static unsigned int check_aes_parms(unsigned int mode,
 static unsigned int check_cmac_parms(unsigned int block_size,
 				     const unsigned char *message, unsigned int message_length,
 				     unsigned char *mac, unsigned int mac_length,
-				     const unsigned char *keys, unsigned int key_length,
+				     unsigned char *keys, unsigned int key_length,
 				     unsigned char *iv)
 {
 
@@ -272,35 +272,6 @@ static unsigned int check_message_part(unsigned int message_part)
 		return EINVAL;
 	else
 		return 0;
-}
-
-static inline unsigned int des_directed_fc(int direction)
-{
-	if (direction)
-		return DEA_ENCRYPT;
-	return DEA_DECRYPT;
-}
-
-static inline unsigned int tdes_directed_fc(int direction)
-{
-	if (direction)
-		return TDEA_192_ENCRYPT;
-	return TDEA_192_DECRYPT;
-}
-
-static inline unsigned int aes_directed_fc(unsigned int key_length, int direction) {
-	switch (key_length) {
-	case AES_KEY_LEN128:
-		return (direction == ICA_DECRYPT) ?
-			AES_128_DECRYPT : AES_128_ENCRYPT;
-	case AES_KEY_LEN192:
-		return (direction == ICA_DECRYPT) ?
-			AES_192_DECRYPT : AES_192_ENCRYPT;
-	case AES_KEY_LEN256:
-		return (direction == ICA_DECRYPT) ?
-			AES_256_DECRYPT : AES_256_ENCRYPT;
-	}
-	return 0;
 }
 
 unsigned int ica_open_adapter(ica_adapter_handle_t *adapter_handle)
@@ -828,7 +799,7 @@ unsigned int ica_aes_decrypt(unsigned int mode,
 }
 
 unsigned int ica_des_ecb(const unsigned char *in_data, unsigned char *out_data,
-			 unsigned long data_length, const unsigned char *key,
+			 unsigned long data_length, unsigned char *key,
 			 unsigned int direction)
 {
 	if (check_des_parms(MODE_ECB, data_length, in_data, NULL, key, out_data))
@@ -839,7 +810,7 @@ unsigned int ica_des_ecb(const unsigned char *in_data, unsigned char *out_data,
 }
 
 unsigned int ica_des_cbc(const unsigned char *in_data, unsigned char *out_data,
-			 unsigned long data_length, const unsigned char *key,
+			 unsigned long data_length, unsigned char *key,
 			 unsigned char *iv,
 			 unsigned int direction)
 {
@@ -852,7 +823,7 @@ unsigned int ica_des_cbc(const unsigned char *in_data, unsigned char *out_data,
 
 unsigned int ica_des_cbc_cs(const unsigned char *in_data, unsigned char *out_data,
 			    unsigned long data_length,
-			    const unsigned char *key, unsigned char *iv,
+			    unsigned char *key, unsigned char *iv,
 			    unsigned int direction, unsigned int variant)
 {
 	if (check_des_parms(MODE_CBCCS, data_length, in_data, iv, key, out_data))
@@ -864,7 +835,7 @@ unsigned int ica_des_cbc_cs(const unsigned char *in_data, unsigned char *out_dat
 }
 
 unsigned int ica_des_cfb(const unsigned char *in_data, unsigned char *out_data,
-			 unsigned long data_length, const unsigned char *key,
+			 unsigned long data_length, unsigned char *key,
 			 unsigned char *iv, unsigned int lcfb,
 			 unsigned int direction)
 {
@@ -879,7 +850,7 @@ unsigned int ica_des_cfb(const unsigned char *in_data, unsigned char *out_data,
 }
 
 unsigned int ica_des_ofb(const unsigned char *in_data, unsigned char *out_data,
-			 unsigned long data_length, const unsigned char *key,
+			 unsigned long data_length, unsigned char *key,
 			 unsigned char *iv, unsigned int direction)
 {
 	if (check_des_parms(MODE_OFB, data_length, in_data, iv, key, out_data))
@@ -891,7 +862,7 @@ unsigned int ica_des_ofb(const unsigned char *in_data, unsigned char *out_data,
 
 unsigned int ica_des_ctr(const unsigned char *in_data, unsigned char *out_data,
 			 unsigned long data_length,
-			 const unsigned char *key,
+			 unsigned char *key,
 			 unsigned char *ctr, unsigned int ctr_width,
 			 unsigned int direction)
 {
@@ -910,7 +881,7 @@ unsigned int ica_des_ctr(const unsigned char *in_data, unsigned char *out_data,
 
 unsigned int ica_des_ctrlist(const unsigned char *in_data, unsigned char *out_data,
 			     unsigned long data_length,
-			     const unsigned char *key,
+			     unsigned char *key,
 			     const unsigned char *ctrlist,
 			     unsigned int direction)
 {
@@ -924,7 +895,7 @@ unsigned int ica_des_ctrlist(const unsigned char *in_data, unsigned char *out_da
 
 unsigned int ica_des_cmac(const unsigned char *message, unsigned long message_length,
 			  unsigned char *mac, unsigned int mac_length,
-			  const unsigned char *key,
+			  unsigned char *key,
 			  unsigned int direction)
 {
 	return ica_des_cmac_last(message, message_length,
@@ -936,7 +907,7 @@ unsigned int ica_des_cmac(const unsigned char *message, unsigned long message_le
 
 unsigned int ica_des_cmac_intermediate(const unsigned char *message,
 				       unsigned long message_length,
-				       const unsigned char *key,
+				       unsigned char *key,
 				       unsigned char *iv)
 {
 	unsigned long function_code;
@@ -962,7 +933,7 @@ unsigned int ica_des_cmac_intermediate(const unsigned char *message,
 
 unsigned int ica_des_cmac_last(const unsigned char *message, unsigned long message_length,
 			       unsigned char *mac, unsigned int mac_length,
-			       const unsigned char *key,
+			       unsigned char *key,
 			       unsigned char *iv,
 			       unsigned int direction)
 {
@@ -1002,7 +973,7 @@ unsigned int ica_des_cmac_last(const unsigned char *message, unsigned long messa
 }
 
 unsigned int ica_3des_ecb(const unsigned char *in_data, unsigned char *out_data,
-			  unsigned long data_length, const unsigned char *key,
+			  unsigned long data_length, unsigned char *key,
 			  unsigned int direction)
 {
 	if (check_des_parms(MODE_ECB, data_length, in_data, NULL, key, out_data))
@@ -1013,7 +984,7 @@ unsigned int ica_3des_ecb(const unsigned char *in_data, unsigned char *out_data,
 }
 
 unsigned int ica_3des_cbc(const unsigned char *in_data, unsigned char *out_data,
-			  unsigned long data_length, const unsigned char *key,
+			  unsigned long data_length, unsigned char *key,
 			  unsigned char *iv,
 			  unsigned int direction)
 {
@@ -1026,7 +997,7 @@ unsigned int ica_3des_cbc(const unsigned char *in_data, unsigned char *out_data,
 
 unsigned int ica_3des_cbc_cs(const unsigned char *in_data, unsigned char *out_data,
 			     unsigned long data_length,
-			     const unsigned char *key, unsigned char *iv,
+			     unsigned char *key, unsigned char *iv,
 			     unsigned int direction, unsigned int variant)
 {
 	if (check_des_parms(MODE_CBCCS, data_length, in_data, iv, key, out_data))
@@ -1038,7 +1009,7 @@ unsigned int ica_3des_cbc_cs(const unsigned char *in_data, unsigned char *out_da
 }
 
 unsigned int ica_3des_cfb(const unsigned char *in_data, unsigned char *out_data,
-			  unsigned long data_length, const unsigned char *key,
+			  unsigned long data_length, unsigned char *key,
 			  unsigned char *iv, unsigned int lcfb,
 			  unsigned int direction)
 {
@@ -1053,7 +1024,7 @@ unsigned int ica_3des_cfb(const unsigned char *in_data, unsigned char *out_data,
 }
 
 unsigned int ica_3des_ofb(const unsigned char *in_data, unsigned char *out_data,
-			  unsigned long data_length, const unsigned char *key,
+			  unsigned long data_length, unsigned char *key,
 			  unsigned char *iv, unsigned int direction)
 {
 	if (check_des_parms(MODE_OFB, data_length, in_data, iv, key, out_data))
@@ -1065,7 +1036,7 @@ unsigned int ica_3des_ofb(const unsigned char *in_data, unsigned char *out_data,
 
 unsigned int ica_3des_ctr(const unsigned char *in_data, unsigned char *out_data,
 			 unsigned long data_length,
-			 const unsigned char *key,
+			 unsigned char *key,
 			 unsigned char *ctr, unsigned int ctr_width,
 			 unsigned int direction)
 {
@@ -1084,7 +1055,7 @@ unsigned int ica_3des_ctr(const unsigned char *in_data, unsigned char *out_data,
 
 unsigned int ica_3des_ctrlist(const unsigned char *in_data, unsigned char *out_data,
 			      unsigned long data_length,
-			      const unsigned char *key,
+			      unsigned char *key,
 			      const unsigned char *ctrlist,
 			      unsigned int direction)
 {
@@ -1098,7 +1069,7 @@ unsigned int ica_3des_ctrlist(const unsigned char *in_data, unsigned char *out_d
 
 unsigned int ica_3des_cmac(const unsigned char *message, unsigned long message_length,
 			   unsigned char *mac, unsigned int mac_length,
-			   const unsigned char *key,
+			   unsigned char *key,
 			   unsigned int direction)
 {
 	return ica_3des_cmac_last(message, message_length,
@@ -1110,7 +1081,7 @@ unsigned int ica_3des_cmac(const unsigned char *message, unsigned long message_l
 
 unsigned int ica_3des_cmac_intermediate(const unsigned char *message,
 					unsigned long message_length,
-					const unsigned char *key,
+					unsigned char *key,
 					unsigned char *iv)
 {
 	unsigned long function_code;
@@ -1136,7 +1107,7 @@ unsigned int ica_3des_cmac_intermediate(const unsigned char *message,
 
 unsigned int ica_3des_cmac_last(const unsigned char *message, unsigned long message_length,
 				unsigned char *mac, unsigned int mac_length,
-				const unsigned char *key,
+				unsigned char *key,
 				unsigned char *iv,
 				unsigned int direction)
 {
@@ -1176,7 +1147,7 @@ unsigned int ica_3des_cmac_last(const unsigned char *message, unsigned long mess
 }
 
 unsigned int ica_aes_ecb(const unsigned char *in_data, unsigned char *out_data,
-			 unsigned long data_length, const unsigned char *key,
+			 unsigned long data_length, unsigned char *key,
 			 unsigned int key_length,
 			 unsigned int direction)
 {
@@ -1190,7 +1161,7 @@ unsigned int ica_aes_ecb(const unsigned char *in_data, unsigned char *out_data,
 }
 
 unsigned int ica_aes_cbc(const unsigned char *in_data, unsigned char *out_data,
-			 unsigned long data_length, const unsigned char *key,
+			 unsigned long data_length, unsigned char *key,
 			 unsigned int key_length, unsigned char *iv,
 			 unsigned int direction)
 {
@@ -1205,7 +1176,7 @@ unsigned int ica_aes_cbc(const unsigned char *in_data, unsigned char *out_data,
 
 unsigned int ica_aes_cbc_cs(const unsigned char *in_data, unsigned char *out_data,
 			    unsigned long data_length,
-			    const unsigned char *key, unsigned int key_length,
+			    unsigned char *key, unsigned int key_length,
 			    unsigned char *iv,
 			    unsigned int direction, unsigned int variant)
 {
@@ -1220,7 +1191,7 @@ unsigned int ica_aes_cbc_cs(const unsigned char *in_data, unsigned char *out_dat
 }
 
 unsigned int ica_aes_cfb(const unsigned char *in_data, unsigned char *out_data,
-			 unsigned long data_length, const unsigned char *key,
+			 unsigned long data_length, unsigned char *key,
 			 unsigned int key_length, unsigned char *iv, unsigned int lcfb,
 			 unsigned int direction)
 {
@@ -1238,7 +1209,7 @@ unsigned int ica_aes_cfb(const unsigned char *in_data, unsigned char *out_data,
 }
 
 unsigned int ica_aes_ofb(const unsigned char *in_data, unsigned char *out_data,
-			 unsigned long data_length, const unsigned char *key,
+			 unsigned long data_length, unsigned char *key,
 			 unsigned int key_length, unsigned char *iv,
 			 unsigned int direction)
 {
@@ -1254,7 +1225,7 @@ unsigned int ica_aes_ofb(const unsigned char *in_data, unsigned char *out_data,
 
 unsigned int ica_aes_ctr(const unsigned char *in_data, unsigned char *out_data,
 			 unsigned long data_length,
-			 const unsigned char *key, unsigned int key_length,
+			 unsigned char *key, unsigned int key_length,
 			 unsigned char *ctr, unsigned int ctr_width,
 			 unsigned int direction)
 {
@@ -1277,7 +1248,7 @@ unsigned int ica_aes_ctr(const unsigned char *in_data, unsigned char *out_data,
 
 unsigned int ica_aes_ctrlist(const unsigned char *in_data, unsigned char *out_data,
 			     unsigned long data_length,
-			     const unsigned char *key, unsigned int key_length,
+			     unsigned char *key, unsigned int key_length,
 			     const unsigned char *ctrlist,
 			     unsigned int direction)
 {
@@ -1293,7 +1264,7 @@ unsigned int ica_aes_ctrlist(const unsigned char *in_data, unsigned char *out_da
 
 unsigned int ica_aes_xts(const unsigned char *in_data, unsigned char *out_data,
 			 unsigned long data_length,
-			 const unsigned char *key1, const unsigned char *key2,
+			 unsigned char *key1, unsigned char *key2,
 			 unsigned int key_length, unsigned char *tweak,
 			 unsigned int direction)
 {
@@ -1325,7 +1296,7 @@ unsigned int ica_aes_xts(const unsigned char *in_data, unsigned char *out_data,
 
 unsigned int ica_aes_cmac(const unsigned char *message, unsigned long message_length,
 			  unsigned char *mac, unsigned int mac_length,
-			  const unsigned char *key, unsigned int key_length,
+			  unsigned char *key, unsigned int key_length,
 			  unsigned int direction)
 {
 	return ica_aes_cmac_last(message, message_length,
@@ -1337,7 +1308,7 @@ unsigned int ica_aes_cmac(const unsigned char *message, unsigned long message_le
 
 unsigned int ica_aes_cmac_intermediate(const unsigned char *message,
 				       unsigned long message_length,
-				       const unsigned char *key, unsigned int key_length,
+				       unsigned char *key, unsigned int key_length,
 				       unsigned char *iv)
 {
 	unsigned long function_code;
@@ -1363,7 +1334,7 @@ unsigned int ica_aes_cmac_intermediate(const unsigned char *message,
 
 unsigned int ica_aes_cmac_last(const unsigned char *message, unsigned long message_length,
 			       unsigned char *mac, unsigned int mac_length,
-			       const unsigned char *key, unsigned int key_length,
+			       unsigned char *key, unsigned int key_length,
 			       unsigned char *iv,
 			       unsigned int direction)
 {
@@ -1406,7 +1377,7 @@ unsigned int ica_aes_ccm(unsigned char *payload, unsigned long payload_length,
 			 unsigned char *ciphertext_n_mac, unsigned int mac_length,
 			 const unsigned char *assoc_data, unsigned long assoc_data_length,
 			 const unsigned char *nonce, unsigned int nonce_length,
-			 const unsigned char *key, unsigned int key_length,
+			 unsigned char *key, unsigned int key_length,
 			 unsigned int direction)
 {
 	unsigned char tmp_mac[AES_BLOCK_SIZE];
@@ -1453,7 +1424,7 @@ unsigned int ica_aes_gcm(unsigned char *plaintext, unsigned long plaintext_lengt
 			 const unsigned char *iv, unsigned int iv_length,
 			 const unsigned char *aad, unsigned long aad_length,
 			 unsigned char *tag, unsigned int tag_length,
-			 const unsigned char *key, unsigned int key_length,
+			 unsigned char *key, unsigned int key_length,
 			 unsigned int direction)
 {
 	unsigned char tmp_tag[AES_BLOCK_SIZE];

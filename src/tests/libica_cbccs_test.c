@@ -190,6 +190,13 @@ void dump_array(char *ptr, int size)
 	printf("\n");
 }
 
+int compare_decrypt_result_with_expected_result(
+			unsigned char *, unsigned char *,
+			unsigned int, unsigned char *,
+			unsigned int, unsigned char *,
+			unsigned int, char *,
+			unsigned int);
+
 inline int compare_decrypt_result_with_expected_result(
 	unsigned char * decrypt_out,
 	unsigned char * expected_result,
