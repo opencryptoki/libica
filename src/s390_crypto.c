@@ -189,11 +189,11 @@ void s390_crypto_switches_init(void)
  * The last filed represent the property flags
  */
 libica_func_list_element_int icaList[] = {
- {SHA__1,   KIMD, SHA_1  		, ICA_FLAG_SW, 0},
- {SHA__224, KIMD, SHA_256		, ICA_FLAG_SW, 0},
- {SHA__256, KIMD, SHA_256		, ICA_FLAG_SW, 0},
- {SHA__384, KIMD, SHA_512		, ICA_FLAG_SW, 0},
- {SHA__512, KIMD, SHA_512		, ICA_FLAG_SW, 0},
+ {SHA1,   KIMD, SHA_1  		, ICA_FLAG_SW, 0},
+ {SHA224, KIMD, SHA_256		, ICA_FLAG_SW, 0},
+ {SHA256, KIMD, SHA_256		, ICA_FLAG_SW, 0},
+ {SHA384, KIMD, SHA_512		, ICA_FLAG_SW, 0},
+ {SHA512, KIMD, SHA_512		, ICA_FLAG_SW, 0},
 
  {DES_ECB,      KMC,  DEA_ENCRYPT, ICA_FLAG_SW, 0},
  {DES_CBC,      KMC,  DEA_ENCRYPT, ICA_FLAG_SW, 0},

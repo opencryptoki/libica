@@ -511,35 +511,35 @@ void sha_tests()
 		      plain_data, &sha_context0, hash);
         if(rc)
                 exit(handle_ica_error(rc, "ica_sha1"));
-	check_icastats(SHA__1, "SHA-1");	
+	check_icastats(SHA1, "SHA-1");
 
 	system("icastats -r");
         rc = ica_sha224(SHA_MSG_PART_ONLY, DATA_LENGHT, 
 			plain_data, &sha_context1, hash);
         if(rc)
                 exit(handle_ica_error(rc, "ica_sha224"));
-	check_icastats(SHA__224, "SHA-224");
+	check_icastats(SHA224, "SHA-224");
 
 	system("icastats -r");
         rc = ica_sha256(SHA_MSG_PART_ONLY, DATA_LENGHT,
 			plain_data, &sha_context1, hash);
         if(rc)
                 exit(handle_ica_error(rc, "ica_sha256"));
-	check_icastats(SHA__256, "SHA-256");	
+	check_icastats(SHA256, "SHA-256");
 
 	system("icastats -r");
         rc = ica_sha384(SHA_MSG_PART_ONLY, DATA_LENGHT,
 			plain_data, &sha_context2, hash);
         if(rc)
                 exit(handle_ica_error(rc, "ica_sha384"));
-	check_icastats(SHA__384, "SHA-384");
+	check_icastats(SHA384, "SHA-384");
 
 	system("icastats -r");
         rc = ica_sha512(SHA_MSG_PART_ONLY, DATA_LENGHT,
 			plain_data, &sha_context2, hash);
         if(rc)
                 exit(handle_ica_error(rc, "ica_sha512"));  
-	check_icastats(SHA__512, "SHA-512");      
+	check_icastats(SHA512, "SHA-512");
 }
 
 void rsa_tests(ica_adapter_handle_t handle)
