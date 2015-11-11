@@ -44,6 +44,8 @@ static unsigned int mod_expo_sw(int arg_length, char *arg, int exp_length,
 RSA* rsa_key_generate(unsigned int modulus_bit_length,
 		      unsigned long *public_exponent)
 {
+	BN_GENCB cb;
+
 	if (*public_exponent == 0)
 	{
 		do {
@@ -51,7 +53,27 @@ RSA* rsa_key_generate(unsigned int modulus_bit_length,
 				  sizeof(unsigned long));
 		} while (*public_exponent <= 2 || !(*public_exponent % 2));
 	}
-	return RSA_generate_key(modulus_bit_length, *public_exponent, NULL, NULL);
+
+	BIGNUM *exp = BN_new();
+	RSA *rsa = RSA_new();
+
+	if (!exp || !rsa) {
+		if (exp)
+			BN_free(exp);
+		if (rsa)
+			RSA_free(rsa);
+		return 0;
+	}
+
+	BN_set_word(exp, *public_exponent);
+	BN_GENCB_set_old(&cb, NULL, NULL);
+
+	if (RSA_generate_key_ex(rsa, modulus_bit_length, exp, &cb)) {
+		BN_free(exp);
+		return rsa;
+	}
+
+	return 0;
 }
 
 /**
