@@ -154,13 +154,13 @@ unsigned int rsa_key_generate_crt(ica_adapter_handle_t deviceHandle,
 		offset = 0;
 	BN_bn2bin(rsa->n, public_key->modulus + offset);
 
-	memset(private_key->p, 0, private_key->key_length / 2 + 8);
-	memset(private_key->q, 0, private_key->key_length / 2);
-	memset(private_key->dp, 0, private_key->key_length / 2 + 8);
-	memset(private_key->dq, 0, private_key->key_length / 2);
-	memset(private_key->qInverse, 0, private_key->key_length / 2 + 8);
+	memset(private_key->p, 0, (private_key->key_length+1) / 2 + 8);
+	memset(private_key->q, 0, (private_key->key_length+1) / 2);
+	memset(private_key->dp, 0, (private_key->key_length+1) / 2 + 8);
+	memset(private_key->dq, 0, (private_key->key_length+1) / 2);
+	memset(private_key->qInverse, 0, (private_key->key_length+1) / 2 + 8);
 
-	unsigned int key_part_length = private_key->key_length / 2;
+	unsigned int key_part_length = (private_key->key_length+1) / 2;
 
 	/* We add the "+8" because it is a requirement by the crypto adapters
 	 * to have an 8 byte zero pad in the beginning of the fields for:
@@ -452,7 +452,7 @@ unsigned int rsa_crt_sw(ica_rsa_modexpo_crt_t * pCrt)
 
 	
 
-	short_length = pCrt->inputdatalength / 2;
+	short_length = (pCrt->inputdatalength+1) / 2;
 	long_length = short_length + 8;
 /*	
 	Use variable buffer length. Earlier version contained fixed 136byte
