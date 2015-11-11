@@ -11,58 +11,59 @@
 icainfo \- show information about cryptographic functions supported by libica
 .SH SYNOPSIS
 .B icainfo
-[-v | --version] [-h | --help] [--quiet | -q]
+[-v | --version] [-h | --help]
 .SH DESCRIPTION
 .B icainfo
 displays all the cryptographic algorithms and modes of operation supported by
 libica together with implementation details about software and hardware support.
 .P
 .nf
- function   |    # hardware     |     # software
-------------+-------------------+----------------
-  SHA-1     |        yes        |          yes
-  SHA-224   |        yes        |          yes
-  SHA-256   |        yes        |          yes
-  SHA-384   |        yes        |          yes
-  SHA-512   |        yes        |          yes
-  PRNG      |        yes        |          yes
-  RSA ME    |        yes        |          yes
-  RSA CRT   |        yes        |          yes
-  DES ECB   |        yes        |          yes
-  DES CBC   |        yes        |          yes
- DES CBC CS |        yes        |          yes
-  DES OFB   |        yes        |          yes
-  DES CTR   |        yes        |          yes
- DES CTR LS |        yes        |          yes
-DES CBC MAC |        yes        |          yes
-  DES CMAC  |        yes        |          yes
- 3DES ECB   |        yes        |          yes
- 3DES CBC   |        yes        |          yes
-3DES CBC CS |        yes        |          yes
- 3DES OFB   |        yes        |          yes
- 3DES CFB   |        yes        |          yes
- 3DES CTR   |        yes        |          yes
-3DES CTRLST |        yes        |          yes
-3DES CBC MAC|        yes        |          yes
-  3DES CMAC |        yes        |          yes
-  AES ECB   |        yes        |          yes
-  AES CBC   |        yes        |          yes
- AEC CBC CS |        yes        |          yes
-  AES OFB   |        yes        |          yes
-  AES CFB   |        yes        |          yes
-  AES CTR   |        yes        |          yes
- AES CTRLST |        yes        |          yes
-AES CBC MAC |        yes        |          yes
-  AES CMAC  |        yes        |          yes
-  AES CCM   |        yes        |          yes
+ function    |    # hardware     |     # software
+-------------+-------------------+----------------
+       SHA-1 |        yes        |         yes
+     SHA-224 |        yes        |         yes
+     SHA-256 |        yes        |         yes
+     SHA-384 |        yes        |         yes
+     SHA-512 |        yes        |         yes
+        PRNG |        yes        |         yes
+      RSA ME |        yes        |         yes
+     RSA CRT |        yes        |         yes
+     DES ECB |        yes        |         yes
+     DES CBC |        yes        |         yes
+  DES CBC CS |        yes        |          no
+     DES OFB |        yes        |          no
+     DES CFB |        yes        |          no
+     DES CTR |        yes        |          no
+  DES CTRLST |        yes        |          no
+ DES CBC MAC |        yes        |          no
+    DES CMAC |        yes        |          no
+    3DES ECB |        yes        |         yes
+    3DES CBC |        yes        |         yes
+ 3DES CBC CS |        yes        |          no
+    3DES OFB |        yes        |          no
+    3DES CFB |        yes        |          no
+    3DES CTR |        yes        |          no
+ 3DES CTRLST |        yes        |          no
+3DES CBC MAC |        yes        |          no
+   3DES CMAC |        yes        |          no
+     AES ECB |        yes        |         yes
+     AES CBC |        yes        |         yes
+  AES CBC CS |        yes        |          no
+     AES OFB |        yes        |          no
+     AES CFB |        yes        |          no
+     AES CTR |        yes        |          no
+  AES CTRLST |        yes        |          no
+ AES CBC MAC |        yes        |          no
+    AES CMAC |        yes        |          no
+     AES CCM |        yes        |          no
+     AES GCM |        yes        |          no
+     AES XTS |        yes        |          no
 .fi
 .SH OPTIONS
 .IP "-v or --version"
 show libica version and copyright
 .IP "-h or --help"
 display this help and exit
-.IP "-q or --quiet"
-list table with algorithms, modes and software/hardware support
 .SH RETURN VALUE
 .IP 1
 unknown or invalid argument on invocation
