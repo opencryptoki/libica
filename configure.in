@@ -23,11 +23,12 @@ AC_PROG_LIBTOOL
 # Checks for header files.
 AC_HEADER_STDC
 AC_CHECK_HEADERS([fcntl.h memory.h stdlib.h string.h strings.h sys/ioctl.h unistd.h \
-		  errno.h stdio.h pthread.h semaphore.h openssl/sha.h openssl/aes.h \
-		  openssl/rand.h openssl/rsa.h linux/types.h sys/ioctl.h])
+		  errno.h stdio.h pthread.h semaphore.h linux/types.h sys/ioctl.h])
 case "$target" in
      *s390*)
-          AC_CHECK_HEADERS(openssl/des.h)
+          AC_CHECK_HEADERS([openssl/bn.h openssl/rsa.h openssl/rand.h \
+				openssl/sha.h openssl/aes.h openssl/des.h],,
+				AC_MSG_ERROR(openssl-devel package required))
           ;;
      *)
           AC_CHECK_HEADER(linux/icaioctl.h, ,
