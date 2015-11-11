@@ -95,7 +95,8 @@ void __attribute__ ((constructor)) icainit(void)
 {
 	if(strcmp(program_invocation_name, "icastats")){
 		if(stats_mmap(-1) == -1){
-			syslog(LOG_INFO, "failed to create or access shared memory segment.");
+			syslog(LOG_INFO,
+			  "Failed to access shared memory segment for libica statistics.");
 		}
 
 		s390_crypto_switches_init();
