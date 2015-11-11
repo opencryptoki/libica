@@ -31,7 +31,6 @@
 ***************************************************************************/
 
 #include <stdint.h>
-#include "s390_crypto.h"
 
 #define ica_adapter_handle_t int
 typedef ica_adapter_handle_t ICA_ADAPTER_HANDLE;
@@ -313,6 +312,26 @@ typedef unsigned char ICA_KEY_RSA_MODEXPO_REC[MAX_MODEXP_SIZE];
  *
  *
  */
+
+typedef enum {
+	DEA_ENCRYPT,
+	DEA_DECRYPT,
+	TDEA_192_ENCRYPT,
+	TDEA_192_DECRYPT,
+	AES_128_ENCRYPT,
+	AES_128_DECRYPT,
+	AES_192_ENCRYPT,
+	AES_192_DECRYPT,
+	AES_256_ENCRYPT,
+	AES_256_DECRYPT,
+/* XTS belongs to the KM family */
+	AES_128_XTS_ENCRYPT,
+	AES_128_XTS_DECRYPT,
+	AES_256_XTS_ENCRYPT,
+	AES_256_XTS_DECRYPT,
+/* PRNG only for KMC */
+	PRNG,
+} kmc_functions_t;
 
 /**
  * @deprecated
