@@ -47,14 +47,14 @@ int main(int argc, char **argv)
 			silent = 1;
 	}
 
-   rc = icaOpenAdapter(0, &adapter_handle);
+   rc = ica_open_adapter(&adapter_handle);
    if (rc != 0) {
-      printf("icaOpenAdapter failed and returned %d (0x%x).\n", rc, rc);
+      printf("ica_open_adapter failed and returned %d (0x%x).\n", rc, rc);
    }
 
-	rc = icaRandomNumberGenerate(adapter_handle, sizeof R, R);
+	rc = ica_random_number_generate(sizeof R, R);
 	if (rc != 0) {
-		printf("icaRandomNumberGenerate failed and returned %d (0x%x).\n", rc, rc);
+		printf("ica_random_number_generate failed and returned %d (0x%x).\n", rc, rc);
 #ifdef __s390__
 		if (rc == ENODEV)
 			printf("The usual cause of this on zSeries is that the CPACF instruction is not available.\n");
@@ -67,7 +67,7 @@ int main(int argc, char **argv)
 		printf("\nWell, does it look random?\n\n");
 	}
 
-	icaCloseAdapter(adapter_handle);
+	ica_close_adapter(adapter_handle);
 	printf("All DES-OFB testcases finished successfully\n");
 	return 0;
 }

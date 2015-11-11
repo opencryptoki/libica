@@ -16,14 +16,11 @@
 
 queue_t queue;
 
-static void test_sha(test_t * test, int (*sha_old_api) (test_t *),
-		     int (*sha_new_api) (test_t *));
-
 int main(int argc, char *argv[])
 {
 	test_t *curr_test;
 	FILE *test_data;
-	int i, first = 1;
+	int i, rc, first = 1;
 
 	queue = new_queue_t();
 
@@ -66,37 +63,43 @@ int main(int argc, char *argv[])
 		case SHA1:
 			if (!silent)
 				printf("SHA1 ...\n");
-			test_sha(curr_test, sha1_old_api_test,
-				 sha1_new_api_test);
+			rc = sha1_new_api_test(curr_test);
 			break;
 		case SHA224:
 			if (!silent)
 				printf("SHA224 ...\n");
-			test_sha(curr_test, sha224_old_api_test,
-				 sha224_new_api_test);
+			rc = sha224_new_api_test(curr_test);
 			break;
 		case SHA256:
 			if (!silent)
 				printf("SHA256 ...\n");
-			test_sha(curr_test, sha256_old_api_test,
-				 sha256_new_api_test);
+			rc = sha256_new_api_test(curr_test);
 			break;
 		case SHA384:
 			if (!silent)
 				printf("SHA384 ...\n");
-			test_sha(curr_test, sha384_old_api_test,
-				 sha384_new_api_test);
+			rc = sha384_new_api_test(curr_test);
 			break;
 		case SHA512:
 			if (!silent)
 				printf("SHA512 ...\n");
-			test_sha(curr_test, sha512_old_api_test,
-				 sha512_new_api_test);
+			rc = sha512_new_api_test(curr_test);
 			break;
 		default:
 			CRITICAL_ERROR("Unknown algorithm.\n");
+			rc = -1;
 			break;
 		}
+		if (!rc) {
+			if (!silent)
+				printf("... Passed.\n");
+			queue.passed++;
+		}
+		else {
+			printf("error: (%x).\n", rc);
+			queue.failed++;
+		}
+
 	}
 	if (!silent) {
 		printf("[SHA test case results: tests: %u,  passed: %u, failed: %u]\n",
@@ -109,33 +112,4 @@ int main(int argc, char *argv[])
 			printf("SHA testcases failed\n");
 	}
 	return EXIT_SUCCESS;
-}
-
-static void test_sha(test_t * test, int (*sha_old_api_test) (test_t *),
-		     int (*sha_new_api_test) (test_t *))
-{
-	int rc_old_api_test = 0, rc_new_api_test = 0;
-
-	if ((rc_old_api_test = (*sha_old_api_test) (test)) == 0) {
-		if (!silent)
-			printf("OK.\n");
-	}
-	else
-		printf("error: (%d).\n", rc_old_api_test);
-
-	if ((rc_new_api_test = (*sha_new_api_test) (test)) == 0) {
-		if (!silent)
-			printf("OK.\n");
-	}
-	else
-		printf("error: (%d).\n", rc_new_api_test);
-
-	if ((rc_old_api_test == 0) && (rc_new_api_test == 0)) {
-		if (!silent)
-			printf("... done. test passed.\n\n");
-		queue.passed++;
-	} else {
-		printf("... done. test failed.\n\n");
-		queue.failed++;
-	}
 }

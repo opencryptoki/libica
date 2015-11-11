@@ -10,63 +10,6 @@
 
 static void dump_array(unsigned char *ptr, unsigned int size);
 
-int sha1_old_api_test(test_t * test)
-{
-	ICA_ADAPTER_HANDLE adapter_handle;
-	SHA_CONTEXT ShaContext;
-	int rc = 0;
-	unsigned int output_length = LENGTH_SHA_HASH;
-	unsigned char output[LENGTH_SHA_HASH];
-
-	if (test->msg_digest_length != LENGTH_SHA_HASH)
-		CRITICAL_ERROR("this shouldn't happen.");
-
-	rc = (int)icaOpenAdapter(0, &adapter_handle);
-	if (rc != 0) {
-		printf("icaOpenAdapter failed and returned %d (0x%x).\n", rc,
-		       (unsigned int)rc);
-#ifdef __s390__
-		if (rc == ENODEV)
-			printf
-			    ("the usual cause of this on zSeries is that the CPACF instruction is not available.\n");
-#endif
-
-		return 2;
-	}
-
-	rc = (int)icaSha1(adapter_handle, SHA_MSG_PART_ONLY, test->msg_length,
-			  test->msg, (unsigned int)LENGTH_SHA_CONTEXT,
-			  &ShaContext, &output_length, output);
-	if (rc != 0) {
-		printf("icaSha1 failed with errno %d (0x%x).\n", rc,
-		       (unsigned int)rc);
-#ifdef __s390__
-		if (rc == ENODEV)
-			printf
-			    ("the usual cause of this on zSeries is that the CPACF instruction is not available.\n");
-#endif
-		return 2;
-	}
-
-	if (output_length != LENGTH_SHA_HASH) {
-		printf
-		    ("icaSha1 returned an incorrect output data length, %u (0x%x).\n",
-		     output_length, (unsigned int)output_length);
-		return 2;
-	}
-
-	if (!silent) {
-		printf("message digest (old api)\n");
-		dump_array(output, LENGTH_SHA_HASH);
-	}
-	if (memcmp(output, test->msg_digest, LENGTH_SHA_HASH) != 0) {
-		printf("output is not what it should be.\n");
-		return 2;
-	}
-
-	return 0;
-}
-
 int sha1_new_api_test(test_t * test)
 {
 
@@ -98,64 +41,6 @@ int sha1_new_api_test(test_t * test)
 	return 0;
 }
 
-int sha224_old_api_test(test_t * test)
-{
-	ICA_ADAPTER_HANDLE adapter_handle;
-	SHA256_CONTEXT Sha256Context;
-	int rc = 0;
-	unsigned int output_length = LENGTH_SHA224_HASH;
-	unsigned char output[LENGTH_SHA224_HASH];
-
-	if (test->msg_digest_length != LENGTH_SHA224_HASH)
-		CRITICAL_ERROR("this shouldn't happen.");
-
-	rc = (int)icaOpenAdapter(0, &adapter_handle);
-	if (rc != 0) {
-		printf("icaOpenAdapter failed and returned %d (0x%x).\n",
-		       rc, (unsigned int)rc);
-#ifdef __s390__
-		if (rc == ENODEV)
-			printf
-			    ("the usual cause of this on zSeries is that the CPACF instruction is not available.\n");
-#endif
-		return 2;
-	}
-
-	rc = (int)icaSha224(adapter_handle, SHA_MSG_PART_ONLY,
-			    test->msg_length, test->msg,
-			    (unsigned int)LENGTH_SHA256_CONTEXT,
-			    &Sha256Context, &output_length, output);
-
-	if (rc != 0) {
-		printf("icaSha224 failed with errno %d (0x%x).\n", rc,
-		       (unsigned int)rc);
-#ifdef __s390__
-		if (rc == ENODEV)
-			printf
-			    ("the usual cause of this on zSeries is that the CPACF instruction is not available.\n");
-#endif
-		return 2;
-	}
-
-	if (output_length != LENGTH_SHA224_HASH) {
-		printf
-		    ("icaSha224 returned an incorrect output data length, %u (0x%x).\n",
-		     output_length, output_length);
-		return 2;
-	}
-
-	if (!silent) {
-		printf("message digest (old api)\n");
-		dump_array(output, LENGTH_SHA224_HASH);
-	}
-	if (memcmp(output, test->msg_digest, LENGTH_SHA224_HASH) != 0) {
-		printf("output is not what it should be.\n");
-		return 2;
-	}
-
-	return 0;
-}
-
 int sha224_new_api_test(test_t * test)
 {
 	sha256_context_t sha256_context;
@@ -179,65 +64,6 @@ int sha224_new_api_test(test_t * test)
 		dump_array(output, LENGTH_SHA224_HASH);
 	}
 	if (memcmp(output, test->msg_digest, LENGTH_SHA224_HASH) != 0) {
-		printf("output is not what it should be.\n");
-		return 2;
-	}
-
-	return 0;
-}
-
-int sha256_old_api_test(test_t * test)
-{
-	ICA_ADAPTER_HANDLE adapter_handle;
-	SHA256_CONTEXT Sha256Context;
-	int rc = 0;
-	unsigned int output_length = LENGTH_SHA256_HASH;
-	unsigned char output[LENGTH_SHA256_HASH];
-
-	if (test->msg_digest_length != LENGTH_SHA256_HASH)
-		CRITICAL_ERROR("this shouldn't happen.");
-
-	rc = (int)icaOpenAdapter(0, &adapter_handle);
-	if (rc != 0) {
-		printf("icaOpenAdapter failed and returned %d (0x%x).\n",
-		       rc, (unsigned int)rc);
-#ifdef __s390__
-		if (rc == ENODEV)
-			printf
-			    ("the usual cause of this on zSeries is that the CPACF instruction is not available.\n");
-#endif
-		return 2;
-	}
-
-	rc = (int)icaSha256(adapter_handle, SHA_MSG_PART_ONLY,
-			    test->msg_length, test->msg,
-			    (unsigned int)LENGTH_SHA256_CONTEXT,
-			    &Sha256Context, &output_length, output);
-
-	if (rc != 0) {
-		printf("icaSha256 failed with errno %d (0x%x).\n", rc,
-		       (unsigned int)rc);
-#ifdef __s390__
-		if (rc == ENODEV)
-			printf
-			    ("the usual cause of this on zSeries is that the CPACF instruction is not available.\n");
-#endif
-
-		return 2;
-	}
-
-	if (output_length != LENGTH_SHA256_HASH) {
-		printf
-		    ("icaSha256 returned an incorrect output data length, %u (0x%x).\n",
-		     output_length, output_length);
-		return 2;
-	}
-
-	if (!silent) {
-		printf("message digest (old api)\n");
-		dump_array(output, LENGTH_SHA256_HASH);
-	}
-	if (memcmp(output, test->msg_digest, LENGTH_SHA256_HASH) != 0) {
 		printf("output is not what it should be.\n");
 		return 2;
 	}
@@ -275,65 +101,6 @@ int sha256_new_api_test(test_t * test)
 	return 0;
 }
 
-int sha384_old_api_test(test_t * test)
-{
-	ICA_ADAPTER_HANDLE adapter_handle;
-	SHA512_CONTEXT Sha512Context;
-	int rc = 0;
-	unsigned int output_length = LENGTH_SHA384_HASH;
-	unsigned char output[LENGTH_SHA384_HASH];
-
-	if (test->msg_digest_length != LENGTH_SHA384_HASH)
-		CRITICAL_ERROR("this shouldn't happen.");
-
-	rc = (int)icaOpenAdapter(0, &adapter_handle);
-	if (rc != 0) {
-		printf("icaOpenAdapter failed and returned %d (0x%x).\n",
-		       rc, (unsigned int)rc);
-#ifdef __s390__
-		if (rc == ENODEV)
-			printf
-			    ("the usual cause of this on zSeries is that the CPACF instruction is not available.\n");
-#endif
-		return 2;
-	}
-
-	rc = (int)icaSha384(adapter_handle, SHA_MSG_PART_ONLY,
-			    test->msg_length, test->msg,
-			    (unsigned int)LENGTH_SHA512_CONTEXT,
-			    &Sha512Context, &output_length, output);
-
-	if (rc != 0) {
-		printf("icaSha384 failed with errno %d (0x%x).\n", rc,
-		       (unsigned int)rc);
-#ifdef __s390__
-		if (rc == ENODEV)
-			printf
-			    ("the usual cause of this on zSeries is that the CPACF instruction is not available.\n");
-#endif
-
-		return 2;
-	}
-
-	if (output_length != LENGTH_SHA384_HASH) {
-		printf
-		    ("icaSha384 returned an incorrect output data length, %u (0x%x).\n",
-		     output_length, output_length);
-		return 2;
-	}
-
-	if (!silent) {
-		printf("message digest (old api)\n");
-		dump_array(output, LENGTH_SHA384_HASH);
-	}
-	if (memcmp(output, test->msg_digest, LENGTH_SHA384_HASH) != 0) {
-		printf("output is not what it should be.\n");
-		return 2;
-	}
-
-	return 0;
-}
-
 int sha384_new_api_test(test_t * test)
 {
 	sha512_context_t sha512_context;
@@ -357,65 +124,6 @@ int sha384_new_api_test(test_t * test)
 		dump_array(output, LENGTH_SHA384_HASH);
 	}
 	if (memcmp(output, test->msg_digest, LENGTH_SHA384_HASH) != 0) {
-		printf("output is not what it should be.\n");
-		return 2;
-	}
-
-	return 0;
-}
-
-int sha512_old_api_test(test_t * test)
-{
-	ICA_ADAPTER_HANDLE adapter_handle;
-	SHA512_CONTEXT Sha512Context;
-	int rc = 0;
-	unsigned int output_length = LENGTH_SHA512_HASH;
-	unsigned char output[LENGTH_SHA512_HASH];
-
-	if (test->msg_digest_length != LENGTH_SHA512_HASH)
-		CRITICAL_ERROR("this shouldn't happen.");
-
-	rc = (int)icaOpenAdapter(0, &adapter_handle);
-	if (rc != 0) {
-		printf("icaOpenAdapter failed and returned %d (0x%x).\n",
-		       rc, (unsigned int)rc);
-#ifdef __s390__
-		if (rc == ENODEV)
-			printf
-			    ("the usual cause of this on zSeries is that the CPACF instruction is not available.\n");
-#endif
-		return 2;
-	}
-
-	rc = (int)icaSha512(adapter_handle, SHA_MSG_PART_ONLY,
-			    test->msg_length, test->msg,
-			    (unsigned int)LENGTH_SHA512_CONTEXT,
-			    &Sha512Context, &output_length, output);
-
-	if (rc != 0) {
-		printf("icaSha512 failed with errno %d (0x%x).\n", rc,
-		       (unsigned int)rc);
-#ifdef __s390__
-		if (rc == ENODEV)
-			printf
-			    ("the usual cause of this on zSeries is that the CPACF instruction is not available.\n");
-#endif
-
-		return 2;
-	}
-
-	if (output_length != LENGTH_SHA512_HASH) {
-		printf
-		    ("icaSha512 returned an incorrect output data length, %u (0x%x).\n",
-		     output_length, output_length);
-		return 2;
-	}
-
-	if (!silent) {
-		printf("message digest (old api)\n");
-		dump_array(output, LENGTH_SHA512_HASH);
-	}
-	if (memcmp(output, test->msg_digest, LENGTH_SHA512_HASH) != 0) {
 		printf("output is not what it should be.\n");
 		return 2;
 	}
