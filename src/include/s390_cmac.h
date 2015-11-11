@@ -73,8 +73,6 @@ static inline unsigned int fc_block_size(unsigned int fc)
 
 static inline void _stats_increment(unsigned int fc, int hw, int direction)
 {
-	int hardware = ALGO_HW;
-
 	switch(fc) {
 		case 1:
 		case 9:

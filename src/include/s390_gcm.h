@@ -300,13 +300,10 @@ static inline int s390_gcm(unsigned int function_code,
 	unsigned char tmp_ctr[AES_BLOCK_SIZE];
 	/* temporary tag must be of size cipher block size */
 	unsigned char tmp_tag[AES_BLOCK_SIZE];
-	unsigned int hardware;
 	unsigned int rc;
 
 	if (!msa4_switch)
 		return EPERM;
-
-	hardware = ALGO_HW;
 
 	/* calculate subkey H */
 	rc = s390_aes_ecb(UNDIRECTED_FC(function_code),
