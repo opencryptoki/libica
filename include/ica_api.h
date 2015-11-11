@@ -117,6 +117,7 @@ typedef ica_adapter_handle_t ICA_ADAPTER_HANDLE;
 #define SHA256          3
 #define SHA384          4
 #define SHA512          5
+#define G_HASH          10
 #define DES_ECB         20
 #define DES_CBC         21
 #define DES_CBC_CS      22

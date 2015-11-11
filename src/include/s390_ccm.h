@@ -295,10 +295,7 @@ static inline unsigned int s390_ccm(unsigned int function_code,
 	unsigned char cipher_ctr[AES_BLOCK_SIZE];
 	unsigned char tag[AES_BLOCK_SIZE];
 	unsigned int ccm_ctr_width;
-	unsigned int hardware;
 	unsigned int rc;
-
-	hardware = ALGO_HW;
 
 	/* compute initial counter */
 	__compute_initial_ctr(nonce, nonce_length, payload_length, initial_ctr);
@@ -317,8 +314,6 @@ static inline unsigned int s390_ccm(unsigned int function_code,
 					  key, cipher_ctr, ccm_ctr_width);
 			if (rc)
 				return rc;
-
-			stats_increment(ICA_STATS_AES_CCM, hardware, DECRYPT);
 		} else {
 			/*encrypt */
 			rc = s390_aes_ctr(UNDIRECTED_FC(function_code),
@@ -326,8 +321,6 @@ static inline unsigned int s390_ccm(unsigned int function_code,
 					  key, cipher_ctr, ccm_ctr_width);
 			if (rc)
 				return rc;
-
-			stats_increment(ICA_STATS_AES_CCM, hardware, ENCRYPT);
 		}
 	}
 

@@ -71,6 +71,34 @@ static inline unsigned int fc_block_size(unsigned int fc)
 	return rc;
 }
 
+static inline void _stats_increment(unsigned int fc, int hw, int direction)
+{
+	int hardware = ALGO_HW;
+
+	switch(fc) {
+		case 1:
+		case 9:
+			stats_increment(ICA_STATS_DES_CMAC, hw, direction);
+			break;
+		case 2:
+		case 3:
+		case 10:
+		case 11:
+			stats_increment(ICA_STATS_3DES_CMAC, hw, direction);
+			break;
+		case 18:
+		case 19:
+		case 20:
+		case 26:
+		case 27:
+		case 28:
+			stats_increment(ICA_STATS_AES_CMAC, hw, direction);
+			break;
+		default:
+			break;
+	}
+}
+
 static inline int s390_cmac_hw(unsigned long fc,
 			const unsigned char *message,
 			unsigned long message_length,
@@ -103,6 +131,8 @@ static inline int s390_cmac_hw(unsigned long fc,
 		if (rc < 0)
 			return rc;
 
+		_stats_increment(fc, ALGO_HW, ENCRYPT);
+
 		/* rescue iv for chained calls (intermediate) */
 		memcpy(iv, pb_lookup.iv, pb_lookup.block_size);
 	} else {
@@ -122,6 +152,7 @@ static inline int s390_cmac_hw(unsigned long fc,
 					memset(pb_lookup.keys, 0, key_size);
 					return EIO;
                                 }
+				_stats_increment(fc, ALGO_HW, ENCRYPT);
 			}
 
 			*pb_lookup.ml = length_tail * 8;	/* message length in bits */
@@ -133,6 +164,7 @@ static inline int s390_cmac_hw(unsigned long fc,
 		if (rc < 0)
 			return EIO;
 
+		_stats_increment(fc, ALGO_HW, ENCRYPT);
 		memcpy(cmac, pb_lookup.iv, cmac_length);
 	}
 
@@ -146,8 +178,6 @@ static inline int s390_cmac(unsigned long fc,
 		     unsigned int  mac_length, unsigned char *mac,
 		     unsigned char *iv)
 {
-/* Statistics (hardwar / software counters are handled in the upper layer */
-/*	int hardware = ALGO_HW; */
 	int rc;
 
 	if (*s390_msa4_functions[fc].enabled)
@@ -157,7 +187,6 @@ static inline int s390_cmac(unsigned long fc,
 				  mac_length, mac,
 				  iv);
 	else {
-/*		hardware = ALGO_SW;*/
 		return EPERM;
 	}
 

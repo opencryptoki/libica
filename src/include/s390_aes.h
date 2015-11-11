@@ -42,7 +42,7 @@ static inline int __s390_aes_ctrlist(unsigned int fc, unsigned long data_length,
 		hardware = ALGO_SW;
 		return rc;
 	}
-	stats_increment(ICA_STATS_AES_CTRLST, hardware,
+	stats_increment(ICA_STATS_AES_CTR, hardware,
 			 (s390_msa4_functions[fc].hw_fc &
                          S390_CRYPTO_DIRECTION_MASK) ==
                          0 ?ENCRYPT:DECRYPT);

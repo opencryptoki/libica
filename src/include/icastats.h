@@ -34,6 +34,7 @@ typedef enum stats_fields {
 	ICA_STATS_SHA256,
 	ICA_STATS_SHA384,
 	ICA_STATS_SHA512,
+	ICA_STATS_GHASH,
 	ICA_STATS_PRNG,
 	ICA_STATS_RSA_ME,
 	ICA_STATS_RSA_CRT,
@@ -41,24 +42,21 @@ typedef enum stats_fields {
 	ICA_STATS_DES_CBC,
 	ICA_STATS_DES_OFB,
 	ICA_STATS_DES_CFB,
-	ICA_STATS_DES_CTRLST,
+	ICA_STATS_DES_CTR,
 	ICA_STATS_DES_CMAC,
 	ICA_STATS_3DES_ECB,
 	ICA_STATS_3DES_CBC,
 	ICA_STATS_3DES_OFB,
 	ICA_STATS_3DES_CFB,
-	ICA_STATS_3DES_CTRLST,
+	ICA_STATS_3DES_CTR,
 	ICA_STATS_3DES_CMAC,	
 	ICA_STATS_AES_ECB,
 	ICA_STATS_AES_CBC,
 	ICA_STATS_AES_OFB,
 	ICA_STATS_AES_CFB,
-	ICA_STATS_AES_CTRLST,
+	ICA_STATS_AES_CTR,
 	ICA_STATS_AES_CMAC,
-	ICA_STATS_AES_CCM,
-	ICA_STATS_AES_GCM,
 	ICA_STATS_AES_XTS,
-	ICA_STATS_AES_GCM_AUTH,
 
 	ICA_NUM_STATS
 } stats_fields_t;
@@ -69,6 +67,7 @@ typedef enum stats_fields {
         "SHA-256",    	\
         "SHA-384",    	\
         "SHA-512",    	\
+        "GHASH",      	\
         "P_RNG",      	\
         "RSA-ME",     	\
         "RSA-CRT",    	\
@@ -76,24 +75,21 @@ typedef enum stats_fields {
         "DES CBC",    	\
         "DES OFB",    	\
         "DES CFB",    	\
-        "DES CTRLST", 	\
+        "DES CTR",    	\
         "DES CMAC",   	\
         "3DES ECB",   	\
         "3DES CBC",   	\
         "3DES OFB",   	\
         "3DES CFB",   	\
-        "3DES CTRLIST", \
+        "3DES CTR",   	\
         "3DES CMAC",	\
         "AES ECB",	\
         "AES CBC",	\
         "AES OFB",	\
         "AES CFB",	\
-        "AES CTRLIST",	\
+        "AES CTR",	\
         "AES CMAC",	\
-        "AES CCM",	\
-        "AES GCM",	\
-        "AES XTS",	\
-        "CCM AUTH"	
+        "AES XTS"
 
 
 

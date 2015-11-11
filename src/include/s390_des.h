@@ -466,14 +466,14 @@ static inline int __s390_des_ctrlist(unsigned int fc, unsigned long data_length,
 	}
 	switch (s390_msa4_functions[fc].hw_fc & S390_CRYPTO_FUNCTION_MASK) {
 	case S390_CRYPTO_DEA_ENCRYPT:
-		stats_increment(ICA_STATS_DES_CTRLST, hardware,
+		stats_increment(ICA_STATS_DES_CTR, hardware,
 				(s390_msa4_functions[fc].hw_fc &
                                 S390_CRYPTO_DIRECTION_MASK) ==
                                 0 ?ENCRYPT: DECRYPT);
 		break;
 	case S390_CRYPTO_TDEA_128_ENCRYPT:
 	case S390_CRYPTO_TDEA_192_ENCRYPT:
-		stats_increment(ICA_STATS_3DES_CTRLST, hardware,
+		stats_increment(ICA_STATS_3DES_CTR, hardware,
 				(s390_msa4_functions[fc].hw_fc &
                                 S390_CRYPTO_DIRECTION_MASK) ==
                                 0 ?ENCRYPT: DECRYPT);

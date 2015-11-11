@@ -52,6 +52,7 @@ static inline int s390_ghash_hw(unsigned int fc,
 		unsigned char hash_subkey[AES_BLOCK_SIZE];
 	} __attribute__((packed)) parmblock;
 	int rc = 0;
+	int hardware = ALGO_HW;
 
 	memcpy(parmblock.iv, iv, AES_BLOCK_SIZE);
 	memcpy(parmblock.hash_subkey, subkey, AES_BLOCK_SIZE);
@@ -60,6 +61,7 @@ static inline int s390_ghash_hw(unsigned int fc,
 	if(rc == data_length) {
 		/* All data has been processed */
 		memcpy(iv, parmblock.iv, AES_BLOCK_SIZE);
+		stats_increment(ICA_STATS_GHASH, hardware, ENCRYPT);
 		return 0;
 	}
 
@@ -328,8 +330,6 @@ static inline int s390_gcm(unsigned int function_code,
 				  key, tmp_ctr, GCM_CTR_WIDTH);
 		if (rc)
 			return rc;
-
-		stats_increment(ICA_STATS_AES_GCM, hardware, DECRYPT);
 	} else {
 		/* encrypt */
 		rc = s390_aes_ctr(UNDIRECTED_FC(function_code),
@@ -337,8 +337,6 @@ static inline int s390_gcm(unsigned int function_code,
 				  key, tmp_ctr, GCM_CTR_WIDTH);
 		if (rc)
 			return rc;
-
-		stats_increment(ICA_STATS_AES_GCM, hardware, ENCRYPT);
 	}
 
 	/* generate authentication tag */
@@ -347,8 +345,6 @@ static inline int s390_gcm(unsigned int function_code,
 				   subkey_h, tmp_tag);
 	if (rc)
 		return rc;
-
-	stats_increment(ICA_STATS_AES_GCM_AUTH, hardware, ENCRYPT);
 
 	/* encrypt tag */
 	return s390_aes_ctr(UNDIRECTED_FC(function_code),
@@ -393,12 +389,10 @@ static inline int s390_gcm_intermediate(unsigned int function_code,
 				unsigned char *tag, unsigned long tag_length,
 				unsigned char *key, unsigned char *subkey)
 {
-	unsigned int hardware, rc;
+	unsigned int rc;
 
 	if (!msa4_switch)
 		return EPERM;
-
-	hardware = ALGO_HW;
 
 	/* en-/decrypt payload */
 	if (function_code % 2) {
@@ -407,16 +401,12 @@ static inline int s390_gcm_intermediate(unsigned int function_code,
 						  text_length, key, ctr, GCM_CTR_WIDTH);
 		if (rc)
 			return rc;
-
-		stats_increment(ICA_STATS_AES_GCM, hardware, DECRYPT);
 	} else {
 		/* encrypt */
 		rc = s390_aes_ctr(UNDIRECTED_FC(function_code), plaintext, ciphertext,
 						  text_length, key, ctr, GCM_CTR_WIDTH);
 		if (rc)
 			return rc;
-
-		stats_increment(ICA_STATS_AES_GCM, hardware, ENCRYPT);
 	}
 
 	/* generate authentication tag */
@@ -424,8 +414,6 @@ static inline int s390_gcm_intermediate(unsigned int function_code,
 											aad, aad_length, subkey, tag);
 	if (rc)
 		return rc;
-
-	stats_increment(ICA_STATS_AES_GCM_AUTH, hardware, ENCRYPT);
 
 	return 0;
 }

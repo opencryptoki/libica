@@ -227,8 +227,7 @@ void check_icastats(int algo_id, char *stat)
 	int i, hw, enc, dec;
 
 	hw = check_hw(algo_id);
-	
-	sprintf(awk, "icastats | awk '{ if($0~\"%s\") if(NR>12) print $%d,$%d;\
+	sprintf(awk, "icastats | awk '{ if($0~\"%s\") if(NR>13) print $%d,$%d;\
 					   else print $%d,-1\
 					 }'",
 		stat, hw?4:7, hw?5:8, hw?3:5);
@@ -736,22 +735,6 @@ void aes_tests(unsigned char *iv, unsigned char *cmac, unsigned char *ctr)
 
 	system("icastats -r");
 	for(mode = 1;mode >= 0;mode--){
-        	rc = ica_aes_ccm(input_buffer, DATA_LENGHT, output_buffer,
-				 AES_CIPHER_BLOCK, assoc_data, 
-			 	 AES_CIPHER_BLOCK, nonce, NONCE_LENGHT, aes_key, 
-			 	 AES_KEY_LEN128, mode);
-        	if(rc)
-                	exit(handle_ica_error(rc, "ica_aes_ccm"));
-
-                if(mode == ICA_ENCRYPT)
-                        input_buffer = output_buffer;
-                else if(mode == ICA_DECRYPT)
-                        input_buffer = plain_data;
-        }
-	check_icastats(AES_CCM, "AES CCM");
-
-	system("icastats -r");
-	for(mode = 1;mode >= 0;mode--){
         	rc = ica_aes_cfb(input_buffer, output_buffer, DATA_LENGHT,
         			 aes_key, AES_KEY_LEN128, iv, AES_CIPHER_BLOCK,
 				 mode);
@@ -788,7 +771,7 @@ void aes_tests(unsigned char *iv, unsigned char *cmac, unsigned char *ctr)
                 else if(mode == ICA_DECRYPT)
                         input_buffer = plain_data;
 	}		
-	check_icastats(AES_CTR, "AES CTRLIST");
+	check_icastats(AES_CTR, "AES CTR");
 
 	system("icastats -r");
 	for(mode = 1;mode >= 0;mode--){
@@ -804,18 +787,6 @@ void aes_tests(unsigned char *iv, unsigned char *cmac, unsigned char *ctr)
 	}
 	check_icastats(AES_ECB, "AES ECB");
 
-	system("icastats -r");
-	for(mode = 1;mode >= 0;mode--){
-        	rc = ica_aes_gcm(input_buffer, DATA_LENGHT, output_buffer, iv,
-				 AES_CIPHER_BLOCK ,  NULL, 0, tag, 
-				 AES_CIPHER_BLOCK, aes_key, AES_KEY_LEN128, 
-				 mode);
-		if(rc)
-			exit(handle_ica_error(rc, "ica_aes_gcm"));
-
-	}
-	check_icastats(AES_GCM, "AES GCM");
-	
 	system("icastats -r");
 	for(mode = 1;mode >= 0;mode--){
         	rc = ica_aes_ofb(input_buffer, output_buffer, DATA_LENGHT,
