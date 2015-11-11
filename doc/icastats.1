@@ -72,6 +72,16 @@ of icastats and persists until it is explicitly removed (see the -d option)
 or system shut down. This also means that the statistical data shown with
 icastats is on a per user base and only the root user is able to see and
 maintain the collection of statistic data from libica at system scope.
+.P
+Newer operating systems might remove these shared memory segments
+after the user has logged out from the system (systemd cleanup action).
+In this case all collected statistic data are gone.
+To prevent the statistic data from being removed you can configure the
+systemd to keep all shared memory segments after session exit by
+enabling the "RemoveIPC=no" paramater in "/etc/systemd/logind.conf".
+Alternatively you can setup the systemd user manager to enable user
+lingering by typing "loginctl enable-linger <user>".
+
 .SH OPTIONS
 .IP "-v or --version"
 show libica version and copyright
