@@ -1464,7 +1464,91 @@ unsigned int ica_aes_gcm(unsigned char *plaintext, unsigned long plaintext_lengt
 		if (memcmp(tmp_tag, tag, tag_length))
 			return EFAULT;
 	}
+	return 0;
+}
 
+unsigned int ica_aes_gcm_initialize(const unsigned char *iv,
+				    unsigned int iv_length,
+				    unsigned char *key,
+				    unsigned int key_length,
+				    unsigned char *icb,
+				    unsigned char *ucb,
+				    unsigned char *subkey,
+				    unsigned int direction)
+{
+	unsigned long function_code;
+
+	function_code = aes_directed_fc(key_length, direction);
+
+	return s390_gcm_initialize(function_code, iv, iv_length,
+							   key, icb, ucb, subkey);
+}
+
+unsigned int ica_aes_gcm_intermediate(unsigned char *plaintext,
+			 unsigned long plaintext_length,
+			 unsigned char *ciphertext,
+			 unsigned char *cb,
+			 unsigned char *aad, unsigned long aad_length,
+			 unsigned char *tag, unsigned int tag_length,
+			 unsigned char *key, unsigned int key_length,
+			 unsigned char *subkey, unsigned int direction)
+{
+	unsigned long function_code;
+	int rc, iv_length_dummy = 12;
+
+	if (check_aes_parms(MODE_GCM, plaintext_length, plaintext, cb, key_length,
+			    key, ciphertext))
+		return EINVAL;
+	if (check_gcm_parms(plaintext_length, aad, aad_length, tag, tag_length,
+				iv_length_dummy))
+		return EINVAL;
+
+	function_code = aes_directed_fc(key_length, direction);
+	if (direction) {
+		/* encrypt & generate */
+		rc = s390_gcm_intermediate(function_code, plaintext, plaintext_length,
+								   ciphertext, cb, aad, aad_length, tag,
+								   tag_length, key, subkey);
+		if (rc)
+			return rc;
+	} else {
+		/* decrypt & verify */
+		rc = s390_gcm_intermediate(function_code, plaintext, plaintext_length,
+								   ciphertext, cb, aad, aad_length, tag,
+								   AES_BLOCK_SIZE, key, subkey);
+		if (rc)
+			return rc;
+	}
+	return 0;
+}
+
+unsigned int ica_aes_gcm_last( unsigned char *icb,
+			 unsigned long aad_length, unsigned long ciph_length,
+			 unsigned char *tag,
+			 unsigned char *final_tag, unsigned int final_tag_length,
+			 unsigned char *key, unsigned int key_length,
+			 unsigned char *subkey, unsigned int direction)
+{
+	unsigned long function_code;
+	int rc;
+
+	function_code = aes_directed_fc(key_length, direction);
+	if (direction) {
+		/* encrypt & generate */
+		rc = s390_gcm_last(function_code, icb, aad_length, ciph_length,
+						   tag, AES_BLOCK_SIZE, key, subkey);
+		if (rc)
+			return rc;
+	} else {
+		/* decrypt & verify */
+		rc = s390_gcm_last(function_code, icb, aad_length, ciph_length,
+			      tag, AES_BLOCK_SIZE, key, subkey);
+		if (rc)
+			return rc;
+
+		if (memcmp(tag, final_tag, final_tag_length))
+			return EFAULT;
+	}
 	return 0;
 }
 

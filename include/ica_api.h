@@ -3346,6 +3346,10 @@ unsigned int ica_aes_ccm(unsigned char *payload, unsigned long payload_length,
 			 unsigned int direction);
 
 /**
+ * This parameter description applies to:
+ * ica_aes_gcm(), ica_aes_gcm_initialize(),
+ * ica_aes_gcm_intermediate() and ica_aes_gcm_last()
+ *
  * Encrypt and authenticate or decrypt data and check authenticity data with
  * an AES key using the Galois/Counter (GCM) mode as described in NIST Special
  * Publication 800-38D.
@@ -3369,6 +3373,9 @@ unsigned int ica_aes_ccm(unsigned char *payload, unsigned long payload_length,
  * @param plaintext_length
  * Length in bytes of the message to be en/decrypted. It must be equal or
  * greater than 0 and less than (2^36)-32.
+ * In case of intermediate operations the length must not be multiple of
+ * blocksize. Padding will be done automatically. Be aware that this is only
+ * useful when this is the last block.
  * @param ciphertext
  * Pointer to a buffer of size greater than or equal to plaintext_length
  * bytes.
@@ -3390,6 +3397,8 @@ unsigned int ica_aes_ccm(unsigned char *payload, unsigned long payload_length,
  * @param aad_length
  * Length in bytes of the additional authenticated data in aad. It must be
  * equal or greater than 0 and less than 2^61.
+ * In case of ica_aes_gcm_last(), 'aad_length' contains the overall
+ * length of authentication data, cumulated over all intermediate operations.
  * @param tag
  * Pointer to a buffer of size greater than or equal to tag_length bytes.
  * If direction is 1 the buffer must be writable and a message authentication
@@ -3398,6 +3407,8 @@ unsigned int ica_aes_ccm(unsigned char *payload, unsigned long payload_length,
  * If direction is 0 the buffer must be readable and contain a message
  * authentication code that will be verified against the additional
  * authenticated data in aad and decrypted cipher text from ciphertext.
+ * In case of intermediate operations, ica_aes_gcm_intermediate() or
+ * ica_aes_gcm_last(), 'tag' contains the temporary hash/tag value.
  * @param tag_length
  * Length in bytes of the message authentication code tag in bytes.
  * Valid values are 4, 8, 12, 13, 14, 15, 16.
@@ -3407,6 +3418,31 @@ unsigned int ica_aes_ccm(unsigned char *payload, unsigned long payload_length,
  * Length in bytes of the AES key. Supported sizes are 16, 24, and 32 for
  * AES-128, AES-192 and AES-256 respectively. Therefore, you can use the
  * macros: AES_KEY_LEN128, AES_KEY_LEN192, and AES_KEY_LEN256.
+ * @param icb
+ * initial counter block - Pointer to a writable buffer that will be created
+ * during ica_aes_gcm_initialize() and will be used in ica_aes_gcm_last() for
+ * the final tag computation.
+ * The length of this counter block is AES_BLOCK_SIZE (16 bytes).
+ * @param ucb
+ * usage counter block - Pointer to a writable buffer that will be created
+ * during ica_aes_gcm_initialize() and will be updated (increased) during the
+ * intermediate update operations.
+ * The length of this counter block is AES_BLOCK_SIZE (16 bytes).
+ * @param subkey
+ * Pointer to a writable buffer, generated in ica_aes_gcm_initialize() and used in
+ * ica_aes_gcm_intermediate() and ica_aes_gcm_last().
+ * The length of this buffer is AES_BLOCK_SIZE (16 bytes).
+ * @param ciph_length
+ * Length in bytes of the overall ciphertext, cumulated over all intermediate
+ * operations.
+ * @param final_tag
+ * Pointer to a readable buffer of size greater than or equal to
+ * final_tag_length bytes. If direction is 1 the buffer is not used.
+ * If direction is 0 this message authentication code (tag) will be verified
+ * with the computed message authentication code computed over the intermediate
+ * update operations.
+ * @param final_tag_length
+ * Length in bytes of the final message authentication code (tag).
  * @param direction
  * 0 or 1:
  * 0 Verify message authentication code and decrypt encrypted payload.
@@ -3427,6 +3463,26 @@ unsigned int ica_aes_gcm(unsigned char *plaintext, unsigned long plaintext_lengt
 			 unsigned char *tag, unsigned int tag_length,
 			 unsigned char *key, unsigned int key_length,
 			 unsigned int direction);
+
+unsigned int ica_aes_gcm_initialize(const unsigned char *iv,
+					unsigned int iv_length,
+					unsigned char *key, unsigned int key_length,
+					unsigned char *icb, unsigned char *ucb,
+					unsigned char *subkey, unsigned int direction);
+
+unsigned int ica_aes_gcm_intermediate(unsigned char *plaintext,
+					unsigned long plaintext_length, unsigned char *ciphertext,
+					unsigned char *ucb,
+					unsigned char *aad, unsigned long aad_length,
+					unsigned char *tag, unsigned int tag_length,
+					unsigned char *key, unsigned int key_length,
+					unsigned char *subkey, unsigned int direction);
+
+unsigned int ica_aes_gcm_last(unsigned char *icb, unsigned long aad_length,
+					unsigned long ciph_length, unsigned char *tag,
+					unsigned char *final_tag, unsigned int final_tag_length,
+					unsigned char *key, unsigned int key_length,
+					unsigned char *subkey, unsigned int direction);
 
 /**
  * Return libica version information.

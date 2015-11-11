@@ -203,6 +203,88 @@ static inline unsigned int s390_gcm_authenticate(const unsigned char *ciphertext
 	return 0;
 }
 
+static inline unsigned int s390_gcm_authenticate_intermediate(
+		const unsigned char *ciphertext, unsigned long text_length,
+		unsigned char *aad, unsigned long aad_length,
+		const unsigned char *subkey_h, unsigned char *iv)
+{
+	unsigned int rc;
+	unsigned char aad_pad[AES_BLOCK_SIZE];
+	unsigned long head_length;
+	unsigned long tail_length;
+	struct pad_meta c_pad_meta;
+
+	memset(c_pad_meta.pad, 0x00, sizeof(c_pad_meta.pad));
+
+	if (aad_length) {
+		tail_length = aad_length % AES_BLOCK_SIZE;
+		head_length = aad_length - tail_length;
+
+		/* ghash aad head */
+		if (head_length) {
+			rc = s390_ghash(aad, head_length, subkey_h, iv);
+			if (rc)
+				return rc;
+		}
+
+		/* ghash aad tail */
+		if (tail_length) {
+			memset(aad_pad, 0x00, AES_BLOCK_SIZE);
+			memcpy(aad_pad, aad + head_length, tail_length);
+
+			rc = s390_ghash(aad_pad, AES_BLOCK_SIZE, subkey_h, iv);
+			if (rc)
+				return rc;
+		}
+	}
+
+	if (text_length) {
+		tail_length = text_length % AES_BLOCK_SIZE;
+		head_length = text_length - tail_length;
+
+		/* ghash ciphertext head */
+		if (head_length) {
+			rc = s390_ghash(ciphertext, head_length, subkey_h, iv);
+			if (rc)
+				return rc;
+		}
+
+		/* ghash ciphertext tail and meta data */
+		if (tail_length) {
+
+			memcpy(c_pad_meta.pad, ciphertext + head_length, tail_length);
+
+			rc = s390_ghash((unsigned char *)&c_pad_meta,
+					AES_BLOCK_SIZE, subkey_h, iv);
+			if (rc)
+				return rc;
+
+		}
+	}
+	return 0;
+}
+
+static inline unsigned int s390_gcm_authenticate_last(
+		unsigned long aad_length, unsigned long ciph_length,
+		const unsigned char *subkey_h, unsigned char *iv)
+{
+	unsigned int rc;
+	struct pad_meta c_pad_meta;
+
+	memset(c_pad_meta.pad, 0x00, sizeof(c_pad_meta.pad));
+	c_pad_meta.length_a = (uint64_t)(aad_length * 8ul);
+	c_pad_meta.length_b = (uint64_t)(ciph_length * 8ul);
+
+	/* ghash meta data only */
+	rc = s390_ghash((unsigned char *)&c_pad_meta.length_a,
+			AES_BLOCK_SIZE,
+			subkey_h, iv);
+	if (rc)
+		return rc;
+
+	return 0;
+}
+
 static inline int s390_gcm(unsigned int function_code,
 	     unsigned char *plaintext, unsigned long text_length,
 	     unsigned char *ciphertext,
@@ -272,5 +354,98 @@ static inline int s390_gcm(unsigned int function_code,
 	return s390_aes_ctr(UNDIRECTED_FC(function_code),
 			    tmp_tag, tag, tag_length,
 			    key, j0, GCM_CTR_WIDTH);
+}
+
+static inline int s390_gcm_initialize(unsigned int function_code,
+				      const unsigned char *iv,
+				      unsigned long iv_length,
+				      unsigned char *key,
+				      unsigned char *icb,
+				      unsigned char *ucb,
+				      unsigned char *subkey)
+{
+	int rc;
+
+	if (!icb || !ucb)
+		return -EINVAL;
+
+	/* calculate subkey H */
+	rc = s390_aes_ecb(UNDIRECTED_FC(function_code),
+					  AES_BLOCK_SIZE, zero_block, key, subkey);
+	if (rc)
+		return rc;
+
+	/* calculate initial counter, based on iv */
+	__compute_j0(iv, iv_length, subkey, icb);
+
+	/* prepate usage counter for cipher */
+	memcpy(ucb, icb, AES_BLOCK_SIZE);
+	ctr_inc_single(ucb, AES_BLOCK_SIZE, GCM_CTR_WIDTH);
+
+	return 0;
+}
+
+static inline int s390_gcm_intermediate(unsigned int function_code,
+				unsigned char *plaintext, unsigned long text_length,
+				unsigned char *ciphertext,
+				unsigned char *ctr,
+				unsigned char *aad, unsigned long aad_length,
+				unsigned char *tag, unsigned long tag_length,
+				unsigned char *key, unsigned char *subkey)
+{
+	unsigned int hardware, rc;
+
+	if (!msa4_switch)
+		return EPERM;
+
+	hardware = ALGO_HW;
+
+	/* en-/decrypt payload */
+	if (function_code % 2) {
+		/* decrypt */
+		rc = s390_aes_ctr(UNDIRECTED_FC(function_code), ciphertext, plaintext,
+						  text_length, key, ctr, GCM_CTR_WIDTH);
+		if (rc)
+			return rc;
+
+		stats_increment(ICA_STATS_AES_GCM, hardware, DECRYPT);
+	} else {
+		/* encrypt */
+		rc = s390_aes_ctr(UNDIRECTED_FC(function_code), plaintext, ciphertext,
+						  text_length, key, ctr, GCM_CTR_WIDTH);
+		if (rc)
+			return rc;
+
+		stats_increment(ICA_STATS_AES_GCM, hardware, ENCRYPT);
+	}
+
+	/* generate authentication tag */
+	rc = s390_gcm_authenticate_intermediate(ciphertext, text_length,
+											aad, aad_length, subkey, tag);
+	if (rc)
+		return rc;
+
+	stats_increment(ICA_STATS_AES_GCM_AUTH, hardware, ENCRYPT);
+
+	return 0;
+}
+
+static inline int s390_gcm_last(unsigned int function_code, unsigned char *icb,
+				unsigned long aad_length, unsigned long ciph_length,
+				unsigned char *tag, unsigned long tag_length,
+				unsigned char *key, unsigned char *subkey)
+{
+	unsigned char tmp_tag[AES_BLOCK_SIZE];
+	int rc;
+
+	/* generate authentication tag */
+	memcpy(tmp_tag, tag, tag_length);
+	rc = s390_gcm_authenticate_last(aad_length, ciph_length, subkey, tmp_tag);
+	if (rc)
+		return rc;
+
+	/* encrypt tag */
+	return s390_aes_ctr(UNDIRECTED_FC(function_code), tmp_tag, tag, tag_length,
+						key, icb, GCM_CTR_WIDTH);
 }
 #endif
