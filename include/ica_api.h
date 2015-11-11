@@ -1564,6 +1564,20 @@ unsigned int ica_rsa_crt(ica_adapter_handle_t adapter_handle,
 			 ica_rsa_key_crt_t *rsa_key,
 			 unsigned char *output_data);
 
+/*
+ * Check if RSA key credentials in CRT format are presented in
+ * privileged form, respectively prime 'p' > prime 'q'.
+ *
+ * In case of 'p' < 'q', key credentials 'p' and 'q' as well as 'dp'
+ * and 'dq' will be swapped and qInverse will be recalculated.
+ *
+ * @return
+ *  0 if all key credentials are in the correct format.
+ *  1 if the key credentials were re-calculated.
+ *  ENOMEM if memory allocation fails.
+ */
+unsigned int ica_rsa_crt_key_check(ica_rsa_key_crt_t *rsa_key);
+
 /**
  * @deprecated, use ica_des_ecb() or ica_des_cbc() instead.
  *

@@ -10,7 +10,8 @@ TARGETS = icastats_test \
 	  libica_aes128_test libica_aes192_test libica_aes256_test \
 	  libica_sha1_test \
 	  libica_sha256_test \
-	  libica_rsa_test libica_rng_test libica_keygen_test \
+	  libica_rsa_test libica_rsa_key_check_test \
+	  libica_rng_test libica_keygen_test \
 	  test_mech_list \
 	  libica_cmac_test \
 	  libica_aes_xts_test libica_aes_gcm_test libica_ccm_test \

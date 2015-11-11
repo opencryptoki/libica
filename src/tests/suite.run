@@ -47,6 +47,7 @@ echo -ne '#############################-------------------- (60%)\r'
 ./libica_rng_test $silent >> ./suite.out
 echo -ne '#####################################------------ (70%)\r'
 ./libica_rsa_test $silent >> ./suite.out
+./libica_rsa_key_check_test $silent >> ./suite.out
 echo -ne '############################################----- (80%)\r'
 PARMS="libica_sha_test/sha_test_vectors/*"
 ./libica_sha_test/libica_sha_test $silent $PARMS >> ./suite.out
