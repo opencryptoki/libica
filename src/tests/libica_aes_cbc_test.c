@@ -409,9 +409,11 @@ int kat_aes_cbc(int iteration, int silent)
 
 	get_sizes(&data_length, &iv_length, &key_length, iteration);
 
-	printf("Test Parameters for iteration = %i\n", iteration);
-	printf("key length = %i, data length = %i, iv length = %i\n",
-	       key_length, data_length, iv_length);
+	if (!silent) {
+		printf("Test Parameters for iteration = %i\n", iteration);
+		printf("key length = %i, data length = %i, iv length = %i\n",
+			key_length, data_length, iv_length);
+	}
 
 	unsigned char iv[iv_length];
 	unsigned char tmp_iv[iv_length];
@@ -540,9 +542,12 @@ for (i = 1; i <= 2; i++) {
 	load_random_test_data(input_data, data_length, iv, iv_length, key,
 			      key_length);
 	memcpy(tmp_iv, iv, iv_length);
-	printf("Test Parameters for iteration = %i\n", iteration);
-	printf("key length = %i, data length = %i, iv length = %i\n",
-	       key_length, data_length, iv_length);
+
+	if (!silent) {
+		printf("Test Parameters for iteration = %i\n", iteration);
+		printf("key length = %i, data length = %i, iv length = %i\n",
+			key_length, data_length, iv_length);
+	}
 
 	rc = ica_aes_cbc(input_data, encrypt, data_length, key, key_length,
 			 tmp_iv, 1);
@@ -611,27 +616,33 @@ int main(int argc, char **argv)
 		if (rc) {
 			printf("kat_aes_cbc failed with rc = %i\n", rc);
 			error_count++;
-		} else
-			printf("kat_aes_cbc finished successfuly\n");
-
+		} else {
+			if (!silent) {
+				printf("kat_aes_cbc finished successfully\n");
+			}
+		  }
 	}
 	for(iteration = 1; iteration <= NR_RANDOM_TESTS; iteration++)	{
-		int silent = 1;
+		//int silent = 1;
 		rc = random_aes_cbc(iteration, silent, data_length);
 		if (rc) {
 			printf("random_aes_cbc failed with rc = %i\n", rc);
 			error_count++;
 			goto out;
-		} else
-			printf("random_aes_cbc finished successfuly\n");
+		} else {
+			if (!silent) {
+				printf("random_aes_cbc finished successfully\n");
+			}
+		  }
 		data_length += sizeof(ica_aes_vector_t);
 	}
 
 out:
 	if (error_count)
 		printf("%i testcases failed\n", error_count);
-	else
-		printf("All testcases finished successfully\n");
+	else {
+		printf("All AES-CBC testcases finished successfully\n");
+	}
 
 	return rc;
 }

@@ -29,16 +29,23 @@ The simplest way to compile this package is:
      `sh ./configure' instead to prevent `csh' from trying to execute
      `configure' itself.
 
+	 Optionally, if you want to build the included test cases automatically
+	 you can call the configure script with the '--enable-testcases' option.
+	 `./configure --enable-testcases`. At compile time all test cases will
+	 be build automatically.
+
      Running `configure' takes awhile.  While running, it prints some
      messages telling which features it is checking for.
 
   2. Type `make' to compile the package.
 
-  3. Optionally, type `make check' to run any self-tests that come with
-     the package.
-
-  4. Type `make install' to install the programs and any data files and
+  3. Type `make install' to install the programs and any data files and
      documentation.
+
+  4. Optionally, if you want to execute the integrated test suite located
+	 in ./src/tests that come with the package, type `./suite.run`.
+	 For silent mode (increased performance) use the 'silent' parameter.
+	 (e.g. `./suite.run silent`)
 
   5. You can remove the program binaries and object files from the
      source code directory by typing `make clean'.  To also remove the

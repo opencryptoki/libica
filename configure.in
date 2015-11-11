@@ -64,7 +64,7 @@ esac
 
 AC_ARG_ENABLE(debug, 
               [--enable-debug          turn on debugging flags],
-              [enable_debug="yes"],)
+              [enable_debug="yes"],[enable_debug="no"])
 
 if test "x$enable_debug" = xyes; then
 	CFLAGS="$CFLAGS -g -O0"
@@ -73,6 +73,24 @@ else
 	CFLAGS="$CFLAGS -O2"
 fi
 
+dnl --- enable_testcases
+AC_ARG_ENABLE([testcases],
+	AS_HELP_STRING([--enable-testcases],[build the test cases @<:@default=no@:>@]),
+	[enable_testcases=yes],
+	[enable_testcases=no])
+
+if test "$enable_testcases" = yes; then
+	MAYBE_OPT="src/tests src/tests/libica_sha_test/"
+else
+	MAYBE_OPT=
+fi
+AC_SUBST(MAYBE_OPT)
+
+AC_CONFIG_FILES([src/tests/Makefile src/tests/libica_sha_test/Makefile])
 AC_OUTPUT([Makefile src/Makefile include/Makefile doc/Makefile])
 
 echo "CFLAGS=$CFLAGS"
+
+echo "Enabled features:"
+echo "  Debug build:    $enable_debug"
+echo "  Testcases:      $enable_testcases"

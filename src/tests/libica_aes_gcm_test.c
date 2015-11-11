@@ -752,11 +752,12 @@ int test_gcm_kat(int iteration, int silent)
 	get_sizes(&aad_length, &data_length, &t_length, &iv_length,
 		  &key_length, &num_chunks, iteration);
 
-	printf("Test Parameters for iteration = %i\n", iteration);
-	printf("key length = %i, data length = %i, tag length = %i,"
-	       "iv length = %i aad_length = %i\n", key_length, data_length,
-	       t_length, iv_length, aad_length);
-
+	if (!silent) {
+		printf("Test Parameters for iteration = %i\n", iteration);
+		printf("key length = %i, data length = %i, tag length = %i,"
+			"iv length = %i aad_length = %i\n", key_length, data_length,
+			t_length, iv_length, aad_length);
+	}
 	unsigned char iv[iv_length];
 	unsigned char input_data[data_length];
 	unsigned char encrypt[data_length];
@@ -877,11 +878,12 @@ int test_gcm_kat_update(int iteration, int silent)
 	get_sizes(&aad_length, &data_length, &t_length, &iv_length,
 		  &key_length, &num_chunks, iteration);
 
-	printf("Test Parameters for iteration = %i\n", iteration);
-	printf("key length = %i, data length = %i, tag length = %i,"
-	       "iv length = %i aad_length = %i\n", key_length, data_length,
-	       t_length, iv_length, aad_length);
-
+	if (!silent) {
+		printf("Test Parameters for iteration = %i\n", iteration);
+		printf("key length = %i, data length = %i, tag length = %i,"
+			"iv length = %i aad_length = %i\n", key_length, data_length,
+			t_length, iv_length, aad_length);
+	}
 	unsigned char iv[iv_length];
 	unsigned char input_data[data_length];
 	unsigned char encrypt[data_length];
@@ -1055,21 +1057,19 @@ int main(int argc, char **argv)
 		if (rc) {
 			printf("test_gcm_kat failed with rc = %i\n", rc);
 			error_count++;
-		} else
-			printf("test_gcm_kat finished successfuly\n");
+		}
 
 		rc = test_gcm_kat_update(iteration, silent);
 		if (rc) {
 			printf("test_gcm_kat_update failed with rc = %i\n", rc);
 			error_count++;
-		} else
-			printf("test_gcm_kat_update finished successfuly\n");
+		}
 
 
 	}
 	if (error_count)
 		printf("%i of %i testcases failed\n", error_count, iteration);
 	else
-		printf("All testcases finished successfully.\n");
+		printf("All AES-GCM testcases finished successfully.\n");
 	return rc;
 }

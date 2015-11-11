@@ -114,10 +114,11 @@ int kat_des_cbc(int iteration, int silent)
 
 	get_sizes(&data_length, &iv_length, &key_length, iteration);
 
-	printf("Test Parameters for iteration = %i\n", iteration);
-	printf("key length = %i, data length = %i, iv length = %i\n",
-	       key_length, data_length, iv_length);
-
+	if (!silent) {
+		printf("Test Parameters for iteration = %i\n", iteration);
+		printf("key length = %i, data length = %i, iv length = %i\n",
+			key_length, data_length, iv_length);
+	}
 	unsigned char iv[iv_length];
 	unsigned char tmp_iv[iv_length];
 	unsigned char expected_iv[iv_length];
@@ -242,9 +243,11 @@ int random_des_cbc(int iteration, int silent, unsigned int data_length)
 			      key_length);
 	memcpy(tmp_iv, iv, iv_length);
 
-	printf("Test Parameters for iteration = %i\n", iteration);
-	printf("key length = %i, data length = %i, iv length = %i\n",
-	       key_length, data_length, iv_length);
+	if (!silent) {
+		printf("Test Parameters for iteration = %i\n", iteration);
+		printf("key length = %i, data length = %i, iv length = %i\n",
+			key_length, data_length, iv_length);
+	}
 
 	rc = ica_des_cbc(input_data, encrypt, data_length, key, tmp_iv, 1);
 	if (rc) {
@@ -308,27 +311,24 @@ int main(int argc, char **argv)
 		if (rc) {
 			printf("kat_des_cbc failed with rc = %i\n", rc);
 			error_count++;
-		} else
-			printf("kat_des_cbc finished successfuly\n");
+		}
 
 	}
 
 	for(iteration = 1; iteration <= NR_RANDOM_TESTS; iteration++)	{
-		int silent = 1;
 		rc = random_des_cbc(iteration, silent, data_length);
 		if (rc) {
 			printf("random_des_cbc failed with rc = %i\n", rc);
 			error_count++;
 			goto out;
-		} else
-			printf("random_des_cbc finished successfuly\n");
+		}
 		data_length += sizeof(ica_des_vector_t);
 	}
 out:
 	if (error_count)
 		printf("%i testcases failed\n", error_count);
 	else
-		printf("All testcases finished successfully\n");
+		printf("All DES-CBC testcases finished successfully\n");
 
 	return rc;
 }

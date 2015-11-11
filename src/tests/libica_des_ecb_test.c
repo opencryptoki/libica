@@ -80,8 +80,11 @@ int random_des_ecb(int iteration, int silent, unsigned int data_length)
 	memset(decrypt, 0x00, data_length);
 
 	load_random_test_data(input_data, data_length, key, key_length);
-	printf("Test Parameters for iteration = %i\n", iteration);
-	printf("key length = %i, data length = %i\n", key_length, data_length);
+
+	if (!silent) {
+		printf("Test Parameters for iteration = %i\n", iteration);
+		printf("key length = %i, data length = %i\n", key_length, data_length);
+	}
 
 	rc = ica_des_ecb(input_data, encrypt, data_length, key, 1);
 	if (rc) {
@@ -146,8 +149,7 @@ int main(int argc, char **argv)
 			printf("random_des_ecb failed with rc = %i\n", rc);
 			error_count++;
 			goto out;
-		} else
-			printf("random_des_ecb finished successfuly\n");
+		}
 		data_length += sizeof(ica_des_vector_t);
 	}
 
@@ -155,7 +157,7 @@ out:
 	if (error_count)
 		printf("%i testcases failed\n", error_count);
 	else
-		printf("All testcases finished successfully\n");
+		printf("All DES-ECB testcases finished successfully\n");
 
 	return rc;
 }

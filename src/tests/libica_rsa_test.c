@@ -186,12 +186,18 @@ void dump_array(unsigned char *ptr, unsigned int size)
    printf("\n");
 }
 
-int main()
+int main(int argc, char **argv)
 {
    ica_adapter_handle_t	adapter_handle;
    unsigned char*	my_result;
    unsigned char*	my_result2;
    int			rc;
+	unsigned int silent = 0;
+
+	if (argc > 1) {
+		if (strstr(argv[1], "silent"))
+			silent = 1;
+	}
 
    rc = ica_open_adapter(&adapter_handle);
    if (rc != 0) {
@@ -201,7 +207,9 @@ int main()
     /*
      * encrypt with public key
      */
-    printf("modulus size = %ld\n", (long)sizeof(n));
+	if (!silent) {
+	    printf("modulus size = %ld\n", (long)sizeof(n));
+	}
 
     my_result =  malloc(sizeof(input_data));
     bzero(my_result, sizeof(input_data));
@@ -214,15 +222,15 @@ int main()
     if (rc)
        exit(handle_ica_error(rc, "ica_rsa_key_mod_expo"));
 
-    printf("\n\n\n\n\n result of encrypt with public key\n");
-    dump_array((unsigned char *)my_result,sizeof(input_data));
-    printf("Ciphertext \n");
-    dump_array(ciphertext,sizeof(input_data));
+	if (!silent) {
+		printf("\n\n\n\n\n result of encrypt with public key\n");
+		dump_array((unsigned char *)my_result,sizeof(input_data));
+		printf("Ciphertext \n");
+		dump_array(ciphertext,sizeof(input_data));
+	}
     if (memcmp(my_result,ciphertext,sizeof(input_data))){
        printf("Ciphertext mismatch\n");
-       return 0;
-    } else {
-       printf("ENCRYPT WORKED\n");
+       return -1;
     }
 
     /*
@@ -233,21 +241,22 @@ int main()
     if(rc)
     	exit(handle_ica_error(rc, "ica_rsa_crt"));
 
-    printf("Result of decrypt\n");
-    dump_array((unsigned char *)my_result2, sizeof(input_data));
-    printf("original data\n");
-    dump_array(input_data, sizeof(input_data));
+	if (!silent) {
+		printf("Result of decrypt\n");
+		dump_array((unsigned char *)my_result2, sizeof(input_data));
+		printf("original data\n");
+		dump_array(input_data, sizeof(input_data));
+	}
     if( memcmp(input_data,my_result2,sizeof(input_data)) != 0) {
       printf("Results do not match.  Failure!\n");
       return -1;
-    } else {
-      printf("Results match!\n");
     }
 
    rc = ica_open_adapter(&adapter_handle);
    if (rc != 0) {
       printf("ica_close_adapter failed and returned %d (0x%x).\n", rc, rc);
    }
+	printf("All RSA testcases finished successfully\n");
    return 0;
 }
 

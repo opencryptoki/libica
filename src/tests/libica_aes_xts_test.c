@@ -450,10 +450,11 @@ int kat_aes_xts(int iteration, int silent)
 		       tweak_length, key, key_length, iteration);
 	memcpy(tmp_tweak, tweak, tweak_length);
 
-	printf("Test Parameters for iteration = %i\n", iteration);
-	printf("key length = %i, data length = %i, tweak length = %i,",
-	        key_length, data_length, tweak_length);
-
+	if (!silent) {
+		printf("Test Parameters for iteration = %i\n", iteration);
+		printf("key length = %i, data length = %i, tweak length = %i,",
+			key_length, data_length, tweak_length);
+	}
 	rc = ica_aes_xts(input_data, encrypt, data_length,
 			 key, key+(key_length/2), (key_length/2),
 			 tmp_tweak, 1);
@@ -568,10 +569,12 @@ for (i = 1; i <= 2; i++) {
 	load_random_test_data(input_data, data_length, iv, iv_length, key,
 			      key_length);
 	memcpy(tmp_iv, iv, iv_length);
-	printf("Test Parameters for iteration = %i\n", iteration);
-	printf("key length = %i, data length = %i, iv length = %i\n",
-	       key_length, data_length, iv_length);
 
+	if (!silent) {
+		printf("Test Parameters for iteration = %i\n", iteration);
+		printf("key length = %i, data length = %i, iv length = %i\n",
+			key_length, data_length, iv_length);
+	}
 	rc = ica_aes_xts(input_data, encrypt, data_length,
 			 key, key+(key_length/2), (key_length/2),
 			 tmp_iv, 1);
@@ -641,8 +644,7 @@ int main(int argc, char **argv)
 		if (rc) {
 			printf("kat_aes_xts failed with rc = %i\n", rc);
 			error_count++;
-		} else
-			printf("kat_aes_xts finished successfuly\n");
+		}
 
 	}
 	for(iteration = 1; iteration <= NR_RANDOM_TESTS; iteration++)	{
@@ -652,8 +654,7 @@ int main(int argc, char **argv)
 			printf("random_aes_xts failed with rc = %i\n", rc);
 			error_count++;
 			goto out;
-		} else
-			printf("random_aes_xts finished successfuly\n");
+		}
 		data_length += sizeof(ica_aes_vector_t) / 2;
 	}
 
@@ -661,7 +662,7 @@ out:
 	if (error_count)
 		printf("%i testcases failed\n", error_count);
 	else
-		printf("All testcases finished successfully\n");
+		printf("All AES-XTS testcases finished successfully\n");
 
 	return rc;
 }

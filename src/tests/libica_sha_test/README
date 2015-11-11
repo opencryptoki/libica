@@ -1,0 +1,5 @@
+usage: libica_sha_test filelist
+test for old and new libica api for sha1/224/256/384/512
+test vectors are read from .rsp files and put in the queue
+the included .rsp files are obtained from nist:
+http://csrc.nist.gov/groups/STM/cavp/index.html#03

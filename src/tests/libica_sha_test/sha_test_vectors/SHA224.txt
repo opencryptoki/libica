@@ -1,0 +1,39 @@
+#  CAVS 11.0
+#  "SHA-224 ShortMsg" information 
+#  SHA-224 tests are configured for BYTE oriented implementations
+#  Generated on Tue Mar 15 08:23:36 2011
+
+[L = 28]
+
+Len = 0
+Msg = 00
+MD = d14a028c2a3a2bc9476102bb288234c415a2b01f828ea62ac5b3e42f
+
+Len = 8
+Msg = 84
+MD = 3cd36921df5d6963e73739cf4d20211e2d8877c19cff087ade9d0e3a
+
+Len = 16
+Msg = 5c7b
+MD = daff9bce685eb831f97fc1225b03c275a6c112e2d6e76f5faf7a36e6
+
+Len = 32
+Msg = 6084347e
+MD = ae57c0a6d49739ba338adfa53bdae063e5c09122b77604780a8eeaa3
+
+Len = 64
+Msg = 5f77b3664823c33e
+MD = bdf21ff325f754157ccf417f4855360a72e8fd117d28c8fe7da3ea38
+
+Len = 128
+Msg = b776708ffb91b3515ac46598ab9fa796
+MD = 427311b1d7ab2488791c4deeb4251d783fe5f9806bfdfb5188c5443d
+
+Len = 256
+Msg = fe1f0fb02c9011f4c8c5905934ed15136771737ce31c5859e67f235fe594f5f6
+MD = bbeaacc632c2a3db2a9b47f157ab54aa27776c6e74cf0bcaa91b06d5
+
+Len = 512
+Msg = a3310ba064be2e14ad32276e18cd0310c933a6e650c3c754d0243c6c61207865b4b65248f66a08edf6e0832689a9dc3a2e5d2095eeea50bd862bac88c8bd318d
+MD = b2a5586d9cbf0baa999157b4af06d88ae08d7c9faab4bc1a96829d65
+

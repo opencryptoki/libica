@@ -57,9 +57,11 @@ int random_des_ctr(int iteration, int silent, unsigned int data_length, unsigned
 	if (data_length % sizeof(ica_des_vector_t))
 		iv_length = sizeof(ica_des_vector_t);
 
-	printf("Test Parameters for iteration = %i\n", iteration);
-	printf("key length = %i, data length = %i, iv length = %i\n",
-	       key_length, data_length, iv_length);
+	if (!silent) {
+		printf("Test Parameters for iteration = %i\n", iteration);
+		printf("key length = %i, data length = %i, iv length = %i\n",
+			key_length, data_length, iv_length);
+	}
 
 	unsigned char iv[iv_length];
 	unsigned char tmp_iv[iv_length];
@@ -153,34 +155,27 @@ int main(int argc, char **argv)
 			printf("i = %i\n",i);
 			rc = random_des_ctr(i, silent, 320, 320);
 			if (rc) {
-				printf("kat_des_ctr failed with rc = %i\n",
-					rc);
+				printf("kat_des_ctr failed with rc = %i\n",	rc);
 				return rc;
-			} else
-				printf("kat_des_ctr finished successfuly\n");
+			}
 			i++;
 		}
 	} else {
 		silent = 1;
 		for (i = 1; i < NR_RANDOM_TESTS; i++) {
 			rc = random_des_ctr(i, silent, data_length, iv_length);
-                	if (rc) {
+			if (rc) {
 				printf("random_des_ctr failed with rc = %i\n", rc);
 				error_count++;
-			} else
-				printf("random_des_ctr finished successfuly\n");
+			}
 			if (!(data_length % sizeof(ica_des_key_single_t))) {
 				/* Always when the full block size is reached use a
 				 * counter with the same size as the data */
-	        		rc = random_des_ctr(i, silent,
-						    data_length, data_length);
-		        	if (rc) {
-		        	        printf("random_des_ctr failed with "
-					       "rc = %i\n", rc);
-		        	        error_count++;
-		        	} else
-					printf("random_des_ctr finished "
-						"successfuly\n");
+				rc = random_des_ctr(i, silent, data_length, data_length);
+		        if (rc) {
+					printf("random_des_ctr failed with rc = %i\n", rc);
+					error_count++;
+				}
 			}
 			// add a value between 1 and 8 to data_length
 			if (ica_random_number_generate(sizeof(rdata), (unsigned char*) &rdata)) {
@@ -195,7 +190,7 @@ int main(int argc, char **argv)
 	if (error_count)
 		printf("%i testcases failed\n", error_count);
 	else
-		printf("All testcases finished successfully\n");
+		printf("All DES-CTR testcases finished successfully\n");
 
 	return rc;
 }

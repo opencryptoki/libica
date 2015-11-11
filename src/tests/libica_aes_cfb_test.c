@@ -592,10 +592,11 @@ int kat_aes_cfb(int iteration, int silent)
 		       iv_length, key, key_length, &lcfb, iteration);
 	memcpy(tmp_iv, iv, iv_length);
 
-	printf("Test Parameters for iteration = %i\n", iteration);
-	printf("key length = %i, data length = %i, iv length = %i,"
-	       " lcfb = %i\n", key_length, data_length, iv_length, lcfb);
-
+	if (!silent) {
+		printf("Test Parameters for iteration = %i\n", iteration);
+		printf("key length = %i, data length = %i, iv length = %i,"
+			" lcfb = %i\n", key_length, data_length, iv_length, lcfb);
+	}
 	if (iteration == 3)
 	rc = ica_aes_cfb(input_data, encrypt, lcfb, key, key_length, tmp_iv,
 			 lcfb, 1);
@@ -717,10 +718,11 @@ int random_aes_cfb(int iteration, int silent, unsigned int data_length,
 			      key_length);
 	memcpy(tmp_iv, iv, iv_length);
 
-	printf("Test Parameters for iteration = %i\n", iteration);
-	printf("key length = %i, data length = %i, iv length = %i,"
-	       " lcfb = %i\n", key_length, data_length, iv_length, lcfb);
-
+	if (!silent) {
+		printf("Test Parameters for iteration = %i\n", iteration);
+		printf("key length = %i, data length = %i, iv length = %i,"
+			" lcfb = %i\n", key_length, data_length, iv_length, lcfb);
+	}
 	rc = ica_aes_cfb(input_data, encrypt, data_length, key, key_length,
 			 tmp_iv, lcfb, 1);
 	if (rc) {
@@ -784,9 +786,7 @@ int main(int argc, char **argv)
 		if (rc) {
 			printf("kat_aes_cfb failed with rc = %i\n", rc);
 			error_count++;
-		} else
-			printf("kat_aes_cfb finished successfuly\n");
-
+		}
 	}
 
 	unsigned int data_length = 1;
@@ -800,8 +800,7 @@ int main(int argc, char **argv)
 				if (rc) {
 					printf("random_aes_cfb failed with rc = %i\n", rc);
 					error_count++;
-				} else
-					printf("random_aes_cfb finished successfuly\n");
+				}
 			}
 			switch (j) {
 			case 1:
@@ -826,7 +825,7 @@ int main(int argc, char **argv)
 	if (error_count)
 		printf("%i testcases failed\n", error_count);
 	else
-		printf("All testcases finished successfully\n");
+		printf("All AES-CFB testcases finished successfully\n");
 
 	return rc;
 }

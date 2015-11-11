@@ -34,6 +34,7 @@ static int handle_ica_error(int rc, char *message);
 static int is_crypto_card_loaded();
 void create_hw_info();
 int check_hw(int algo_id);
+unsigned int silent = 0;
 void check_icastats(int algo_id, char *stat);
 void des_tests(unsigned char *iv, unsigned char *cmac, unsigned char *ctr);
 void tdes_tests(unsigned char *iv, unsigned char *cmac, unsigned char *ctr);
@@ -41,12 +42,15 @@ void sha_tests();
 void rsa_tests(ica_adapter_handle_t handle);
 void aes_tests(unsigned char *iv, unsigned char *cmac, unsigned char *ctr);
 
-int main (void)
+int main (int argc, char **argv)
 {
+	int rc = 0;
+	ica_adapter_handle_t adapter_handle;
 
-        int rc = 0;
-	libica_version_info version;
-        ica_adapter_handle_t adapter_handle;
+	if (argc > 1) {
+		if (strstr(argv[1], "silent"))
+			silent = 1;
+	}
 
 	unsigned char *cmac; 
         unsigned char *ctr;
@@ -65,15 +69,6 @@ int main (void)
                 perror("Error in malloc: ");
                 exit(EXIT_FAILURE);
         }
-
-        /* Print out libica version.
-         **/
-        ica_get_version(&version);
-        printf("libica version %i.%i.%i\n\n",
-        version.major_version,
-        version.minor_version,
-        version.fixpack_version);
-        
 
 	  /*
  	 * Open crypto adapter
@@ -106,8 +101,8 @@ int main (void)
 	  /*
  	 * Check counters for all crypto operations
  	 **/ 	
-        des_tests(iv, cmac, ctr);
-        tdes_tests(iv, cmac, ctr);
+	des_tests(iv, cmac, ctr);
+	tdes_tests(iv, cmac, ctr);
 	sha_tests();
 	rsa_tests(adapter_handle);
 	aes_tests(iv, cmac, ctr);
@@ -116,6 +111,7 @@ int main (void)
 	free(ctr);
 	free(iv);
 
+	printf("All icastats testcases finished successfully\n");
 	return 0;
 }
 
@@ -247,16 +243,18 @@ void check_icastats(int algo_id, char *stat)
 	if(dec == -1){
 		if(enc == 0){
 			printf("Test %s FAILED: Could not count crypto operations!\n",
-			       stat);
+					stat);
 		} else if(enc > 0){
-			printf("Test %s SUCCESS.\n", stat);
+			if (!silent)
+				printf("Test %s SUCCESS.\n", stat);
 		} else{
-                        fprintf(stderr, "icastats parsing by %s FAILED!\n", stat);
-                        exit(EXIT_FAILURE);
+			fprintf(stderr, "icastats parsing by %s FAILED!\n", stat);
+			exit(EXIT_FAILURE);
 		}
 	} else{
 		if(enc > 0 && dec > 0){
-			printf("Test %s SUCCESS.\n", stat);
+			if (!silent)
+				printf("Test %s SUCCESS.\n", stat);
 		} else if(enc == 0 && dec == 0){
 			printf("Test %s FAILED: Could not count crypto operation!\n",
                                stat);

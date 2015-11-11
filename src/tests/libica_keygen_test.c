@@ -3,6 +3,7 @@
 #include <errno.h>
 #include <string.h>
 #include "ica_api.h"
+#include <sys/time.h>
 
 #define ZERO_PADDING 8
 
@@ -22,10 +23,12 @@ extern int errno;
 int main(int argc, char **argv)
 {
 	unsigned int rc = 0, rc_test = 0, expo_type = 0, key_bit_length = 0;
+	unsigned int silent = 0;
+	struct timeval start,end;
 
-	if(argc != 3){
-		printf( "usage: %s <key_bit_length>"
-				" <exponent_type>\n", argv[0]);
+	if(argc < 3){
+		printf( "usage: %s <key_bit_length> (57..4096) <exponent_type> "
+			"(3, 65537 or r [random])\n", argv[0]);
 		return EXIT_FAILURE;
 	}
 
@@ -54,9 +57,14 @@ int main(int argc, char **argv)
 		return EXIT_FAILURE;
 	}
 
-	unsigned char ciphertext[BITSTOBYTES(key_bit_length)],
-		      decrypted[BITSTOBYTES(key_bit_length)],
-		      plaintext[BITSTOBYTES(key_bit_length)];
+	if (argv[3]) {
+		if (strstr(argv[3], "silent"))
+			silent = 1;
+	}
+
+	unsigned char	ciphertext[BITSTOBYTES(key_bit_length)],
+					decrypted[BITSTOBYTES(key_bit_length)],
+					plaintext[BITSTOBYTES(key_bit_length)];
 	memset(ciphertext, 0, (size_t) BITSTOBYTES(key_bit_length));
 	memset(decrypted, 0, (size_t) BITSTOBYTES(key_bit_length));
 	memset(plaintext, 0, (size_t) BITSTOBYTES(key_bit_length));
@@ -88,31 +96,28 @@ int main(int argc, char **argv)
 
 	ica_adapter_handle_t adapter_handle = 0;
 
-	printf("[TEST RSA CRT]\n");
-
-	printf("generate random plaintext\t...");
+	if (!silent) {
+		printf("[TEST RSA CRT]\n");
+		printf("generate random plaintext\t...");
+	}
 	if((rc = ica_random_number_generate(BITSTOBYTES(key_bit_length) ,plaintext)) != 0){
 		++rc_test;
 		print_error_report(rc, errno, "ica_random_number_generate");
 	}
-	else
-		printf("\t\tOK\n");
 
 	/* make sure that plaintext < modulus */
 	plaintext[0] = 0;
 
-	printf("plaintext:\n");
-	dump_array((char *)plaintext, BITSTOBYTES(key_bit_length));
-
-	printf("open adapter\t\t\t...");
+	if (!silent) {
+		printf("plaintext:\n");
+		dump_array((char *)plaintext, BITSTOBYTES(key_bit_length));
+	}
 	if((rc = ica_open_adapter(&adapter_handle)) != 0){
 		++rc_test;
 		print_error_report(rc, errno, "ica_open_adapter");
 	}
-	else
-		printf("\t\tOK\n");
 
-        switch(expo_type){
+	switch(expo_type){
 	case EXPO_TYPE_3:
 		*(unsigned long*)((unsigned char *)modexpo_public_key.exponent +
 				  modexpo_public_key.key_length -
@@ -131,9 +136,13 @@ int main(int argc, char **argv)
 	default:
 		printf( "error - unknown <exponent_type>\n");
 		return EXIT_FAILURE;
+	} 
+
+	if (!silent) {
+		printf("generate keys\t\t\t...\n");
 	}
 
-	printf("generate keys\t\t\t...");
+	gettimeofday(&start, NULL);
 	if((rc = ica_rsa_key_generate_crt(adapter_handle,
 					       key_bit_length,
 					       &modexpo_public_key,
@@ -141,84 +150,89 @@ int main(int argc, char **argv)
 		++rc_test;
 		print_error_report(rc, errno, "ica_rsa_key_generate_crt");
 	}
-	else
-		printf("\t\tOK\n");
+	gettimeofday(&end, NULL);
+	if (!silent)
+		printf("RSA CRT Key_gen with key length %d took: %06lu µs.\n",
+				key_bit_length, (end.tv_sec*1000000+end.tv_usec)-
+					(start.tv_sec*1000000+start.tv_usec));
 
-	printf("public key (e,n):\ne =\n");
-	dump_array((char *) (char *)modexpo_public_key.exponent,
-		   BITSTOBYTES(key_bit_length));
-	printf("n =\n");
-	dump_array((char *) (char *)modexpo_public_key.modulus,
-		   BITSTOBYTES(key_bit_length));
-	printf("private key (p,q,dp,dq,q^-1):\np =\n");
-	dump_array((char *) (char *) crt_private_key.p,
-		   BITSTOBYTES(key_bit_length) / 2 + 1 + ZERO_PADDING);
-	printf("q =\n");
-	dump_array((char *) (char *)crt_private_key.q,
-		   BITSTOBYTES(key_bit_length) / 2 + 1);
-	printf("dp =\n");
-	dump_array((char *) (char *)crt_private_key.dp,
-		   BITSTOBYTES(key_bit_length) / 2 + 1 +ZERO_PADDING);
-	printf("dq =\n");
-	dump_array((char *) (char *)crt_private_key.dq,
-		   BITSTOBYTES(key_bit_length) / 2 + 1);
-	printf("q^-1 =\n");
-	dump_array((char *) (char *)crt_private_key.qInverse,
-		   BITSTOBYTES(key_bit_length) / 2 + 1 + ZERO_PADDING);
+	if (!silent) {
+		printf("public key (e,n):\ne =\n");
+		dump_array((char *) (char *)modexpo_public_key.exponent,
+			BITSTOBYTES(key_bit_length));
+		printf("n =\n");
+		dump_array((char *) (char *)modexpo_public_key.modulus,
+			BITSTOBYTES(key_bit_length));
+		printf("private key (p,q,dp,dq,q^-1):\np =\n");
+		dump_array((char *) (char *) crt_private_key.p,
+			BITSTOBYTES(key_bit_length) / 2 + 1 + ZERO_PADDING);
+		printf("q =\n");
+		dump_array((char *) (char *)crt_private_key.q,
+			BITSTOBYTES(key_bit_length) / 2 + 1);
+		printf("dp =\n");
+		dump_array((char *) (char *)crt_private_key.dp,
+			BITSTOBYTES(key_bit_length) / 2 + 1 +ZERO_PADDING);
+		printf("dq =\n");
+		dump_array((char *) (char *)crt_private_key.dq,
+			BITSTOBYTES(key_bit_length) / 2 + 1);
+		printf("q^-1 =\n");
+		dump_array((char *) (char *)crt_private_key.qInverse,
+			BITSTOBYTES(key_bit_length) / 2 + 1 + ZERO_PADDING);
+	}
 
-	printf("encrypt\t\t\t\t...");
-	if((rc = ica_rsa_mod_expo(adapter_handle, plaintext, &modexpo_public_key,
+	if (!silent) {
+		printf("encrypt...\n");
+	}
+	if((rc = ica_rsa_mod_expo(adapter_handle, plaintext, &modexpo_public_key, 
 				  ciphertext)) != 0){
 		++rc_test;
 		print_error_report(rc, errno, "ica_rsa_mod_expo");
 	}
-	else
-		printf("\t\tOK\n");
 
-	printf("ciphertext:\n");
-	dump_array((char *) ciphertext, BITSTOBYTES(key_bit_length));
+	if (!silent) {
+		printf("ciphertext:\n");
+		dump_array((char *) ciphertext, BITSTOBYTES(key_bit_length));
+	}
 
-	printf("decrypt\t\t\t\t...");
-	if((rc = ica_rsa_crt(adapter_handle, ciphertext, &crt_private_key,
+	if (!silent) {
+		printf("decrypt...\n");
+	}
+	if((rc = ica_rsa_crt(adapter_handle, ciphertext, &crt_private_key, 
 				  decrypted)) != 0){
 		++rc_test;
 		print_error_report(rc, errno, "ica_rsa_crt");
 	}
-	else
-		printf("\t\tOK\n");
 
-	printf("result:\n");
-	dump_array((char *) decrypted, BITSTOBYTES(key_bit_length));
+	if (!silent) {
+		printf("result:\n");
+		dump_array((char *) decrypted, BITSTOBYTES(key_bit_length));
+	}
 
-	printf("close adapter\t\t\t...");
 	if((rc = ica_close_adapter(adapter_handle)) != 0){
 		++rc_test;
 		print_error_report(rc, errno, "ica_close_adapter");
 	}
-	else
-		printf("\t\tOK\n");
-	
-	printf("compare ciphertext to plaintext\t...");
-	if(memcmp(plaintext,ciphertext,BITSTOBYTES(key_bit_length)) != 0)
-		printf("\t\tOK\n");
-	else{
+
+	if (!silent) {
+		printf("compare ciphertext to plaintext...\n");
+	}
+	if(memcmp(plaintext,ciphertext,BITSTOBYTES(key_bit_length)) == 0) {
 		printf("\t\tFAILED\nerror - ciphertext equals plaintext.\n");
 		++rc_test;
 	}
 
-	printf("compare result to plaintext\t...");
-	if(memcmp(plaintext,decrypted,BITSTOBYTES(key_bit_length)) == 0)
-		printf("\t\tOK\n");
-	else
-	{
+	if (!silent) {
+		printf("compare result to plaintext...\n");
+	}
+	if(memcmp(plaintext,decrypted,BITSTOBYTES(key_bit_length)) != 0) {
 		printf("\t\tFAILED\nerror - decryption result doesn't match plaintext.\n");
 		++rc_test;
 	}
 
 	if(0 == rc_test)
-		printf("[TEST PASSED]\n");
+		printf("All Keygen tests passed successfully\n");
 	else
-		printf("[TEST FAILEDED: %u errors]\n",rc_test);
+		printf("Keygen tests failed: %u errors\n",rc_test);
 
 	return rc_test;
 }

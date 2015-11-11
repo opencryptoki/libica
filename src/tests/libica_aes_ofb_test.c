@@ -354,10 +354,12 @@ for (i = 0; i <= 2; i++) {
 	load_random_test_data(input_data, data_length, iv, iv_length, key,
 			      key_length);
 	memcpy(tmp_iv, iv, iv_length);
-	printf("Test Parameters for iteration = %i\n", iteration);
-	printf("key length = %i, data length = %i, iv length = %i\n",
-	       key_length, data_length, iv_length);
 
+	if (!silent) {
+		printf("Test Parameters for iteration = %i\n", iteration);
+		printf("key length = %i, data length = %i, iv length = %i\n",
+			key_length, data_length, iv_length);
+	}
 	rc = ica_aes_ofb(input_data, encrypt, data_length, key, key_length,
 			 tmp_iv, 1);
 	if (rc) {
@@ -417,10 +419,11 @@ int kat_aes_ofb(int iteration, int silent)
 
 	get_sizes(&data_length, &iv_length, &key_length, iteration);
 
-	printf("Test Parameters for iteration = %i\n", iteration);
-	printf("key length = %i, data length = %i, iv length = %i\n",
-	       key_length, data_length, iv_length);
-
+	if (!silent) {
+		printf("Test Parameters for iteration = %i\n", iteration);
+		printf("key length = %i, data length = %i, iv length = %i\n",
+			key_length, data_length, iv_length);
+	}
 	unsigned char iv[iv_length];
 	unsigned char tmp_iv[iv_length];
 	unsigned char expected_iv[iv_length];
@@ -520,8 +523,7 @@ int main(int argc, char **argv)
 		if (rc) {
 			printf("kat_aes_ofb failed with rc = %i\n", rc);
 			error_count++;
-		} else
-			printf("kat_aes_ofb finished successfuly\n");
+		}
 
 	}
 
@@ -532,8 +534,7 @@ int main(int argc, char **argv)
 			printf("random_aes_ofb failed with rc = %i\n", rc);
 			error_count++;
 			goto out;
-		} else
-			printf("random_aes_ofb finished successfuly\n");
+		}
 		// add a value between 1 and 8 to data_length
 		if (ica_random_number_generate(sizeof(rdata), (unsigned char*) &rdata)) {
 			printf("ica_random_number_generate failed with errnor = %i\n",
@@ -547,7 +548,7 @@ out:
 	if (error_count)
 		printf("%i testcases failed\n", error_count);
 	else
-		printf("All testcases finished successfully\n");
+		printf("All AES-OFB testcases finished successfully\n");
 
 	return rc;
 }

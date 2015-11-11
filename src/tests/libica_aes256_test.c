@@ -93,7 +93,9 @@ int test_aes256_old_api(int mode)
 		printf("This does NOT match the known result.\n");
 		return 1;
 	} else {
-		printf("Yep, it's what it should be.\n");
+		if (!silent) {
+			printf("Yep, it's what it should be.\n");
+		}
 	}
 
 	bzero(iv, sizeof(iv));
@@ -133,8 +135,8 @@ int test_aes256_old_api(int mode)
 			dump_array((unsigned char *) enc_text, sizeof(enc_text));
 			printf("\nDecrypted data:\n");
 			dump_array((unsigned char *) dec_text, sizeof(dec_text));
+			printf("Successful!\n");
 		}
-		printf("Successful!\n");
 	}
 
 	return 0;
@@ -168,7 +170,9 @@ int test_aes256_new_api(int mode)
 		printf("This does NOT match the known result.\n");
 		return 1;
 	} else {
-		printf("Yep, it's what it should be.\n");
+		if (!silent) {
+			printf("Yep, it's what it should be.\n");
+		}
 	}
 
 	bzero(iv, sizeof(iv));
@@ -196,8 +200,8 @@ int test_aes256_new_api(int mode)
 			dump_array((unsigned char *) enc_text, sizeof(enc_text));
 			printf("\nDecrypted data:\n");
 			dump_array((unsigned char *) dec_text, sizeof(dec_text));
+			printf("Successful!\n");
 		}
-		printf("Successful!\n");
 	}
 
 	return 0;
@@ -212,8 +216,18 @@ int main(int argc, char **argv)
 			mode = MODE_ECB;
 		if (strstr(argv[1], "cbc"))
 			mode = MODE_CBC;
-		printf("mode = %i \n", mode);
+		if (strstr(argv[1], "silent"))
+			silent = 1;
 		}
+	if (argc > 2) {
+		if (strstr(argv[2], "ecb"))
+			mode = MODE_ECB;
+		if (strstr(argv[2], "cbc"))
+			mode = MODE_CBC;
+		if (strstr(argv[2], "silent"))
+			silent = 1;
+	}
+
 	if (mode != 0 && mode != MODE_ECB && mode != MODE_CBC) {
 		printf("Usage: %s [ ecb | cbc ]\n", argv[0]);
 		return -1;
@@ -229,37 +243,46 @@ int main(int argc, char **argv)
 				error_count++;
 				printf ("test_aes_old_api mode = %i failed \n", mode);
 			}
-			else
-				printf ("test_aes_old_api mode = %i finished successfuly \n", mode);
-
+			else {
+				if (!silent) {
+					printf ("test_aes_old_api mode = %i finished successfully \n", mode);
+				}
+			}
 			rc = test_aes256_new_api(mode);
 			if (rc) {
 				error_count++;
 				printf ("test_aes_new_api mode = %i failed \n", mode);
 			}
-			else
-				printf ("test_aes_new_api mode = %i finished successfuly \n", mode);
-
+			else {
+				if (!silent) {
+					printf ("test_aes_new_api mode = %i finished successfully \n", mode);
+				}
+			}
 			mode--;
 		}
 		if (error_count)
 			printf("%i testcases failed\n", error_count);
 		else
-			printf("All testcases finished successfuly\n");
+			printf("All AES256 (ECB/CBC) testcases finished successfully\n");
 	} else {
 	/* Perform only the old test either ein ECB or CBC mode */
 		silent = 0;
 		rc = test_aes256_old_api(mode);
 		if (rc)
 			printf("test_aes_old_api mode = %i failed \n", mode);
-		else
-			printf("test_aes_old_api mode = %i finished successfuly \n", mode);
-
+		else {
+			if (!silent) {
+				printf("test_aes_old_api mode = %i finished successfully \n", mode);
+			}
+		}
 		rc = test_aes256_new_api(mode);
 		if (rc)
 			printf("test_aes_new_api mode = %i failed \n", mode);
-		else
-			printf("test_aes_new_api mode = %i finished successfuly \n", mode);
+		else {
+			if (!silent) {
+				printf("test_aes_new_api mode = %i finished successfully \n", mode);
+			}
+		}
 	}
 
 	return rc;

@@ -228,7 +228,7 @@ inline int compare_decrypt_result_with_expected_result(
 }
 
 
-int test_3des_new_api(unsigned int mode, unsigned int variant)
+int test_3des_new_api(unsigned int mode, unsigned int variant, int silent)
 {
 	/* Test 3des */
 	unsigned int iv_size = sizeof(ica_des_vector_t);
@@ -283,13 +283,16 @@ int test_3des_new_api(unsigned int mode, unsigned int variant)
 				key[i], 24, tmp_iv, iv_size,
 				(char *) "3DES", i))
 			return 1;
-		else
-			printf("Test case number %i for 3DES with CBC_CS mode was "
-			"successful!\n", i) ;
+		else {
+			if (!silent) {
+				printf("Test case number %i for 3DES with CBC_CS mode was "
+				"successful!\n", i);
+			}
+		}
 	}
 	return rc;
 }
-int test_des_new_api(unsigned int mode, unsigned int variant)
+int test_des_new_api(unsigned int mode, unsigned int variant, int silent)
 {
 	/* Test des */
 	unsigned int iv_size = sizeof(ica_des_vector_t);
@@ -345,13 +348,16 @@ int test_des_new_api(unsigned int mode, unsigned int variant)
 				(sizeof(key[i]) / 8), tmp_iv, iv_size,
 				(char *) "DES", i))
 			return 1;
-		else
-			printf("Test case number %i for DES with CBC_CS mode was "
-			"successful!\n", i);
+		else {
+			if (!silent) {
+				printf("Test case number %i for DES with CBC_CS mode was "
+				"successful!\n", i);
+			}
+		}
 	}
 	return rc;
 }
-int test_aes_new_api(unsigned int mode, unsigned int variant)
+int test_aes_new_api(unsigned int mode, unsigned int variant, int silent)
 {
 	/* Test with 192 & 256 byte keys */
 	unsigned int iv_size = sizeof(ica_aes_vector_t);
@@ -410,14 +416,17 @@ int test_aes_new_api(unsigned int mode, unsigned int variant)
 				key[i],	key_size[i], tmp_iv, iv_size,
 				(i < 3) ? text[0] : text[1], i))
 			return 1;
-		else
-			printf("Test case number %i for %s with CBC_CS mode was "
-			"successful!\n", i, (i < 3) ? text[0] : text[1]) ;
+		else {
+			if (!silent) {
+				printf("Test case number %i for %s with CBC_CS mode was "
+				"successful!\n", i, (i < 3) ? text[0] : text[1]);
+			}
+		}
 	}
 	return rc;
 }
 
-int test_aes128_new_api(unsigned int mode)
+int test_aes128_new_api(unsigned int mode, int silent)
 {
 	/* AES128 Known Answer Tests*/
 	unsigned int iv_size = sizeof(ica_aes_vector_t);
@@ -491,80 +500,76 @@ int test_aes128_new_api(unsigned int mode)
 				key, sizeof(key), tmp_iv, iv_size,
 				(char *) "AES-128", i))
 			return 1;
-		else
-			printf("Test case number %i for AES-128 with CBC_CS "
-			"mode was successful!\n", i) ;
+		else {
+			if (!silent) {
+				printf("Test case number %i for AES-128 with CBC_CS "
+				"mode was successful!\n", i);
+			}
+		}
 	}
 	return rc;
 }
 
-int main()
+int main(int argc, char **argv)
 {
 	unsigned int mode;
 	unsigned int variant;
 	int rc, error_count;
+	unsigned int silent = 0;
+
+	if (argc > 1) {
+		if (strstr(argv[1], "silent"))
+			silent = 1;
+	}
 
 	mode = MODE_CBCCS;
 	rc = 0;
 	error_count = 0;
-	printf("\n");
 
 	/* known answer tests for AES128 */
-	rc = test_aes128_new_api(mode);
+	rc = test_aes128_new_api(mode, silent);
 	if (rc) {
 		error_count++;
 		printf("test_aes128_new_api for CBC_CS mode with AES-128 "
 		"failed \n");
 		return rc;
 	}
-	else
-		printf("test_aes_new_api for CBC_CS mode with AES-128 "
-			"finished successfuly \n\n");
 
 	for (variant =  ICA_CBCCS_VARIANT1;
 	     variant <= ICA_CBCCS_VARIANT3;
 	     variant++) {
-		printf("\n--- Test cycle with CBCCS variant %d ---\n", variant);
-
+		if (!silent) {
+			printf("\n--- Test cycle with CBCCS variant %d ---\n", variant);
+		}
 		/* AES 192 & 256 test */
-		rc = test_aes_new_api(mode, variant);
+		rc = test_aes_new_api(mode, variant, silent);
 		if (rc) {
 			error_count++;
 			printf("test_aes_new_api for CBC_CS mode with AES (192|256) "
 			       "failed \n");
 			return rc;
-		}
-		else {
-			printf("test_aes_new_api for CBC_CS mode with AES (192|256) "
-			       "finished successfuly \n\n");
 		}
 
 		/* DES tests */
-		rc = test_des_new_api(mode, variant);
+		rc = test_des_new_api(mode, variant, silent);
 		if (rc) {
 			error_count++;
 			printf("test_des_new_api for CBC_CS mode with DES "
 			       "failed \n");
 			return rc;
-		} else {
-			printf("test_des_new_api for CBC_CS mode with DES "
-			       "finished successfuly \n\n");
 		}
 
 		/* 3DES tests */
-		rc = test_3des_new_api(mode, variant);
+		rc = test_3des_new_api(mode, variant, silent);
 		if (rc) {
 			error_count++;
 			printf("test_des_new_api for CBC_CS mode with 3DES "
 			       "failed \n");
 			return rc;
-		} else {
-			printf("test_des_new_api for CBC_CS mode with 3DES "
-			       "finished successfuly \n");
 		}
 	}
 
-	printf("\nAll CBC_CS mode tests finished successfuly\n\n");
+	printf("All CBC-CS mode tests finished successfully\n");
 	return rc;
 }
 

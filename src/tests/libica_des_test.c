@@ -210,7 +210,7 @@ int main(int argc, char **argv)
 				printf ("test_des_old_api mode = %i failed \n", mode);
 			}
 			else
-				printf ("test_des_old_api mode = %i finished successfuly \n", mode);
+				printf ("test_des_old_api mode = %i finished successfully \n", mode);
 
 			rc = test_des_new_api(mode);
 			if (rc) {
@@ -218,14 +218,14 @@ int main(int argc, char **argv)
 				printf ("test_des_new_api mode = %i failed \n", mode);
 			}
 			else
-				printf ("test_des_new_api mode = %i finished successfuly \n", mode);
+				printf ("test_des_new_api mode = %i finished successfully \n", mode);
 
 			mode--;
 		}
 		if (error_count)
 			printf("%i testcases failed\n", error_count);
 		else
-			printf("All testcases finished successfuly\n");
+			printf("All testcases finished successfully\n");
 	} else {
 	/* Perform only the old test either ein ECB or CBC mode */
 		silent = 0;
@@ -233,13 +233,13 @@ int main(int argc, char **argv)
 		if (rc)
 			printf("test_des_old_api mode = %i failed \n", mode);
 		else
-			printf("test_des_old_api mode = %i finished successfuly \n", mode);
+			printf("test_des_old_api mode = %i finished successfully \n", mode);
 
 		rc = test_des_new_api(mode);
 		if (rc)
 			printf ("test_des_new_api mode = %i failed \n", mode);
 		else
-			printf ("test_des_new_api mode = %i finished successfuly \n", mode);
+			printf ("test_des_new_api mode = %i finished successfully \n", mode);
 	}
 	return rc;
 }

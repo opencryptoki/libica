@@ -417,10 +417,11 @@ int random_aes_ctr(int iteration, int silent, unsigned int data_length, unsigned
 	if (data_length % sizeof(ica_aes_vector_t))
 		iv_length = sizeof(ica_aes_vector_t);
 
-	printf("Test Parameters for iteration = %i\n", iteration);
-	printf("key length = %i, data length = %i, iv length = %i\n",
-	       key_length, data_length, iv_length);
-
+	if (!silent) {
+		printf("Test Parameters for iteration = %i\n", iteration);
+		printf("key length = %i, data length = %i, iv length = %i\n",
+			key_length, data_length, iv_length);
+	}
 	unsigned char iv[iv_length];
 	unsigned char tmp_iv[iv_length];
 	unsigned char key[key_length];
@@ -497,10 +498,11 @@ int kat_aes_ctr(int iteration, int silent)
 
 	get_sizes(&data_length, &iv_length, &key_length, iteration);
 
-	printf("Test Parameters for iteration = %i\n", iteration);
-	printf("key length = %i, data length = %i, iv length = %i\n",
-	       key_length, data_length, iv_length);
-
+	if (!silent) {
+		printf("Test Parameters for iteration = %i\n", iteration);
+		printf("key length = %i, data length = %i, iv length = %i\n",
+			key_length, data_length, iv_length);
+	}
 	unsigned char iv[iv_length];
 	unsigned char tmp_iv[iv_length];
 	unsigned char expected_iv[iv_length];
@@ -614,8 +616,7 @@ int main(int argc, char **argv)
 			if (rc) {
 				printf("kat_aes_ctr failed with rc = %i\n", rc);
 				error_count++;
-			} else
-				printf("kat_aes_ctr finished successfuly\n");
+			}
 		}
 		// run random tests
 		silent = 1;
@@ -624,8 +625,7 @@ int main(int argc, char **argv)
 			if (rc) {
 				printf("random_aes_ctr failed with rc = %i\n", rc);
 				error_count++;
-			} else
-				printf("random_aes_ctr finished successfuly\n");
+			}
 			// add a value between 1 and 8 to data_length
 			if (ica_random_number_generate(sizeof(rdata), (unsigned char*) &rdata)) {
 				printf("ica_random_number_generate failed with errnor = %i\n",
@@ -645,8 +645,7 @@ int main(int argc, char **argv)
 			if (rc) {
 				printf("random_aes_ctr failed with rc = %i\n", rc);
 				return rc;
-			} else
-				printf("random_aes_ctr finished successfuly\n");
+			}
 			i++;
 		}
 
@@ -655,7 +654,7 @@ int main(int argc, char **argv)
 	if (error_count)
 		printf("%i testcases failed\n", error_count);
 	else
-		printf("All testcases finished successfully\n");
+		printf("All AES-CTR testcases finished successfully\n");
 
 	return rc;
 }

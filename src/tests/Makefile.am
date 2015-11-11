@@ -33,3 +33,6 @@ all: $(TARGETS)
 clean:
 	rm -f $(TARGETS)
 
+distclean:
+	rm -f Makefile
+	rm -f $(TARGETS)

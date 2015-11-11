@@ -312,10 +312,11 @@ int kat_aes_ecb(int iteration, int silent)
 
 	get_sizes(&data_length, &key_length, iteration);
 
-	printf("Test Parameters for iteration = %i\n", iteration);
-	printf("key length = %i, data length = %i",
-	       key_length, data_length);
-
+	if (!silent) {
+		printf("Test Parameters for iteration = %i\n", iteration);
+		printf("key length = %i, data length = %i",
+			key_length, data_length);
+	}
 	unsigned char key[key_length];
 	unsigned char input_data[data_length];
 	unsigned char encrypt[data_length];
@@ -414,9 +415,11 @@ for (i = 1; i <= 2; i++) {
 	memset(decrypt, 0x00, data_length);
 
 	load_random_test_data(input_data, data_length, key, key_length);
-	printf("Test Parameters for iteration = %i\n", iteration);
-	printf("key length = %i, data length = %i\n", key_length, data_length);
 
+	if (!silent) {
+		printf("Test Parameters for iteration = %i\n", iteration);
+		printf("key length = %i, data length = %i\n", key_length, data_length);
+	}
 	rc = ica_aes_ecb(input_data, encrypt, data_length, key, key_length,
 			 1);
 	if (rc) {
@@ -482,8 +485,7 @@ int main(int argc, char **argv)
 		if (rc) {
 			printf("kat_aes_ecb failed with rc = %i\n", rc);
 			error_count++;
-		} else
-			printf("kat_aes_ecb finished successfuly\n");
+		}
 
 	}
 	for(iteration = 1; iteration <= NR_RANDOM_TESTS; iteration++)	{
@@ -493,8 +495,7 @@ int main(int argc, char **argv)
 			printf("random_aes_ecb failed with rc = %i\n", rc);
 			error_count++;
 			goto out;
-		} else
-			printf("random_aes_ecb finished successfuly\n");
+		}
 		data_length += sizeof(ica_aes_vector_t);
 	}
 
@@ -503,7 +504,7 @@ out:
 	if (error_count)
 		printf("%i testcases failed\n", error_count);
 	else
-		printf("All testcases finished successfully\n");
+		printf("All AES-ECB testcases finished successfully\n");
 
 	return rc;
 }

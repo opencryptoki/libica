@@ -122,18 +122,22 @@ static void dump_array(unsigned char *ptr, unsigned int size)
 		printf("... %d bytes not printed\n", trunc);
 }
 
-int api_ccm_test(void)
+int api_ccm_test(int silent)
 {
 	unsigned char *out_data;
 
-	printf("Test of CCM api\n");
+	if (!silent) {
+		printf("Test of CCM api\n");
+	}
 	while ( i < 65536 ) { // init big assoc_data
 		memcpy(assoc_data[3] + i, repeated_string, 256);
 		i= i + 256;
 	}
 	int rc = 0;
 	for (i = 0; i < NUM_CCM_TESTS; i++) {
-		printf("\nOriginal data for test %d:\n", i);
+		if (!silent) {
+			printf("\nOriginal data for test %d:\n", i);
+		}
 		if (!(out_data = malloc(cipher_text_length[i])))
                         return EINVAL;
 		memset(out_data, 0, cipher_text_length[i]);
@@ -149,15 +153,21 @@ int api_ccm_test(void)
 				 rc, rc);
 			return rc;
 		}
-		printf("\nOutput Cipher text for test %d:\n", i);
-		dump_array(out_data, cipher_text_length[i]);
-		printf("\nExpected Cipher Text for test %d:\n", i);
-		dump_array(cipher_text[i], cipher_text_length[i]);
+		if (!silent) {
+			printf("\nOutput Cipher text for test %d:\n", i);
+			dump_array(out_data, cipher_text_length[i]);
+			printf("\nExpected Cipher Text for test %d:\n", i);
+			dump_array(cipher_text[i], cipher_text_length[i]);
+		}
+
 		if (memcmp(cipher_text[i], out_data, cipher_text_length[i]) != 0) {
 			printf("This does NOT match the known result.\n");
 			return 1;
 		}
-		printf("Yep, that's how it should be encrypted.\n");
+
+		if (!silent) {
+			printf("Yep, that's how it should be encrypted.\n");
+		}
 		// start decrypt / verify
 		memset(payload[i], 0, payload_length[i]);
 		rc = (ica_aes_ccm(out_data, payload_length[i],
@@ -171,13 +181,19 @@ int api_ccm_test(void)
 				rc,rc);
 			return rc;
 		}
-		printf("\nOutput payload for test %d:\n", i);
-		dump_array(out_data, payload_length[i]);
-		printf("\nExpected payload for test %d:\n", i);
-		dump_array(payload_after_decrypt[i], payload_length[i]);
+
+		if (!silent) {
+			printf("\nOutput payload for test %d:\n", i);
+			dump_array(out_data, payload_length[i]);
+			printf("\nExpected payload for test %d:\n", i);
+			dump_array(payload_after_decrypt[i], payload_length[i]);
+		}
+
 		if (memcmp(out_data, payload_after_decrypt[i],
 				payload_length[i]) == 0 ) {
-			printf("Yep, payload matches to original.\n");
+			if (!silent) {
+				printf("Yep, payload matches to original.\n");
+			}
 		} else {
 			printf("This does NOT match the known result.\n");
 			return 1;
@@ -190,13 +206,19 @@ int api_ccm_test(void)
 int main(int argc, char **argv)
 {
 	int rc = 0;
+	int silent = 0;
 
-	rc = api_ccm_test();
+	if (argc > 1) {
+		if (strstr(argv[1], "silent"))
+			silent = 1;
+	}
+
+	rc = api_ccm_test(silent);
 	if (rc) {
 		printf("api_ccm_test failed with rc = %i\n", rc);
 		return rc;
 	}
-	printf("api_ccm_test was succesful\n");
+	printf("All AES-CCM mode tests finished successfully\n");
 	return 0;
 }
 
