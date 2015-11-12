@@ -1,4 +1,12 @@
-v2.4.0
+v2.5.0
+ - [FEATURE] Added streaming support for Galois Counter Mode (AES-GCM)
+ - [FEATURE] Allow RSA Key generation for any granularity (57..4096 bits)
+ - [FEATURE] New RSA CRT Key check API (Convertion of non-compliant keys)
+ - [PATCH] Replaced deprecated RSA_key_generate function
+ - [PATCH] Fixed accounting for GCM, CCM and CMAC. Added accounting for GHASH
+ - [PATCH] Improved configure script to automatically build test cases
+ - [UPDATE] Added SHA test cases. Improved and extended test suite
+ v2.4.0
  Reworked the statistic measurement facility (icastats)
  - Statistics are now collected independent from the process context
  - Statistic data gathered per user
