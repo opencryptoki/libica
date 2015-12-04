@@ -46,7 +46,7 @@
 
 #define MAX_VERSION_LENGTH 16
 
-//#define NDEBUG /* turns off assertions *///DEBUG
+#define NDEBUG /* turns off assertions */
 
 static unsigned int check_des_parms(unsigned int mode,
 				    unsigned long data_length,

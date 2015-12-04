@@ -3676,7 +3676,7 @@ int ica_drbg_instantiate(ica_drbg_t **sh,
  * (reseed a DRBG instantiation)
  *
  * @sh: State Handle. Identifies the DRBG instantiation to be reseeded.
- * @pr: Prediciton Resistance request. Indicates whether or not prediciton
+ * @pr: Prediciton Resistance request. Indicates whether or not prediction
  * resistance is required.
  * @add: ADDitional input: An optional input. NULL indicates that no additional
  * input is used.
@@ -3702,7 +3702,7 @@ int ica_drbg_reseed(ica_drbg_t *sh,
  * bytes are requested.
  * @sec: requested SECurity strength: Minimum bits of security that the
  * generated pseudorandom bytes SHALL offer.
- * @pr: Prediciton Resistance request. Indicates whether or not prediciton
+ * @pr: Prediciton Resistance request. Indicates whether or not prediction
  * resistance is required.
  * @add: ADDitional input. An optional input. NULL indicates that no additional input
  * is used.

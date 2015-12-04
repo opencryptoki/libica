@@ -82,7 +82,7 @@ ica_drbg_mech_t DRBG_SHA512 = {
 
 	/* Health test */
 	.lock = PTHREAD_RWLOCK_INITIALIZER,
-	.test_intervall = 3,//UINT64_MAX,//DEBUG
+	.test_intervall = UINT64_MAX,
 	.test_ctr = 0,
 	.error_state = 0,
 };

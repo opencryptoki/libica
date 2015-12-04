@@ -23,7 +23,7 @@
 #include "s390_drbg.h"
 #include "s390_sha.h"
 
-//#define NDEBUG	/* turns off assertions *///DEBUG
+#define NDEBUG	/* turns off assertions */
 
 /*
  * Test DRBG mechanisms
