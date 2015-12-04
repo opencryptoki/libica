@@ -30,6 +30,7 @@
 ***                                                                      ***
 ***************************************************************************/
 
+#include <stdbool.h>
 #include <stdint.h>
 
 #define ica_adapter_handle_t int
@@ -153,6 +154,7 @@ typedef ica_adapter_handle_t ICA_ADAPTER_HANDLE;
 #define RSA_CRT         91
 #define RSA_KEY_GEN_ME  92
 #define RSA_KEY_GEN_CRT 93
+#define SHA512_DRNG	94
 
 /*
  * Key length for DES/3DES encryption/decryption
@@ -3594,5 +3596,173 @@ static inline unsigned int aes_directed_fc(unsigned int key_length, int directio
 	}
 	return 0;
 }
+
+/*
+ * ica_drbg: libica's Deterministic Random Bit Generator
+ * 	     (conforming to NIST SP 800-90A)
+ *
+ * Table of currently supported DRBG mechanisms:
+ *
+ * DRBG mechanism	supported security	max. byte length
+ * 			  strengths (bits)	   of pers / add
+ * -------------------------------------------------------------
+ * DRBG_SHA512		112, 128, 196, 256	       256 / 256
+ */
+typedef struct ica_drbg_mech ica_drbg_mech_t;
+
+extern ica_drbg_mech_t *const ICA_DRBG_SHA512;
+
+/*
+ * An ica_drbg_t object holds the internal state of a DRBG instantiation. A
+ * DRBG instantiation is identified by an associated ica_drbg_t * pointer
+ * (state handle).
+ * State handles that do not identify any DRBG instantiation SHALL be NULL
+ * (invalid). Therefore a new state handle SHALL be initialized to NULL.
+ */
+#define ICA_DRBG_NEW_STATE_HANDLE	NULL
+
+typedef struct ica_drbg ica_drbg_t;
+
+/*
+ * If a catastrophic error is detected, all existing DRBG instantiations of the
+ * corresponding mechanism are in error state making uninstantiation their
+ * only permitted operation. Creation of new DRBG instantiations of
+ * this mechanism are not permitted.
+ *
+ * Catastrophic error flags ( < 0):
+ */
+#define ICA_DRBG_HEALTH_TEST_FAIL	(-1)
+#define ICA_DRBG_ENTROPY_SOURCE_FAIL	(-2)
+
+/*
+ * Instantiate function
+ * (create a new DRBG instantiation)
+ *
+ * @sh: State Handle pointer. The (invalid) state handle is set to identify the
+ * new DRBG instantiation and thus becomes valid.
+ * @sec: requested instantiation SECurity strength (bits). The new DRBG
+ * instantiation's security strength is set to the lowest security strength
+ * supported by it's DRBG mechanism (see table) that is greater than or equal
+ * to @sec.
+ * @pr: Prediction Resistance flag. Indicates whether or not prediction
+ * resistance may be required by the consuming application during one or more
+ * requests for pseudorandom bytes.
+ * @mech: MECHanism. The new DRBG instantiation is of this mechanism type.
+ * @pers: PERSonalization string. An optional input that provides
+ * personalization information. The personalisation string SHALL be unique for
+ * all instantiations of the same mechanism type. NULL indicates that no
+ * personalization string is used (not recommended).
+ * @pers_len: Byte length of @pers.
+ *
+ * @return:
+ * 0				Success.
+ * ENOMEM			Out of memory.
+ * EINVAL 			At least one argument is invalid.
+ * ENOTSUP 			Prediction resistance or the requested security
+ * 				strength is not supported.
+ * EPERM			Failed to obtain a valid timestamp from clock.
+ * ICA_DRBG_HEALTH_TEST_FAIL	Health test failed.
+ * ICA_DRBG_ENTROPY_SOURCE_FAIL	Entropy source failed.
+ */
+int ica_drbg_instantiate(ica_drbg_t **sh,
+			 int sec,
+			 bool pr,
+			 ica_drbg_mech_t *mech,
+			 const unsigned char *pers,
+			 size_t pers_len);
+
+/*
+ * Reseed function
+ * (reseed a DRBG instantiation)
+ *
+ * @sh: State Handle. Identifies the DRBG instantiation to be reseeded.
+ * @pr: Prediciton Resistance request. Indicates whether or not prediciton
+ * resistance is required.
+ * @add: ADDitional input: An optional input. NULL indicates that no additional
+ * input is used.
+ * @add_len: Byte length of @add.
+ *
+ * @return:
+ * 0				Success.
+ * ENOMEM			Out of memory.
+ * EINVAL 			At least one argument is invalid.
+ * ENOTSUP 			Prediction resistance is not supported.
+ * ICA_DRBG_HEALTH_TEST_FAIL	Health test failed.
+ * ICA_DRBG_ENTROPY_SOURCE_FAIL	Entropy source failed.
+ */
+int ica_drbg_reseed(ica_drbg_t *sh,
+		    bool pr,
+		    const unsigned char *add,
+		    size_t add_len);
+/*
+ * Generate function
+ * (request pseudorandom bytes from a DRBG instantiation)
+ *
+ * @sh: State Handle. Identifies the DRBG instantiation from which pseudorandom
+ * bytes are requested.
+ * @sec: requested SECurity strength: Minimum bits of security that the
+ * generated pseudorandom bytes SHALL offer.
+ * @pr: Prediciton Resistance request. Indicates whether or not prediciton
+ * resistance is required.
+ * @add: ADDitional input. An optional input. NULL indicates that no additional input
+ * is used.
+ * @add_len: Byte length of @add.
+ * @prnd: PseudoRaNDom bytes.
+ * @prnd_len: Byte length of @prnd. Requested number of pseudorandom bytes.
+ *
+ * @return:
+ * 0				Success.
+ * ENOMEM			Out of memory.
+ * EINVAL 			At least one argument is invalid.
+ * ENOTSUP 			Prediction resistance or the requested security
+ * 				strength is not supported.
+ * EPERM			Reseed required.
+ * ICA_DRBG_HEALTH_TEST_FAIL	Health test failed.
+ * ICA_DRBG_ENTROPY_SOURCE_FAIL	Entropy source failed.
+ */
+int ica_drbg_generate(ica_drbg_t *sh,
+		      int sec,
+		      bool pr,
+		      const unsigned char *add,
+		      size_t add_len,
+		      unsigned char *prnd,
+		      size_t prnd_len);
+
+/*
+ * Uninstantiate function
+ * (destroy an existing DRBG instiantiation)
+ *
+ * @sh: State Handle pointer. The corresponding DRBG instantiation is destroyed
+ * and the state handle is set to NULL (invalid).
+ *
+ * @return:
+ * 0				Success.
+ * EINVAL 			At least one argument is invalid.
+ */
+int ica_drbg_uninstantiate(ica_drbg_t **sh);
+
+/*
+ * Health test function
+ * (run health test for a DRBG mechanism function)
+ *
+ * @func: FUNCtion. Pointer indicating which function should be tested. Options
+ * are "ica_drbg_instantiate", "ica_drbg_reseed" and "ica_drbg_generate". The
+ * uninstantiate function is tested whenever other functions are tested.
+ * @sec: SECurity strength. Argument for the call to @func.
+ * @pr: PRediction resistance. Argument for the call to @func.
+ * @mech: MECHanism. The mechanism to be tested.
+ *
+ * @return:
+ * 0				Success.
+ * EINVAL 			At least one argument is invalid.
+ * ENOTSUP 			Prediction resistance or security strength is
+ * 				not supported (when testing instantiate).
+ * ICA_DRBG_HEALTH_TEST_FAIL	Health test failed.
+ * ICA_DRBG_ENTROPY_SOURCE_FAIL	Entropy source failed.
+ */
+int ica_drbg_health_test(void *func,
+			 int sec,
+			 bool pr,
+			 ica_drbg_mech_t *mech);
 
 #endif /* __ICA_API_H__ */

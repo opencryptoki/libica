@@ -23,6 +23,8 @@
 #include <errno.h>
 #include <stdint.h>
 #include <linux/types.h>
+#include <stdbool.h>
+#include <assert.h>
 
 #include "ica_api.h"
 #include "icastats.h"
@@ -36,12 +38,15 @@
 #include "s390_cbccs.h"
 #include "s390_ccm.h"
 #include "s390_gcm.h"
+#include "s390_drbg.h"
 
 #define DEFAULT_CRYPT_DEVICE "/udev/z90crypt"
 #define DEFAULT2_CRYPT_DEVICE "/dev/z90crypt"
 #define DEFAULT3_CRYPT_DEVICE "/dev/zcrypt"
 
 #define MAX_VERSION_LENGTH 16
+
+//#define NDEBUG /* turns off assertions *///DEBUG
 
 static unsigned int check_des_parms(unsigned int mode,
 				    unsigned long data_length,
@@ -1662,4 +1667,174 @@ unsigned int ica_get_functionlist(libica_func_list_element *pmech_list,
 					  unsigned int *pmech_list_len)
 {
 	return s390_get_functionlist(pmech_list, pmech_list_len);
+}
+
+/*
+ * ica_drbg: libica's Deterministic Random Bit Generator
+ * 	     (conforming to NIST SP 800-90A)
+ */
+ica_drbg_mech_t *const ICA_DRBG_SHA512 = &DRBG_SHA512;
+
+static inline int ica_drbg_error(int status)
+{
+	switch(status){
+	case 0:
+		return 0;
+	case DRBG_RESEED_REQUIRED:
+	case DRBG_NONCE_INV:
+		return EPERM;
+	case DRBG_NOMEM:
+		return ENOMEM;
+	case DRBG_SH_INV:
+	case DRBG_MECH_INV:
+	case DRBG_PERS_INV:
+	case DRBG_ADD_INV:
+	case DRBG_REQUEST_INV:
+		return EINVAL;
+	case DRBG_SEC_NOTSUPP:
+	case DRBG_PR_NOTSUPP:
+		return ENOTSUP;
+	case DRBG_HEALTH_TEST_FAIL:
+		return ICA_DRBG_HEALTH_TEST_FAIL;
+	case DRBG_ENTROPY_SOURCE_FAIL:
+		return ICA_DRBG_ENTROPY_SOURCE_FAIL;
+	default:
+		assert(!"unreachable");
+	}
+}
+
+int ica_drbg_instantiate(ica_drbg_t **sh,
+			 int sec,
+			 bool pr,
+			 ica_drbg_mech_t *mech,
+			 const unsigned char *pers,
+			 size_t pers_len)
+{
+	int status = drbg_mech_valid(mech);
+	if(status)
+		return ica_drbg_error(status);
+
+	/* Run instantiate health test (11.3.2). */
+	assert(!pthread_rwlock_wrlock(&mech->lock));
+	status = drbg_health_test(drbg_instantiate, sec, pr, mech);
+	assert(!pthread_rwlock_unlock(&mech->lock));
+	if(status)
+		return ica_drbg_error(status);
+
+	/* Instantiate. */
+	status = drbg_instantiate(sh, sec, pr, mech, pers, pers_len, false,
+				  NULL, 0, NULL, 0);
+	if(0 > status)
+		mech->error_state = status;
+
+	return ica_drbg_error(status);
+}
+
+int ica_drbg_reseed(ica_drbg_t *sh,
+		    bool pr,
+		    const unsigned char *add,
+		    size_t add_len)
+{
+	if(!sh)
+		return ica_drbg_error(DRBG_SH_INV);
+	int status = drbg_mech_valid(sh->mech);
+	if(status)
+		return ica_drbg_error(status);
+
+	/* Reseed health test runs whenever generate is tested (11.3.4). */
+
+	/* Reseed. */
+	status = drbg_reseed(sh, pr, add, add_len, false, NULL, 0);
+	if(0 > status)
+		sh->mech->error_state = status;
+
+	return ica_drbg_error(status);
+}
+
+int ica_drbg_generate(ica_drbg_t *sh,
+		      int sec,
+		      bool pr,
+		      const unsigned char *add,
+		      size_t add_len,
+		      unsigned char *prnd,
+		      size_t prnd_len)
+{
+	if(!sh)
+		return ica_drbg_error(DRBG_SH_INV);
+	int status = drbg_mech_valid(sh->mech);
+	if(status)
+		return ica_drbg_error(status);
+
+	/* Run generate and reseed health tests before first use of these
+	 * functions and when indicated by the test counter (11.3.3). */
+	assert(!pthread_rwlock_wrlock(&sh->mech->lock));
+	if(!(sh->mech->test_ctr %= sh->mech->test_intervall)){
+		status = drbg_health_test(drbg_reseed, sec, pr, sh->mech);
+		if(!status)
+			status = drbg_health_test(drbg_generate, sec, pr,
+						  sh->mech);
+		if(status){
+			assert(!pthread_rwlock_unlock(&sh->mech->lock));
+			return ica_drbg_error(status);
+		}
+		sh->mech->test_ctr = 0;
+	}
+	sh->mech->test_ctr++;
+	assert(!pthread_rwlock_unlock(&sh->mech->lock));
+
+	/* Generate. */
+	status = pthread_rwlock_rdlock(&sh->mech->lock);
+	if(EAGAIN == status)
+		return ica_drbg_error(DRBG_REQUEST_INV);
+	else if(status)
+		assert(!status);
+	status = drbg_generate(sh, sec, pr, add, add_len, false, NULL, 0, prnd,
+			       prnd_len);
+	assert(!pthread_rwlock_unlock(&sh->mech->lock));
+	if(0 > status)
+		sh->mech->error_state = status;
+
+	/* Inhibit output if mechanism is in error state (11.3.6). */
+	if(sh->mech->error_state)
+		drbg_zmem(prnd, prnd_len);
+
+	return ica_drbg_error(status);
+}
+
+int ica_drbg_uninstantiate(ica_drbg_t **sh)
+{
+	/* Uninstantiate health test runs whenever other functions are
+	 * tested (11.3.5). */
+
+	/* Uninstantiate. */
+	return ica_drbg_error(drbg_uninstantiate(sh, false));
+}
+
+int ica_drbg_health_test(void *func,
+			 int sec,
+			 bool pr,
+			 ica_drbg_mech_t *mech)
+{
+	int status = drbg_mech_valid(mech);
+	if(status)
+		return ica_drbg_error(status);
+
+	/* Health test. */
+	assert(!pthread_rwlock_wrlock(&mech->lock));
+	if(ica_drbg_instantiate == func)
+		status = drbg_health_test(drbg_instantiate, sec, pr, mech);
+	else if(ica_drbg_reseed == func)
+		status = drbg_health_test(drbg_reseed, sec, pr, mech);
+	else if(ica_drbg_generate == func){
+		status = drbg_health_test(drbg_reseed, sec, pr, mech);
+		if(!status)
+			status = drbg_health_test(drbg_generate, sec, pr,
+						  mech);
+		mech->test_ctr = 1; /* reset test counter */
+	}
+	else
+		status = DRBG_REQUEST_INV;
+	assert(!pthread_rwlock_unlock(&mech->lock));
+
+	return ica_drbg_error(status);
 }

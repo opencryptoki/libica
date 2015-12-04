@@ -70,6 +70,11 @@ s390_supported_function_t s390_msa4_functions[] = {
 	{AES_256_XTS_DECRYPT, S390_CRYPTO_AES_256_XTS_DECRYPT, &msa4_switch}
 };
 
+s390_supported_function_t s390_ppno_functions[] = {
+	{SHA512_DRNG_GEN, S390_CRYPTO_SHA512_DRNG_GEN, &sha512_drng_switch},
+	{SHA512_DRNG_SEED, S390_CRYPTO_SHA512_DRNG_SEED, &sha512_drng_switch},
+};
+
 int read_cpuinfo(void)
 {
 	int msa = 0;
@@ -92,22 +97,30 @@ int read_cpuinfo(void)
 int read_facility_bits(void)
 {
 	int msa = 0;
-	unsigned long long facility_bits[2];
+	unsigned long long facility_bits[2] = {0};
 	struct sigaction oldact;
 	sigset_t oldset;
 	int rc = -1;
+
 	rc = begin_sigill_section(&oldact, &oldset);
 	if (!rc) {
 		rc = __stfle(facility_bits, 2);
 		end_sigill_section(&oldact, &oldset);
 	}
-	if (rc == 2) {
-		// stfle should return 2
+	/* __stfle always returns the no. of double words needed to store the
+	 * facility bits. This quantity is machine dependent. However, we just
+	 * need the first two double words. */
+	if(rc >= 2){
 		if(facility_bits[0] & (1ULL << (63 - 17)))
 			msa = 1;
+		if(facility_bits[1] & (1ULL << (127 - 76)))
+			msa = 3;
 		if(facility_bits[1] & (1ULL << (127 - 77)))
 			msa = 4;
+		if(facility_bits[0] & (1ULL << (63 - 57)))
+			msa = 5;
 	}
+
 	return msa;
 }
 
@@ -152,22 +165,33 @@ void set_switches(int msa)
 	for (n = 0; n < (sizeof(s390_kimd_functions) /
 			 sizeof(s390_supported_function_t)); n++) {
 		if (S390_CRYPTO_TEST_MASK(mask, s390_kimd_functions[n].hw_fc))
-	        on = 1;
-	else
-	        on = 0;
+			on = 1;
+		else
+			on = 0;
 		*s390_kimd_functions[n].enabled = on;
+	}
+
+	if (5 <= msa) {
+		msa5_switch = 1;
+		if (begin_sigill_section(&oldact, &oldset) == 0) {
+			s390_ppno(S390_CRYPTO_QUERY, mask, NULL, 0, NULL, 0);
+		        end_sigill_section(&oldact, &oldset);
+		}
+	}
+
+	for (n = 0; n < (sizeof(s390_ppno_functions) /
+			 sizeof(s390_supported_function_t)); n++) {
+		if (S390_CRYPTO_TEST_MASK(mask, s390_ppno_functions[n].hw_fc))
+			on = 1;
+		else
+			on = 0;
+		*s390_ppno_functions[n].enabled = on;
 	}
 }
 
 void s390_crypto_switches_init(void)
 {
-	/* First read cpu info to check if msa feature is available.
-	 * If it is not available, execute stfle instructions to read the
-	 * facility bits.
-	 * If then crypto support is detected crypto functions will be queryed
-	 * from the processor */
 	int msa;
-	msa = read_cpuinfo();
 
 	msa = read_facility_bits();
 	if (!msa)
@@ -225,6 +249,8 @@ libica_func_list_element_int icaList[] = {
  {RSA_KEY_GEN_ME,  	ADAPTER, 0, ICA_FLAG_SW, 		0},	// SW (openssl)
  {RSA_KEY_GEN_CRT, 	ADAPTER, 0, ICA_FLAG_SW, 		0},	// SW (openssl)
 
+ {SHA512_DRNG, PPNO, SHA512_DRNG_GEN, ICA_FLAG_SW, 0}, // SW (openssl)
+
 /* available for the MSA4 instruction */
 /* available for the RSA instruction */
  
@@ -275,6 +301,10 @@ int s390_initialize_functionlist() {
                         	icaList[x].property = icaList[x].property | 1; // 128 bit
                 }
   	break;
+	case PPNO:
+		icaList[x].flags = icaList[x].flags |
+		((*s390_ppno_functions[icaList[x].id].enabled)? 4: 0);
+	break;
 	default:
 	break;
 	}

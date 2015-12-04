@@ -31,6 +31,7 @@
 #define KIMD 	3
 #define MSA4 	4
 #define ADAPTER 5
+#define PPNO	6
 
 enum s390_crypto_instruction {
 	S390_CRYPTO_DIRECTION_MASK = 0x80,
@@ -40,7 +41,7 @@ enum s390_crypto_instruction {
 enum s390_crypto_function {
 	/*
 	 * The S390_QUERY function is always available for all 4 KM, KMC, KIMD and
-	 * KLMD instructions to query the available functions.
+	 * KLMD instructions and the PPNO instructions to query the available functions.
 	 */
 	S390_CRYPTO_QUERY = 0x00,
 	/*
@@ -74,13 +75,18 @@ enum s390_crypto_function {
 	/*
 	 * The S390_PRNG is only available for the KMC instruction.
 	 */
-	S390_CRYPTO_PRNG = 0x43
+	S390_CRYPTO_PRNG = 0x43,
+	/*
+	 * The S390_SHA512_DRNG_* functions are available for the PPNO instruction.
+	 */
+        S390_CRYPTO_SHA512_DRNG_GEN  = 0x03,
+        S390_CRYPTO_SHA512_DRNG_SEED = 0x03 | 0x80
 };
 
 unsigned int sha1_switch, sha256_switch, sha512_switch, des_switch,
 	     tdes_switch, aes128_switch, aes192_switch, aes192_switch,
 	     aes256_switch, prng_switch, tdea128_switch, tdea192_switch,
-	     msa4_switch;
+	     sha512_drng_switch, msa4_switch, msa5_switch;
 
 typedef struct {
 	unsigned int dummy_fc;
@@ -108,15 +114,21 @@ typedef enum {
 	CMAC_AES_256_VERIFY
 } pcc_functions_t;
 
+typedef enum {
+	SHA512_DRNG_GEN,
+	SHA512_DRNG_SEED
+} ppno_functions_t;
+
 s390_supported_function_t s390_kmc_functions[PRNG + 1];
 s390_supported_function_t s390_msa4_functions[AES_256_XTS_DECRYPT + 1];
 s390_supported_function_t s390_kimd_functions[GHASH + 1];
+s390_supported_function_t s390_ppno_functions[SHA512_DRNG_SEED + 1];
 
 void s390_crypto_switches_init(void);
 
 /**
  * s390_pcc:
- * @func: the function code passed to KM; see s390_kmc_func
+ * @func: the function code passed to KM; see s390_kmc_func *
  * @param: address of parameter block; see POP for details on each func
  *
  * Executes the PCC operation of the CPU.
@@ -390,30 +402,72 @@ static inline int s390_klmd(unsigned long func, void *param, const unsigned char
 	return func ? src_len - __src_len : __src_len;
 }
 
-static inline int s390_stckf_hw(void *buf)
+/*
+ * s390_ppno:
+ *
+ * @func: FUNction code. See s390_ppno_func.
+ * @param: PARAMeter block.
+ * @dest: DESTination. Address of destination memory area.
+ * @dest_len: Byte length of @dest
+ * @src: SouRCe. Address of source memory area.
+ * @src_len: Byte length of @src
+ *
+ * Executes the PPNO (Perform Pseudorandom Number Operation) operation of the
+ * CPU. See POP for details.
+ *
+ * @return:
+ * -1					Failure.
+ * 0					Success.
+ * no. of processed bytes
+ */
+static inline int s390_ppno(long func,
+			    void *param,
+			    unsigned char *dest,
+			    long dest_len,
+			    const unsigned char *src,
+			    long src_len)
 {
-	register int cc = 0;
+	register long  __func asm("0") = func;
+	register void *__param asm("1") = param;
+	register unsigned char *__dest asm("2") = dest;
+	register long  __dest_len asm("3") = dest_len;
+	register const unsigned char *__src asm("4") = src;
+	register long  __src_len asm("5") = src_len;
+	int ret = -1;
 
+	asm volatile(
+		"0:      .insn   rre,0xb93c0000,%1,%5\n\t" /* PPNO opcode */
+		"        brc     1,0b\n\t" /* handle partial completion */
+		"        la      %0,0\n\t"
+		: "+d" (ret), "+a"(__dest), "+d"(__dest_len)
+		: "d"(__func), "a"(__param), "a"(__src), "d"(__src_len)
+		: "cc", "memory"
+	);
+
+	if(ret < 0)
+		return ret;
+
+        return func ? dest_len - __dest_len : 0;
+}
+
+static inline void s390_stckf_hw(void *buf)
+{
 	asm volatile(".insn     s,0xb27c0000,%0"
 		     : "=Q" (*((unsigned long long *)buf)) : : "cc");
-	return cc;
 }
 
-static inline int s390_stcke_hw(void *buf)
+static inline void s390_stcke_hw(void *buf)
 {
-	register int cc = 0;
-
 	asm volatile(".insn     s,0xb2780000,%0"
 		     : "=Q" (*((unsigned long long *)buf)) : : "cc");
-	return cc;
 }
 
-static inline int s390_stck(void *buf)
+static inline void s390_stck(void *buf)
 {
 #ifdef _LINUX_S390X_
-	return s390_stckf_hw(buf);
+	s390_stckf_hw(buf);
 #endif
-	return s390_stcke_hw(buf);
+	s390_stcke_hw(buf);
 }
 
 static inline int __stfle(unsigned long long *list, int doublewords)

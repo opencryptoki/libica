@@ -25,6 +25,7 @@
 #include "icastats.h"
 #include "s390_prng.h"
 #include "s390_crypto.h"
+#include "ica_api.h"
 
 static pthread_key_t envq_key;
 static pthread_once_t envq_key_once = PTHREAD_ONCE_INIT;
@@ -106,6 +107,9 @@ void __attribute__ ((constructor)) icainit(void)
 		s390_initialize_functionlist();	
 
 		openssl_init();
+
+		ica_drbg_health_test(ica_drbg_generate, 256, true,
+				     ICA_DRBG_SHA512);
 	}
 }
 
