@@ -1,6 +1,6 @@
 #OPTS = -O0 -g -Wall -fprofile-arcs -ftest-coverage -fPIC
 #OPTS = -O0 -g -Wall -m31 -D_LINUX_S390_
-OPTS = -O0 -g -Wall -D_LINUX_S390_
+OPTS = -O0 -g -Wall -D_LINUX_S390_ -pthread
 LIBS = -L../.libs
 INCLUDE = -I. -I../include -I../../include
 CC = gcc
@@ -23,7 +23,9 @@ TARGETS = icastats_test \
 	  libica_des_ecb_test libica_cbccs_test libica_3des_ecb_test \
 	  libica_des_ofb_test libica_3des_ofb_test \
 	  libica_get_version \
-      libica_get_functionlist
+	  libica_get_functionlist \
+	  libica_drbg_test \
+	  libica_drbg_birthdays
 
 all: $(TARGETS)
 

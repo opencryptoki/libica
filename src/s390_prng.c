@@ -112,12 +112,12 @@ static int s390_add_entropy(void)
 		return ENOTSUP;
 
 	for (K = 0; K < 16; K++) {
-		if ((s390_stck(entropy + 0 * STCK_BUFFER)) ||
-		    (s390_stck(entropy + 1 * STCK_BUFFER)) ||
-		    (s390_stck(entropy + 2 * STCK_BUFFER)) ||
-		    (s390_stck(entropy + 3 * STCK_BUFFER)) ||
-		    (s390_kmc(0x43, zPRNG_PB.ch, entropy, entropy, 
-			      sizeof(entropy)) < 0)) {
+		s390_stck(entropy + 0 * STCK_BUFFER);
+		s390_stck(entropy + 1 * STCK_BUFFER);
+		s390_stck(entropy + 2 * STCK_BUFFER);
+		s390_stck(entropy + 3 * STCK_BUFFER);
+		if(s390_kmc(0x43, zPRNG_PB.ch, entropy, entropy,
+			      sizeof(entropy)) < 0) {
 			rc = -1;
 			goto out;
 		}
@@ -204,28 +204,24 @@ static int s390_prng_hw(unsigned char *random_bytes, unsigned int num_bytes)
 		remainder = num_bytes % PRNG_BLK_SZ;
 		num_bytes -= remainder;
 
-		for (i = 0; !rc && i < (num_bytes / STCK_BUFFER); i++) {
-			rc = s390_stck(random_bytes + i * STCK_BUFFER);
-		}
-		if (!rc) {
-			rc = s390_kmc(S390_CRYPTO_PRNG, zPRNG_PB.ch, random_bytes,
-				      random_bytes, num_bytes);
-			if (rc > 0) {
-				s390_byte_count += rc;
-				rc = 0;
-			}
+		for (i = 0; i < (num_bytes / STCK_BUFFER); i++)
+			s390_stck(random_bytes + i * STCK_BUFFER);
+
+		rc = s390_kmc(S390_CRYPTO_PRNG, zPRNG_PB.ch, random_bytes,
+			      random_bytes, num_bytes);
+		if (rc > 0) {
+			s390_byte_count += rc;
+			rc = 0;
 		}
 
 		// If there was a remainder, we'll use an internal buffer to handle it.
 		if (!rc && remainder) {
-			rc = s390_stck(last_dw);
-			if (!rc) {
-				rc = s390_kmc(S390_CRYPTO_PRNG, zPRNG_PB.ch, last_dw,
-					      last_dw, STCK_BUFFER);
-				if (rc > 0) {
-					s390_byte_count += rc;
-					rc = 0;
-				}
+			s390_stck(last_dw);
+			rc = s390_kmc(S390_CRYPTO_PRNG, zPRNG_PB.ch, last_dw,
+				      last_dw, STCK_BUFFER);
+			if (rc > 0) {
+				s390_byte_count += rc;
+				rc = 0;
 			}
 			memcpy(random_bytes + num_bytes, last_dw, remainder);
 		}

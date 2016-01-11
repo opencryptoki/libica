@@ -44,7 +44,7 @@ int main(int argc, char **argv)
 	if(2 > argc || 4 < argc){
 		fprintf(stderr,
 			"usage: ica_drbg_birthdays <rnd_ex1> <rnd_ex2>"
-			"<rnd_ex3>\n");
+			" <rnd_ex3>\n");
 		exit(1);
 	}
 	long rnd_ex[3] = {0};

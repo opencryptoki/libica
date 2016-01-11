@@ -52,5 +52,6 @@ echo -ne '############################################----- (80%)\r'
 PARMS="libica_sha_test/sha_test_vectors/*"
 ./libica_sha_test/libica_sha_test $silent $PARMS >> ./suite.out
 #./libica_sha_test/libica_sha_test 'libica_sha_test/sha_test_vectors/*'
+./libica_drbg_test -s >> ./suite.out
 echo -ne '################################################# (100%) Done\r'
 echo -ne '\n'
