@@ -26,6 +26,7 @@
 #include "s390_prng.h"
 #include "s390_crypto.h"
 #include "icastats.h"
+#include "s390_drbg.h"
 
 /*
  * On 31 bit systems we have to use the instruction STCKE while on 64 bit
@@ -38,8 +39,10 @@
 #define STCK_BUFFER 16
 #endif
 
-sem_t semaphore;
+/* State handle for the global ica_drbg instantiation. */
+ica_drbg_t *ica_drbg_global = ICA_DRBG_NEW_STATE_HANDLE;
 
+sem_t semaphore;
 
 union zprng_pb_t {
 	unsigned char ch[32];
@@ -69,6 +72,17 @@ static int s390_prng_seed(void *srv, unsigned int count);
 
 int s390_prng_init(void)
 {
+	// Create a global ica_drbg instance if sha512 or sha512 drng is
+	// available. However, the old prng is still initialized but
+	// only used as a fallback.
+	if(sha512_switch || sha512_drng_switch){
+		const char *pers = "ica_drbg_global";
+		ica_drbg_instantiate(&ica_drbg_global, 256, true,
+				     ICA_DRBG_SHA512, (unsigned char *)pers,
+				     strlen(pers));
+	}
+
+	// The old prng code starts here:
 	sem_init(&semaphore, 0, 1);
 
 	int rc = -1;
@@ -155,6 +169,37 @@ out:
  */
 int s390_prng(unsigned char *output_data, unsigned int output_length)
 {
+	// Try to use the global ica_drbg instantiation. If it does not exist
+	// or it does not work, the old prng code is used.
+	if(ica_drbg_global){
+		int status = 0;
+
+		const size_t
+		q = output_length / ICA_DRBG_SHA512->max_no_of_bytes_per_req;
+		const size_t
+		r = output_length % ICA_DRBG_SHA512->max_no_of_bytes_per_req;
+
+		unsigned char *ptr = output_data;
+		size_t i = 0;
+		for(; i < q; i++){
+			status = ica_drbg_generate(ica_drbg_global, 256, true,
+						   NULL, 0, ptr,
+						   ICA_DRBG_SHA512
+						   ->max_no_of_bytes_per_req);
+			if(status)
+				break;
+
+			ptr += ICA_DRBG_SHA512->max_no_of_bytes_per_req;
+		}
+		if(!status){
+			status = ica_drbg_generate(ica_drbg_global, 256, true,
+						   NULL, 0, ptr, r);
+			if(!status)
+				return 0;
+		}
+	}
+
+	// Old prng code starts here:
 	int rc = 1;
 	int hardware = ALGO_HW;
 

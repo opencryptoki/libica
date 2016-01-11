@@ -102,14 +102,14 @@ void __attribute__ ((constructor)) icainit(void)
 
 		s390_crypto_switches_init();
 
+		ica_drbg_health_test(ica_drbg_generate, 256, true,
+				     ICA_DRBG_SHA512);
+
 		s390_prng_init();
 
 		s390_initialize_functionlist();	
 
 		openssl_init();
-
-		ica_drbg_health_test(ica_drbg_generate, 256, true,
-				     ICA_DRBG_SHA512);
 	}
 }
 
