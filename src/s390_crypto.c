@@ -265,7 +265,7 @@ int s390_initialize_functionlist() {
 
   unsigned int list_len = (sizeof(icaList)/sizeof(libica_func_list_element_int)), x;
 
-  for (x=0; x<=list_len; x++) {
+  for (x=0; x<list_len; x++) {
   	switch ((int)icaList[x].type) {
 	case KIMD:
 		icaList[x].flags = icaList[x].flags | 
