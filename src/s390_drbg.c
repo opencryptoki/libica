@@ -590,6 +590,9 @@ void drbg_zmem(void *ptr,
 {
 	if(ptr)
 		memset(ptr, 0, len);
+
+	/* protect this code from unwanted compiler optimization */
+	__asm__ __volatile__ ("": :"r"(ptr) :"memory");
 }
 
 int drbg_check_zmem(void *ptr,

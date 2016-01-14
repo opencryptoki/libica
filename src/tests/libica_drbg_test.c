@@ -86,7 +86,7 @@ int main(int argc,
 	int status = -1;
 
 	if(1 < argc){
-		if(!strcmp(argv[1], "-s")){
+		if(strstr(argv[1], "silent")){
 			v = false;
 		}
 		else{

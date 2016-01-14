@@ -19,6 +19,7 @@
 #include "s390_crypto.h"
 #include "s390_drbg.h"
 #include "s390_drbg_sha512.h"
+#include "icastats.h"
 #include "s390_sha.h"
 
 typedef drbg_sha512_ws_t ws_t; /* local rename */
@@ -205,6 +206,7 @@ int drbg_sha512_reseed_ppno(void *ws,
 
 	/* step 6 */
 	drbg_zmem(seed_material, seed_material_len);
+
 	return status;
 }
 
@@ -253,6 +255,7 @@ _exit_:
 	drbg_zmem(_0x00v, sizeof(_0x00v));
 	drbg_zmem(seed_material, seed_material_len);
 	free(seed_material);
+
 	return status;
 }
 
@@ -262,6 +265,9 @@ int drbg_sha512_generate_ppno(void *ws,
 			      unsigned char *prnd,
 			      size_t prnd_len)
 {
+	/* increase corresponding icastats counter */
+        stats_increment(ICA_STATS_DRBGSHA512, ALGO_HW, ENCRYPT);
+
 	/* 10.1.1.4 Hash_DRBG Generate Process */
 
 	/* step 1 */
@@ -292,6 +298,9 @@ int drbg_sha512_generate(void *ws,
 			 unsigned char *prnd,
 			 size_t prnd_len)
 {
+	/* increase corresponding icastats counter */
+        stats_increment(ICA_STATS_DRBGSHA512, ALGO_SW, ENCRYPT);
+
 	/* 10.1.1.4 Hash_DRBG Generate Process */
 
 	/* step 1 */

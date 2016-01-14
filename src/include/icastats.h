@@ -29,6 +29,7 @@ typedef struct statis_entry {
 
 
 typedef enum stats_fields {
+	/* crypt counter */
 	ICA_STATS_SHA1 = 0,
 	ICA_STATS_SHA224,
 	ICA_STATS_SHA256,
@@ -36,8 +37,12 @@ typedef enum stats_fields {
 	ICA_STATS_SHA512,
 	ICA_STATS_GHASH,
 	ICA_STATS_PRNG,
+	ICA_STATS_DRBGSHA512,
 	ICA_STATS_RSA_ME,
-	ICA_STATS_RSA_CRT,
+	ICA_STATS_RSA_CRT, /* add new crypt counters above RSA_CRT
+			      (see print_stats function) */
+
+	/* enc and dec counter  */
 	ICA_STATS_DES_ECB,
 	ICA_STATS_DES_CBC,
 	ICA_STATS_DES_OFB,
@@ -58,6 +63,7 @@ typedef enum stats_fields {
 	ICA_STATS_AES_CMAC,
 	ICA_STATS_AES_XTS,
 
+	/* number of counters */
 	ICA_NUM_STATS
 } stats_fields_t;
 
@@ -69,6 +75,7 @@ typedef enum stats_fields {
         "SHA-512",    	\
         "GHASH",      	\
         "P_RNG",      	\
+	"DRBG-SHA-512",	\
         "RSA-ME",     	\
         "RSA-CRT",    	\
         "DES ECB",    	\

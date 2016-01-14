@@ -249,7 +249,7 @@ libica_func_list_element_int icaList[] = {
  {RSA_KEY_GEN_ME,  	ADAPTER, 0, ICA_FLAG_SW, 		0},	// SW (openssl)
  {RSA_KEY_GEN_CRT, 	ADAPTER, 0, ICA_FLAG_SW, 		0},	// SW (openssl)
 
- {SHA512_DRNG, PPNO, SHA512_DRNG_GEN, ICA_FLAG_SW, 0}, // SW (openssl)
+ {SHA512_DRNG, PPNO, SHA512_DRNG_GEN, ICA_FLAG_SHW | ICA_FLAG_SW, 0},
 
 /* available for the MSA4 instruction */
 /* available for the RSA instruction */

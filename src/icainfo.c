@@ -68,6 +68,7 @@ static struct crypt_pair crypt_map[] = {
         {"SHA-512", SHA512},
         {"GHASH", G_HASH},
         {"P_RNG", P_RNG},
+	{"DRBG-SHA-512", SHA512_DRNG},
         {"RSA ME", RSA_ME},
         {"RSA CRT", RSA_CRT},
         {"DES ECB", DES_ECB},

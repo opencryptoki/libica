@@ -13,6 +13,7 @@
 #include <dirent.h>
 #include <string.h>
 #include "ica_api.h"
+#include "s390_crypto.h"
 
 #define DATA_LENGHT 32
 #define DES_CIPHER_BLOCK 8
@@ -92,7 +93,12 @@ int main (int argc, char **argv)
 	  /*
  	 * Check if counter for Random operations has incremneted
  	 **/	 	
-	check_icastats(P_RNG, "P_RNG");
+	/* ica_random_number_generate uses ica_drbg if available. Otherwise the
+	 * old prng code is used. */
+	if(sha512_switch || sha512_drng_switch)
+		check_icastats(SHA512_DRNG, "DRBG-SHA-512");
+	else
+		check_icastats(P_RNG, "P_RNG");
 
         rc = ica_random_number_generate(AES_CIPHER_BLOCK, iv);
         if (rc)
@@ -227,7 +233,9 @@ void check_icastats(int algo_id, char *stat)
 	int i, hw, enc, dec;
 
 	hw = check_hw(algo_id);
-	sprintf(awk, "icastats | awk '{ if($0~\"%s\") if(NR>13) print $%d,$%d;\
+	/* The magic number 14 in the following awk statement has to be
+	 * incremented when a new crypt counter is added. */
+	sprintf(awk, "icastats | awk '{ if($0~\"%s\") if(NR>14) print $%d,$%d;\
 					   else print $%d,-1\
 					 }'",
 		stat, hw?4:7, hw?5:8, hw?3:5);

@@ -196,9 +196,7 @@ int drbg_get_entropy_input(bool pr,
 int drbg_get_nonce(unsigned char *nonce,
 		   size_t nonce_len);
 
-/* Zeroise memory to erase secret information. This functions should be
- * implemented via memset_s if available to be safe of compiler
- * optimizations. */
+/* Zeroise memory to erase sensitive data. */
 void drbg_zmem(void *ptr,
 	       size_t len);
 
