@@ -73,7 +73,7 @@ typedef struct drbg_sha512_test_vec drbg_sha512_test_vec_t;
  * Array of SHA-512 DRBG test vectors for health testing
  */
 extern const drbg_sha512_test_vec_t DRBG_SHA512_TEST_VEC[];
-const size_t DRBG_SHA512_TEST_VEC_LEN;
+extern const size_t DRBG_SHA512_TEST_VEC_LEN;
 
 /*
  * SHA-512 DRBG mechanism functions
