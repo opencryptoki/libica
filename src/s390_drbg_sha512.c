@@ -158,6 +158,7 @@ int drbg_sha512_instantiate(void **ws,
 	if(status){
 		drbg_zmem(*ws, sizeof(ws_t));
 		free(*ws);
+		*ws = NULL;
 		goto _exit_;
 	}
 
@@ -170,6 +171,7 @@ int drbg_sha512_instantiate(void **ws,
 	if(status){
 		drbg_zmem(*ws, sizeof(ws_t));
 		free(*ws);
+		*ws = NULL;
 		goto _exit_;
 	}
 
