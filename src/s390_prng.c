@@ -86,26 +86,24 @@ int s390_prng_init(void)
 	sem_init(&semaphore, 0, 1);
 
 	int rc = -1;
-	int handle;
 	unsigned char seed[16];
 
-	handle = open("/dev/hwrng", O_RDONLY);
+	FILE *handle = fopen("/dev/hwrng", "r");
 	if (!handle)
-		handle = open("/dev/urandom", O_RDONLY);
+		handle = fopen("/dev/urandom", "r");
 	if (handle) {
-		rc = read(handle, seed, sizeof(seed));
-	        if (rc != -1)
+		rc = fread(seed, sizeof(seed), 1, handle);
+		fclose(handle);
+	        if (1 == rc)
 			rc = s390_prng_seed(seed, sizeof(seed) /
 					    sizeof(long long));
-		close(handle);
+		else
+			rc = EIO;
 	} else
 		rc = ENODEV;
 	// If the original seeding failed, we should try to stir in some
 	// entropy anyway (since we already put out a message).
 	s390_byte_count = 0;
-
-	if (rc < 0)
-		return EIO;
 
 	return rc;
 }
@@ -132,33 +130,34 @@ static int s390_add_entropy(void)
 		s390_stck(entropy + 3 * STCK_BUFFER);
 		if(s390_kmc(0x43, zPRNG_PB.ch, entropy, entropy,
 			      sizeof(entropy)) < 0) {
-			rc = -1;
-			goto out;
+			return EIO;
 		}
 		rc = 0;
 		memcpy(zPRNG_PB.ch, entropy, sizeof(zPRNG_PB.ch));
 	}
-	int handle;
 	unsigned char seed[32];
-	/* Add some additional entropy. If it fails, do not care here. */
-	handle = open("/dev/hwrng", O_RDONLY);
-	if (handle < 1)
-		handle = open("/dev/urandom", O_RDONLY);
-        if (handle > 0) {
-		rc = read(handle, seed, sizeof(seed));
-		if (rc != -1)
+	/* Add some additional entropy. */
+	FILE *handle = fopen("/dev/hwrng", "r");
+	if (!handle)
+		handle = fopen("/dev/urandom", "r");
+        if (handle) {
+		rc = fread(seed, sizeof(seed), 1, handle);
+		fclose(handle);
+		if (1 == rc){
 			rc = s390_kmc(0x43, zPRNG_PB.ch, seed, seed,
 				      sizeof(seed));
-		close(handle);
-		if (rc >= 0)
-			memcpy(zPRNG_PB.ch, seed, sizeof(seed));
+			if (rc >= 0)
+				memcpy(zPRNG_PB.ch, seed, sizeof(seed));
+			else
+				return EIO;
+		}
+		else
+			return EIO;
 	}
-out:
-	if (rc >= 0)
-		rc = 0;
 	else
-		rc = EIO;
-	return rc;
+		return ENODEV;
+
+	return 0;
 }
 
 
@@ -215,15 +214,15 @@ int s390_prng(unsigned char *output_data, unsigned int output_length)
 
 static int s390_prng_sw(unsigned char *output_data, unsigned int output_length)
 {
-	ica_adapter_handle_t adapter_handle = open("/dev/urandom", O_RDONLY);
-	if (adapter_handle == -1)
-		return errno;
-	if (read(adapter_handle, output_data, output_length) == -1) {
-		close(adapter_handle);
-		return errno;
+	FILE *handle = fopen("/dev/urandom", "r");
+	if (!handle)
+		return ENODEV;
+	if (1 != fread(output_data, output_length, 1, handle)) {
+		fclose(handle);
+		return EIO;
 	}
-	close(adapter_handle);
-	
+
+	fclose(handle);
 	return 0;
 }
 

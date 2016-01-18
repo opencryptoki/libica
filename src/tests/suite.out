@@ -1,0 +1,35 @@
+All icastats testcases finished successfully
+All 3des_cbc testcases finished successfully
+All 3des_cfb testcases finished successfully
+All 3des_ctr testcases finished successfully
+All 3des_ecb testcases finished successfully
+All 3des_ofb testcases finished successfully
+All AES128 (ECB/CBC) testcases finished successfully
+All AES192 (ECB/CBC) testcases finished successfully
+All AES256 (ECB/CBC) testcases finished successfully
+All AES-CBC testcases finished successfully
+All AES-CFB testcases finished successfully
+All AES-CTR testcases finished successfully
+All AES-ECB testcases finished successfully
+All AES-GCM testcases finished successfully.
+All AES-OFB testcases finished successfully
+All AES-XTS testcases finished successfully
+All CBC-CS mode tests finished successfully
+All AES-CCM mode tests finished successfully
+All CMAC tests finished successfully
+All DES-CBC testcases finished successfully
+All DES-CFB testcases finished successfully
+All DES-CTR testcases finished successfully
+All DES-ECB testcases finished successfully
+All DES-OFB testcases finished successfully
+All ica_get_functionlist tests completed sucessfully
+All ica_get_version tests completed sucessfully
+All Keygen tests passed successfully
+All Keygen tests passed successfully
+All Keygen tests passed successfully
+All Keygen tests passed successfully
+All Keygen tests passed successfully
+All RSA testcases finished successfully
+All RSA KEY Check testcases finished successfully
+All SHA testcases finished successfully
+RUNNING SHA-512 DRBG TESTS ... 52 PASSED, 0 FAILED, 52 TOTAL

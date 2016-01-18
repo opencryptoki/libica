@@ -76,6 +76,7 @@ static unsigned int check_des_parms(unsigned int mode,
 			return EINVAL;
 		if (data_length <= DES_BLOCK_SIZE)
 			return EINVAL;
+		break;
 	case MODE_CFB:
 		if (iv == NULL)
 			return EINVAL;
@@ -130,6 +131,7 @@ static unsigned int check_aes_parms(unsigned int mode,
 			return EINVAL;
 		if (data_length <= AES_BLOCK_SIZE)
 			return EINVAL;
+		break;
 	case MODE_CFB:
 		if (iv == NULL)
 			return EINVAL;
@@ -648,8 +650,7 @@ unsigned int ica_rsa_crt_key_check(ica_rsa_key_crt_t *rsa_key)
 
 		memcpy(rsa_key->qInverse + 8, tmp_buf, rsa_key->key_length/2);
 
-		if (tmp_buf)
-			free(tmp_buf);
+		free(tmp_buf);
 
 		return 1;
 	}
@@ -1615,7 +1616,6 @@ unsigned int ica_aes_gcm_last( unsigned char *icb,
 unsigned int ica_get_version(libica_version_info *version_info)
 {
 #ifdef VERSION
-	int length;
 	int rc;
 	int i;
 	char *pch;
@@ -1625,7 +1625,7 @@ unsigned int ica_get_version(libica_version_info *version_info)
 		return EINVAL;
 	}
 
-	length = strnlen(VERSION, MAX_VERSION_LENGTH);
+	int length = strnlen(VERSION, MAX_VERSION_LENGTH);
 	char buffer[length+1];
 
 	rc = snprintf(buffer, (length+1), "%s", VERSION);
