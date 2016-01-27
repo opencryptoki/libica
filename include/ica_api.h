@@ -31,6 +31,7 @@
 ***************************************************************************/
 
 #include <stdbool.h>
+#include <stddef.h>
 #include <stdint.h>
 
 #define ica_adapter_handle_t int
