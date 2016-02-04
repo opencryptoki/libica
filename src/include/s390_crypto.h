@@ -84,9 +84,9 @@ enum s390_crypto_function {
 };
 
 unsigned int sha1_switch, sha256_switch, sha512_switch, des_switch,
-	     tdes_switch, aes128_switch, aes192_switch, aes192_switch,
-	     aes256_switch, prng_switch, tdea128_switch, tdea192_switch,
-	     sha512_drng_switch, msa4_switch, msa5_switch;
+	     tdes_switch, aes128_switch, aes192_switch, aes256_switch,
+	     prng_switch, tdea128_switch, tdea192_switch, sha512_drng_switch,
+	     msa4_switch, msa5_switch;
 
 typedef struct {
 	unsigned int dummy_fc;
