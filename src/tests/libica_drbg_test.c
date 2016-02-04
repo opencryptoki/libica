@@ -110,8 +110,6 @@ int main(int argc,
 	/*
 	 * drbg_sha512 tests
 	 */
-	printf("RUNNING SHA-512 DRBG TESTS ... ");
-	if(v) printf("\n");
 
 	/* Instantiate */
 	ica_drbg_t *sh = NULL;
@@ -625,8 +623,11 @@ int main(int argc,
 		}
 	}
 
-	printf("%d PASSED, %d FAILED, %d TOTAL\n", passed, failed,
-	       passed + failed);
+	if(failed)
+		printf("ica_drbg testcases: %d passed, %d failed, %d total\n", passed, failed,
+		       passed + failed);
+	else
+		printf("ALL ica_drbg tests passed successfully.\n");
 
 	return 0;
 }

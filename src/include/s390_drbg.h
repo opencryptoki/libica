@@ -20,6 +20,8 @@
 
 #include <pthread.h>
 
+#include "ica_api.h"
+
 #define DRBG_ADD_ENTROPY_LEN	18	/* bytes of entropy input used in
 					   addition to the required minimum */
 #define DRBG_NONCE_LEN	16		/* byte length of nonce */
@@ -101,7 +103,6 @@ struct ica_drbg_mech{
 	uint64_t test_ctr;
 	int error_state;
 };
-typedef struct ica_drbg_mech ica_drbg_mech_t;
 
 /*
  * DRBG type
@@ -118,7 +119,6 @@ struct ica_drbg{
 	int sec;		/* security strength */
 	bool pr;		/* prediction resistance flag */
 };
-typedef struct ica_drbg ica_drbg_t;
 
 /*
  * DRBG mechanism list. Add new DRBG mechanism here:

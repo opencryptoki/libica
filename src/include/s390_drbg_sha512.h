@@ -16,6 +16,8 @@
 
 #include <stdint.h>
 
+#include "ica_api.h"
+
 #define DRBG_SHA512_SEED_LEN (888 / 8)
 
 /*
