@@ -1,6 +1,6 @@
 #OPTS = -O0 -g -Wall -fprofile-arcs -ftest-coverage -fPIC
 #OPTS = -O0 -g -Wall -m31 -D_LINUX_S390_
-OPTS = -O0 -g -Wall -D_LINUX_S390_ -pthread
+OPTS = -O0 -g -Wall -D_LINUX_S390_ -D_GNU_SOURCE -pthread
 LIBS = -L../.libs
 INCLUDE = -I. -I../include -I../../include
 CC = gcc

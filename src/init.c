@@ -12,7 +12,6 @@
  * Copyright IBM Corp. 2001, 2009, 2011
  */
 
-#define _GNU_SOURCE
 #include <errno.h>
 #include <unistd.h>
 #include <pthread.h>
