@@ -228,7 +228,7 @@ int check_hw(int algo_id)
  **/
 void check_icastats(int algo_id, char *stat)
 {
-	char awk[80];
+	char awk[255];
 	FILE *fp;
 	int i, hw, enc, dec;
 
