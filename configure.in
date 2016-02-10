@@ -26,7 +26,7 @@ AC_PROG_LIBTOOL
 # Checks for header files.
 AC_HEADER_STDC
 AC_CHECK_HEADERS([fcntl.h memory.h stdlib.h string.h strings.h sys/ioctl.h unistd.h \
-		  errno.h stdio.h pthread.h semaphore.h linux/types.h sys/ioctl.h])
+		  errno.h stdio.h semaphore.h linux/types.h sys/ioctl.h])
 case "$target" in
      *s390*)
           AC_CHECK_HEADERS([openssl/bn.h openssl/rsa.h openssl/rand.h \
@@ -55,6 +55,8 @@ AC_FUNC_STAT
 AC_CHECK_FUNCS([bzero memset])
 
 CFLAGS="$cmdline_CFLAGS"
+AX_PTHREAD
+CFLAGS="$CFLAGS $PTHREAD_CFLAGS"
 
 case $target in
      *s390x*)
