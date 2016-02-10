@@ -16,7 +16,7 @@ FILES = libica_sha_test.c~ \
 	include/critical_error.h~
 
 all:
-	$(CC) $(OPTS) $(LIBS) $(INCLUDE) -lica -lcrypto -o libica_sha_test $(SOURCES)
+	$(CC) $(OPTS) -o libica_sha_test $(SOURCES) $(LIBS) $(INCLUDE) -lica -lcrypto
 
 clean:
 	rm -f libica_sha_test

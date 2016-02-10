@@ -31,7 +31,7 @@ all: $(TARGETS)
 
 # Every target is created from a single .c file.
 %: %.c
-	gcc $(OPTS) $(LIBS) $(INCLUDE) -lica -lcrypto -o $@ $^
+	gcc $(OPTS) -o $@ $^ $(LIBS) $(INCLUDE) -lica -lcrypto
 
 clean:
 	rm -f $(TARGETS)
