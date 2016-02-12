@@ -10,7 +10,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <strings.h>
-#include <stdlib.h> 
+#include <stdlib.h>
 #include "ica_api.h"
 
 #define NR_RANDOM_TESTS 10000
@@ -37,9 +37,9 @@ void dump_array(unsigned char *ptr, unsigned int size)
 }
 
 void dump_cbc_data(unsigned char *iv, unsigned int iv_length,
-                   unsigned char *key, unsigned int key_length,
-                   unsigned char *input_data, unsigned int data_length,
-                   unsigned char *output_data)
+		   unsigned char *key, unsigned int key_length,
+		   unsigned char *input_data, unsigned int data_length,
+		   unsigned char *output_data)
 {
 	printf("IV \n");
 	dump_array(iv, iv_length);
@@ -52,8 +52,8 @@ void dump_cbc_data(unsigned char *iv, unsigned int iv_length,
 }
 
 int load_random_test_data(unsigned char *data, unsigned int data_length,
-		    	   unsigned char *iv, unsigned int iv_length,
-		    	   unsigned char *key, unsigned int key_length)
+			   unsigned char *iv, unsigned int iv_length,
+			   unsigned char *key, unsigned int key_length)
 {
 	int rc;
 	rc = ica_random_number_generate(data_length, data);

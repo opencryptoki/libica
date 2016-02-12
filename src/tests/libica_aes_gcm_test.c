@@ -492,11 +492,11 @@ void dump_array(unsigned char *ptr, unsigned int size)
 }
 
 void dump_gcm_data(unsigned char *iv, unsigned int iv_length,
-                   unsigned char *aad, unsigned int aad_length,
-                   unsigned char *key, unsigned int key_length,
-                   unsigned char *input_data, unsigned int data_length,
-                   unsigned char *output_data,
-                   unsigned char *t, unsigned int t_size)
+		   unsigned char *aad, unsigned int aad_length,
+		   unsigned char *key, unsigned int key_length,
+		   unsigned char *input_data, unsigned int data_length,
+		   unsigned char *output_data,
+		   unsigned char *t, unsigned int t_size)
 {
 	printf("IV \n");
 	dump_array(iv, iv_length);

@@ -10,7 +10,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <strings.h>
-#include <stdlib.h> 
+#include <stdlib.h>
 #include "ica_api.h"
 
 #define NR_TESTS 12
@@ -88,7 +88,7 @@ unsigned char NIST_EXPECTED_IV_CFB_E3[] = {
 	0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f, 0x3b,
 };
 unsigned char NIST_TEST_DATA_CFB_E3[] = {
-	0x6b, 
+	0x6b,
 };
 
 unsigned char NIST_TEST_RESULT_CFB_E3[] = {
@@ -112,7 +112,7 @@ unsigned char NIST_EXPECTED_IV_CFB_E4[] = {
 	0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f, 0x3b, 0x79,
 };
 unsigned char NIST_TEST_DATA_CFB_E4[] = {
-	0xc1, 
+	0xc1,
 };
 
 unsigned char NIST_TEST_RESULT_CFB_E4[] = {
@@ -375,9 +375,9 @@ void dump_array(unsigned char *ptr, unsigned int size)
 }
 
 void dump_cfb_data(unsigned char *iv, unsigned int iv_length,
-                   unsigned char *key, unsigned int key_length,
-                   unsigned char *input_data, unsigned int data_length,
-                   unsigned char *output_data)
+		   unsigned char *key, unsigned int key_length,
+		   unsigned char *input_data, unsigned int data_length,
+		   unsigned char *output_data)
 {
 	printf("IV \n");
 	dump_array(iv, iv_length);
@@ -671,8 +671,8 @@ int kat_aes_cfb(int iteration, int silent)
 }
 
 int load_random_test_data(unsigned char *data, unsigned int data_length,
-		    	   unsigned char *iv, unsigned int iv_length,
-		    	   unsigned char *key, unsigned int key_length)
+			   unsigned char *iv, unsigned int iv_length,
+			   unsigned char *key, unsigned int key_length)
 {
 	int rc;
 	rc = ica_random_number_generate(data_length, data);

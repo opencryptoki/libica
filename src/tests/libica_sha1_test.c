@@ -85,7 +85,7 @@ void dump_array(unsigned char *ptr, unsigned int size)
     h++;
     if (i == 8) {
       if (h != ptr_end)
-        printf("\n");
+	printf("\n");
       i = 1;
     } else {
      ++i;

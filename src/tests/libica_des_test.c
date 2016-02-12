@@ -16,13 +16,13 @@
 const int cipher_buf_length = 8;
 
 unsigned char NIST_KEY1[] =
-                  { 0x7c, 0xa1, 0x10, 0x45, 0x4a, 0x1a, 0x6e, 0x57 };
+		  { 0x7c, 0xa1, 0x10, 0x45, 0x4a, 0x1a, 0x6e, 0x57 };
 
 unsigned char NIST_TEST_DATA[] =
-                  { 0x01, 0xa1, 0xd6, 0xd0, 0x39, 0x77, 0x67, 0x42 };
+		  { 0x01, 0xa1, 0xd6, 0xd0, 0x39, 0x77, 0x67, 0x42 };
 
 unsigned char NIST_TEST_RESULT[] =
-                  { 0x69, 0x0f, 0x5b, 0x0d, 0x9a, 0x26, 0x93, 0x9b };
+		  { 0x69, 0x0f, 0x5b, 0x0d, 0x9a, 0x26, 0x93, 0x9b };
 
 int silent = 1;
 
@@ -53,7 +53,7 @@ int test_des_new_api(int mode)
 	ica_des_key_single_t key;
 	int rc = 0;
 	unsigned char dec_text[sizeof NIST_TEST_DATA],
-	              enc_text[sizeof NIST_TEST_DATA];
+		      enc_text[sizeof NIST_TEST_DATA];
 
 	bzero(dec_text, sizeof dec_text);
 	bzero(enc_text, sizeof enc_text);
@@ -76,7 +76,7 @@ int test_des_new_api(int mode)
 		return -1;
 	} else {
 		printf("Yep, it's what it should be.\n");
-	}	
+	}
 
 	bzero(iv, sizeof iv);
 	rc = ica_des_decrypt(mode, sizeof enc_text, enc_text, &iv, &key,

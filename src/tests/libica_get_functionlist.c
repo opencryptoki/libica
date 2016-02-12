@@ -63,7 +63,7 @@ int main(int argc, char **argv)
 	rc = ica_get_functionlist(NULL, NULL);
 	if (rc != EINVAL) {
 		printf("Operation failed: Expected: %d Actual: %d\n", EINVAL, rc);
-                failed++;
+		failed++;
 	}
 
 	if (failed) {

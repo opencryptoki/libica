@@ -20,24 +20,24 @@ extern int errno;
 
 static int handle_ica_error(int rc, char *message)
 {
-        printf("Error in %s: ", message);
-        switch (rc) {
-                case 0:
-                  printf("OK\n");
-                  break;
-                case EINVAL:
-                  printf("Incorrect parameter.\n");
-                  break;
-                case EPERM:
-                  printf("Operation not permitted by Hardware.\n");
-                  break;
-                case EIO:
-                  printf("I/O error.\n");
-                  break;
-                default:
-                  perror("");
-        }
-        return rc;
+	printf("Error in %s: ", message);
+	switch (rc) {
+		case 0:
+		  printf("OK\n");
+		  break;
+		case EINVAL:
+		  printf("Incorrect parameter.\n");
+		  break;
+		case EPERM:
+		  printf("Operation not permitted by Hardware.\n");
+		  break;
+		case EIO:
+		  printf("I/O error.\n");
+		  break;
+		default:
+		  perror("");
+	}
+	return rc;
 }
 
 void dump_array(unsigned char *ptr, unsigned int size)
@@ -52,10 +52,10 @@ void dump_array(unsigned char *ptr, unsigned int size)
       printf("0x%02x ",(unsigned char ) *h);
       h++;
       if (i == 8) {
-         printf("\n");
-         i = 1;
+	 printf("\n");
+	 i = 1;
       } else {
-         ++i;
+	 ++i;
       }
    }
    printf("\n");

@@ -245,7 +245,7 @@ typedef CK_ULONG CK_MECHANISM_TYPE;
 #define CKM_BATON_SHUFFLE              0x00001035
 #define CKM_BATON_WRAP                 0x00001036
 
-/* CKM_ECDSA_KEY_PAIR_GEN is deprecated in v2.11, 
+/* CKM_ECDSA_KEY_PAIR_GEN is deprecated in v2.11,
  * CKM_EC_KEY_PAIR_GEN is preferred. */
 #define CKM_ECDSA_KEY_PAIR_GEN         0x00001040
 #define CKM_EC_KEY_PAIR_GEN            0x00001040

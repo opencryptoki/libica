@@ -94,9 +94,9 @@ RSA* rsa_key_generate(unsigned int modulus_bit_length,
  * Returns 0 if successful.
  */
 unsigned int rsa_key_generate_mod_expo(ica_adapter_handle_t deviceHandle,
-                                       unsigned int modulus_bit_length,
-                                       ica_rsa_key_mod_expo_t *public_key,
-                                       ica_rsa_key_mod_expo_t *private_key)
+				       unsigned int modulus_bit_length,
+				       ica_rsa_key_mod_expo_t *public_key,
+				       ica_rsa_key_mod_expo_t *private_key)
 {
 	RSA *rsa = rsa_key_generate(modulus_bit_length,
 				    (unsigned long*)(public_key->exponent +
@@ -127,7 +127,7 @@ unsigned int rsa_key_generate_mod_expo(ica_adapter_handle_t deviceHandle,
 	if (bn_length < private_key->key_length)
 		offset = private_key->key_length - bn_length;
 	else
-		offset = 0;	
+		offset = 0;
 	BN_bn2bin(rsa->d, private_key->exponent + offset);
 
 	RSA_free(rsa);
@@ -160,7 +160,7 @@ unsigned int rsa_key_generate_crt(ica_adapter_handle_t deviceHandle,
 				    sizeof(unsigned long)));
 	if (!rsa)
 		return errno;
-	
+
 	/* Public exponent has already been set, no need to do this here.
 	 * For public key, only modulus needs to be set.
 	 */
@@ -220,7 +220,7 @@ unsigned int rsa_key_generate_crt(ica_adapter_handle_t deviceHandle,
 	else
 		offset = 0;
 	BN_bn2bin(rsa->dmq1, private_key->dq + offset);
-	
+
 	/* Copy qInverse into buffer */
 	bn_length = BN_num_bytes(rsa->iqmp);
 	if(bn_length < key_part_length)
@@ -239,22 +239,22 @@ unsigned int rsa_key_generate_crt(ica_adapter_handle_t deviceHandle,
  */
 unsigned int rsa_mod_mult_sw(ica_rsa_modmult_t *pMul)
 {
-        int rc = 0;
-        BN_CTX *ctx = NULL;
+	int rc = 0;
+	BN_CTX *ctx = NULL;
 
-        if ((ctx = BN_CTX_new()) == NULL) {
-		return errno;		
-        }
+	if ((ctx = BN_CTX_new()) == NULL) {
+		return errno;
+	}
 
-        rc = mod_mul_sw(pMul->inputdatalength, pMul->inputdata,
+	rc = mod_mul_sw(pMul->inputdatalength, pMul->inputdata,
 			pMul->inputdatalength, pMul->b_key,
 			pMul->inputdatalength, pMul->n_modulus,
 			(int *)&(pMul->outputdatalength),
 			pMul->outputdata, ctx);
-        BN_CTX_free(ctx);
+	BN_CTX_free(ctx);
 	if (rc)
 		rc = EIO;
-        return rc;
+	return rc;
 }
 
 /**
@@ -265,53 +265,53 @@ static unsigned int mod_mul_sw(int fc_1_length, char *fc1, int fc_2_length,
 			      char *fc2, int mod_length, char *mod,
 			      int *res_length, char *res, BN_CTX *ctx)
 {
-        int rc = 0;
-        int ln = 0;
-        int pad = 0;
-        BIGNUM *b_fc1 = NULL;
-        BIGNUM *b_fc2 = NULL;
-        BIGNUM *b_mod = NULL;
-        BIGNUM *b_res = NULL;
+	int rc = 0;
+	int ln = 0;
+	int pad = 0;
+	BIGNUM *b_fc1 = NULL;
+	BIGNUM *b_fc2 = NULL;
+	BIGNUM *b_mod = NULL;
+	BIGNUM *b_res = NULL;
 
-        BN_CTX_start(ctx);
+	BN_CTX_start(ctx);
 
-        b_fc1 = BN_CTX_get(ctx);
-        b_fc2 = BN_CTX_get(ctx);
-        b_mod = BN_CTX_get(ctx);
-        if ((b_res = BN_CTX_get(ctx)) == NULL) {
-                rc = ENOMEM;
-                goto cleanup;
-        }
+	b_fc1 = BN_CTX_get(ctx);
+	b_fc2 = BN_CTX_get(ctx);
+	b_mod = BN_CTX_get(ctx);
+	if ((b_res = BN_CTX_get(ctx)) == NULL) {
+		rc = ENOMEM;
+		goto cleanup;
+	}
 
-        b_fc1 = BN_bin2bn((const unsigned char *)fc1, fc_1_length, b_fc1);
-        b_fc2 = BN_bin2bn((const unsigned char *)fc2, fc_2_length, b_fc2);
-        b_mod = BN_bin2bn((const unsigned char *)mod, mod_length, b_mod);
+	b_fc1 = BN_bin2bn((const unsigned char *)fc1, fc_1_length, b_fc1);
+	b_fc2 = BN_bin2bn((const unsigned char *)fc2, fc_2_length, b_fc2);
+	b_mod = BN_bin2bn((const unsigned char *)mod, mod_length, b_mod);
 
-        if (!(BN_mod_mul(b_res, b_fc1, b_fc2, b_mod, ctx))) {
-                goto err;
-        }
+	if (!(BN_mod_mul(b_res, b_fc1, b_fc2, b_mod, ctx))) {
+		goto err;
+	}
 
-        if ((ln = BN_num_bytes(b_res)) > *res_length) {
-                rc = EIO;
-                goto cleanup;
-        }
+	if ((ln = BN_num_bytes(b_res)) > *res_length) {
+		rc = EIO;
+		goto cleanup;
+	}
 
-        if (ln)
-                pad = *res_length - ln;
+	if (ln)
+		pad = *res_length - ln;
 
-        ln = BN_bn2bin(b_res,(unsigned char *)(res + pad));
+	ln = BN_bn2bin(b_res,(unsigned char *)(res + pad));
 
-        if (pad)
-                memset(res, 0, pad);
+	if (pad)
+		memset(res, 0, pad);
 
-        goto cleanup;
+	goto cleanup;
 
       err:
-        rc = EIO;
+	rc = EIO;
 
       cleanup:
-        BN_CTX_end(ctx);
-	
+	BN_CTX_end(ctx);
+
 	 return rc;
 }
 
@@ -333,27 +333,27 @@ static unsigned int mod_mul_sw(int fc_1_length, char *fc1, int fc_2_length,
  */
 unsigned int rsa_mod_expo_sw(ica_rsa_modexpo_t *pMex)
 {
-        int rc = 0;
-        BN_CTX *ctx = NULL;
+	int rc = 0;
+	BN_CTX *ctx = NULL;
 
-        if ((ctx = BN_CTX_new()) == NULL) {
+	if ((ctx = BN_CTX_new()) == NULL) {
 		return errno;
-        }
+	}
 
 	/* check if modulus value > data value */
 	if ((memcmp(pMex->n_modulus, pMex->inputdata,
 		    pMex->inputdatalength)) <= 0)
 		return EINVAL;
 
-        rc = mod_expo_sw(pMex->inputdatalength, pMex->inputdata,
-                       pMex->inputdatalength, pMex->b_key,
-                       pMex->inputdatalength, pMex->n_modulus,
-                       (int *)&(pMex->outputdatalength), pMex->outputdata, ctx);
+	rc = mod_expo_sw(pMex->inputdatalength, pMex->inputdata,
+		       pMex->inputdatalength, pMex->b_key,
+		       pMex->inputdatalength, pMex->n_modulus,
+		       (int *)&(pMex->outputdatalength), pMex->outputdata, ctx);
 
-        BN_CTX_free(ctx);
+	BN_CTX_free(ctx);
 	if (rc == 1)
 		rc = EIO;
-        return rc;
+	return rc;
 }
 
 /**
@@ -385,65 +385,65 @@ static unsigned int mod_expo_sw(int arg_length, char *arg, int exp_length,
 				char *exp, int mod_length, char *mod,
 				int *res_length, char *res, BN_CTX *ctx)
 {
-        int rc = 0;
-        int ln = 0;
-        int pad = 0;
-        BIGNUM *b_arg = NULL;
-        BIGNUM *b_exp = NULL;
-        BIGNUM *b_mod = NULL;
-        BIGNUM *b_res = NULL;
-        BN_CTX *mod_expo_ctx = NULL;
-        int mod_expo_rc = 1;
+	int rc = 0;
+	int ln = 0;
+	int pad = 0;
+	BIGNUM *b_arg = NULL;
+	BIGNUM *b_exp = NULL;
+	BIGNUM *b_mod = NULL;
+	BIGNUM *b_res = NULL;
+	BN_CTX *mod_expo_ctx = NULL;
+	int mod_expo_rc = 1;
 
-        BN_CTX_start(ctx);
+	BN_CTX_start(ctx);
 
-        b_arg = BN_CTX_get(ctx);
-        b_exp = BN_CTX_get(ctx);
-        b_mod = BN_CTX_get(ctx);
-        if ((b_res = BN_CTX_get(ctx)) == NULL) {
-                rc = ENOMEM;
-                goto cleanup;
-        }
+	b_arg = BN_CTX_get(ctx);
+	b_exp = BN_CTX_get(ctx);
+	b_mod = BN_CTX_get(ctx);
+	if ((b_res = BN_CTX_get(ctx)) == NULL) {
+		rc = ENOMEM;
+		goto cleanup;
+	}
 
-        b_arg = BN_bin2bn((const unsigned char *)arg, arg_length, b_arg);
-        b_exp = BN_bin2bn((const unsigned char *)exp, exp_length, b_exp);
-        b_mod = BN_bin2bn((const unsigned char *)mod, mod_length, b_mod);
+	b_arg = BN_bin2bn((const unsigned char *)arg, arg_length, b_arg);
+	b_exp = BN_bin2bn((const unsigned char *)exp, exp_length, b_exp);
+	b_mod = BN_bin2bn((const unsigned char *)mod, mod_length, b_mod);
 
-        // Evidently BN_mod_exp gets a *lot* of temp BN's, so it
-        // needs a context all its own.
-        if ((mod_expo_ctx = BN_CTX_new()) == NULL) {
-                goto err;
-        }
-		
-        mod_expo_rc = BN_mod_exp(b_res, b_arg, b_exp, b_mod, mod_expo_ctx);
-        BN_CTX_free(mod_expo_ctx);
+	// Evidently BN_mod_exp gets a *lot* of temp BN's, so it
+	// needs a context all its own.
+	if ((mod_expo_ctx = BN_CTX_new()) == NULL) {
+		goto err;
+	}
 
-        if (!(mod_expo_rc)) {
-                goto err;
-        }
+	mod_expo_rc = BN_mod_exp(b_res, b_arg, b_exp, b_mod, mod_expo_ctx);
+	BN_CTX_free(mod_expo_ctx);
 
-        if ((ln = BN_num_bytes(b_res)) > *res_length) {
-                rc = 1;
-                goto cleanup;
-        }
+	if (!(mod_expo_rc)) {
+		goto err;
+	}
+
+	if ((ln = BN_num_bytes(b_res)) > *res_length) {
+		rc = 1;
+		goto cleanup;
+	}
 
     if (ln)
-                pad = *res_length - ln;
+		pad = *res_length - ln;
 
-        ln = BN_bn2bin(b_res, (unsigned char *)(res + pad));
+	ln = BN_bn2bin(b_res, (unsigned char *)(res + pad));
 
-        if (pad)
-                memset(res, 0, pad);
+	if (pad)
+		memset(res, 0, pad);
 
-        goto cleanup;
+	goto cleanup;
 
       err:
-        rc = EIO;
+	rc = EIO;
 
       cleanup:
-        BN_CTX_end(ctx);
+	BN_CTX_end(ctx);
 
-        return rc;
+	return rc;
 }
 
 /**
@@ -472,11 +472,11 @@ unsigned int rsa_crt_sw(ica_rsa_modexpo_crt_t * pCrt)
 	int short_length = 0;
 	BN_CTX *ctx = NULL;
 
-	
+
 
 	short_length = (pCrt->inputdatalength+1) / 2;
 	long_length = short_length + 8;
-/*	
+/*
 	Use variable buffer length. Earlier version contained fixed 136byte
 	size for ir buffers. Thus the software fallback should be able to
 	handle keys of bigger size, too.
@@ -605,51 +605,51 @@ unsigned int rsa_crt_sw(ica_rsa_modexpo_crt_t * pCrt)
 static unsigned int mod_sw(int arg_length, char *arg, int mod_length,
 			   char *mod, int *res_length, char *res, BN_CTX *ctx)
 {
-        int rc = 0;
-        int ln = 0;
-        int pad = 0;
-        BIGNUM *b_arg = NULL;
-        BIGNUM *b_mod = NULL;
-        BIGNUM *b_res = NULL;
+	int rc = 0;
+	int ln = 0;
+	int pad = 0;
+	BIGNUM *b_arg = NULL;
+	BIGNUM *b_mod = NULL;
+	BIGNUM *b_res = NULL;
 
-        BN_CTX_start(ctx);
+	BN_CTX_start(ctx);
 
-        b_arg = BN_CTX_get(ctx);
-        b_mod = BN_CTX_get(ctx);
-        if ((b_res = BN_CTX_get(ctx)) == NULL) {
-                rc = -ENOMEM;
-                goto cleanup;
-        }
+	b_arg = BN_CTX_get(ctx);
+	b_mod = BN_CTX_get(ctx);
+	if ((b_res = BN_CTX_get(ctx)) == NULL) {
+		rc = -ENOMEM;
+		goto cleanup;
+	}
 
-        b_arg = BN_bin2bn((const unsigned char *)arg, arg_length, b_arg);
-        b_mod = BN_bin2bn((const unsigned char *)mod, mod_length, b_mod);
+	b_arg = BN_bin2bn((const unsigned char *)arg, arg_length, b_arg);
+	b_mod = BN_bin2bn((const unsigned char *)mod, mod_length, b_mod);
 
-        if (!(BN_mod(b_res, b_arg, b_mod, ctx))) {
-                goto err;
-        }
+	if (!(BN_mod(b_res, b_arg, b_mod, ctx))) {
+		goto err;
+	}
 
-        if ((ln = BN_num_bytes(b_res)) > *res_length) {
-                rc = 1;
-                goto cleanup;
-        }
+	if ((ln = BN_num_bytes(b_res)) > *res_length) {
+		rc = 1;
+		goto cleanup;
+	}
 
-        if (ln)
-                pad = *res_length - ln;
+	if (ln)
+		pad = *res_length - ln;
 
-        ln = BN_bn2bin(b_res, (unsigned char *)(res + pad));
+	ln = BN_bn2bin(b_res, (unsigned char *)(res + pad));
 
-        if (pad)
-                memset(res, 0, pad);
+	if (pad)
+		memset(res, 0, pad);
 
-        goto cleanup;
+	goto cleanup;
 
       err:
-        rc = EIO;
+	rc = EIO;
 
       cleanup:
-        BN_CTX_end(ctx);
+	BN_CTX_end(ctx);
 
-        return rc;
+	return rc;
 }
 
 /**
@@ -682,79 +682,79 @@ static unsigned int mod_sub_sw(int min_length, char *minu, int sub_length,
 			       char *sub, int mod_length, char *mod,
 			       int *res_length, char *res, BN_CTX * ctx)
 {
-        int rc = 0;
-        int ln = 0;
-        int pad = 0;
+	int rc = 0;
+	int ln = 0;
+	int pad = 0;
 
-        int min_size, sub_size, dif_size;
+	int min_size, sub_size, dif_size;
 
-        BIGNUM *b_min = NULL;
-        BIGNUM *b_sub = NULL;
-        BIGNUM *b_mod = NULL;
-        BIGNUM *b_res = NULL;
+	BIGNUM *b_min = NULL;
+	BIGNUM *b_sub = NULL;
+	BIGNUM *b_mod = NULL;
+	BIGNUM *b_res = NULL;
 
-        BN_CTX_start(ctx);
+	BN_CTX_start(ctx);
 
-        b_min = BN_CTX_get(ctx);
-        b_sub = BN_CTX_get(ctx);
-        b_mod = BN_CTX_get(ctx);
-        if ((b_res = BN_CTX_get(ctx)) == NULL) {
-                rc = -ENOMEM;
-                goto cleanup;
-        }
+	b_min = BN_CTX_get(ctx);
+	b_sub = BN_CTX_get(ctx);
+	b_mod = BN_CTX_get(ctx);
+	if ((b_res = BN_CTX_get(ctx)) == NULL) {
+		rc = -ENOMEM;
+		goto cleanup;
+	}
 
-        b_min = BN_bin2bn((const unsigned char *)minu, min_length, b_min);
-        b_sub = BN_bin2bn((const unsigned char *)sub, sub_length, b_sub);
-        b_mod = BN_bin2bn((const unsigned char *)mod, mod_length, b_mod);
+	b_min = BN_bin2bn((const unsigned char *)minu, min_length, b_min);
+	b_sub = BN_bin2bn((const unsigned char *)sub, sub_length, b_sub);
+	b_mod = BN_bin2bn((const unsigned char *)mod, mod_length, b_mod);
 
-        min_size = BN_num_bytes(b_min);
-        sub_size = BN_num_bytes(b_sub);
+	min_size = BN_num_bytes(b_min);
+	sub_size = BN_num_bytes(b_sub);
 
-        /* if sub == min, the result is zero, but it's an error */
-        if (sub_size == min_size) {
-                dif_size = memcmp(sub, minu, sub_length);
-                if (dif_size == 0) {
-                        memset(res, 0, *res_length);
-                        rc = -1;
-                        goto cleanup;
-                }
-        }
-        /* if sub < min, the result is just min - sub */
-        if ((sub_size < min_size) || ((sub_size == min_size) && (dif_size < 0))) {
-                if (!(BN_sub(b_res, b_min, b_sub))) {
-                        goto err;
-                }
-        } else {                /* sub > min, so the result is (min + mod) - sub */
-                if (!(BN_add(b_res, b_min, b_mod))) {
-                        goto err;
-                }
-                if (!(BN_sub(b_res, b_res, b_sub))) {
-                        goto err;
-                }
-        }
+	/* if sub == min, the result is zero, but it's an error */
+	if (sub_size == min_size) {
+		dif_size = memcmp(sub, minu, sub_length);
+		if (dif_size == 0) {
+			memset(res, 0, *res_length);
+			rc = -1;
+			goto cleanup;
+		}
+	}
+	/* if sub < min, the result is just min - sub */
+	if ((sub_size < min_size) || ((sub_size == min_size) && (dif_size < 0))) {
+		if (!(BN_sub(b_res, b_min, b_sub))) {
+			goto err;
+		}
+	} else {                /* sub > min, so the result is (min + mod) - sub */
+		if (!(BN_add(b_res, b_min, b_mod))) {
+			goto err;
+		}
+		if (!(BN_sub(b_res, b_res, b_sub))) {
+			goto err;
+		}
+	}
 
-        if ((ln = BN_num_bytes(b_res)) > *res_length) {
-                rc = 1;
-                goto cleanup;
-        }
+	if ((ln = BN_num_bytes(b_res)) > *res_length) {
+		rc = 1;
+		goto cleanup;
+	}
 
-        if (ln)
-                pad = *res_length - ln;
+	if (ln)
+		pad = *res_length - ln;
 
-        ln = BN_bn2bin(b_res, (unsigned char *)(res + pad));
+	ln = BN_bn2bin(b_res, (unsigned char *)(res + pad));
 
-        if (pad)
-                memset(res, 0, pad);
+	if (pad)
+		memset(res, 0, pad);
 
-        goto cleanup;
+	goto cleanup;
 
       err:
-        rc = EIO;
+	rc = EIO;
 
       cleanup:
-        BN_CTX_end(ctx);
+	BN_CTX_end(ctx);
 
-        return rc;
+	return rc;
 }
 
 /**
@@ -780,51 +780,51 @@ static unsigned int mod_sub_sw(int min_length, char *minu, int sub_length,
 static unsigned int add_sw(int aug_length, char *aug, int add_length,
 			   char *add, int *res_length, char *res, BN_CTX *ctx)
 {
-        int rc = 0;
-        int ln = 0;
-        int pad = 0;
-        BIGNUM *b_aug = NULL;
-        BIGNUM *b_add = NULL;
-        BIGNUM *b_res = NULL;
+	int rc = 0;
+	int ln = 0;
+	int pad = 0;
+	BIGNUM *b_aug = NULL;
+	BIGNUM *b_add = NULL;
+	BIGNUM *b_res = NULL;
 
-        BN_CTX_start(ctx);
+	BN_CTX_start(ctx);
 
-        b_aug = BN_CTX_get(ctx);
-        b_add = BN_CTX_get(ctx);
-        if ((b_res = BN_CTX_get(ctx)) == NULL) {
-                rc = -ENOMEM;
-                goto cleanup;
-        }
+	b_aug = BN_CTX_get(ctx);
+	b_add = BN_CTX_get(ctx);
+	if ((b_res = BN_CTX_get(ctx)) == NULL) {
+		rc = -ENOMEM;
+		goto cleanup;
+	}
 
-        b_aug = BN_bin2bn((const unsigned char *)aug, aug_length, b_aug);
-        b_add = BN_bin2bn((const unsigned char *)add, add_length, b_add);
+	b_aug = BN_bin2bn((const unsigned char *)aug, aug_length, b_aug);
+	b_add = BN_bin2bn((const unsigned char *)add, add_length, b_add);
 
-        if (!(BN_add(b_res, b_aug, b_add))) {
-                goto err;
-        }
+	if (!(BN_add(b_res, b_aug, b_add))) {
+		goto err;
+	}
 
-        if ((ln = BN_num_bytes(b_res)) > *res_length) {
-                rc = 1;
-                goto cleanup;
-        }
+	if ((ln = BN_num_bytes(b_res)) > *res_length) {
+		rc = 1;
+		goto cleanup;
+	}
 
-        if (ln)
-                pad = *res_length - ln;
+	if (ln)
+		pad = *res_length - ln;
 
-        ln = BN_bn2bin(b_res, (unsigned char *)(res + pad));
+	ln = BN_bn2bin(b_res, (unsigned char *)(res + pad));
 
-        if (pad)
-                memset(res, 0, pad);
+	if (pad)
+		memset(res, 0, pad);
 
-        goto cleanup;
+	goto cleanup;
 
       err:
-        rc = EIO;
+	rc = EIO;
 
       cleanup:
-        BN_CTX_end(ctx);
+	BN_CTX_end(ctx);
 
-        return rc;
+	return rc;
 }
 
 /**
@@ -844,50 +844,50 @@ static unsigned int add_sw(int aug_length, char *aug, int add_length,
 static unsigned int mul_sw(int fc_1_length, char *fc1, int fc_2_length,
 			   char *fc2, int *res_length, char *res, BN_CTX *ctx)
 {
-        int rc = 0;
-        int ln = 0;
-        int pad = 0;
-        BIGNUM *b_fc1 = NULL;
-        BIGNUM *b_fc2 = NULL;
-        BIGNUM *b_res = NULL;
+	int rc = 0;
+	int ln = 0;
+	int pad = 0;
+	BIGNUM *b_fc1 = NULL;
+	BIGNUM *b_fc2 = NULL;
+	BIGNUM *b_res = NULL;
 
-        BN_CTX_start(ctx);
+	BN_CTX_start(ctx);
 
-        b_fc1 = BN_CTX_get(ctx);
-        b_fc2 = BN_CTX_get(ctx);
-        if ((b_res = BN_CTX_get(ctx)) == NULL) {
-                rc = -ENOMEM;
-                goto cleanup;
-        }
+	b_fc1 = BN_CTX_get(ctx);
+	b_fc2 = BN_CTX_get(ctx);
+	if ((b_res = BN_CTX_get(ctx)) == NULL) {
+		rc = -ENOMEM;
+		goto cleanup;
+	}
 
-        b_fc1 = BN_bin2bn((const unsigned char *)fc1, fc_1_length, b_fc1);
-        b_fc2 = BN_bin2bn((const unsigned char *)fc2, fc_2_length, b_fc2);
+	b_fc1 = BN_bin2bn((const unsigned char *)fc1, fc_1_length, b_fc1);
+	b_fc2 = BN_bin2bn((const unsigned char *)fc2, fc_2_length, b_fc2);
 
-        if (!(BN_mul(b_res, b_fc1, b_fc2, ctx))) {
-                goto err;
-        }
+	if (!(BN_mul(b_res, b_fc1, b_fc2, ctx))) {
+		goto err;
+	}
 
-        if ((ln = BN_num_bytes(b_res)) > *res_length) {
-                rc = 1;
-                goto cleanup;
-        }
+	if ((ln = BN_num_bytes(b_res)) > *res_length) {
+		rc = 1;
+		goto cleanup;
+	}
 
-        if (ln)
-                pad = *res_length - ln;
+	if (ln)
+		pad = *res_length - ln;
 
-        ln = BN_bn2bin(b_res, (unsigned char *)(res + pad));
+	ln = BN_bn2bin(b_res, (unsigned char *)(res + pad));
 
-        if (pad)
-                memset(res, 0, pad);
+	if (pad)
+		memset(res, 0, pad);
 
-        goto cleanup;
+	goto cleanup;
 
       err:
-        rc = EIO;
+	rc = EIO;
 
       cleanup:
-        BN_CTX_end(ctx);
+	BN_CTX_end(ctx);
 
-        return rc;
+	return rc;
 }
 

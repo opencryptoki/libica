@@ -73,32 +73,32 @@ const char *const STATS_DESC[ICA_NUM_STATS] = {
 void print_stats(stats_entry_t *stats)
 {
 	printf(" function     |          # hardware      |       # software\n");
-        printf("--------------+--------------------------+-------------------------\n");
-        printf("              |       ENC    CRYPT   DEC |        ENC    CRYPT   DEC\n");
-        printf("--------------+--------------------------+-------------------------\n");
-        unsigned int i;
-        for (i = 0; i < ICA_NUM_STATS; ++i){
-        	if(i<=ICA_STATS_RSA_CRT){
-                	printf(" %12s |      %*d          |       %*d\n",
-                               STATS_DESC[i],
-			       CELL_SIZE,
-                               stats[i].enc.hw,
-			       CELL_SIZE,
-                               stats[i].enc.sw);
-                } else{
-                	printf(" %12s |%*d     %*d |%*d    %*d\n",
+	printf("--------------+--------------------------+-------------------------\n");
+	printf("              |       ENC    CRYPT   DEC |        ENC    CRYPT   DEC\n");
+	printf("--------------+--------------------------+-------------------------\n");
+	unsigned int i;
+	for (i = 0; i < ICA_NUM_STATS; ++i){
+		if(i<=ICA_STATS_RSA_CRT){
+			printf(" %12s |      %*d          |       %*d\n",
 			       STATS_DESC[i],
 			       CELL_SIZE,
-                               stats[i].enc.hw,
+			       stats[i].enc.hw,
 			       CELL_SIZE,
-                               stats[i].dec.hw,
+			       stats[i].enc.sw);
+		} else{
+			printf(" %12s |%*d     %*d |%*d    %*d\n",
+			       STATS_DESC[i],
 			       CELL_SIZE,
-                               stats[i].enc.sw,
+			       stats[i].enc.hw,
 			       CELL_SIZE,
-                               stats[i].dec.sw);
+			       stats[i].dec.hw,
+			       CELL_SIZE,
+			       stats[i].enc.sw,
+			       CELL_SIZE,
+			       stats[i].dec.sw);
 
-               }
-        }
+	       }
+	}
 }
 
 
@@ -124,7 +124,7 @@ int main(int argc, char *argv[])
 		case 'R':
 			if(geteuid() != 0){
 				fprintf(stderr,"You have no rights to reset all shared memory"
-                                	" segments!\n");
+					" segments!\n");
 				return EXIT_FAILURE;
 			}
 			reset = 2;
@@ -133,11 +133,11 @@ int main(int argc, char *argv[])
 			delete = 1;
 			break;
 		case 'D':
-                        if(geteuid() != 0){
-                                fprintf(stderr,"You have no rights to delete all shared memory"
-                                        " segments!\n");
-                                return EXIT_FAILURE;
-                        }
+			if(geteuid() != 0){
+				fprintf(stderr,"You have no rights to delete all shared memory"
+					" segments!\n");
+				return EXIT_FAILURE;
+			}
 
 			delete = 2;
 			break;
@@ -170,17 +170,17 @@ int main(int argc, char *argv[])
 		}
 	}
 
-        if (optind < argc) {
-                fprintf(stderr, "%s: invalid option.\n\
-                        Try '%s --help' for more information.\n",
-                        argv[0], basename(argv[0]));
-                return EXIT_FAILURE;
-        }
-	
+	if (optind < argc) {
+		fprintf(stderr, "%s: invalid option.\n\
+			Try '%s --help' for more information.\n",
+			argv[0], basename(argv[0]));
+		return EXIT_FAILURE;
+	}
+
 	if(delete == 2){
 		if(delete_all() == -1){
 			perror("deleteall: ");
-			return EXIT_FAILURE;	
+			return EXIT_FAILURE;
 		}
 		return EXIT_SUCCESS;
 	} else if(delete){
@@ -202,25 +202,25 @@ int main(int argc, char *argv[])
 			free(entries);
 		}
 		return EXIT_SUCCESS;
-	}		
-	
+	}
+
 	if (sum){
 		stats_entry_t *entries;
 		if((entries = malloc(sizeof(stats_entry_t)*ICA_NUM_STATS)) == NULL){
-                	perror("malloc: ");
-                        return EXIT_FAILURE;
-                }
+			perror("malloc: ");
+			return EXIT_FAILURE;
+		}
 
 		if(!get_stats_sum(entries)){
 			perror("get_stats_sum: ");
 			return EXIT_FAILURE;
-                }
+		}
 		print_stats(entries);
 		return EXIT_SUCCESS;
-			
-				
+
+
 	}
-	
+
 	if(reset == 2){
 		while(get_next_usr() != NULL)
 			stats_reset();
@@ -244,7 +244,7 @@ int main(int argc, char *argv[])
 		}
 		get_stats_data(stats);
 		print_stats(stats);
-	
+
 	}
 	return EXIT_SUCCESS;
 }

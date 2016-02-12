@@ -62,34 +62,34 @@ struct crypt_pair {
 
 static struct crypt_pair crypt_map[] = {
 	{"SHA-1", SHA1},
-        {"SHA-224", SHA224},
-        {"SHA-256", SHA256},
-        {"SHA-384", SHA384},
-        {"SHA-512", SHA512},
-        {"GHASH", G_HASH},
-        {"P_RNG", P_RNG},
+	{"SHA-224", SHA224},
+	{"SHA-256", SHA256},
+	{"SHA-384", SHA384},
+	{"SHA-512", SHA512},
+	{"GHASH", G_HASH},
+	{"P_RNG", P_RNG},
 	{"DRBG-SHA-512", SHA512_DRNG},
-        {"RSA ME", RSA_ME},
-        {"RSA CRT", RSA_CRT},
-        {"DES ECB", DES_ECB},
-        {"DES CBC", DES_CBC},
-        {"DES OFB", DES_OFB},
-        {"DES CFB", DES_CFB},
-        {"DES CTR", DES_CTR},
-        {"DES CMAC", DES_CMAC},
-        {"3DES ECB", DES3_ECB},
-        {"3DES CBC", DES3_CBC},
-        {"3DES OFB", DES3_OFB},
-        {"3DES CFB", DES3_OFB},
-        {"3DES CTR", DES3_CTR},
-        {"3DES CMAC", DES3_CMAC},
-        {"AES ECB", AES_ECB},
-        {"AES CBC", AES_CBC},
-        {"AES OFB", AES_OFB},
-        {"AES CFB", AES_CFB},
-        {"AES CTR", AES_CTR},
-        {"AES CMAC", AES_CMAC},
-        {"AES XTS", AES_XTS},
+	{"RSA ME", RSA_ME},
+	{"RSA CRT", RSA_CRT},
+	{"DES ECB", DES_ECB},
+	{"DES CBC", DES_CBC},
+	{"DES OFB", DES_OFB},
+	{"DES CFB", DES_CFB},
+	{"DES CTR", DES_CTR},
+	{"DES CMAC", DES_CMAC},
+	{"3DES ECB", DES3_ECB},
+	{"3DES CBC", DES3_CBC},
+	{"3DES OFB", DES3_OFB},
+	{"3DES CFB", DES3_OFB},
+	{"3DES CTR", DES3_CTR},
+	{"3DES CMAC", DES3_CMAC},
+	{"AES ECB", AES_ECB},
+	{"AES CBC", AES_CBC},
+	{"AES OFB", AES_OFB},
+	{"AES CFB", AES_CFB},
+	{"AES CTR", AES_CTR},
+	{"AES CMAC", AES_CMAC},
+	{"AES XTS", AES_XTS},
 	{NULL,0}
 };
 
@@ -110,28 +110,28 @@ int is_crypto_card_loaded()
 	while((direntp = readdir(sysDir)) != NULL){
 		if(strstr(direntp->d_name, "card") != 0){
 			snprintf(dev, PATH_MAX, "/sys/devices/ap/%s/type",
-			 	 direntp->d_name); 
+				 direntp->d_name);
 
 			if ((file = fopen(dev, "r")) == NULL){
-	                        closedir(sysDir);
-                                return 0;
+				closedir(sysDir);
+				return 0;
 			}
-		
+
 			if (getline(&type, &size, file) == -1){
 				fclose(file);
 				closedir(sysDir);
 				return 0;
 			}
-					
- 			/* ignore \n
+
+			/* ignore \n
 			 * looking for CEX??A and CEX??C
 			 * Skip type CEX??P cards
- 			 */
+			 */
 			if (type[strlen(type)-2] == 'P'){
 				free(type);
 				type = NULL;
-			        fclose(file);
-                        	continue;
+				fclose(file);
+				continue;
 			}
 			free(type);
 			type = NULL;
@@ -152,8 +152,8 @@ int is_crypto_card_loaded()
 	}
 	closedir(sysDir);
 	return 0;
-}	
-	
+}
+
 
 
 int main(int argc, char **argv)
@@ -162,7 +162,7 @@ int main(int argc, char **argv)
 	int index = 0;
 	unsigned int mech_len;
 	libica_func_list_element *pmech_list = NULL;
-	int flag;	
+	int flag;
 
 	while ((rc = getopt_long(argc, argv, getopt_string,
 				 getopt_long_options, &index)) != -1) {
@@ -212,28 +212,28 @@ int main(int argc, char **argv)
 		for(j=0;j<mech_len;j++){
 			if(crypt_map[i].algo_id == pmech_list[j].mech_mode_id){
 				if(flag){
-					printf("%14s |    %*s     |     %*s\n", 
+					printf("%14s |    %*s     |     %*s\n",
 						crypt_map[i].name,
 						CELL_SIZE,
 						pmech_list[j].flags &
 						(ICA_FLAG_SHW | ICA_FLAG_DHW)
-						? "yes" : "no",		
-						CELL_SIZE,	
+						? "yes" : "no",
+						CELL_SIZE,
 						pmech_list[j].flags & ICA_FLAG_SW
 						? "yes" : "no");
 				} else{
-                                        printf("%14s |    %*s     |     %*s\n",
-                                                crypt_map[i].name,
+					printf("%14s |    %*s     |     %*s\n",
+						crypt_map[i].name,
 						CELL_SIZE,
-                                                (pmech_list[j].flags &
-                                                ICA_FLAG_SHW)
-                                                ? "yes" : "no",
+						(pmech_list[j].flags &
+						ICA_FLAG_SHW)
+						? "yes" : "no",
 						CELL_SIZE,
-                                                pmech_list[j].flags & ICA_FLAG_SW
-                                                ? "yes" : "no");
-	
+						pmech_list[j].flags & ICA_FLAG_SW
+						? "yes" : "no");
+
 				}
-				break;		
+				break;
 			}
 
 		}

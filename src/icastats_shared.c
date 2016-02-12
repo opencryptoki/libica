@@ -53,7 +53,7 @@ static void atomic_add(int *x, int i)
  * Arguments:
  * @user: if user is -1 stats_mmap will open the shared memory segent of the same
  * user.
- * If it is not -1, stats_mmap will treat it as uid and will open the shared memory 
+ * If it is not -1, stats_mmap will treat it as uid and will open the shared memory
  * segment of this userid
  * return value:
  *  0 - Success
@@ -65,18 +65,18 @@ int stats_mmap(int user)
 	if (stats == NULL) {
 		char shm_id[NAME_LENGHT];
 		sprintf(shm_id, "icastats_%d", user == -1? geteuid(): user);
-	
+
 		stats_shm_handle = shm_open(shm_id, O_CREAT | O_RDWR,
-		                    		    S_IRUSR | S_IWUSR);
-		
+						    S_IRUSR | S_IWUSR);
+
 		if (stats_shm_handle == NOT_INITIALIZED)
 			return -1;
 		if (ftruncate(stats_shm_handle, STATS_SHM_SIZE) == -1)
 			return -1;
-		
+
 		stats = (stats_entry_t *) mmap(NULL, STATS_SHM_SIZE, PROT_READ |
-					         PROT_WRITE, MAP_SHARED,
-					         stats_shm_handle, 0);
+						 PROT_WRITE, MAP_SHARED,
+						 stats_shm_handle, 0);
 		if (stats == MAP_FAILED){
 			close(stats_shm_handle);
 			stats = NULL;
@@ -86,11 +86,11 @@ int stats_mmap(int user)
 	return 0;
 }
 
-/* Close and/or delete the shared memory segment 
+/* Close and/or delete the shared memory segment
  * Argument:
- * @unlink - if unlink is true the shared memory segment will be 
- * deleted. If it is false it will only be closed. 
- */ 
+ * @unlink - if unlink is true the shared memory segment will be
+ * deleted. If it is false it will only be closed.
+ */
 
 void stats_munmap(int unlink)
 {
@@ -103,16 +103,16 @@ void stats_munmap(int unlink)
 	munmap(stats, STATS_SHM_SIZE);
 	close(stats_shm_handle);
 	stats_shm_handle = NOT_INITIALIZED;
-	
+
 	if(unlink == SHM_DESTROY)
 		shm_unlink(shm_id);
 	stats = NULL;
 }
 
-/* query the shared memory segment for a specific field 
+/* query the shared memory segment for a specific field
  * arguments:
  * @field - the enum of the field see icastats.h
- * @hardware - valid values are ALGO_SW for software statistics 
+ * @hardware - valid values are ALGO_SW for software statistics
  * and ALGO_HW for hardware statistics
  * @direction - valid values are ENCRYPT and DECRYPT
  */
@@ -125,7 +125,7 @@ uint32_t stats_query(stats_fields_t field, int hardware, int direction)
 	if (direction == ENCRYPT)
 		if (hardware == ALGO_HW)
 			return stats[field].enc.hw;
-		else 
+		else
 			return stats[field].enc.sw;
 	else
 		if (hardware == ALGO_HW)
@@ -140,21 +140,21 @@ uint32_t stats_query(stats_fields_t field, int hardware, int direction)
 
 void get_stats_data(stats_entry_t *entries)
 {
-        unsigned int i;
-        for(i = 0;i<ICA_NUM_STATS; i++){
+	unsigned int i;
+	for(i = 0;i<ICA_NUM_STATS; i++){
 		entries[i].enc.hw = stats_query(i, ALGO_HW, ENCRYPT);
 		entries[i].enc.sw = stats_query(i, ALGO_SW, ENCRYPT);
- 		entries[i].dec.hw = stats_query(i, ALGO_HW, DECRYPT);
+		entries[i].dec.hw = stats_query(i, ALGO_HW, DECRYPT);
 		entries[i].dec.sw = stats_query(i, ALGO_SW, DECRYPT);
 	}
 }
 
 
 
-/* get the statistic data from all shared memory segments 
+/* get the statistic data from all shared memory segments
  * accumulated in one variable
  * @sum: sum must be array of the size of ICA_NUM_STATS
- * After a call to this function sum contains the accumulated 
+ * After a call to this function sum contains the accumulated
  * data of all shared memory segments.
  * Return value:
  * 1 - Success
@@ -172,22 +172,22 @@ int get_stats_sum(stats_entry_t *sum)
 		return 0;
 
 	while((direntp = readdir(shmDir)) != NULL){
-        	if(strstr(direntp->d_name, "icastats_") != NULL){
+		if(strstr(direntp->d_name, "icastats_") != NULL){
 			int fd;
 			stats_entry_t *tmp;
-			
-                        if((getpwuid(atoi(&direntp->d_name[9]))) == NULL){
+
+			if((getpwuid(atoi(&direntp->d_name[9]))) == NULL){
 				closedir(shmDir);
 				return 0;
-			}		
+			}
 
 			if ((fd = shm_open(direntp->d_name, O_RDONLY, 0)) == -1){
-				closedir(shmDir);	
+				closedir(shmDir);
 				return 0;
 			}
-			if ((tmp = (stats_entry_t *)mmap(NULL, STATS_SHM_SIZE, 
+			if ((tmp = (stats_entry_t *)mmap(NULL, STATS_SHM_SIZE,
 						    PROT_READ, MAP_SHARED,
-					            fd, 0)) == MAP_FAILED){
+						    fd, 0)) == MAP_FAILED){
 				closedir(shmDir);
 				close(fd);
 				return 0;
@@ -208,10 +208,10 @@ int get_stats_sum(stats_entry_t *sum)
 }
 
 /* Open the shared memory segment of the next user!
- * Each call to this function will open one file of the 
+ * Each call to this function will open one file of the
  * /dev/shm directory. The function will return NULL when all files
  * in the directory were opened.
- * WARNING: You should never call this function only one time! Call this funtion in a loop with 
+ * WARNING: You should never call this function only one time! Call this funtion in a loop with
  * abort condition unequal NULL.
  * The directory will reamin open if you don't wait for NULL!
  * Return value:
@@ -232,14 +232,14 @@ char *get_next_usr()
 			return NULL;
 	}
 	while((direntp = readdir(shmDir)) != NULL){
-		if(strstr(direntp->d_name, "icastats_") != NULL){					
+		if(strstr(direntp->d_name, "icastats_") != NULL){
 			int uid = atoi(&direntp->d_name[9]);
 			struct passwd *pwd;
 			if((pwd = getpwuid(uid)) == NULL)
 				return NULL;
 			if(stats_mmap(uid) == -1)
 				return NULL;
-			
+
 			return pwd->pw_name;
 		} else{
 			continue;
@@ -253,17 +253,17 @@ char *get_next_usr()
 /* increments a field of the shared memory segment
  * arguments:
  * @field - the enum of the field see icastats.h
- * @hardware - valid values are ALGO_SW for software statistics 
+ * @hardware - valid values are ALGO_SW for software statistics
  * and ALGO_HW for hardware statistics
  * @direction - valid values are ENCRYPT and DECRYPT
  */
 
 
 void stats_increment(stats_fields_t field, int hardware, int direction)
-{	
+{
 	if (stats == NULL)
 		return;
-	
+
 	if(direction == ENCRYPT)
 		if (hardware == ALGO_HW)
 			atomic_add((int *)&stats[field].enc.hw, 1);
@@ -298,15 +298,15 @@ int delete_all()
 {
 	stats_munmap(SHM_DESTROY);
 	struct dirent *direntp;
-        DIR *shmDir;
-        if((shmDir = opendir("/dev/shm")) == NULL)
-                return 0;
+	DIR *shmDir;
+	if((shmDir = opendir("/dev/shm")) == NULL)
+		return 0;
 
 	while((direntp = readdir(shmDir)) != NULL){
-		if(strstr(direntp->d_name, "icastats_") != NULL){ 
+		if(strstr(direntp->d_name, "icastats_") != NULL){
 			if(shm_unlink(direntp->d_name) == -1)
-				return 0;	
-		}	
+				return 0;
+		}
 	}
 	closedir(shmDir);
 	return 1;

@@ -76,7 +76,7 @@ void dump_array(unsigned char *ptr, unsigned int size)
     h++;
     if (i == 8) {
       if (h != ptr_end)
-        printf("\n");
+	printf("\n");
       i = 1;
     } else {
      ++i;
@@ -102,18 +102,18 @@ int new_api_sha256_test(void)
 			memcpy(input_data, FIPS_TEST_DATA[i], FIPS_TEST_DATA_SIZE[i]);
 		else
 			memset(input_data, 'a', FIPS_TEST_DATA_SIZE[i]);
-        
+
 		printf("\nOriginal data for test %d:\n", i);
 		dump_array(input_data, FIPS_TEST_DATA_SIZE[i]);
-        
+
 		rc = ica_sha256(SHA_MSG_PART_ONLY, FIPS_TEST_DATA_SIZE[i], input_data,
 				&sha256_context, output_hash);
-        
+
 		if (rc != 0) {
 			printf("icaSha256 failed with errno %d (0x%x).\n", rc, rc);
 			return rc;
 		}
-        
+
 		printf("\nOutput hash for test %d:\n", i);
 		dump_array(output_hash, output_hash_length);
 		if (memcmp(output_hash, FIPS_TEST_RESULT[i], LENGTH_SHA256_HASH) != 0)
@@ -205,5 +205,5 @@ int main(int argc, char **argv)
 		return rc;
 	}
 
-	return rc;	
+	return rc;
 }

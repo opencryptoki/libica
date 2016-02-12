@@ -10,7 +10,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <strings.h>
-#include <stdlib.h> 
+#include <stdlib.h>
 #include "ica_api.h"
 
 #define NR_TESTS 2
@@ -36,7 +36,7 @@ unsigned char NIST_KEY_ECB_E2[] = {
 	0x01, 0x23, 0x45, 0x67, 0x89, 0xAB, 0xCD, 0xEF,
 	0x23, 0x45, 0x67, 0x89, 0xAB, 0xCD, 0xEF, 0x01,
 	0x45, 0x67, 0x89, 0xAB, 0xCD, 0xEF, 0x01, 0x23,
-	
+
 };
 
 unsigned char NIST_TEST_DATA_ECB_E2[] = {
@@ -73,8 +73,8 @@ void dump_array(unsigned char *ptr, unsigned int size)
 }
 
 void dump_ecb_data(unsigned char *key, unsigned int key_length,
-                   unsigned char *input_data, unsigned int data_length,
-                   unsigned char *output_data)
+		   unsigned char *input_data, unsigned int data_length,
+		   unsigned char *output_data)
 {
 	printf("Key \n");
 	dump_array(key, key_length);
@@ -197,7 +197,7 @@ int kat_3des_ecb(int iteration, int silent)
 }
 
 int load_random_test_data(unsigned char *data, unsigned int data_length,
-		    	   unsigned char *key, unsigned int key_length)
+			   unsigned char *key, unsigned int key_length)
 {
 	int rc;
 	rc = ica_random_number_generate(data_length, data);

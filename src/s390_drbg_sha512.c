@@ -268,7 +268,7 @@ int drbg_sha512_generate_ppno(void *ws,
 			      size_t prnd_len)
 {
 	/* increase corresponding icastats counter */
-        stats_increment(ICA_STATS_DRBGSHA512, ALGO_HW, ENCRYPT);
+	stats_increment(ICA_STATS_DRBGSHA512, ALGO_HW, ENCRYPT);
 
 	/* 10.1.1.4 Hash_DRBG Generate Process */
 
@@ -285,7 +285,7 @@ int drbg_sha512_generate_ppno(void *ws,
 	}
 
 	/* steps 3 - 6 */
-        status = s390_ppno(S390_CRYPTO_SHA512_DRNG_GEN, ws, prnd, prnd_len,
+	status = s390_ppno(S390_CRYPTO_SHA512_DRNG_GEN, ws, prnd, prnd_len,
 			   NULL, 0);
 	if(status != prnd_len)
 		return DRBG_HEALTH_TEST_FAIL;
@@ -301,7 +301,7 @@ int drbg_sha512_generate(void *ws,
 			 size_t prnd_len)
 {
 	/* increase corresponding icastats counter */
-        stats_increment(ICA_STATS_DRBGSHA512, ALGO_SW, ENCRYPT);
+	stats_increment(ICA_STATS_DRBGSHA512, ALGO_SW, ENCRYPT);
 
 	/* 10.1.1.4 Hash_DRBG Generate Process */
 

@@ -94,7 +94,7 @@ int s390_prng_init(void)
 	if (handle) {
 		rc = fread(seed, sizeof(seed), 1, handle);
 		fclose(handle);
-	        if (1 == rc)
+		if (1 == rc)
 			rc = s390_prng_seed(seed, sizeof(seed) /
 					    sizeof(long long));
 		else
@@ -140,7 +140,7 @@ static int s390_add_entropy(void)
 	FILE *handle = fopen("/dev/hwrng", "r");
 	if (!handle)
 		handle = fopen("/dev/urandom", "r");
-        if (handle) {
+	if (handle) {
 		rc = fread(seed, sizeof(seed), 1, handle);
 		fclose(handle);
 		if (1 == rc){

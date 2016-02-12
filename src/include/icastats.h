@@ -18,13 +18,13 @@
 
 
 typedef struct crypt_opts{
-        uint32_t hw;
-        uint32_t sw;
+	uint32_t hw;
+	uint32_t sw;
 } crypt_opts_t;
 
 typedef struct statis_entry {
-        crypt_opts_t  enc;
-        crypt_opts_t  dec;
+	crypt_opts_t  enc;
+	crypt_opts_t  dec;
 } stats_entry_t;
 
 
@@ -54,7 +54,7 @@ typedef enum stats_fields {
 	ICA_STATS_3DES_OFB,
 	ICA_STATS_3DES_CFB,
 	ICA_STATS_3DES_CTR,
-	ICA_STATS_3DES_CMAC,	
+	ICA_STATS_3DES_CMAC,
 	ICA_STATS_AES_ECB,
 	ICA_STATS_AES_CBC,
 	ICA_STATS_AES_OFB,
@@ -69,34 +69,34 @@ typedef enum stats_fields {
 
 #define STAT_STRINGS	\
 	"SHA-1",      	\
-        "SHA-224",    	\
-        "SHA-256",    	\
-        "SHA-384",    	\
-        "SHA-512",    	\
-        "GHASH",      	\
-        "P_RNG",      	\
+	"SHA-224",    	\
+	"SHA-256",    	\
+	"SHA-384",    	\
+	"SHA-512",    	\
+	"GHASH",      	\
+	"P_RNG",      	\
 	"DRBG-SHA-512",	\
-        "RSA-ME",     	\
-        "RSA-CRT",    	\
-        "DES ECB",    	\
-        "DES CBC",    	\
-        "DES OFB",    	\
-        "DES CFB",    	\
-        "DES CTR",    	\
-        "DES CMAC",   	\
-        "3DES ECB",   	\
-        "3DES CBC",   	\
-        "3DES OFB",   	\
-        "3DES CFB",   	\
-        "3DES CTR",   	\
-        "3DES CMAC",	\
-        "AES ECB",	\
-        "AES CBC",	\
-        "AES OFB",	\
-        "AES CFB",	\
-        "AES CTR",	\
-        "AES CMAC",	\
-        "AES XTS"
+	"RSA-ME",     	\
+	"RSA-CRT",    	\
+	"DES ECB",    	\
+	"DES CBC",    	\
+	"DES OFB",    	\
+	"DES CFB",    	\
+	"DES CTR",    	\
+	"DES CMAC",   	\
+	"3DES ECB",   	\
+	"3DES CBC",   	\
+	"3DES OFB",   	\
+	"3DES CFB",   	\
+	"3DES CTR",   	\
+	"3DES CMAC",	\
+	"AES ECB",	\
+	"AES CBC",	\
+	"AES OFB",	\
+	"AES CFB",	\
+	"AES CTR",	\
+	"AES CMAC",	\
+	"AES XTS"
 
 
 
@@ -119,7 +119,7 @@ void stats_increment(stats_fields_t field, int hardware, int direction);
 int get_stats_sum(stats_entry_t *sum);
 char *get_next_usr();
 void stats_reset();
-int delete_all(); 
+int delete_all();
 
 
 #endif

@@ -70,12 +70,12 @@ unsigned int icaSha224(ica_adapter_handle_t adapter_handle,
 }
 
 unsigned int icaSha256(ica_adapter_handle_t adapter_handle,
-	  	       unsigned int message_part,
-	  	       unsigned int input_length,
-	  	       unsigned char *input_data,
-	  	       unsigned int context_length,
-	  	       sha256_context_t *sha256_context,
-	  	       unsigned int *output_length,
+		       unsigned int message_part,
+		       unsigned int input_length,
+		       unsigned char *input_data,
+		       unsigned int context_length,
+		       sha256_context_t *sha256_context,
+		       unsigned int *output_length,
 		       unsigned char *output_data)
 {
 	if (output_length == NULL)
@@ -89,7 +89,7 @@ unsigned int icaSha256(ica_adapter_handle_t adapter_handle,
 
 unsigned int icaSha384(ica_adapter_handle_t adapter_handle,
 		       unsigned int message_part,
-	  	       unsigned int input_length,
+		       unsigned int input_length,
 		       unsigned char *input_data,
 		       unsigned int context_length,
 		       sha512_context_t *sha512_context,
@@ -218,7 +218,7 @@ unsigned int icaRsaKeyGenerateCrt(ica_adapter_handle_t adapter_handle,
 		return EINVAL;
 
 	public_key->modulusBitLength = modulus_bit_length;
-	private_key->modulusBitLength = modulus_bit_length;	
+	private_key->modulusBitLength = modulus_bit_length;
 
 	ica_rsa_key_mod_expo_t new_public_key;
 	unsigned int key_length = (modulus_bit_length + 7) / 8;
@@ -311,8 +311,8 @@ unsigned int icaRsaModExpo(ica_adapter_handle_t adapter_handle,
 	ica_rsa_key_mod_expo_t new_rsa_key;
 	new_rsa_key.key_length = key_length;
 
-        new_rsa_key.modulus = &rsa_key->keyRecord[new_rsa_key.key_length];
-        new_rsa_key.exponent = &rsa_key->keyRecord[0];
+	new_rsa_key.modulus = &rsa_key->keyRecord[new_rsa_key.key_length];
+	new_rsa_key.exponent = &rsa_key->keyRecord[0];
 
 	return ica_rsa_mod_expo(adapter_handle, input_data,
 				&new_rsa_key, output_data);

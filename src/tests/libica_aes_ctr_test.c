@@ -10,7 +10,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <strings.h>
-#include <stdlib.h> 
+#include <stdlib.h>
 #include "ica_api.h"
 
 #define NR_TESTS 7
@@ -293,9 +293,9 @@ void dump_array(unsigned char *ptr, unsigned int size)
 }
 
 void dump_ctr_data(unsigned char *iv, unsigned int iv_length,
-                   unsigned char *key, unsigned int key_length,
-                   unsigned char *input_data, unsigned int data_length,
-                   unsigned char *output_data)
+		   unsigned char *key, unsigned int key_length,
+		   unsigned char *input_data, unsigned int data_length,
+		   unsigned char *output_data)
 {
 	printf("IV \n");
 	dump_array(iv, iv_length);

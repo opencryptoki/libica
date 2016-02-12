@@ -22,10 +22,10 @@
 #define LARGE_MSG_CHUNK 4096	/* page size */
 
 static inline int s390_ctr_hw(unsigned int function_code, unsigned long data_length,
-                       const unsigned char *in_data, unsigned char *key,
-                       unsigned char *out_data, const unsigned char *ctrlist)
+		       const unsigned char *in_data, unsigned char *key,
+		       unsigned char *out_data, const unsigned char *ctrlist)
 {
-        int rc = -1;
+	int rc = -1;
 	rc = s390_kmctr(function_code, key, out_data, in_data,
 			data_length, (unsigned char *)ctrlist);
 	if (rc >= 0)

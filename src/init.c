@@ -43,21 +43,21 @@ static void sigill_handler(int sig)
 {
 	jmp_buf* envq = pthread_getspecific(envq_key);
 	if (envq) {
-	        longjmp(*envq, EXCEPTION_RV);
+		longjmp(*envq, EXCEPTION_RV);
 	}
 }
 
 int begin_sigill_section(struct sigaction *oldact, sigset_t *oldset)
 {
-        struct sigaction newact;
-        sigset_t newset;
+	struct sigaction newact;
+	sigset_t newset;
 
-        sigemptyset(&newset);
-        sigaddset(&newset, SIGILL);
-        sigprocmask(SIG_UNBLOCK, &newset, oldset);
-        newact.sa_handler = (void *)sigill_handler;
-        newact.sa_flags = 0;
-        sigaction(SIGILL, &newact, oldact);
+	sigemptyset(&newset);
+	sigaddset(&newset, SIGILL);
+	sigprocmask(SIG_UNBLOCK, &newset, oldset);
+	newact.sa_handler = (void *)sigill_handler;
+	newact.sa_flags = 0;
+	sigaction(SIGILL, &newact, oldact);
 
 	jmp_buf* envq;
 	pthread_once(&envq_key_once, make_envq_key);
@@ -66,17 +66,17 @@ int begin_sigill_section(struct sigaction *oldact, sigset_t *oldset)
 		envq = malloc(sizeof(jmp_buf));
 		pthread_setspecific(envq_key, envq);
 	}
-        if (setjmp(*envq) != 0) {
+	if (setjmp(*envq) != 0) {
 		end_sigill_section(oldact, oldset);
 		return -1;
-        }
-        return 0;
+	}
+	return 0;
 }
 
 void end_sigill_section(struct sigaction *oldact, sigset_t *oldset)
 {
-        sigaction(SIGILL, oldact, 0);
-        sigprocmask(SIG_SETMASK, oldset, 0);
+	sigaction(SIGILL, oldact, 0);
+	sigprocmask(SIG_SETMASK, oldset, 0);
 }
 
 
@@ -85,7 +85,7 @@ void openssl_init(void)
 	static const int random_data_length = 64;
 	unsigned char random_data[random_data_length];
 	/* Counts PRNG statistic! */
-	s390_prng(random_data, random_data_length); 
+	s390_prng(random_data, random_data_length);
 	RAND_seed(random_data, random_data_length);
 }
 
@@ -106,7 +106,7 @@ void __attribute__ ((constructor)) icainit(void)
 
 		s390_prng_init();
 
-		s390_initialize_functionlist();	
+		s390_initialize_functionlist();
 
 		openssl_init();
 	}

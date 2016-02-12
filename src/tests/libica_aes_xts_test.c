@@ -10,7 +10,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <strings.h>
-#include <stdlib.h> 
+#include <stdlib.h>
 #include "ica_api.h"
 
 #define NR_TESTS 5
@@ -326,9 +326,9 @@ void dump_array(unsigned char *ptr, unsigned int size)
 }
 
 void dump_xts_data(unsigned char *tweak, unsigned int tweak_length,
-                   unsigned char *key, unsigned int key_length,
-                   unsigned char *input_data, unsigned int data_length,
-                   unsigned char *output_data)
+		   unsigned char *key, unsigned int key_length,
+		   unsigned char *input_data, unsigned int data_length,
+		   unsigned char *output_data)
 {
 	printf("TWEAK \n");
 	dump_array(tweak, tweak_length);
@@ -523,8 +523,8 @@ int kat_aes_xts(int iteration, int silent)
 }
 
 int load_random_test_data(unsigned char *data, unsigned int data_length,
-		    	   unsigned char *iv, unsigned int iv_length,
-		    	   unsigned char *key, unsigned int key_length)
+			   unsigned char *iv, unsigned int iv_length,
+			   unsigned char *key, unsigned int key_length)
 {
 	int rc;
 	rc = ica_random_number_generate(data_length, data);
@@ -624,7 +624,7 @@ for (i = 1; i <= 2; i++) {
 	}
 	key_length = AES_KEY_LEN256 * 2;
 }
-	
+
 	return rc;
 }
 

@@ -149,7 +149,7 @@ static inline int s390_cmac_hw(unsigned long fc,
 				if (rc < 0) {
 					memset(pb_lookup.keys, 0, key_size);
 					return EIO;
-                                }
+				}
 				_stats_increment(fc, ALGO_HW, ENCRYPT);
 			}
 

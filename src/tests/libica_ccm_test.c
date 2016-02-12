@@ -139,7 +139,7 @@ int api_ccm_test(int silent)
 			printf("\nOriginal data for test %d:\n", i);
 		}
 		if (!(out_data = malloc(cipher_text_length[i])))
-                        return EINVAL;
+			return EINVAL;
 		memset(out_data, 0, cipher_text_length[i]);
 		rc = (ica_aes_ccm(payload[i], payload_length[i],
 				  out_data,

@@ -10,7 +10,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <strings.h>
-#include <stdlib.h> 
+#include <stdlib.h>
 #include "ica_api.h"
 
 #define NR_RANDOM_TESTS 1000
@@ -37,9 +37,9 @@ void dump_array(unsigned char *ptr, unsigned int size)
 }
 
 void dump_ctr_data(unsigned char *iv, unsigned int iv_length,
-                   unsigned char *key, unsigned int key_length,
-                   unsigned char *input_data, unsigned int data_length,
-                   unsigned char *output_data)
+		   unsigned char *key, unsigned int key_length,
+		   unsigned char *input_data, unsigned int data_length,
+		   unsigned char *output_data)
 {
 	printf("IV \n");
 	dump_array(iv, iv_length);
@@ -172,7 +172,7 @@ int main(int argc, char **argv)
 				/* Always when the full block size is reached use a
 				 * counter with the same size as the data */
 				rc = random_des_ctr(i, silent, data_length, data_length);
-		        if (rc) {
+			if (rc) {
 					printf("random_des_ctr failed with rc = %i\n", rc);
 					error_count++;
 				}

@@ -51,7 +51,7 @@ typedef ica_adapter_handle_t ICA_ADAPTER_HANDLE;
  * These are used to tell deprecated functions:
  * - icaRsaKeyGenerateModExpo
  * - icaRsaKeyGenerateCrt
- * which public exponent to take. They are not used within the new API functions. 
+ * which public exponent to take. They are not used within the new API functions.
  */
 #define RSA_PUBLIC_RANDOM 0
 #define RSA_PUBLIC_3      1
@@ -196,10 +196,10 @@ typedef ica_adapter_handle_t ICA_ADAPTER_HANDLE;
  * Use SHA_HASH_LENGTH, SHA224_HASH_LENGTH, SHA256_HASH_LENGTH,
  * SHA384_HASH_LENGTH, SHA512_HASH_LENGTH instead.
  */
-#define LENGTH_SHA_HASH		SHA_HASH_LENGTH	
-#define LENGTH_SHA224_HASH	SHA224_HASH_LENGTH	
-#define LENGTH_SHA256_HASH	SHA256_HASH_LENGTH	
-#define LENGTH_SHA384_HASH	SHA384_HASH_LENGTH	
+#define LENGTH_SHA_HASH		SHA_HASH_LENGTH
+#define LENGTH_SHA224_HASH	SHA224_HASH_LENGTH
+#define LENGTH_SHA256_HASH	SHA256_HASH_LENGTH
+#define LENGTH_SHA384_HASH	SHA384_HASH_LENGTH
 #define LENGTH_SHA512_HASH	SHA512_HASH_LENGTH
 
 /**
@@ -722,11 +722,11 @@ unsigned int icaRsaKeyGenerateCrt(ica_adapter_handle_t adapter_handle,
 __attribute__ ((__deprecated__))
 unsigned int icaDesEncrypt(ica_adapter_handle_t adapter_handle,
 			   unsigned int mode,
-	      		   unsigned int data_length,
-	      		   unsigned char *input_data,
-	      		   ica_des_vector_t *iv,
-	      		   ica_des_key_single_t *des_key,
-	      		   unsigned int *output_length,
+			   unsigned int data_length,
+			   unsigned char *input_data,
+			   ica_des_vector_t *iv,
+			   ica_des_key_single_t *des_key,
+			   unsigned int *output_length,
 			   unsigned char *output_data);
 
 
@@ -763,11 +763,11 @@ unsigned int icaDesEncrypt(ica_adapter_handle_t adapter_handle,
 __attribute__ ((__deprecated__))
 unsigned int icaDesDecrypt(ica_adapter_handle_t adapter_handle,
 			   unsigned int mode,
-	      		   unsigned int data_length,
-	      		   unsigned char *input_data,
-	      		   ica_des_vector_t *iv,
-	      		   ica_des_key_single_t *des_key,
-	      		   unsigned int *output_length,
+			   unsigned int data_length,
+			   unsigned char *input_data,
+			   ica_des_vector_t *iv,
+			   ica_des_key_single_t *des_key,
+			   unsigned int *output_length,
 			   unsigned char *output_data);
 
 /**
@@ -1328,9 +1328,9 @@ unsigned int ica_sha1(unsigned int message_part,
  * EIO if the operation fails. This should never happen.
  */
 unsigned int ica_sha224(unsigned int message_part,
-	 		unsigned int input_length,
-	 		unsigned char *input_data,
-	 		sha256_context_t *sha256_context,
+			unsigned int input_length,
+			unsigned char *input_data,
+			sha256_context_t *sha256_context,
 			unsigned char *output_data);
 
 /**
@@ -3535,7 +3535,7 @@ unsigned int ica_get_version(libica_version_info *version_info);
 
 int s390_initialize_functionlist(void);
 
-int s390_get_functionlist(libica_func_list_element *pmech_list, 
+int s390_get_functionlist(libica_func_list_element *pmech_list,
 			  unsigned int *pmech_list_len);
 
 /**
@@ -3550,7 +3550,7 @@ int s390_get_functionlist(libica_func_list_element *pmech_list,
  *    crypto mechanisms.
  * @param pmech_list_len
  *    number of list entries
- *    On input, pointer to the number of elements allocated in the 
+ *    On input, pointer to the number of elements allocated in the
  *    @mech_list array.
  *    On output, @mech_list_len will contain the number of items copied to
  *    the @mech_list array, or the number of items libica would have returned
@@ -3564,8 +3564,8 @@ int s390_get_functionlist(libica_func_list_element *pmech_list,
  *   the number of elements to allocate. This is followed by a second call to
  *   ica_get_functionlist() with a valid pointer @list to an array of
  *   libica_func_list_element structures with @mech_list_len elements.
- */       
-unsigned int ica_get_functionlist(libica_func_list_element *pmech_list, 
+ */
+unsigned int ica_get_functionlist(libica_func_list_element *pmech_list,
 					unsigned int *pmech_list_len);
 
 static inline unsigned int des_directed_fc(int direction)

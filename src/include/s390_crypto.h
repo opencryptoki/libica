@@ -24,7 +24,7 @@
 
 #define S390_CRYPTO_TEST_MASK(mask, function) \
 	(((unsigned char *)(mask))[((function) & 0x7F) >> 3] & \
-        (0x80 >> ((function) & 0x07)))
+	(0x80 >> ((function) & 0x07)))
 
 #define KM   	1
 #define KMC  	2
@@ -79,8 +79,8 @@ enum s390_crypto_function {
 	/*
 	 * The S390_SHA512_DRNG_* functions are available for the PPNO instruction.
 	 */
-        S390_CRYPTO_SHA512_DRNG_GEN  = 0x03,
-        S390_CRYPTO_SHA512_DRNG_SEED = 0x03 | 0x80
+	S390_CRYPTO_SHA512_DRNG_GEN  = 0x03,
+	S390_CRYPTO_SHA512_DRNG_SEED = 0x03 | 0x80
 };
 
 unsigned int sha1_switch, sha256_switch, sha512_switch, des_switch,
@@ -163,7 +163,7 @@ static inline int s390_pcc(unsigned long func, void *param)
  * bytes for encryption/decryption funcs
  */
 static inline int s390_kmac(unsigned long func, void *param,
-                    const unsigned char *src, long src_len)
+		    const unsigned char *src, long src_len)
 {
 	register long __func asm("0") = func;
 	register void *__param asm("1") = param;
@@ -447,7 +447,7 @@ static inline int s390_ppno(long func,
 	if(ret < 0)
 		return ret;
 
-        return func ? dest_len - __dest_len : 0;
+	return func ? dest_len - __dest_len : 0;
 }
 
 static inline void s390_stckf_hw(void *buf)
@@ -472,12 +472,12 @@ static inline void s390_stck(void *buf)
 
 static inline int __stfle(unsigned long long *list, int doublewords)
 {
-        typedef struct { unsigned long long _[doublewords]; } addrtype;
-        register unsigned long __nr asm("0") = doublewords - 1;
+	typedef struct { unsigned long long _[doublewords]; } addrtype;
+	register unsigned long __nr asm("0") = doublewords - 1;
 
-        asm volatile(".insn s,0xb2b00000,%0" /* stfle */
-                     : "=m" (*(addrtype *) list), "+d" (__nr) : : "cc");
-        return __nr + 1;
+	asm volatile(".insn s,0xb2b00000,%0" /* stfle */
+		     : "=m" (*(addrtype *) list), "+d" (__nr) : : "cc");
+	return __nr + 1;
 }
 
 #endif

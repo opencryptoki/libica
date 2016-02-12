@@ -30,9 +30,9 @@ unsigned int ica_rsa_key_generate_crt(ica_adapter_handle_t device_handle,
 				      ica_rsa_key_mod_expo_t *public_key,
 				      ica_rsa_key_crt_t *private_key);
 unsigned int rsa_key_generate_mod_expo(ica_adapter_handle_t deviceHandle,
-                                       unsigned int modulus_bit_length,
-                                       ica_rsa_key_mod_expo_t *public_key,
-                                       ica_rsa_key_mod_expo_t *private_key);
+				       unsigned int modulus_bit_length,
+				       ica_rsa_key_mod_expo_t *public_key,
+				       ica_rsa_key_mod_expo_t *private_key);
 unsigned int rsa_key_generate_crt(ica_adapter_handle_t deviceHandle,
 				  unsigned int modulus_bit_length,
 				  ica_rsa_key_mod_expo_t *public_key,

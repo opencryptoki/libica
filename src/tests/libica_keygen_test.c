@@ -123,7 +123,7 @@ int main(int argc, char **argv)
 				  modexpo_public_key.key_length -
 				  sizeof(unsigned long)) = (unsigned long) EXPO_TYPE_3;
 		break;
-        case EXPO_TYPE_65537:
+	case EXPO_TYPE_65537:
 		*(unsigned long*)((unsigned char *)modexpo_public_key.exponent +
 				  modexpo_public_key.key_length -
 				  sizeof(unsigned long)) = (unsigned long) EXPO_TYPE_65537;
@@ -136,7 +136,7 @@ int main(int argc, char **argv)
 	default:
 		printf( "error - unknown <exponent_type>\n");
 		return EXIT_FAILURE;
-	} 
+	}
 
 	if (!silent) {
 		printf("generate keys\t\t\t...\n");
@@ -183,7 +183,7 @@ int main(int argc, char **argv)
 	if (!silent) {
 		printf("encrypt...\n");
 	}
-	if((rc = ica_rsa_mod_expo(adapter_handle, plaintext, &modexpo_public_key, 
+	if((rc = ica_rsa_mod_expo(adapter_handle, plaintext, &modexpo_public_key,
 				  ciphertext)) != 0){
 		++rc_test;
 		print_error_report(rc, errno, "ica_rsa_mod_expo");
@@ -197,7 +197,7 @@ int main(int argc, char **argv)
 	if (!silent) {
 		printf("decrypt...\n");
 	}
-	if((rc = ica_rsa_crt(adapter_handle, ciphertext, &crt_private_key, 
+	if((rc = ica_rsa_crt(adapter_handle, ciphertext, &crt_private_key,
 				  decrypted)) != 0){
 		++rc_test;
 		print_error_report(rc, errno, "ica_rsa_crt");

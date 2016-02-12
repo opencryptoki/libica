@@ -10,7 +10,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <strings.h>
-#include <stdlib.h> 
+#include <stdlib.h>
 #include "ica_api.h"
 
 #define NR_TESTS 7
@@ -52,7 +52,7 @@ unsigned char NIST_TEST_RESULT_ECB_E2[] = {
 unsigned char NIST_KEY_ECB_E3[] = {
 	0x2b, 0x7e, 0x15, 0x16, 0x28, 0xae, 0xd2, 0xa6,
 	0xab, 0xf7, 0x15, 0x88, 0x09, 0xcf, 0x4f, 0x3c,
-	
+
 };
 
 unsigned char NIST_TEST_DATA_ECB_E3[] = {
@@ -74,7 +74,7 @@ unsigned char NIST_TEST_RESULT_ECB_E3[] = {
 	0x43, 0xb1, 0xcd, 0x7f, 0x59, 0x8e, 0xce, 0x23,
 	0x88, 0x1b, 0x00, 0xe3, 0xed, 0x03, 0x06, 0x88,
 	0x7b, 0x0c, 0x78, 0x5e, 0x27, 0xe8, 0xad, 0x3f,
-	0x82, 0x23, 0x20, 0x71, 0x04, 0x72, 0x5d, 0xd4,	
+	0x82, 0x23, 0x20, 0x71, 0x04, 0x72, 0x5d, 0xd4,
 };
 
 /* ECB data - 4 - for AES192 */
@@ -193,8 +193,8 @@ void dump_array(unsigned char *ptr, unsigned int size)
 }
 
 void dump_ecb_data(unsigned char *key, unsigned int key_length,
-                   unsigned char *input_data, unsigned int data_length,
-                   unsigned char *output_data)
+		   unsigned char *input_data, unsigned int data_length,
+		   unsigned char *output_data)
 {
 	printf("Key \n");
 	dump_array(key, key_length);
@@ -381,7 +381,7 @@ int kat_aes_ecb(int iteration, int silent)
 }
 
 int load_random_test_data(unsigned char *data, unsigned int data_length,
-		    	   unsigned char *key, unsigned int key_length)
+			   unsigned char *key, unsigned int key_length)
 {
 	int rc;
 	rc = ica_random_number_generate(data_length, data);
@@ -464,7 +464,7 @@ for (i = 1; i <= 2; i++) {
 	}
 	key_length += 8;
 }
-	
+
 	return rc;
 }
 

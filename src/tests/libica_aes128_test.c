@@ -59,7 +59,7 @@ int test_aes128_new_api(int mode)
 	unsigned char key[AES_KEY_LEN128];
 	int rc = 0;
 	unsigned char dec_text[sizeof(NIST_TEST_DATA)],
-	              enc_text[sizeof(NIST_TEST_DATA)];
+		      enc_text[sizeof(NIST_TEST_DATA)];
 
 	bzero(dec_text, sizeof(dec_text));
 	bzero(enc_text, sizeof(enc_text));
@@ -139,10 +139,10 @@ int test_aes128_new_api(int mode)
 			printf("\nDecrypted data:\n");
 			dump_array((unsigned char *) dec_text, sizeof(dec_text));
 		}
-	}	
+	}
 
 // Test 2
-	
+
 	rc = 0;
 	bzero(dec_text, sizeof(dec_text));
 	bzero(enc_text, sizeof(enc_text));
@@ -194,7 +194,7 @@ int test_aes128_new_api(int mode)
 		printf("\nEncrypted data:\n");
 		dump_array((unsigned char *) encrypt, length);
 		printf("ica_aes_decrypt failed with errno %d (0x%x).\n", rc, rc);
-		goto free;	
+		goto free;
 	}
 
 	if (memcmp(decrypt, original, length) != 0) {
@@ -224,7 +224,7 @@ int test_aes128_new_api(int mode)
 		rc = -1;
 		goto free;
 
-   	} else {
+	} else {
 		if (!silent) {
 			printf("Successful!\n");
 		}

@@ -367,9 +367,9 @@ unsigned int ica_sha1(unsigned int message_part,
 }
 
 unsigned int ica_sha224(unsigned int message_part,
-	 		unsigned int input_length,
-	 		unsigned char *input_data,
-	 		sha256_context_t *sha256_context,
+			unsigned int input_length,
+			unsigned char *input_data,
+			sha256_context_t *sha256_context,
 			unsigned char *output_data)
 {
 	unsigned int rc;
@@ -393,7 +393,7 @@ unsigned int ica_sha224(unsigned int message_part,
 	    (message_part == SHA_MSG_PART_FIRST ||
 	     message_part == SHA_MSG_PART_MIDDLE))
 		return EINVAL;
-	
+
 	return s390_sha224((unsigned char *) &sha256_context->sha256Hash,
 			   input_data, input_length, output_data, message_part,
 			   (uint64_t *)&sha256_context->runningLength);
@@ -507,13 +507,13 @@ unsigned int ica_random_number_generate(unsigned int output_length,
 	if (output_data == NULL)
 		return EINVAL;
 
-	return s390_prng(output_data, output_length);	
+	return s390_prng(output_data, output_length);
 }
 
 unsigned int ica_rsa_key_generate_mod_expo(ICA_ADAPTER_HANDLE adapter_handle,
-                                           unsigned int modulus_bit_length,
-                                           ica_rsa_key_mod_expo_t *public_key,
-                                           ica_rsa_key_mod_expo_t *private_key)
+					   unsigned int modulus_bit_length,
+					   ica_rsa_key_mod_expo_t *public_key,
+					   ica_rsa_key_mod_expo_t *private_key)
 {
 	if (public_key->key_length != private_key->key_length)
 		return EINVAL;
@@ -543,9 +543,9 @@ unsigned int ica_rsa_key_generate_mod_expo(ICA_ADAPTER_HANDLE adapter_handle,
 }
 
 unsigned int ica_rsa_key_generate_crt(ICA_ADAPTER_HANDLE adapter_handle,
-                                      unsigned int modulus_bit_length,
-                                      ica_rsa_key_mod_expo_t *public_key,
-                                      ica_rsa_key_crt_t *private_key)
+				      unsigned int modulus_bit_length,
+				      ica_rsa_key_mod_expo_t *public_key,
+				      ica_rsa_key_crt_t *private_key)
 {
 	if (public_key->key_length != private_key->key_length)
 		return EINVAL;
@@ -570,9 +570,9 @@ unsigned int ica_rsa_key_generate_crt(ICA_ADAPTER_HANDLE adapter_handle,
 }
 
 unsigned int ica_rsa_mod_expo(ICA_ADAPTER_HANDLE adapter_handle,
-                              unsigned char *input_data,
-                              ica_rsa_key_mod_expo_t *rsa_key,
-                              unsigned char *output_data)
+			      unsigned char *input_data,
+			      ica_rsa_key_mod_expo_t *rsa_key,
+			      unsigned char *output_data)
 {
 	ica_rsa_modexpo_t rb;
 	int rc;
@@ -692,7 +692,7 @@ unsigned int ica_rsa_crt(ICA_ADAPTER_HANDLE adapter_handle,
 			hardware = ALGO_HW;
 		else
 			rc = rsa_crt_sw(&rb);
-	}	
+	}
 	if (rc == 0)
 		stats_increment(ICA_STATS_RSA_CRT, hardware, ENCRYPT);
 
@@ -822,7 +822,7 @@ unsigned int ica_aes_encrypt(unsigned int mode,
 				    aes_key, output_data);
 	default:
 		return EINVAL;
-        }
+	}
 
 	return EINVAL;
 }
