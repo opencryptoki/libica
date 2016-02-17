@@ -26,7 +26,8 @@ void ctr_inc_single(unsigned char *iv, unsigned int block_size,
 static inline void memcpy_r_allign(void *dest, int dest_bs,
 			    void *src, int src_bs, int size)
 {
-	memcpy(dest + (dest_bs - size), src + (src_bs - size), size);
+	memcpy((unsigned char *)dest + (dest_bs - size),
+	       (unsigned char *)src + (src_bs - size), size);
 }
 
 static inline void block_xor(unsigned char dest[],
