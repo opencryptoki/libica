@@ -22,6 +22,7 @@
 #include "init.h"
 #include "s390_crypto.h"
 #include "s390_ctr.h"
+#include "s390_common.h"
 
 #define AES_BLOCK_SIZE 16
 
@@ -159,12 +160,6 @@ free_out:
 		free(tmp_ctrlist);
 
 	return rc;
-}
-
-static inline void __memcpy_r_allign(void *dest, int dest_bs,
-				     void *src, int src_bs, size_t size)
-{
-	memcpy(dest + (dest_bs - size), src + (src_bs - size), size);
 }
 
 static inline int s390_aes_ecb_hw(unsigned int function_code,
@@ -587,9 +582,9 @@ static inline int s390_aes_xts_msg_dec(unsigned long function_code,
 	memcpy(tmp_in_data,
 	       in_data + tmp_data_length + AES_BLOCK_SIZE,
 	       rest_data_length);
-	__memcpy_r_allign(tmp_in_data, AES_BLOCK_SIZE,
-			  out_data + tmp_data_length, AES_BLOCK_SIZE,
-			  AES_BLOCK_SIZE - rest_data_length);
+	memcpy_r_allign(tmp_in_data, AES_BLOCK_SIZE,
+			out_data + tmp_data_length, AES_BLOCK_SIZE,
+			AES_BLOCK_SIZE - rest_data_length);
 	memcpy(out_data + tmp_data_length + AES_BLOCK_SIZE,
 	       out_data + tmp_data_length, rest_data_length);
 
@@ -627,10 +622,10 @@ static inline int s390_aes_xts_msg_enc(unsigned long function_code,
 		memcpy(tmp_in_data,
 		       in_data + tmp_data_length,
 		       rest_data_length);
-		__memcpy_r_allign(tmp_in_data, AES_BLOCK_SIZE,
-				  out_data + (tmp_data_length - AES_BLOCK_SIZE),
-				  AES_BLOCK_SIZE,
-				  AES_BLOCK_SIZE - rest_data_length);
+		memcpy_r_allign(tmp_in_data, AES_BLOCK_SIZE,
+				out_data + (tmp_data_length - AES_BLOCK_SIZE),
+				AES_BLOCK_SIZE,
+				AES_BLOCK_SIZE - rest_data_length);
 		memcpy(out_data + tmp_data_length,
 		       out_data + (tmp_data_length - AES_BLOCK_SIZE),
 		       rest_data_length);
