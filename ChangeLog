@@ -1,3 +1,5 @@
+v2.6.0
+ - [FEATURE] Added NIST compliant deterministic random bit generator (DRBG)
 v2.5.0
  - [FEATURE] Added streaming support for Galois Counter Mode (AES-GCM)
  - [FEATURE] Allow RSA Key generation for any granularity (57..4096 bits)
