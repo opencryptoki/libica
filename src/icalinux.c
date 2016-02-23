@@ -463,3 +463,46 @@ unsigned int icaAesDecrypt(ica_adapter_handle_t adapter_handle,
 	return ica_aes_decrypt(mode, data_length, input_data, iv, key_length,
 			       aes_key, output_data);
 }
+
+/*
+ * @deprecated
+ * These function have been used internally only and will be removed
+ * with the next major release.
+ */
+unsigned int icaRsaModMult(ica_adapter_handle_t adapter_handle,
+			   unsigned int input_length,
+			   unsigned char *input_data,
+			   ICA_KEY_RSA_MODEXPO *rsa_key,
+			   unsigned int *output_length,
+			   unsigned char *output_data)
+{
+	ica_rsa_modmult_t rb;
+	int bytelength;
+	unsigned char pad[256];
+	unsigned char *inputdata;
+
+	if ((input_length < 1) ||
+	    (input_length > 256) ||
+	    (input_data == NULL) ||
+	    (rsa_key == NULL) || (output_data == NULL))
+		return EINVAL;
+
+	bytelength = (rsa_key->modulusBitLength + 7) / 8;
+	if (input_length > bytelength)
+		return EINVAL;
+	if (input_length == bytelength)
+		inputdata = input_data;
+	else {
+		memset(pad, 0x00, 256);
+		memcpy(pad + bytelength - input_length, input_data,
+		       input_length);
+		inputdata = pad;
+	}
+	rb.inputdata = (char *)inputdata;
+	rb.inputdatalength = bytelength;
+	rb.outputdata = (char *)output_data;
+	rb.outputdatalength = bytelength;
+	rb.b_key = (char *)&rsa_key->keyRecord[0];
+	rb.n_modulus = (char *)&rsa_key->keyRecord[bytelength];
+	return rsa_mod_mult_sw(&rb);
+}
