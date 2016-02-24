@@ -12,6 +12,7 @@
 #include <errno.h>
 #include <dirent.h>
 #include <string.h>
+#include <ctype.h>
 #include "ica_api.h"
 #include "s390_crypto.h"
 
@@ -206,9 +207,11 @@ void create_hw_info()
  **/
 int check_hw(int algo_id)
 {
-	int i = 0;
-	while(pmech_list[i].mech_mode_id != algo_id)
-		i++;
+	int i;
+	for (i=mech_len-1; i >= 0; i--)
+		if (pmech_list[i].mech_mode_id == algo_id)
+			break;
+	if (i < 0) return -1;
 
 	if(hw_flag){
 		if(pmech_list[i].flags & (ICA_FLAG_SHW | ICA_FLAG_DHW))
@@ -228,56 +231,102 @@ int check_hw(int algo_id)
  **/
 void check_icastats(int algo_id, char *stat)
 {
-	char awk[255];
-	FILE *fp;
-	int i, hw, enc, dec;
+	char cmd[256], line[256], *p;
+	FILE *f;
+	int i, hw, rc=-1, counters=0;
+	int hwcounter1=0, hwcounter2=0, swcounter1=0, swcounter2=0;
 
 	hw = check_hw(algo_id);
-	/* The magic number 14 in the following awk statement has to be
-	 * incremented when a new crypt counter is added. */
-	sprintf(awk, "icastats | awk '{ if($0~\"%s\") if(NR>14) print $%d,$%d;\
-					   else print $%d,-1\
-					 }'",
-		stat, hw?4:7, hw?5:8, hw?3:5);
+	if (hw < 0) return; /* unknown algo_id */
 
-	fp = popen(awk,"r");
-	if(fp == NULL){
+	sprintf(cmd, "icastats | grep '%s'", stat);
+	f = popen(cmd, "r");
+	if (!f) {
 		perror("error in peopen");
 		exit(EXIT_FAILURE);
 	}
+	fgets(line, sizeof(line), f);
+	pclose(f);
 
-	fscanf(fp, "%d %d", &enc, &dec);
-	if(dec == -1){
-		if(enc == 0){
-			printf("Test %s FAILED: Could not count crypto operations!\n",
-					stat);
-		} else if(enc > 0){
-			if (!silent)
-				printf("Test %s SUCCESS.\n", stat);
-		} else{
-			fprintf(stderr, "icastats parsing by %s FAILED!\n", stat);
-			exit(EXIT_FAILURE);
-		}
-	} else{
-		if(enc > 0 && dec > 0){
-			if (!silent)
-				printf("Test %s SUCCESS.\n", stat);
-		} else if(enc == 0 && dec == 0){
-			printf("Test %s FAILED: Could not count crypto operation!\n",
-			       stat);
-		} else if(enc == 0){
-			printf("Test %s FAILED: Could not count encryption operations\n",
-			      stat);
-		} else if(dec == 0){
-			printf("Test %s FAILED: Could not count decryption operations\n",
-				stat);
-		} else{
-			fprintf(stderr, "icastats parsing of %s FAILED!\n", stat);
-			exit(EXIT_FAILURE);
-		}
+	/* remove trailing whitespace from the line */
+	i = strlen(line);
+	while (i > 0 && isspace(line[i-1])) {
+		line[i-1] = 0;
+		i--;
 	}
-	if((i = pclose(fp)) != 0){
-		fprintf(stderr, "awk script failed with %d", i);
+
+	p = strstr(line, "|");
+	if (!p) goto out; /* no | in the output. Wrong algo string ? */
+	p++;
+	while (isspace(*p)) p++;
+	hwcounter1 = atoi(p); /* parse 1st hw counter value */
+	counters++;
+	while (*p && !isspace(*p)) p++; /* parse over counter value */
+	while (isspace(*p)) p++;
+	/* now either a | or another counter value follows */
+	if (isdigit(*p)) {
+		hwcounter2 = atoi(p); /* parse 2nd hw counter value */
+		counters++;
+		while (*p && !isspace(*p)) p++; /* parse over counter value */
+		while (isspace(*p)) p++;
+	}
+	/* now there should be a | */
+	if (*p != '|') {
+		fprintf(stderr, "parse error, missing '|' in line '%s'\n", line);
+		goto out;
+	}
+	p++;
+	while (isspace(*p)) p++;
+	swcounter1 = atoi(p); /* parse 1st sw counter value */
+	counters++;
+	while (*p && !isspace(*p)) p++; /* parse over counter value */
+	while (isspace(*p)) p++;
+	/* maybe another counter value follows */
+	if (isdigit(*p)) {
+		swcounter2 = atoi(p); /* parse 2nd sw counter value */
+		counters++;
+	}
+
+	/* counters should be 2 or 4 now */
+	if (counters == 2) {
+		if (hw) {
+			/* hwcounter1 should be > 0 */
+			if (hwcounter1 > 0)
+				rc = 0;
+			else
+				goto out;
+		} else {
+			/* swcounter1 should be > 0 */
+			if (swcounter1 > 0)
+				rc = 0;
+			else
+				goto out;
+		}
+	} else if (counters == 4) {
+		if (hw) {
+			/* hwcounter1 or hwcounter2 should be > 0 */
+			if (hwcounter1 > 0 || hwcounter2 > 0)
+				rc = 0;
+			else
+				goto out;
+		} else {
+			/* swcounter1 or swcounter2 should be > 0 */
+			if (swcounter1 > 0 || swcounter2 > 0)
+				rc = 0;
+			else
+				goto out;
+		}
+	} else {
+		fprintf(stderr, "parse error, could not parse 2 or 4 counter values\n");
+		goto out;
+	}
+out:
+	if (rc == 0) {
+		if (!silent)
+			printf("Test %s SUCCESS.\n", stat);
+	} else {
+		fprintf(stderr, "icastats %s test FAILED!\n", stat);
+		fprintf(stderr, "icastats line for %s was '%s'\n", stat, line);
 		exit(EXIT_FAILURE);
 	}
 }
