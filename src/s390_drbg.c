@@ -52,6 +52,14 @@ const size_t DRBG_MECH_LIST_LEN = sizeof(DRBG_MECH_LIST)
 				  / sizeof(DRBG_MECH_LIST[0]);
 
 /*
+ * DRBG SEI list. The first string (element 0) has the highest priority.
+ */
+const char *const DRBG_SEI_LIST[] = {"/dev/hwrng",
+				     "/dev/prandom"};
+const size_t DRBG_SEI_LIST_LEN = sizeof(DRBG_SEI_LIST)
+				 / sizeof(DRBG_SEI_LIST[0]);
+
+/*
  * DRBG mechanism functions
  */
 int drbg_instantiate(ica_drbg_t **sh,
@@ -66,11 +74,14 @@ int drbg_instantiate(ica_drbg_t **sh,
 		     const unsigned char *test_entropy,
 		     size_t test_entropy_len)
 {
+	void *init_ws;
+	int status;
+
 	/* 9.1 Instantiate Process */
 
 	if(!sh || *sh)
 		return DRBG_SH_INV;
-	int status = drbg_mech_valid(mech);
+	status = drbg_mech_valid(mech);
 	if(status)
 		return status;
 
@@ -143,7 +154,6 @@ int drbg_instantiate(ica_drbg_t **sh,
 	}
 
 	/* step 9 */
-	void *init_ws;
 	status = mech->instantiate(&init_ws, sec, pers, pers_len, entropy,
 				   entropy_len, nonce, nonce_len);
 	if(status){
@@ -181,12 +191,14 @@ int drbg_reseed(ica_drbg_t *sh,
 		const unsigned char *test_entropy,
 		size_t test_entropy_len)
 {
+	int status;
+
 	/* 9.2 Reseed Process */
 
 	/* step 1 */
 	if(!sh || !sh->ws)
 		return DRBG_SH_INV;
-	int status = drbg_mech_valid(sh->mech);
+	status = drbg_mech_valid(sh->mech);
 	if(status)
 		return status;
 
@@ -253,12 +265,15 @@ int drbg_generate(ica_drbg_t *sh,
 		  unsigned char *prnd,
 		  size_t prnd_len)
 {
+	int status;
+	bool reseed_required;
+
 	/* 9.3 Generate Process */
 
 	/* step 1 */
 	if(!sh || !sh->ws)
 		return DRBG_SH_INV;
-	int status = drbg_mech_valid(sh->mech);
+	status = drbg_mech_valid(sh->mech);
 	if(status)
 		return status;
 
@@ -283,7 +298,7 @@ int drbg_generate(ica_drbg_t *sh,
 		return DRBG_PR_NOTSUPP;
 
 	/* step 6 */
-	bool reseed_required = false;
+	reseed_required = false;
 
 	/* step 7 */
 _reseed_req_:
@@ -328,12 +343,14 @@ _reseed_req_:
 int drbg_uninstantiate(ica_drbg_t **sh,
 		       bool test_mode)
 {
+	int status;
+
 	/* 9.4 Uninstantiate Process */
 
 	/* step 1 */
 	if(!sh || !(*sh) || !(*sh)->ws)
 		return DRBG_SH_INV;
-	int status = drbg_mech_valid((*sh)->mech);
+	status = drbg_mech_valid((*sh)->mech);
 	if(status > 0)		/* uninst. is possible in error state (< 0) */
 		return status;
 
@@ -362,10 +379,11 @@ int drbg_health_test(const void *func,
 		     bool pr,
 		     ica_drbg_mech_t *mech)
 {
+	int status;
 	const int SEC[] = {DRBG_SEC_112, DRBG_SEC_128, DRBG_SEC_192,
 			   DRBG_SEC_256};
 
-	int status = drbg_mech_valid(mech);
+	status = drbg_mech_valid(mech);
 	if(status)
 		return status;
 
@@ -460,6 +478,11 @@ int drbg_get_entropy_input(bool pr,
 			   unsigned char *entropy,
 			   size_t entropy_len)
 {
+	size_t min_len;
+	size_t priority;
+	FILE *fd;
+	int status;
+
 	/* NIST SP800-90C Get_entropy_input */
 
 	if(!entropy)
@@ -467,7 +490,7 @@ int drbg_get_entropy_input(bool pr,
 	if(0 > min_entropy)
 		min_entropy = 0;
 
-	size_t min_len = ((min_entropy + 7) / 8);
+	min_len = ((min_entropy + 7) / 8);
 
 	if(min_len > max_len)
 		return DRBG_REQUEST_INV;
@@ -475,22 +498,17 @@ int drbg_get_entropy_input(bool pr,
 	if(entropy_len < min_len || entropy_len > max_len)
 		return DRBG_REQUEST_INV;
 
-	/* SEI (source of entropy input) priority. */
-	FILE *fd = fopen("/dev/hwrng", "r");
-	if(!fd)
-		fd = fopen("/dev/prandom", "r");
-	if(!fd)
-		return DRBG_ENTROPY_SOURCE_FAIL;
-
-	if(1 != fread(entropy, entropy_len, 1, fd)){
-		fclose(fd);
-		return DRBG_ENTROPY_SOURCE_FAIL;
+	for(priority = 0; priority < DRBG_SEI_LIST_LEN; priority++){
+		fd = fopen(DRBG_SEI_LIST[priority], "r");
+		if(fd){
+			status = fread(entropy, entropy_len, 1, fd);
+			fclose(fd);
+			if(status == 1)
+				return 0;
+		}
 	}
 
-	if(fclose(fd))
-		return DRBG_ENTROPY_SOURCE_FAIL;
-
-	return 0;
+	return DRBG_ENTROPY_SOURCE_FAIL;
 }
 
 int drbg_get_nonce(unsigned char *nonce,

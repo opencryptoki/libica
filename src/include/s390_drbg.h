@@ -129,6 +129,12 @@ extern ica_drbg_mech_t *const DRBG_MECH_LIST[];
 extern const size_t DRBG_MECH_LIST_LEN;
 
 /*
+ * DRBG SEI (source of entropy input) list. Add devices/change priorities here:
+ */
+extern const char *const DRBG_SEI_LIST[];
+extern const size_t DRBG_SEI_LIST_LEN;
+
+/*
  * DRBG mechanism functions
  *
  * @test_mode = true enables testing interface (see 11.2).
