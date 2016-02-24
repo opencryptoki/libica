@@ -1671,7 +1671,7 @@ unsigned int ica_get_functionlist(libica_func_list_element *pmech_list,
 
 /*
  * ica_drbg: libica's Deterministic Random Bit Generator
- * 	     (conforming to NIST SP 800-90A)
+ *	     (conforming to NIST SP 800-90A)
  */
 ica_drbg_mech_t *const ICA_DRBG_SHA512 = &DRBG_SHA512;
 
@@ -1710,7 +1710,9 @@ int ica_drbg_instantiate(ica_drbg_t **sh,
 			 const unsigned char *pers,
 			 size_t pers_len)
 {
-	int status = drbg_mech_valid(mech);
+	int status;
+
+	status = drbg_mech_valid(mech);
 	if(status)
 		return ica_drbg_error(status);
 
@@ -1735,9 +1737,11 @@ int ica_drbg_reseed(ica_drbg_t *sh,
 		    const unsigned char *add,
 		    size_t add_len)
 {
+	int status;
+
 	if(!sh)
 		return ica_drbg_error(DRBG_SH_INV);
-	int status = drbg_mech_valid(sh->mech);
+	status = drbg_mech_valid(sh->mech);
 	if(status)
 		return ica_drbg_error(status);
 
@@ -1759,9 +1763,11 @@ int ica_drbg_generate(ica_drbg_t *sh,
 		      unsigned char *prnd,
 		      size_t prnd_len)
 {
+	int status;
+
 	if(!sh)
 		return ica_drbg_error(DRBG_SH_INV);
-	int status = drbg_mech_valid(sh->mech);
+	status = drbg_mech_valid(sh->mech);
 	if(status)
 		return ica_drbg_error(status);
 
@@ -1815,7 +1821,9 @@ int ica_drbg_health_test(void *func,
 			 bool pr,
 			 ica_drbg_mech_t *mech)
 {
-	int status = drbg_mech_valid(mech);
+	int status;
+
+	status = drbg_mech_valid(mech);
 	if(status)
 		return ica_drbg_error(status);
 
