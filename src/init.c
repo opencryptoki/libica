@@ -79,21 +79,21 @@ void end_sigill_section(struct sigaction *oldact, sigset_t *oldset)
 	sigprocmask(SIG_SETMASK, oldset, 0);
 }
 
-
 void openssl_init(void)
 {
-	static const int random_data_length = 64;
-	unsigned char random_data[random_data_length];
-	/* Counts PRNG statistic! */
-	s390_prng(random_data, random_data_length);
-	RAND_seed(random_data, random_data_length);
+	/* initial seed the openssl random generator */
+	unsigned char random_data[64];
+	s390_prng(random_data, sizeof(random_data));
+	RAND_seed(random_data, sizeof(random_data));
 }
 
 /* Switches have to be done first. Otherwise we will not have hw support
  * in initialization */
 void __attribute__ ((constructor)) icainit(void)
 {
-	if(strcmp(program_invocation_name, "icastats")){
+	/* some init stuff but only when application is NOT icastats */
+	if (strcmp(program_invocation_name, "icastats")) {
+
 		if(stats_mmap(-1) == -1){
 			syslog(LOG_INFO,
 			  "Failed to access shared memory segment for libica statistics.");
@@ -116,4 +116,3 @@ void __attribute__ ((destructor)) icaexit(void)
 {
 	stats_munmap(SHM_CLOSE);
 }
-
