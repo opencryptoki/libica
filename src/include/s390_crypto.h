@@ -466,8 +466,9 @@ static inline void s390_stck(void *buf)
 {
 #ifdef _LINUX_S390X_
 	s390_stckf_hw(buf);
-#endif
+#else
 	s390_stcke_hw(buf);
+#endif
 }
 
 static inline int __stfle(unsigned long long *list, int doublewords)
