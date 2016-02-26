@@ -1,3 +1,7 @@
+v2.6.1
+ - [Patch] Fixed buffer overflow on random generation
+ - [Patch] Fixed DRBG entropy input
+ - [Patch] Fixed icastats test case
 v2.6.0
  - [FEATURE] Added NIST compliant deterministic random bit generator (DRBG)
 v2.5.0
