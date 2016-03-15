@@ -9,30 +9,19 @@
  *
  * Copyright IBM Corp. 2011
  */
-#include <sys/types.h>
+#include <stdint.h>
 
 #ifndef S390_COMMON_H
 #define S390_COMMON_H
 
 #define UNDIRECTED_FC(x) (((x)/2)*2)
 
-void ctr_inc_block(unsigned char *iv, unsigned int block_size,
-		   unsigned int ctr_width, unsigned char *ctrlist,
-		   unsigned long ctrlist_length);
+struct uint128 {
+	uint64_t	g[2];
+};
 
-void ctr_inc_single(unsigned char *iv, unsigned int block_size,
-		    unsigned int ctr_width);
-
-static inline void memcpy_r_allign(void *dest, int dest_bs,
-			    void *src, int src_bs, int size)
-{
-	memcpy((unsigned char *)dest + (dest_bs - size),
-	       (unsigned char *)src + (src_bs - size), size);
-}
-
-static inline void block_xor(unsigned char dest[],
-		      unsigned char a[], unsigned char b[],
-		      unsigned int length)
+static inline void block_xor(unsigned char dest[], unsigned char a[],
+    unsigned char b[], unsigned int length)
 {
 	unsigned int i;
 	for (i = 0; i < length; i++) {
@@ -40,15 +29,12 @@ static inline void block_xor(unsigned char dest[],
 	}
 }
 
-typedef struct {
-	u_int64_t upper_half;
-	u_int64_t lower_half;
-} ctr128_t;
-
-static inline void __inc(ctr128_t *ctr)
+static inline void memcpy_r_allign(void *dest, int dest_bs,
+    void *src, int src_bs, int size)
 {
-	if (!(++(ctr->lower_half)))
-		(ctr->upper_half)++;
+	memcpy((unsigned char *)dest + (dest_bs - size),
+	       (unsigned char *)src + (src_bs - size), size);
 }
+
 #endif /* S390_COMMON_H */
 

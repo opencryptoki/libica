@@ -14,6 +14,8 @@
 #ifndef S390_GCM_H
 #define S390_GCM_H
 
+#include "s390_ctr.h"
+
 #define S390_GCM_MAX_TEXT_LENGTH (0x0000000fffffffe0ul) /* (2^31)-32 */
 #define S390_GCM_MAX_AAD_LENGTH  (0x2000000000000000ul) /* (2^61)    */
 #define S390_GCM_MAX_IV_LENGTH   (0x2000000000000000ul) /* (2^61)    */
@@ -317,7 +319,7 @@ static inline int s390_gcm(unsigned int function_code,
 
 	/* prepate initial counter for cipher */
 	memcpy(tmp_ctr, j0, AES_BLOCK_SIZE);
-	ctr_inc_single(tmp_ctr, AES_BLOCK_SIZE, GCM_CTR_WIDTH);
+	__inc_aes_ctr((struct uint128 *)tmp_ctr, GCM_CTR_WIDTH);
 
 	/* en-/decrypt payload */
 	if (function_code % 2) {
@@ -373,7 +375,7 @@ static inline int s390_gcm_initialize(unsigned int function_code,
 
 	/* prepate usage counter for cipher */
 	memcpy(ucb, icb, AES_BLOCK_SIZE);
-	ctr_inc_single(ucb, AES_BLOCK_SIZE, GCM_CTR_WIDTH);
+	__inc_aes_ctr((struct uint128 *)ucb, GCM_CTR_WIDTH);
 
 	return 0;
 }

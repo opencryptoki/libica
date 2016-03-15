@@ -11,10 +11,10 @@
  * Copyright IBM Corp. 2010
  */
 
-#include "s390_common.h"
-
-#ifndef S390_CCM
+#ifndef S390_CCM_H
 #define S390_CCM_H
+
+#include "s390_ctr.h"
 
 #define S390_CCM_MAX_NONCE_LENGTH 13
 #define S390_CCM_MIN_NONCE_LENGTH  7
@@ -304,7 +304,7 @@ static inline unsigned int s390_ccm(unsigned int function_code,
 	if (payload_length) {
 		/* compute counter for en-/decryption */
 		memcpy(cipher_ctr, initial_ctr, AES_BLOCK_SIZE);
-		ctr_inc_single(cipher_ctr, AES_BLOCK_SIZE, ccm_ctr_width);
+		__inc_aes_ctr((struct uint128 *)cipher_ctr, ccm_ctr_width);
 
 		/* en-/decrypt */
 		if (function_code % 2) {
@@ -340,4 +340,3 @@ static inline unsigned int s390_ccm(unsigned int function_code,
 			    key, initial_ctr, ccm_ctr_width);
 }
 #endif
-

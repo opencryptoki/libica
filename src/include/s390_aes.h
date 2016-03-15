@@ -22,7 +22,6 @@
 #include "init.h"
 #include "s390_crypto.h"
 #include "s390_ctr.h"
-#include "s390_common.h"
 
 #define AES_BLOCK_SIZE 16
 
@@ -111,7 +110,7 @@ static inline int s390_aes_ctr(unsigned int fc, const unsigned char *in_data,
 		if (rc)
 			goto free_out;
 
-		ctr_inc_single(ctr, AES_BLOCK_SIZE, ctr_width);
+		__inc_aes_ctr((struct uint128 *)ctr,  ctr_width);
 		return rc;
 	}
 
@@ -136,9 +135,9 @@ static inline int s390_aes_ctr(unsigned int fc, const unsigned char *in_data,
 		tmp_length = (rest_length < chunk_length) ?
 			      rest_length : chunk_length;
 		if (tmp_ctrlist) {
-			ctr_inc_block(ctr, AES_BLOCK_SIZE, ctr_width,
-				      tmp_ctrlist,
-				      NEXT_BS(tmp_length, AES_BLOCK_SIZE));
+			__fill_aes_ctrlist(tmp_ctrlist,
+			    NEXT_BS(tmp_length, AES_BLOCK_SIZE),
+			    (struct uint128 *)ctr, ctr_width);
 
 			rc = s390_aes_ctrlist(fc, tmp_length, src,
 					      tmp_ctrlist, key, out_data);
@@ -151,7 +150,7 @@ static inline int s390_aes_ctr(unsigned int fc, const unsigned char *in_data,
 			if (rc)
 				goto free_out;
 
-			ctr_inc_single(ctr, AES_BLOCK_SIZE, ctr_width);
+			__inc_aes_ctr((struct uint128 *)ctr, ctr_width);
 		}
 	}
 

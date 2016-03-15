@@ -541,7 +541,7 @@ static inline int s390_des_ctr(unsigned int fc, const unsigned char *in_data,
 		if (rc)
 			goto free_out;
 
-		ctr_inc_single(ctr, DES_BLOCK_SIZE, ctr_width);
+		__inc_des_ctr((uint64_t *)ctr, ctr_width);
 		return rc;
 	}
 
@@ -567,9 +567,9 @@ static inline int s390_des_ctr(unsigned int fc, const unsigned char *in_data,
 		tmp_length = (rest_length < chunk_length) ?
 			      rest_length : chunk_length;
 		if (tmp_ctrlist) {
-			ctr_inc_block(ctr, DES_BLOCK_SIZE, ctr_width,
-				      tmp_ctrlist,
-				      NEXT_BS(tmp_length, DES_BLOCK_SIZE));
+			__fill_des_ctrlist(tmp_ctrlist,
+			    NEXT_BS(tmp_length, DES_BLOCK_SIZE),
+			    (uint64_t *)ctr, ctr_width);
 
 			rc = s390_des_ctrlist(fc, tmp_length, src,
 					      tmp_ctrlist, key, out_data);
@@ -581,7 +581,7 @@ static inline int s390_des_ctr(unsigned int fc, const unsigned char *in_data,
 			if (rc)
 				goto free_out;
 
-			ctr_inc_single(ctr, DES_BLOCK_SIZE, ctr_width);
+			__inc_des_ctr((uint64_t *)ctr, ctr_width);
 		}
 	}
 

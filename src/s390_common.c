@@ -24,52 +24,17 @@
 #include "s390_des.h"
 #include "s390_common.h"
 
+/*
+ * The following functions are waiting to be removed...
+ */
+__attribute__ ((__deprecated__))
 void ctr_inc_block(unsigned char *iv, unsigned int block_size,
-		   unsigned int ctr_width, unsigned char *ctrlist,
-		   unsigned long ctrlist_length)
+    unsigned int ctr_width, unsigned char *ctrlist,
+    unsigned long ctrlist_length)
 {
-	ctr128_t tmp_ctr = { 0ul, 0ul };
-	unsigned char *dest;
-	unsigned int ctr_byte_width;
-
-	ctr_byte_width = ctr_width / 8;
-
-	// init counter with iv
-	memcpy_r_allign((void *)&tmp_ctr, sizeof(tmp_ctr),
-			iv, block_size, block_size);
-
-	for (dest = ctrlist;
-	     dest < (ctrlist + ctrlist_length);
-	     dest += block_size) {
-		// copy nounce to ctrlist
-		memcpy(dest, iv, block_size - ctr_byte_width);
-
-		// add counter values to ctrlist
-		memcpy_r_allign(dest, block_size, (void *)&tmp_ctr,
-				sizeof(tmp_ctr), ctr_byte_width);
-		__inc(&tmp_ctr);
-	}
-
-	// update iv for chaining
-	memcpy_r_allign(iv, block_size, (void *)&tmp_ctr,
-			  sizeof(tmp_ctr), ctr_byte_width);
 }
-
+__attribute__ ((__deprecated__))
 void ctr_inc_single(unsigned char *iv, unsigned int block_size,
-			   unsigned int ctr_width)
+    unsigned int ctr_width)
 {
-	ctr128_t tmp_ctr = { 0ul, 0ul };
-	unsigned int ctr_byte_width;
-
-	ctr_byte_width = ctr_width / 8;
-
-	// init counter with iv
-	memcpy_r_allign((void *)&tmp_ctr, sizeof(tmp_ctr), iv, block_size, block_size);
-
-	__inc(&tmp_ctr);
-
-	// update iv for chaining
-	memcpy_r_allign(iv, block_size, (void *)&tmp_ctr, sizeof(tmp_ctr), ctr_byte_width);
 }
-
-
