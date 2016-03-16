@@ -44,7 +44,7 @@ unsigned int FIPS_TEST_DATA_SIZE[NUM_FIPS_TESTS] = {
   1000000,
 };
 
-unsigned char FIPS_TEST_RESULT[NUM_FIPS_TESTS][LENGTH_SHA_HASH] =
+unsigned char FIPS_TEST_RESULT[NUM_FIPS_TESTS][SHA_HASH_LENGTH] =
 {
   // Hash for test 0: NULL
   {
@@ -102,8 +102,8 @@ int new_api_sha_test(void)
 	sha_context_t sha_context;
 	int rc = 0, i = 0;
 	unsigned char input_data[1000000];
-	unsigned int  output_hash_length = LENGTH_SHA_HASH;
-	unsigned char output_hash[LENGTH_SHA_HASH];
+	unsigned int  output_hash_length = SHA_HASH_LENGTH;
+	unsigned char output_hash[SHA_HASH_LENGTH];
 
 	for (i = 0; i < NUM_FIPS_TESTS; i++) {
 	// Test 3 is a special one, because we want to keep the size of the
@@ -126,7 +126,7 @@ int new_api_sha_test(void)
 
 	printf("\nOutput hash for test %d:\n", i);
 	dump_array(output_hash, output_hash_length);
-	if (memcmp(output_hash, FIPS_TEST_RESULT[i], LENGTH_SHA_HASH) != 0)
+	if (memcmp(output_hash, FIPS_TEST_RESULT[i], SHA_HASH_LENGTH) != 0)
 		printf("This does NOT match the known result.\n");
 	else
 		printf("Yep, it's what it should be.\n");
@@ -161,7 +161,7 @@ int new_api_sha_test(void)
 
 	printf("\nOutput hash for test 3(chunks = 1024):\n");
 	dump_array(output_hash, output_hash_length);
-	if (memcmp(output_hash, FIPS_TEST_RESULT[3], LENGTH_SHA_HASH) != 0)
+	if (memcmp(output_hash, FIPS_TEST_RESULT[3], SHA_HASH_LENGTH) != 0)
 		printf("This does NOT match the known result.\n");
 	else
 		printf("Yep, it's what it should be.\n");
@@ -195,7 +195,7 @@ int new_api_sha_test(void)
 
 	printf("\nOutput hash for test 3(chunks = 64):\n");
 	dump_array(output_hash, output_hash_length);
-	if (memcmp(output_hash, FIPS_TEST_RESULT[3], LENGTH_SHA_HASH) != 0)
+	if (memcmp(output_hash, FIPS_TEST_RESULT[3], SHA_HASH_LENGTH) != 0)
 		printf("This does NOT match the known result.\n");
 	else
 	printf("Yep, it's what it should be.\n");

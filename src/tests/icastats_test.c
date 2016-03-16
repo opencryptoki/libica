@@ -96,7 +96,7 @@ int main (int argc, char **argv)
 	 **/
 	/* ica_random_number_generate uses ica_drbg if available. Otherwise the
 	 * old prng code is used. */
-	if(sha512_switch || sha512_drng_switch)
+	if (check_hw(SHA512_DRNG) == 1 || check_hw(SHA512) == 1)
 		check_icastats(SHA512_DRNG, "DRBG-SHA-512");
 	else
 		check_icastats(P_RNG, "P_RNG");

@@ -15,9 +15,9 @@ int sha1_new_api_test(test_t * test)
 
 	sha_context_t sha_context;
 	int rc = 0;
-	unsigned char output[LENGTH_SHA_HASH];
+	unsigned char output[SHA_HASH_LENGTH];
 
-	if (test->msg_digest_length != LENGTH_SHA_HASH)
+	if (test->msg_digest_length != SHA_HASH_LENGTH)
 		CRITICAL_ERROR("this shouldn't happen.");
 
 	rc = (int)ica_sha1(SHA_MSG_PART_ONLY, test->msg_length, test->msg,
@@ -31,10 +31,10 @@ int sha1_new_api_test(test_t * test)
 
 	if (!silent) {
 		printf("message digest (new api)\n");
-		dump_array(output, LENGTH_SHA_HASH);
+		dump_array(output, SHA_HASH_LENGTH);
 	}
 
-	if (memcmp(output, test->msg_digest, LENGTH_SHA_HASH) != 0) {
+	if (memcmp(output, test->msg_digest, SHA_HASH_LENGTH) != 0) {
 		printf("output is not what it should be.\n");
 		return 2;
 	}
@@ -45,9 +45,9 @@ int sha224_new_api_test(test_t * test)
 {
 	sha256_context_t sha256_context;
 	int rc = 0;
-	unsigned char output[LENGTH_SHA224_HASH];
+	unsigned char output[SHA224_HASH_LENGTH];
 
-	if (test->msg_digest_length != LENGTH_SHA224_HASH)
+	if (test->msg_digest_length != SHA224_HASH_LENGTH)
 		CRITICAL_ERROR("this shouldn't happen.");
 
 	rc = (int)ica_sha224(SHA_MSG_PART_ONLY, test->msg_length, test->msg,
@@ -61,9 +61,9 @@ int sha224_new_api_test(test_t * test)
 
 	if (!silent) {
 		printf("message digest (new api)\n");
-		dump_array(output, LENGTH_SHA224_HASH);
+		dump_array(output, SHA224_HASH_LENGTH);
 	}
-	if (memcmp(output, test->msg_digest, LENGTH_SHA224_HASH) != 0) {
+	if (memcmp(output, test->msg_digest, SHA224_HASH_LENGTH) != 0) {
 		printf("output is not what it should be.\n");
 		return 2;
 	}
@@ -75,9 +75,9 @@ int sha256_new_api_test(test_t * test)
 {
 	sha256_context_t sha256_context;
 	int rc = 0;
-	unsigned char output[LENGTH_SHA256_HASH];
+	unsigned char output[SHA256_HASH_LENGTH];
 
-	if (test->msg_digest_length != LENGTH_SHA256_HASH)
+	if (test->msg_digest_length != SHA256_HASH_LENGTH)
 		CRITICAL_ERROR("this shouldn't happen.");
 
 	rc = (int)ica_sha256(SHA_MSG_PART_ONLY, test->msg_length, test->msg,
@@ -91,9 +91,9 @@ int sha256_new_api_test(test_t * test)
 
 	if (!silent) {
 		printf("message digest (new api)\n");
-		dump_array(output, LENGTH_SHA256_HASH);
+		dump_array(output, SHA256_HASH_LENGTH);
 	}
-	if (memcmp(output, test->msg_digest, LENGTH_SHA256_HASH) != 0) {
+	if (memcmp(output, test->msg_digest, SHA256_HASH_LENGTH) != 0) {
 		printf("output is not what it should be.\n");
 		return 2;
 	}
@@ -105,9 +105,9 @@ int sha384_new_api_test(test_t * test)
 {
 	sha512_context_t sha512_context;
 	int rc = 0;
-	unsigned char output[LENGTH_SHA384_HASH];
+	unsigned char output[SHA384_HASH_LENGTH];
 
-	if (test->msg_digest_length != LENGTH_SHA384_HASH)
+	if (test->msg_digest_length != SHA384_HASH_LENGTH)
 		CRITICAL_ERROR("this shouldn't happen.");
 
 	rc = (int)ica_sha384(SHA_MSG_PART_ONLY, test->msg_length, test->msg,
@@ -121,9 +121,9 @@ int sha384_new_api_test(test_t * test)
 
 	if (!silent) {
 		printf("message digest (new api)\n");
-		dump_array(output, LENGTH_SHA384_HASH);
+		dump_array(output, SHA384_HASH_LENGTH);
 	}
-	if (memcmp(output, test->msg_digest, LENGTH_SHA384_HASH) != 0) {
+	if (memcmp(output, test->msg_digest, SHA384_HASH_LENGTH) != 0) {
 		printf("output is not what it should be.\n");
 		return 2;
 	}
@@ -135,9 +135,9 @@ int sha512_new_api_test(test_t * test)
 {
 	sha512_context_t sha512_context;
 	int rc = 0;
-	unsigned char output[LENGTH_SHA512_HASH];
+	unsigned char output[SHA512_HASH_LENGTH];
 
-	if (test->msg_digest_length != LENGTH_SHA512_HASH)
+	if (test->msg_digest_length != SHA512_HASH_LENGTH)
 		CRITICAL_ERROR("this shouldn't happen.");
 
 	rc = (int)ica_sha512(SHA_MSG_PART_ONLY, test->msg_length, test->msg,
@@ -151,9 +151,9 @@ int sha512_new_api_test(test_t * test)
 
 	if (!silent) {
 		printf("message digest (new api)\n");
-		dump_array(output, LENGTH_SHA512_HASH);
+		dump_array(output, SHA512_HASH_LENGTH);
 	}
-	if (memcmp(output, test->msg_digest, LENGTH_SHA512_HASH) != 0) {
+	if (memcmp(output, test->msg_digest, SHA512_HASH_LENGTH) != 0) {
 		printf("output is not what it should be.\n");
 		return 2;
 	}

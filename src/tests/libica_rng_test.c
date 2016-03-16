@@ -39,7 +39,7 @@ void dump_array(unsigned char *ptr, unsigned int size)
 int main(int argc, char **argv)
 {
 	int rc;
-	ICA_ADAPTER_HANDLE adapter_handle;
+	ica_adapter_handle_t adapter_handle;
 	unsigned int silent = 0;
 
 	if (argc > 1) {
