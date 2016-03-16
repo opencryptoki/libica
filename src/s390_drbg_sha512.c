@@ -50,12 +50,13 @@ static inline void mod_add(unsigned char *v,
 			   const unsigned char *s,
 			   size_t s_len)
 {
+	int i;
+	uint16_t c = 0;
+
 	v = v + DRBG_SHA512_SEED_LEN - 1;
 	s = s + s_len - 1;
 
-	uint16_t c = 0;
-	int i = 1;
-	for(; i <= s_len; i++, v--, s--)
+	for(i = 1; i <= s_len; i++, v--, s--)
 		*v = (c = *v + *s + (uint8_t)(c >> 8));
 	for(; i <= DRBG_SHA512_SEED_LEN; i++, v--)
 		*v = (c = *v + (uint8_t)(c >> 8));
@@ -103,6 +104,8 @@ int drbg_sha512_instantiate_ppno(void **ws,
 				 const unsigned char *nonce,
 				 size_t nonce_len)
 {
+	int status;
+
 	/* 10.1.1.2 Hash_DRBG Instantiate Process */
 
 	*ws = calloc(1, sizeof(ws_t)); /* buffer must be zero! (see POP) */
@@ -118,8 +121,8 @@ int drbg_sha512_instantiate_ppno(void **ws,
 	memcpy(seed_material + entropy_len + nonce_len, pers, pers_len);
 
 	/* steps 2 - 5 */
-	int status = s390_ppno(S390_CRYPTO_SHA512_DRNG_SEED, *ws, NULL, 0,
-			       seed_material, seed_material_len);
+	status = s390_ppno(S390_CRYPTO_SHA512_DRNG_SEED, *ws, NULL, 0,
+			   seed_material, seed_material_len);
 	if(status)
 		status = DRBG_HEALTH_TEST_FAIL;
 
@@ -137,14 +140,16 @@ int drbg_sha512_instantiate(void **ws,
 			    const unsigned char *nonce,
 			    size_t nonce_len)
 {
+	const size_t seed_material_len = entropy_len + nonce_len + pers_len;
+	unsigned char seed_material[seed_material_len];
+	int status;
+
 	/* 10.1.1.2 Hash_DRBG Instantiate Process */
 
 	*ws = malloc(sizeof(ws_t));
 	if(!*ws)
 		return DRBG_NOMEM;
 
-	const size_t seed_material_len = entropy_len + nonce_len + pers_len;
-	unsigned char seed_material[seed_material_len];
 	unsigned char _0x00v[1 + sizeof(((ws_t *)*ws)->v)];
 
 	/* step 1 */
@@ -153,8 +158,8 @@ int drbg_sha512_instantiate(void **ws,
 	memcpy(seed_material + entropy_len + nonce_len, pers, pers_len);
 
 	/* steps 2 and 3 */
-	int status = drbg_hash_df(seed_material, seed_material_len,
-				  ((ws_t *)*ws)->v, sizeof(((ws_t *)*ws)->v));
+	status = drbg_hash_df(seed_material, seed_material_len,
+			      ((ws_t *)*ws)->v, sizeof(((ws_t *)*ws)->v));
 	if(status){
 		drbg_zmem(*ws, sizeof(ws_t));
 		free(*ws);
@@ -191,18 +196,19 @@ int drbg_sha512_reseed_ppno(void *ws,
 			    const unsigned char *entropy,
 			    size_t entropy_len)
 {
-	/* 10.1.1.3 Hash_DRBG Reseed Process */
-
 	const size_t seed_material_len = entropy_len + add_len;
 	unsigned char seed_material[seed_material_len];
+	int status;
+
+	/* 10.1.1.3 Hash_DRBG Reseed Process */
 
 	/* step 1 (0x01||V is prepended by ppno, see POP)*/
 	memcpy(seed_material, entropy, entropy_len);
 	memcpy(seed_material + entropy_len, add, add_len);
 
 	/* steps 2 - 5 */
-	int status = s390_ppno(S390_CRYPTO_SHA512_DRNG_SEED, ws, NULL, 0,
-			       seed_material, seed_material_len);
+	status = s390_ppno(S390_CRYPTO_SHA512_DRNG_SEED, ws, NULL, 0,
+			   seed_material, seed_material_len);
 	if(status)
 		status = DRBG_HEALTH_TEST_FAIL;
 
@@ -218,12 +224,14 @@ int drbg_sha512_reseed(void *ws,
 		       const unsigned char *entropy,
 		       size_t entropy_len)
 {
-	/* 10.1.1.3 Hash_DRBG Reseed Process */
-
+	int status;
+	unsigned char *seed_material;
 	unsigned char _0x00v[1 + sizeof(((ws_t *)ws)->v)];
 	const size_t seed_material_len = 1 + sizeof(((ws_t *)ws)->v)
 					   + entropy_len + add_len;
-	unsigned char *seed_material = malloc(seed_material_len);
+
+	/* 10.1.1.3 Hash_DRBG Reseed Process */
+	seed_material = malloc(seed_material_len);
 	if(!seed_material)
 		return DRBG_NOMEM;
 
@@ -236,8 +244,8 @@ int drbg_sha512_reseed(void *ws,
 	       add_len);
 
 	/* steps 2 and 3 */
-	int status = drbg_hash_df(seed_material, seed_material_len,
-				  ((ws_t *)ws)->v, sizeof(((ws_t *)ws)->v));
+	status = drbg_hash_df(seed_material, seed_material_len,
+			      ((ws_t *)ws)->v, sizeof(((ws_t *)ws)->v));
 	if(status)
 		goto _exit_;
 
@@ -267,6 +275,8 @@ int drbg_sha512_generate_ppno(void *ws,
 			      unsigned char *prnd,
 			      size_t prnd_len)
 {
+	int status;
+
 	/* increase corresponding icastats counter */
 	stats_increment(ICA_STATS_DRBGSHA512, ALGO_HW, ENCRYPT);
 
@@ -277,7 +287,6 @@ int drbg_sha512_generate_ppno(void *ws,
 		return DRBG_RESEED_REQUIRED;
 
 	/* step 2 */
-	int status;
 	if(add){
 		status = generate_add(ws, add, add_len);
 		if(status)
@@ -300,6 +309,11 @@ int drbg_sha512_generate(void *ws,
 			 unsigned char *prnd,
 			 size_t prnd_len)
 {
+	unsigned char _0x03v[1 + sizeof(((ws_t *)ws)->v)] = {0};
+	unsigned char h[DRBG_OUT_LEN];
+	uint64_t shabuff[2];
+	int status;
+
 	/* increase corresponding icastats counter */
 	stats_increment(ICA_STATS_DRBGSHA512, ALGO_SW, ENCRYPT);
 
@@ -310,7 +324,6 @@ int drbg_sha512_generate(void *ws,
 		return DRBG_RESEED_REQUIRED;
 
 	/* step 2 */
-	int status;
 	if(add){
 		status = generate_add(ws, add, add_len);
 		if(status)
@@ -323,11 +336,8 @@ int drbg_sha512_generate(void *ws,
 		return status;
 
 	/* step 4 */
-	unsigned char _0x03v[1 + sizeof(((ws_t *)ws)->v)] = {0};
 	_0x03v[0] = 0x03;
 	memcpy(_0x03v + 1, ((ws_t *)ws)->v, sizeof(((ws_t *)ws)->v));
-	unsigned char h[DRBG_OUT_LEN];
-	uint64_t shabuff[2];
 	status = s390_sha_hw(SHA_512_DEFAULT_IV, _0x03v, sizeof(_0x03v), h,
 			     SHA_MSG_PART_ONLY, &shabuff[0], &shabuff[1],
 			     SHA_512);
@@ -411,11 +421,10 @@ static int test_instantiate(int sec,
 			    bool pr)
 {
 	ica_drbg_t *sh = NULL;
-
 	const drbg_sha512_test_vec_t *tv;
-	int status;
-	int i = 0;
-	for(; i < DRBG_SHA512_TEST_VEC_LEN; i++){
+	int status, i;
+
+	for(i = 0; i < DRBG_SHA512_TEST_VEC_LEN; i++){
 		tv = &DRBG_SHA512_TEST_VEC[i];
 		if(tv->pr != pr)
 			continue;
@@ -450,12 +459,12 @@ static int test_reseed(int sec,
 	ws_t ws;
 	ica_drbg_t sh = {.mech = &DRBG_SHA512, .ws = &ws, .sec = sec,
 			 .pr = pr};
+	const drbg_sha512_test_vec_t *tv;
+	int status, i;
+
 	drbg_recursive_mutex_init(&sh.lock);
 
-	const drbg_sha512_test_vec_t *tv;
-	int status;
-	int i = 0;
-	for(; i < DRBG_SHA512_TEST_VEC_LEN; i++){
+	for(i = 0; i < DRBG_SHA512_TEST_VEC_LEN; i++){
 		tv = &DRBG_SHA512_TEST_VEC[i];
 		if(tv->pr || tv->no_reseed)
 			continue;
@@ -486,12 +495,13 @@ static int test_generate(int sec,
 	ws_t ws;
 	ica_drbg_t sh = {.mech = &DRBG_SHA512, .ws = &ws, .sec = sec,
 			 .pr = true};
+	int status, i;
+	const drbg_sha512_test_vec_t *tv;
+	unsigned char prnd;
+
 	drbg_recursive_mutex_init(&sh.lock);
 
 	/* Use appropriate test vectors for self-test */
-	int status;
-	int i;
-	const drbg_sha512_test_vec_t *tv;
 	do{
 		for(i = 0; i < DRBG_SHA512_TEST_VEC_LEN; i++){
 			tv = &DRBG_SHA512_TEST_VEC[i];
@@ -554,7 +564,6 @@ static int test_generate(int sec,
 	/* Set reseed counter to meet the reseed intervall. */
 	if(!pr){
 		ws.reseed_ctr = DRBG_SHA512.reseed_intervall + 1;
-		unsigned char prnd;
 		status = drbg_generate(&sh, sec, pr, NULL, 0, false, NULL, 0,
 				       &prnd, sizeof(prnd));
 		if(2 != ws.reseed_ctr)
@@ -568,21 +577,24 @@ static int generate_add(ws_t *ws,
 			const unsigned char *add,
 			size_t add_len)
 {
+	unsigned char *_0x02v;
+	const size_t _0x02v_len = 1 + sizeof(ws->v) + add_len;
+	unsigned char w[DRBG_OUT_LEN];
+	uint64_t shabuff[2];
+	int status;
+
 	/* 10.1.1.4 Hash_DRBG Generate Process, step 2.x */
 
 	/* step 2.1 */
-	const size_t _0x02v_len = 1 + sizeof(ws->v) + add_len;
-	unsigned char *_0x02v = malloc(_0x02v_len);
+	_0x02v = malloc(_0x02v_len);
 	if(!_0x02v)
 		return DRBG_NOMEM;
 	_0x02v[0] = 0x02;
 	memcpy(_0x02v + 1, ws->v, sizeof(ws->v));
 	memcpy(_0x02v + 1 + sizeof(ws->v), add, add_len);
-	unsigned char w[DRBG_OUT_LEN];
-	uint64_t shabuff[2];
-	int status = s390_sha_hw(SHA_512_DEFAULT_IV, _0x02v, _0x02v_len, w,
-				 SHA_MSG_PART_ONLY, &shabuff[0], &shabuff[1],
-				 SHA_512);
+	status = s390_sha_hw(SHA_512_DEFAULT_IV, _0x02v, _0x02v_len, w,
+			     SHA_MSG_PART_ONLY, &shabuff[0], &shabuff[1],
+			     SHA_512);
 	if(status){
 		status = DRBG_HEALTH_TEST_FAIL;
 		goto _exit_;
@@ -602,30 +614,32 @@ static int hashgen(const unsigned char *v,
 		   unsigned char *prnd,
 		   size_t prnd_len)
 {
+	unsigned char data[DRBG_SHA512_SEED_LEN];
+	unsigned char w_i[DRBG_OUT_LEN];
+	unsigned char *w;
+	size_t m, i;
+	uint64_t shabuff[2];
+	int status;
+	const unsigned char _0x01 = 0x01;
+
 	/* 10.1.1.4 Hashgen Process */
 
 	if(0 >= prnd_len)
 		return 0; /* no pseudorandom bytes requested */
 
 	/* step 1 */
-	const size_t m = (prnd_len + DRBG_OUT_LEN - 1) / DRBG_OUT_LEN;
+	m = (prnd_len + DRBG_OUT_LEN - 1) / DRBG_OUT_LEN;
 
 	/* step 2 */
-	unsigned char data[DRBG_SHA512_SEED_LEN];
 	memcpy(data, v, sizeof(data));
 
 	/* step 3 */
-	unsigned char *w = malloc(m * DRBG_OUT_LEN);
+	w = malloc(m * DRBG_OUT_LEN);
 	if(!w)
 		return DRBG_NOMEM;
 
 	/* step 4 */
-	const unsigned char _0x01 = 0x01;
-	unsigned char w_i[DRBG_OUT_LEN];
-	uint64_t shabuff[2];
-	int status;
-	size_t i = 1;
-	for(; i <= m; i++){
+	for(i = 1; i <= m; i++){
 		status = s390_sha_hw(SHA_512_DEFAULT_IV, data, sizeof(data),
 				     w_i, SHA_MSG_PART_ONLY, &shabuff[0],
 				     &shabuff[1], SHA_512);

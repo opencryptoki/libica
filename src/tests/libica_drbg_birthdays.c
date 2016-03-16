@@ -28,8 +28,9 @@ static ica_drbg_t *sh  = NULL;
 
 void *thread(void *buffer)
 {
-	int rc = ica_drbg_generate(sh, 0, false, NULL, 0, buffer,
-				   GEN_BYTES[test]);
+	int rc;
+
+	rc = ica_drbg_generate(sh, 0, false, NULL, 0, buffer, GEN_BYTES[test]);
 	if(rc){
 		fprintf(stderr, "error: ica_drbg_generate: %s (%d)\n",
 			strerror(rc), rc);
@@ -41,19 +42,24 @@ void *thread(void *buffer)
 
 int main(int argc, char **argv)
 {
+	long rnd_ex[3] = {0};
+	long ex = 0, pair_found = 0;
+	int status[THREADS[test]];
+	int i, j, rc;
+	unsigned char buffer[THREADS[test]][GEN_BYTES[test]];
+	bool toggle;
+
 	if(2 > argc || 4 < argc){
 		fprintf(stderr,
 			"usage: ica_drbg_birthdays <rnd_ex1> <rnd_ex2>"
 			" <rnd_ex3>\n");
 		exit(1);
 	}
-	long rnd_ex[3] = {0};
-	int i = 1;
-	for(; i < argc; i++)
+	for(i = 1; i < argc; i++)
 		rnd_ex[i - 1] = strtol(argv[i], NULL, 10);
 
 	/* create instantiation */
-	int rc = ica_drbg_instantiate(&sh, 0, false, ICA_DRBG_SHA512, NULL, 0);
+	rc = ica_drbg_instantiate(&sh, 0, false, ICA_DRBG_SHA512, NULL, 0);
 	if(rc){
 		fprintf(stderr, "error: ica_drbg_instantiate: %s (%d)\n",
 			strerror(rc), rc);
@@ -74,11 +80,6 @@ int main(int argc, char **argv)
 		       rnd_ex[test], THREADS[test], GEN_BYTES[test]);
 		pthread_t threads[THREADS[test]];
 
-		unsigned char buffer[THREADS[test]][GEN_BYTES[test]];
-
-		int status[THREADS[test]];
-		long pair_found = 0;
-		long ex = 0;
 		for(; ex < rnd_ex[test]; ex++){
 			/* start threads */
 			for(i = 0; i < THREADS[test]; i++){
@@ -104,10 +105,9 @@ int main(int argc, char **argv)
 			}
 
 			/* search pairs */
-			bool toggle = false;
+			toggle = false;
 			for(i = 0; i < THREADS[test]; i++){
-				int j = 0;
-				for(; j < THREADS[test]; j++){
+				for(j = 0; j < THREADS[test]; j++){
 					if(!memcmp(buffer[i], buffer[j],
 						   GEN_BYTES[test]) && i != j){
 						pair_found++;

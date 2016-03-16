@@ -22,7 +22,8 @@
 #include "s390_drbg.h"
 #include "s390_sha.h"
 
-#define NDEBUG	/* turns off assertions */
+#define NDEBUG					/* turns off assertions */
+#define MAX_NO_OF_BYTES	(255 * DRBG_OUT_LEN)	/* limit for hash_df */
 
 /*
  * Test DRBG mechanisms
@@ -378,7 +379,7 @@ int drbg_health_test(const void *func,
 		     bool pr,
 		     ica_drbg_mech_t *mech)
 {
-	int status;
+	int status, i;
 	const int SEC[] = {DRBG_SEC_112, DRBG_SEC_128, DRBG_SEC_192,
 			   DRBG_SEC_256};
 
@@ -430,8 +431,7 @@ int drbg_health_test(const void *func,
 	}
 	else if(drbg_generate == func){
 		/* Test vectors: test all combinations sec, pr supp, pr req */
-		int i = 0;
-		for(; i < sizeof(SEC) / sizeof(SEC[0]); i++){
+		for(i = 0; i < sizeof(SEC) / sizeof(SEC[0]); i++){
 			if(SEC[i] > mech->highest_supp_sec)
 				break;
 
@@ -513,6 +513,7 @@ int drbg_get_entropy_input(bool pr,
 int drbg_get_nonce(unsigned char *nonce,
 		   size_t nonce_len)
 {
+	size_t i;
 	static uint16_t ctr;
 
 	/* The buffer for nonce must hold a 16 byte timestamp. */
@@ -533,8 +534,7 @@ int drbg_get_nonce(unsigned char *nonce,
 	pthread_t thread_id = pthread_self();
 
 	/* Store bytewise XOR of the thread id in first byte. */
-	int i = 0;
-	for(; i < sizeof(thread_id); i++)
+	for(i = 0; i < sizeof(thread_id); i++)
 		*nonce ^= *((unsigned char *)&thread_id + i);
 
 	/* Store counter in the last two bytes. Since TOD clock is thread-save,
@@ -550,9 +550,13 @@ int drbg_hash_df(const unsigned char *input,
 		 unsigned char *req_bytes,
 		 size_t req_bytes_len)
 {
+	uint64_t shabuff[2];
+	size_t i;
+	int status;
+	unsigned char counter;
+
 	/* 10.4.1 Hash_df Process */
 
-#define MAX_NO_OF_BYTES	(255 * DRBG_OUT_LEN)
 	if(!req_bytes_len)
 		return 0;	/* no bytes requested: do nothing */
 	if(!req_bytes || !input)
@@ -567,17 +571,14 @@ int drbg_hash_df(const unsigned char *input,
 	unsigned char temp[len * DRBG_OUT_LEN];
 
 	/* step 3 */
-	unsigned counter = 0x01;
+	counter = 0x01;
 
 	/* step 4 */
 	const size_t _tmp_len = 1 + sizeof(no_of_bits_to_return) + input_len;
 	unsigned char _tmp[_tmp_len];
 	memcpy(_tmp + 1, &no_of_bits_to_return, sizeof(no_of_bits_to_return));
 	memcpy(_tmp + 1 + sizeof(no_of_bits_to_return), input, input_len);
-	int status;
-	uint64_t shabuff[2];
-	size_t i = 1;
-	for(; i <= len; i++){
+	for(i = 1; i <= len; i++){
 		/* step 4.1 */
 		_tmp[0] = counter;
 		status = s390_sha_hw(SHA_512_DEFAULT_IV, _tmp, _tmp_len,
@@ -605,7 +606,9 @@ _exit_:
 static int test_uninstantiate(ica_drbg_mech_t *mech)
 {
 	/* Error handling test. */
-	int status = drbg_uninstantiate(NULL, false);
+	int status;
+
+	status = drbg_uninstantiate(NULL, false);
 	if(DRBG_SH_INV != status)
 		return DRBG_HEALTH_TEST_FAIL;
 
@@ -627,10 +630,12 @@ static int test_uninstantiate(ica_drbg_mech_t *mech)
 
 static int test_instantiate_error_handling(ica_drbg_mech_t *mech)
 {
+	int test_no = 0, status;
+
 	/* Pointer to state handle is NULL. */
-	int test_no = 1;
-	int status = drbg_instantiate(NULL, 0, true, mech, NULL, 0, false,
-				      NULL, 0, NULL, 0);
+	test_no++;
+	status = drbg_instantiate(NULL, 0, true, mech, NULL, 0, false, NULL,
+				  0, NULL, 0);
 	if(DRBG_SH_INV != status)
 		return test_no;
 
@@ -691,9 +696,10 @@ static int test_instantiate_error_handling(ica_drbg_mech_t *mech)
 
 static int test_reseed_error_handling(ica_drbg_mech_t *mech)
 {
+	int test_no = 0, status;
+
 	/* Invalid state handle. */
-	int test_no = 1;
-	int status = drbg_reseed(NULL, true, NULL, 0, false, NULL, 0);
+	status = drbg_reseed(NULL, true, NULL, 0, false, NULL, 0);
 	if(DRBG_SH_INV != status)
 		return test_no;
 
@@ -749,12 +755,13 @@ static int test_generate_error_handling(ica_drbg_mech_t *mech)
 {
 	const int SEC[] = {DRBG_SEC_112, DRBG_SEC_128, DRBG_SEC_192,
 			   DRBG_SEC_256};
+	int test_no = 0, status, i;
+	unsigned char prnd;
 
 	/* Invalid state handle. */
-	int test_no = 1;
-	unsigned char prnd;
-	int status = drbg_generate(NULL, mech->highest_supp_sec, false, NULL,
-				   0, false, NULL, 0, &prnd, sizeof(prnd));
+	test_no++;
+	status = drbg_generate(NULL, mech->highest_supp_sec, false, NULL, 0,
+			       false, NULL, 0, &prnd, sizeof(prnd));
 	if(DRBG_SH_INV != status)
 		return test_no;
 
@@ -820,8 +827,7 @@ static int test_generate_error_handling(ica_drbg_mech_t *mech)
 	test_no++;
 	test_sh.mech = mech;
 	test_sh.sec = mech->highest_supp_sec;
-	int i = 0;
-	for(; i < sizeof(SEC); i++){
+	for(i = 0; i < sizeof(SEC); i++){
 		if(SEC[i] > mech->highest_supp_sec)
 			break;
 		status = drbg_generate(&test_sh, SEC[i], true, NULL, 0, true,
