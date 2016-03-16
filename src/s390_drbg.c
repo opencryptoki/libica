@@ -11,7 +11,6 @@
  * Copyright IBM Corp. 2015
  */
 
-#include <assert.h>
 #include <errno.h>
 #include <pthread.h>
 #include <stdbool.h>
@@ -603,52 +602,6 @@ _exit_:
 	return status;
 }
 
-void drbg_zmem(void *ptr,
-	       size_t len)
-{
-	if(ptr)
-		memset(ptr, 0, len);
-
-	/* protect this code from unwanted compiler optimization */
-	__asm__ __volatile__ ("": :"r"(ptr) :"memory");
-}
-
-int drbg_check_zmem(void *ptr,
-		    size_t len)
-{
-	if(!ptr)
-		return DRBG_HEALTH_TEST_FAIL;
-
-	int i = 0;
-	for(; i < len; i++){
-		if(((unsigned char *)ptr)[i])
-			return DRBG_HEALTH_TEST_FAIL;
-	}
-
-	return 0;
-}
-
-int drbg_mech_valid(const ica_drbg_mech_t *mech)
-{
-	if(!mech)
-		return DRBG_MECH_INV;
-
-	/* Check if @mech is supported. */
-	int i = DRBG_MECH_LIST_LEN - 1;
-	for(; i >= 0; i--){
-		if(DRBG_MECH_LIST[i] == mech)
-			break;
-	}
-	if(i < 0)
-		return DRBG_MECH_INV;
-
-	/* Check if @mech is in error state. */
-	if(mech->error_state)
-		return mech->error_state;
-
-	return 0;
-}
-
 static int test_uninstantiate(ica_drbg_mech_t *mech)
 {
 	/* Error handling test. */
@@ -894,13 +847,4 @@ static int test_generate_error_handling(ica_drbg_mech_t *mech)
 	test_sh.pr = false;
 
 	return 0;
-}
-
-void drbg_recursive_mutex_init(pthread_mutex_t *lock)
-{
-	pthread_mutexattr_t attr;
-
-	assert(!pthread_mutexattr_init(&attr));
-	assert(!pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE));
-	assert(!pthread_mutex_init(lock, &attr));
 }

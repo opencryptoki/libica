@@ -18,6 +18,7 @@
 #ifndef S390_DRBG_H
 #define S390_DRBG_H
 
+#include <assert.h>
 #include <pthread.h>
 
 #include "ica_api.h"
@@ -203,19 +204,67 @@ int drbg_get_nonce(unsigned char *nonce,
 		   size_t nonce_len);
 
 /* Zeroise memory to erase sensitive data. */
-void drbg_zmem(void *ptr,
-	       size_t len);
+static inline void drbg_zmem(void *ptr,
+			     size_t len)
+{
+	if(ptr)
+		memset(ptr, 0, len);
+
+	/* protect this code from unwanted compiler optimization */
+	__asm__ __volatile__ ("": :"r"(ptr) :"memory");
+}
 
 /* Check if memory area was zeroised. */
-int drbg_check_zmem(void *ptr,
-		    size_t len);
+static inline int drbg_check_zmem(void *ptr,
+				  size_t len)
+{
+	int i;
+
+	if(!ptr)
+		return DRBG_HEALTH_TEST_FAIL;
+
+	for(i = 0; i < len; i++){
+		if(((unsigned char *)ptr)[i])
+			return DRBG_HEALTH_TEST_FAIL;
+	}
+
+	return 0;
+}
 
 /* Test whether a mechanism is valid. Returns EINVAL for unsupported
  * mechanisms, the error state (<0) for mechanisms in error state or 0 on
  * success. */
-int drbg_mech_valid(const ica_drbg_mech_t *mech);
+static inline int drbg_mech_valid(const ica_drbg_mech_t *mech)
+{
+	int i;
+
+	if(!mech)
+		return DRBG_MECH_INV;
+
+	/* Check if @mech is supported. */
+	for(i = DRBG_MECH_LIST_LEN - 1; i >= 0; i--){
+		if(DRBG_MECH_LIST[i] == mech)
+			break;
+	}
+	if(i < 0)
+		return DRBG_MECH_INV;
+
+	/* Check if @mech is in error state. */
+	if(mech->error_state)
+		return mech->error_state;
+
+	return 0;
+}
+
 
 /* Initilize a recursive mutex. */
-void drbg_recursive_mutex_init(pthread_mutex_t *lock);
+static inline void drbg_recursive_mutex_init(pthread_mutex_t *lock)
+{
+	pthread_mutexattr_t attr;
+
+	assert(!pthread_mutexattr_init(&attr));
+	assert(!pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE));
+	assert(!pthread_mutex_init(lock, &attr));
+}
 
 #endif
