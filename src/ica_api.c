@@ -361,7 +361,7 @@ unsigned int ica_sha1(unsigned int message_part,
 			(uint64_t *) &sha_context->runningLength);
 
 	if (!rc)
-		memcpy(&sha_context->shaHash, output_data, LENGTH_SHA_HASH);
+		memcpy(&sha_context->shaHash, output_data, SHA_HASH_LENGTH);
 
 	return rc;
 }
@@ -435,7 +435,7 @@ unsigned int ica_sha256(unsigned int message_part,
 unsigned int ica_sha384(unsigned int message_part,
 			uint64_t input_length,
 			unsigned char *input_data,
-			SHA512_CONTEXT *sha512_context,
+			sha512_context_t *sha512_context,
 			unsigned char *output_data)
 {
 	unsigned int rc;
@@ -510,7 +510,7 @@ unsigned int ica_random_number_generate(unsigned int output_length,
 	return s390_prng(output_data, output_length);
 }
 
-unsigned int ica_rsa_key_generate_mod_expo(ICA_ADAPTER_HANDLE adapter_handle,
+unsigned int ica_rsa_key_generate_mod_expo(ica_adapter_handle_t adapter_handle,
 					   unsigned int modulus_bit_length,
 					   ica_rsa_key_mod_expo_t *public_key,
 					   ica_rsa_key_mod_expo_t *private_key)
@@ -542,7 +542,7 @@ unsigned int ica_rsa_key_generate_mod_expo(ICA_ADAPTER_HANDLE adapter_handle,
 					 public_key, private_key);
 }
 
-unsigned int ica_rsa_key_generate_crt(ICA_ADAPTER_HANDLE adapter_handle,
+unsigned int ica_rsa_key_generate_crt(ica_adapter_handle_t adapter_handle,
 				      unsigned int modulus_bit_length,
 				      ica_rsa_key_mod_expo_t *public_key,
 				      ica_rsa_key_crt_t *private_key)
@@ -569,7 +569,7 @@ unsigned int ica_rsa_key_generate_crt(ICA_ADAPTER_HANDLE adapter_handle,
 				    public_key, private_key);
 }
 
-unsigned int ica_rsa_mod_expo(ICA_ADAPTER_HANDLE adapter_handle,
+unsigned int ica_rsa_mod_expo(ica_adapter_handle_t adapter_handle,
 			      unsigned char *input_data,
 			      ica_rsa_key_mod_expo_t *rsa_key,
 			      unsigned char *output_data)
@@ -657,7 +657,7 @@ unsigned int ica_rsa_crt_key_check(ica_rsa_key_crt_t *rsa_key)
 	return 0;
 }
 
-unsigned int ica_rsa_crt(ICA_ADAPTER_HANDLE adapter_handle,
+unsigned int ica_rsa_crt(ica_adapter_handle_t adapter_handle,
 			 unsigned char *input_data,
 			 ica_rsa_key_crt_t *rsa_key,
 			 unsigned char *output_data)
