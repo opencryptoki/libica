@@ -1,5 +1,5 @@
 Name:          libica
-Version:       2.6.1
+Version:       2.6.2
 Release:       1%{?dist}
 Summary:       Interface library to the ICA device driver
 
@@ -62,6 +62,8 @@ rm -rf $RPM_BUILD_ROOT
 %{_includedir}/ica_api.h
 
 %changelog
+* Tue Mar 22 2016 Ingo Tuchscherer <ingo.tuchscherer@linux.vnet.ibm.com>
+- Version v2.6.2
 * Fri Feb 26 2016 Ingo Tuchscherer <ingo.tuchscherer@linux.vnet.ibm.com>
 - Version v2.6.1
 * Thu Feb 18 2016 Ingo Tuchscherer <ingo.tuchscherer@linux.vnet.ibm.com>
