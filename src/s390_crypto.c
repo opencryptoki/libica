@@ -26,6 +26,11 @@
 #include "s390_crypto.h"
 #include "init.h"
 
+unsigned int sha1_switch, sha256_switch, sha512_switch, des_switch,
+             tdes_switch, aes128_switch, aes192_switch, aes256_switch,
+             prng_switch, tdea128_switch, tdea192_switch, sha512_drng_switch,
+             msa4_switch, msa5_switch;
+
 s390_supported_function_t s390_kimd_functions[] = {
 	{SHA_1, S390_CRYPTO_SHA_1, &sha1_switch},
 	{SHA_224, S390_CRYPTO_SHA_256, &sha256_switch},
