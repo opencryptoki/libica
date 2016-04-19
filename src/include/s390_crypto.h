@@ -83,7 +83,7 @@ enum s390_crypto_function {
 	S390_CRYPTO_SHA512_DRNG_SEED = 0x03 | 0x80
 };
 
-unsigned int sha1_switch, sha256_switch, sha512_switch, des_switch,
+extern unsigned int sha1_switch, sha256_switch, sha512_switch, des_switch,
 	     tdes_switch, aes128_switch, aes192_switch, aes256_switch,
 	     prng_switch, tdea128_switch, tdea192_switch, sha512_drng_switch,
 	     msa4_switch, msa5_switch;
@@ -119,10 +119,10 @@ typedef enum {
 	SHA512_DRNG_SEED
 } ppno_functions_t;
 
-s390_supported_function_t s390_kmc_functions[PRNG + 1];
-s390_supported_function_t s390_msa4_functions[AES_256_XTS_DECRYPT + 1];
-s390_supported_function_t s390_kimd_functions[GHASH + 1];
-s390_supported_function_t s390_ppno_functions[SHA512_DRNG_SEED + 1];
+extern s390_supported_function_t s390_kmc_functions[PRNG + 1];
+extern s390_supported_function_t s390_msa4_functions[AES_256_XTS_DECRYPT + 1];
+extern s390_supported_function_t s390_kimd_functions[GHASH + 1];
+extern s390_supported_function_t s390_ppno_functions[SHA512_DRNG_SEED + 1];
 
 void s390_crypto_switches_init(void);
 
