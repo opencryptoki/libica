@@ -409,8 +409,8 @@ static inline int s390_gcm_intermediate(unsigned int function_code,
 	}
 
 	/* generate authentication tag */
-	rc = s390_gcm_authenticate_intermediate(ciphertext, text_length,
-											aad, aad_length, subkey, tag);
+	rc = s390_gcm_authenticate_intermediate(ciphertext, text_length, aad,
+	    aad_length, subkey, tag);
 	if (rc)
 		return rc;
 

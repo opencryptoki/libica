@@ -14,8 +14,7 @@
 #include "ica_api.h"
 #include <stdlib.h>
 #include <openssl/aes.h>
-
-int silent = 0;
+#include "testcase.h"
 
 unsigned char NIST_KEY1[] = {
 	0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
@@ -31,27 +30,6 @@ unsigned char NIST_TEST_RESULT[] = {
 	0x69, 0xc4, 0xe0, 0xd8, 0x6a, 0x7b, 0x04, 0x30,
 	0xd8, 0xcd, 0xb7, 0x80, 0x70, 0xb4, 0xc5, 0x5a,
 };
-
-void dump_array(unsigned char *ptr, unsigned int size)
-{
-	unsigned char *ptr_end;
-	unsigned char *h;
-	int i = 1;
-
-	h = ptr;
-	ptr_end = ptr + size;
-	while (h < (unsigned char *)ptr_end) {
-		printf("0x%02x ",(unsigned char ) *h);
-		h++;
-		if (i == 8) {
-			printf("\n");
-			i = 1;
-		} else {
-			++i;
-		}
-	}
-	printf("\n");
-}
 
 int test_aes128_new_api(int mode)
 {
@@ -69,76 +47,72 @@ int test_aes128_new_api(int mode)
 	rc = ica_aes_encrypt(mode, sizeof(NIST_TEST_DATA), NIST_TEST_DATA, &iv,
 			     AES_KEY_LEN128, key, enc_text);
 	if (rc) {
-		printf("key \n");
+		VV_(printf("key \n"));
 		dump_array((unsigned char *) key, sizeof(NIST_KEY1));
-		printf("\nOriginal data:\n");
+		VV_(printf("\nOriginal data:\n"));
 		dump_array((unsigned char *) NIST_TEST_DATA, sizeof(NIST_TEST_DATA));
-		printf("test iv\n");
+		VV_(printf("test iv\n"));
 		dump_array((unsigned char *) &iv, sizeof(ica_aes_vector_t));
-		printf("key\n");
+		VV_(printf("key\n"));
 		dump_array((unsigned char *) key, AES_KEY_LEN128);
-		printf("ica_aes_encrypt failed with errno %d (0x%x).\n", rc, rc);
+		VV_(printf("ica_aes_encrypt failed with errno %d (0x%x).\n", rc, rc));
 		return 1;
 	}
 
 	if (memcmp(enc_text, NIST_TEST_RESULT, sizeof(NIST_TEST_RESULT)) != 0) {
-		printf("key \n");
+		VV_(printf("key \n"));
 		dump_array((unsigned char *) key, sizeof(NIST_KEY1));
-		printf("\nOriginal data:\n");
+		VV_(printf("\nOriginal data:\n"));
 		dump_array((unsigned char *) NIST_TEST_DATA, sizeof(NIST_TEST_DATA));
-		printf("test iv\n");
+		VV_(printf("test iv\n"));
 		dump_array((unsigned char *) &iv, sizeof(ica_aes_vector_t));
-		printf("key\n");
+		VV_(printf("key\n"));
 		dump_array((unsigned char *) key, AES_KEY_LEN128);
-		printf("\nEncrypted data:\n");
+		VV_(printf("\nEncrypted data:\n"));
 		dump_array((unsigned char *) enc_text, sizeof(enc_text));
-		printf("This does NOT match the known result.\n");
+		VV_(printf("This does NOT match the known result.\n"));
 		return 1;
 	} else {
-		if (!silent) {
-			printf("Yep, it's what it should be.\n");
-		}
+		VV_(printf("Yep, it's what it should be.\n"));
 	}
 
 	bzero(iv, sizeof(iv));
 	rc = ica_aes_decrypt(mode, sizeof(enc_text), enc_text, &iv,
 			     AES_KEY_LEN128, key, dec_text);
 	if (rc) {
-		printf("key \n");
+		VV_(printf("key \n"));
 		dump_array((unsigned char *) key, sizeof(NIST_KEY1));
-		printf("\nOriginal data:\n");
+		VV_(printf("\nOriginal data:\n"));
 		dump_array((unsigned char *) NIST_TEST_DATA, sizeof(NIST_TEST_DATA));
-		printf("test iv\n");
+		VV_(printf("test iv\n"));
 		dump_array((unsigned char *) &iv, sizeof(ica_aes_vector_t));
-		printf("key\n");
+		VV_(printf("key\n"));
 		dump_array((unsigned char *) key, AES_KEY_LEN128);
-		printf("\nEncrypted data:\n");
+		VV_(printf("\nEncrypted data:\n"));
 		dump_array((unsigned char *) enc_text, sizeof(enc_text));
-		printf("\nDecrypted data:\n");
+		VV_(printf("\nDecrypted data:\n"));
 		dump_array((unsigned char *) dec_text, sizeof(dec_text));
-		printf("ica_aes_decrypt failed with errno %d (0x%x).\n", rc, rc);
+		VV_(printf("ica_aes_decrypt failed with errno %d (0x%x).\n", rc, rc));
 		return 1;
 	}
 
 	if (memcmp(dec_text, NIST_TEST_DATA, sizeof(NIST_TEST_DATA)) != 0) {
-		printf("This does NOT match the original data.\n");
+		VV_(printf("This does NOT match the original data.\n"));
 		return 1;
 	} else {
-		if (!silent) {
-			printf("Successful!\n");
-			printf("key \n");
-			dump_array((unsigned char *) key, sizeof(NIST_KEY1));
-			printf("\nOriginal data:\n");
-			dump_array((unsigned char *) NIST_TEST_DATA, sizeof(NIST_TEST_DATA));
-			printf("test iv\n");
-			dump_array((unsigned char *) &iv, sizeof(ica_aes_vector_t));
-			printf("key\n");
-			dump_array((unsigned char *) key, AES_KEY_LEN128);
-			printf("\nEncrypted data:\n");
-			dump_array((unsigned char *) enc_text, sizeof(enc_text));
-			printf("\nDecrypted data:\n");
-			dump_array((unsigned char *) dec_text, sizeof(dec_text));
-		}
+		VV_(printf("Successful!\n"));
+		VV_(printf("key \n"));
+		dump_array((unsigned char *) key, sizeof(NIST_KEY1));
+		VV_(printf("\nOriginal data:\n"));
+		dump_array((unsigned char *) NIST_TEST_DATA, sizeof(NIST_TEST_DATA));
+		VV_(printf("test iv\n"));
+		dump_array((unsigned char *) &iv, sizeof(ica_aes_vector_t));
+		VV_(printf("key\n"));
+		dump_array((unsigned char *) key, AES_KEY_LEN128);
+		VV_(printf("\nEncrypted data:\n"));
+		dump_array((unsigned char *) enc_text, sizeof(enc_text));
+		VV_(printf("\nDecrypted data:\n"));
+		dump_array((unsigned char *) dec_text, sizeof(dec_text));
 	}
 
 // Test 2
@@ -157,29 +131,29 @@ int test_aes128_new_api(int mode)
 
 	rc = ica_random_number_generate(length, original);
 	if (rc) {
-		printf("ica_random_number_generate returned rc = %i\n", rc);
+		VV_(printf("ica_random_number_generate returned rc = %i\n", rc));
 		return rc;
 	}
 
 	rc = ica_random_number_generate(AES_KEY_LEN128, (unsigned char *) &key2);
 	if (rc) {
-		printf("ica_random_number_generate returned rc = %i\n", rc);
+		VV_(printf("ica_random_number_generate returned rc = %i\n", rc));
 		return rc;
 	}
 
 	rc = ica_aes_encrypt(mode, length, original, &iv, AES_KEY_LEN128, (unsigned char *) &key2,
 			     (unsigned char *) encrypt);
 	if (rc) {
-		printf("\nOriginal data:\n");
+		VV_(printf("\nOriginal data:\n"));
 		dump_array((unsigned char *) original, length);
-		printf("KEY: \n");
+		VV_(printf("KEY: \n"));
 		dump_array((unsigned char *) &key2, AES_KEY_LEN128);
-		printf("ica_aes_encrypt failed with errno %d (0x%x).\n", rc, rc);
+		VV_(printf("ica_aes_encrypt failed with errno %d (0x%x).\n", rc, rc));
 		return rc;
 	}
 
 	if (memcmp(encrypt, original, length) == 0) {
-		printf("Encrypt and original are the same.\n");
+		VV_(printf("Encrypt and original are the same.\n"));
 		return 1;
 	}
 
@@ -187,47 +161,45 @@ int test_aes128_new_api(int mode)
 	rc = ica_aes_decrypt(mode, length, encrypt, &iv, AES_KEY_LEN128,
 			     (unsigned char *) &key2, decrypt);
 	if (rc) {
-		printf("\nOriginal data:\n");
+		VV_(printf("\nOriginal data:\n"));
 		dump_array((unsigned char *) original, length);
-		printf("KEY: \n");
+		VV_(printf("KEY: \n"));
 		dump_array((unsigned char *) &key2, AES_KEY_LEN128);
-		printf("\nEncrypted data:\n");
+		VV_(printf("\nEncrypted data:\n"));
 		dump_array((unsigned char *) encrypt, length);
-		printf("ica_aes_decrypt failed with errno %d (0x%x).\n", rc, rc);
+		VV_(printf("ica_aes_decrypt failed with errno %d (0x%x).\n", rc, rc));
 		goto free;
 	}
 
 	if (memcmp(decrypt, original, length) != 0) {
-		printf("\nOriginal data:\n");
+		VV_(printf("\nOriginal data:\n"));
 		dump_array((unsigned char *) original, length);
-		printf("KEY: \n");
+		VV_(printf("KEY: \n"));
 		dump_array((unsigned char *) &key2, AES_KEY_LEN128);
-		printf("\nEncrypted data:\n");
+		VV_(printf("\nEncrypted data:\n"));
 		dump_array((unsigned char *) encrypt, length);
-		printf("\nDecrypted data:\n");
+		VV_(printf("\nDecrypted data:\n"));
 		dump_array((unsigned char *) decrypt, length);
-		printf("This does NOT match the original data.\n");
+		VV_(printf("This does NOT match the original data.\n"));
 		rc = -1;
 		goto free;
 	}
 
 	if(memcmp(decrypt, encrypt, length) == 0) {
-		printf("\nOriginal data:\n");
+		VV_(printf("\nOriginal data:\n"));
 		dump_array((unsigned char *) original, length);
-		printf("KEY: \n");
+		VV_(printf("KEY: \n"));
 		dump_array((unsigned char *) &key2, AES_KEY_LEN128);
-		printf("\nEncrypted data:\n");
+		VV_(printf("\nEncrypted data:\n"));
 		dump_array((unsigned char *) encrypt, length);
-		printf("\nDecrypted data:\n");
+		VV_(printf("\nDecrypted data:\n"));
 		dump_array((unsigned char *) decrypt, length);
-		printf("decrypt and encrypt are the same\n");
+		VV_(printf("decrypt and encrypt are the same\n"));
 		rc = -1;
 		goto free;
 
 	} else {
-		if (!silent) {
-			printf("Successful!\n");
-		}
+		VV_(printf("Successful!\n"));
 	}
 	free:
 		free(original);
@@ -237,65 +209,61 @@ int test_aes128_new_api(int mode)
    return rc;
 }
 
+/*
+ * Performs ECB and CBC tests.
+ */
 int main(int argc, char **argv)
 {
-	// Default mode is 0. ECB and CBC tests will be performed.
 	unsigned int mode = 0;
+	int rc = 0;
+	int error_count = 0;
+
 	if (argc > 1) {
 		if (strstr(argv[1], "ecb"))
 			mode = MODE_ECB;
 		if (strstr(argv[1], "cbc"))
 			mode = MODE_CBC;
-		if (strstr(argv[1], "silent"))
-			silent = 1;
-		}
+	}
 
 	if (argc > 2) {
 		if (strstr(argv[2], "ecb"))
 			mode = MODE_ECB;
 		if (strstr(argv[2], "cbc"))
 			mode = MODE_CBC;
-		if (strstr(argv[2], "silent"))
-			silent = 1;
 	}
+
+	set_verbosity(argc, argv);
 
 	if (mode != 0 && mode != MODE_ECB && mode != MODE_CBC) {
 		printf("Usage: %s [ ecb | cbc ]\n", argv[0]);
 		return -1;
 	}
-	int rc = 0;
-	int error_count = 0;
 
 	if (!mode) {
-	//	silent = 0;
 	/* This is the standard loop that will perform all testcases */
 		mode = 2;
 		while (mode) {
 			rc = test_aes128_new_api(mode);
 			if (rc) {
 				error_count++;
-				printf ("test_aes_new_api mode = %i failed \n", mode);
+				V_(printf ("test_aes_new_api mode = %i failed \n", mode));
 			}
 			else {
-				if (!silent) {
-					printf ("test_aes_new_api mode = %i finished successfully \n", mode);
-				}
+				V_(printf ("test_aes_new_api mode = %i finished.\n", mode));
 			}
 			mode--;
 		}
 		if (error_count)
-			printf("%i testcases failed\n", error_count);
+			printf("%i AES-128-ECB/CBC tests failed.\n", error_count);
 		else
-			printf("All AES128 (ECB/CBC) testcases finished successfully\n");
+			printf("All AES-128-ECB/CBC tests passed.\n");
 	} else {
 	/* Perform only either in ECB or CBC mode */
 		rc = test_aes128_new_api(mode);
 		if (rc)
 			printf ("test_aes_new_api mode = %i failed \n", mode);
 		else {
-			if (!silent) {
-				printf ("test_aes_new_api mode = %i finished successfully \n", mode);
-			}
+			printf ("test_aes_new_api mode = %i finished.\n", mode);
 		}
 	}
 	return rc;

@@ -26,6 +26,9 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <errno.h>
+
+#include "fips.h"
+#include "ica_api.h"
 #include "s390_crypto.h"
 
 #define CMD_NAME "icainfo"
@@ -187,8 +190,8 @@ int main(int argc, char **argv)
 		exit(1);
 	}
 
-	printf("The following CP Assist for Cryptographic Function (CPACF) \n"
-	       "operations are supported by libica on this system:\n");
+	printf("      Cryptographic algorithm support      \n");
+	printf("-------------------------------------------\n");
 
 	if (ica_get_functionlist(NULL, &mech_len) != 0){
 		perror("get_functionlist: ");
@@ -206,12 +209,22 @@ int main(int argc, char **argv)
 	#define CELL_SIZE 3
 
 	int i, j;
-	printf(" function      | # hardware | #software\n");
+	printf(" function      | # hardware | # software   \n");
 	printf("---------------+------------+--------------\n");
 	for(i = 0;crypt_map[i].algo_id;i++){
 		for(j=0;j<mech_len;j++){
 			if(crypt_map[i].algo_id == pmech_list[j].mech_mode_id){
-				if(flag){
+#ifdef ICA_FIPS
+				if (((fips & ICA_FIPS_MODE)
+				    && !fips_approved(pmech_list[j].mech_mode_id))
+				    || fips >> 1) {
+					printf("%14s |  blocked   "
+						"|   blocked\n",
+						crypt_map[i].name);
+					break;
+				}
+#endif /* ICA_FIPS */
+				if (flag) {
 					printf("%14s |    %*s     |     %*s\n",
 						crypt_map[i].name,
 						CELL_SIZE,
@@ -221,7 +234,7 @@ int main(int argc, char **argv)
 						CELL_SIZE,
 						pmech_list[j].flags & ICA_FLAG_SW
 						? "yes" : "no");
-				} else{
+				} else {
 					printf("%14s |    %*s     |     %*s\n",
 						crypt_map[i].name,
 						CELL_SIZE,
@@ -239,5 +252,16 @@ int main(int argc, char **argv)
 		}
 	}
 	free(pmech_list);
+
+	printf("-------------------------------------------\n");
+#ifdef ICA_FIPS
+	printf("Built-in FIPS support: FIPS mode %s.\n",
+	    ica_fips_status() & ICA_FIPS_MODE ? "active" : "inactive");
+	if (fips >> 1)
+		printf("FIPS SELF-TEST FAILURE. CHECK THE SYSLOG.\n");
+#else
+	printf("No built-in FIPS support.\n");
+#endif /* ICA_FIPS */
+
 	return EXIT_SUCCESS;
 }

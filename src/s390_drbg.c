@@ -17,12 +17,13 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
+#include <syslog.h>
 
+#include "fips.h"
 #include "s390_crypto.h"
 #include "s390_drbg.h"
 #include "s390_sha.h"
 
-#define NDEBUG					/* turns off assertions */
 #define MAX_NO_OF_BYTES	(255 * DRBG_OUT_LEN)	/* limit for hash_df */
 
 /*
@@ -41,6 +42,9 @@ static int test_instantiate_error_handling(ica_drbg_mech_t *mech);
 static int test_reseed_error_handling(ica_drbg_mech_t *mech);
 
 static int test_generate_error_handling(ica_drbg_mech_t *mech);
+
+static int set_error_state(ica_drbg_mech_t *mech,
+			   int error);
 
 /*
  * DRBG mechanism list. Add new DRBG mechanism here:
@@ -158,7 +162,7 @@ int drbg_instantiate(ica_drbg_t **sh,
 				   entropy_len, nonce, nonce_len);
 	if(status){
 		if(0 > status)
-			mech->error_state = status;
+			set_error_state(mech, status);
 		goto _exit_;
 	}
 
@@ -246,7 +250,7 @@ int drbg_reseed(ica_drbg_t *sh,
 	status = sh->mech->reseed(sh->ws, add, add_len, entropy, entropy_len);
 	assert(!pthread_mutex_unlock(&sh->lock));
 	if(0 > status)
-		sh->mech->error_state = status;
+		set_error_state(sh->mech, status);
 
 	/* step 8 */
 _exit_:
@@ -334,7 +338,7 @@ _reseed_req_:
 		goto _reseed_req_;
 	}
 	else if(0 > status)
-		sh->mech->error_state = status;
+		set_error_state(sh->mech, status);
 
 	/* step 11 */
 	return status;
@@ -359,7 +363,7 @@ int drbg_uninstantiate(ica_drbg_t **sh,
 	status = (*sh)->mech->uninstantiate(&(*sh)->ws, test_mode);
 	if(status){
 		if(0 > status)
-			(*sh)->mech->error_state = status;
+			set_error_state((*sh)->mech, status);
 		return status;	/* return uninstantiate status */
 	}
 	assert(!pthread_mutex_unlock(&(*sh)->lock));
@@ -392,19 +396,19 @@ int drbg_health_test(const void *func,
 		status = mech->health_test(drbg_instantiate, sec, pr);
 		if(status){
 			if(0 > status)
-				mech->error_state = status;
+				set_error_state(mech, status);
 			return status;
 		}
 
 		/* Error handling test. */
 		status = test_instantiate_error_handling(mech);
 		if(status)
-			return mech->error_state = DRBG_HEALTH_TEST_FAIL;
+			return set_error_state(mech, DRBG_HEALTH_TEST_FAIL);
 
 		/* Uninstantiate test. */
 		status = test_uninstantiate(mech);
 		if(status)
-			return mech->error_state = DRBG_HEALTH_TEST_FAIL;
+			return set_error_state(mech, DRBG_HEALTH_TEST_FAIL);
 
 		return 0;
 	}
@@ -413,19 +417,19 @@ int drbg_health_test(const void *func,
 		status = mech->health_test(drbg_reseed, sec, pr);
 		if(status){
 			if(0 > status)
-				mech->error_state = status;
+				return set_error_state(mech, status);
 			return status;
 		}
 
 		/* Error handling test. */
 		status = test_reseed_error_handling(mech);
 		if(status)
-			return mech->error_state = DRBG_HEALTH_TEST_FAIL;
+			return set_error_state(mech, status);
 
 		/* Uninstantiate test. */
 		status = test_uninstantiate(mech);
 		if(status)
-			return mech->error_state = DRBG_HEALTH_TEST_FAIL;
+			return set_error_state(mech, status);
 
 		return 0;
 	}
@@ -439,7 +443,7 @@ int drbg_health_test(const void *func,
 						   false);
 			if(status){
 				if(0 > status)
-					mech->error_state = status;
+					set_error_state(mech, status);
 				return status;
 			}
 
@@ -447,7 +451,7 @@ int drbg_health_test(const void *func,
 						   true);
 			if(status){
 				if(0 > status)
-					mech->error_state = status;
+					set_error_state(mech, status);
 				return status;
 			}
 		}
@@ -455,12 +459,12 @@ int drbg_health_test(const void *func,
 		/* Error handling test. */
 		status = test_generate_error_handling(mech);
 		if(status)
-			return mech->error_state = DRBG_HEALTH_TEST_FAIL;
+			return set_error_state(mech, status);
 
 		/* Uninstantiate test.*/
 		status = test_uninstantiate(mech);
 		if(status)
-			return mech->error_state = DRBG_HEALTH_TEST_FAIL;
+			return set_error_state(mech, status);
 
 		return 0;
 	}
@@ -616,8 +620,6 @@ static int test_uninstantiate(ica_drbg_mech_t *mech)
 	ica_drbg_t *sh = NULL;
 	status = drbg_instantiate(&sh, mech->highest_supp_sec, true, mech,
 				  NULL, 0, false, NULL, 0, NULL, 0);
-	if(0 > status)
-		mech->error_state = status;
 	if(status)
 		return status;
 
@@ -853,4 +855,29 @@ static int test_generate_error_handling(ica_drbg_mech_t *mech)
 	test_sh.pr = false;
 
 	return 0;
+}
+
+static int set_error_state(ica_drbg_mech_t *mech,
+			   int error)
+{
+#ifdef ICA_FIPS
+	fips |= ICA_FIPS_RNG;
+
+	/* Write to syslog in FIPS-enabled built. The DRBG failure is critical
+	 * here since the old PRNG code is diasbled at compile time. */
+	switch (error) {
+	case DRBG_HEALTH_TEST_FAIL:
+		syslog(LOG_ERR, "Libica DRBG-%s test failed.", mech->id);
+		break;
+	case DRBG_ENTROPY_SOURCE_FAIL:
+		syslog(LOG_ERR, "Libica DRBG-%s entropy source failed.",
+		    mech->id);
+		break;
+	default:
+		assert(!"unreachable");
+		break;
+	}
+#endif /* ICA_FIPS */
+
+	return mech->error_state = error;
 }

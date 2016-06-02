@@ -12,6 +12,7 @@
 #include <strings.h>
 #include <stdlib.h>
 #include "ica_api.h"
+#include "testcase.h"
 
 #define NR_TESTS 7
 #define NR_RANDOM_TESTS 1000
@@ -270,40 +271,18 @@ unsigned char NIST_TEST_RESULT_CTR_E7[] = {
 	0x13, 0xc2, 0xdd, 0x08, 0x45, 0x79, 0x41, 0xa6,
 };
 
-
-void dump_array(unsigned char *ptr, unsigned int size)
-{
-	unsigned char *ptr_end;
-	unsigned char *h;
-	int i = 1;
-
-	h = ptr;
-	ptr_end = ptr + size;
-	while (h < (unsigned char *)ptr_end) {
-		printf("0x%02x ",(unsigned char ) *h);
-		h++;
-		if (i == 8) {
-			printf("\n");
-			i = 1;
-		} else {
-			++i;
-		}
-	}
-	printf("\n");
-}
-
 void dump_ctr_data(unsigned char *iv, unsigned int iv_length,
 		   unsigned char *key, unsigned int key_length,
 		   unsigned char *input_data, unsigned int data_length,
 		   unsigned char *output_data)
 {
-	printf("IV \n");
+	VV_(printf("IV \n"));
 	dump_array(iv, iv_length);
-	printf("Key \n");
+	VV_(printf("Key \n"));
 	dump_array(key, key_length);
-	printf("Input Data\n");
+	VV_(printf("Input Data\n"));
 	dump_array(input_data, data_length);
-	printf("Output Data\n");
+	VV_(printf("Output Data\n"));
 	dump_array(output_data, data_length);
 }
 
@@ -411,17 +390,13 @@ void load_test_data(unsigned char *data, unsigned int data_length,
 
 }
 
-int random_aes_ctr(int iteration, int silent, unsigned int data_length, unsigned int iv_length)
+int random_aes_ctr(int iteration, unsigned int data_length, unsigned int iv_length)
 {
 	unsigned int key_length = AES_KEY_LEN256;
+
 	if (data_length % sizeof(ica_aes_vector_t))
 		iv_length = sizeof(ica_aes_vector_t);
 
-	if (!silent) {
-		printf("Test Parameters for iteration = %i\n", iteration);
-		printf("key length = %i, data length = %i, iv length = %i\n",
-			key_length, data_length, iv_length);
-	}
 	unsigned char iv[iv_length];
 	unsigned char tmp_iv[iv_length];
 	unsigned char key[key_length];
@@ -430,20 +405,25 @@ int random_aes_ctr(int iteration, int silent, unsigned int data_length, unsigned
 	unsigned char decrypt[data_length];
 
 	int rc = 0;
+
+	VV_(printf("Test Parameters for iteration = %i\n", iteration));
+	VV_(printf("key length = %i, data length = %i, iv length = %i\n",
+	    key_length, data_length, iv_length));
+
 	rc = ica_random_number_generate(data_length, input_data);
 	if (rc) {
-		printf("random number generate returned rc = %i, errno = %i\n", rc, errno);
+		VV_(printf("random number generate returned rc = %i, errno = %i\n", rc, errno));
 		return rc;
 	}
 	rc = ica_random_number_generate(iv_length, iv);
 	if (rc) {
-		printf("random number generate returned rc = %i, errno = %i\n", rc, errno);
+		VV_(printf("random number generate returned rc = %i, errno = %i\n", rc, errno));
 		return rc;
 	}
 
 	rc = ica_random_number_generate(key_length, key);
 	if (rc) {
-		printf("random number generate returned rc = %i, errno = %i\n", rc, errno);
+		VV_(printf("random number generate returned rc = %i, errno = %i\n", rc, errno));
 		return rc;
 	}
 	memcpy(tmp_iv, iv, iv_length);
@@ -451,13 +431,13 @@ int random_aes_ctr(int iteration, int silent, unsigned int data_length, unsigned
 	rc = ica_aes_ctr(input_data, encrypt, data_length, key, key_length,
 			 tmp_iv, 32, 1);
 	if (rc) {
-		printf("ica_aes_ctr encrypt failed with rc = %i\n", rc);
+		VV_(printf("ica_aes_ctr encrypt failed with rc = %i\n", rc));
 		dump_ctr_data(iv, iv_length, key, key_length, input_data,
 			      data_length, encrypt);
 		return rc;
 	}
-	if (!silent && !rc) {
-		printf("Encrypt:\n");
+	if (!rc) {
+		VV_(printf("Encrypt:\n"));
 		dump_ctr_data(iv, iv_length, key, key_length, input_data,
 			      data_length, encrypt);
 	}
@@ -466,31 +446,31 @@ int random_aes_ctr(int iteration, int silent, unsigned int data_length, unsigned
 	rc = ica_aes_ctr(encrypt, decrypt, data_length, key, key_length,
 			 tmp_iv, 32, 0);
 	if (rc) {
-		printf("ica_aes_ctr decrypt failed with rc = %i\n", rc);
+		VV_(printf("ica_aes_ctr decrypt failed with rc = %i\n", rc));
 		dump_ctr_data(iv, iv_length, key, key_length, encrypt,
 			      data_length, decrypt);
 		return rc;
 	}
 
 
-	if (!silent && !rc) {
-		printf("Decrypt:\n");
+	if (!rc) {
+		VV_(printf("Decrypt:\n"));
 		dump_ctr_data(iv, iv_length, key, key_length, encrypt,
 			      data_length, decrypt);
 	}
 
 	if (memcmp(decrypt, input_data, data_length)) {
-		printf("Decryption Result does not match the original data!\n");
-		printf("Original data:\n");
+		VV_(printf("Decryption Result does not match the original data!\n"));
+		VV_(printf("Original data:\n"));
 		dump_array(input_data, data_length);
-		printf("Decryption Result:\n");
+		VV_(printf("Decryption Result:\n"));
 		dump_array(decrypt, data_length);
 		rc++;
 	}
 	return rc;
 }
 
-int kat_aes_ctr(int iteration, int silent)
+int kat_aes_ctr(int iteration)
 {
 	unsigned int data_length;
 	unsigned int iv_length;
@@ -498,11 +478,6 @@ int kat_aes_ctr(int iteration, int silent)
 
 	get_sizes(&data_length, &iv_length, &key_length, iteration);
 
-	if (!silent) {
-		printf("Test Parameters for iteration = %i\n", iteration);
-		printf("key length = %i, data length = %i, iv length = %i\n",
-			key_length, data_length, iv_length);
-	}
 	unsigned char iv[iv_length];
 	unsigned char tmp_iv[iv_length];
 	unsigned char expected_iv[iv_length];
@@ -513,6 +488,10 @@ int kat_aes_ctr(int iteration, int silent)
 	unsigned char result[data_length];
 
 	int rc = 0;
+
+	VV_(printf("Test Parameters for iteration = %i\n", iteration));
+	VV_(printf("key length = %i, data length = %i, iv length = %i\n",
+		key_length, data_length, iv_length));
 
 	load_test_data(input_data, data_length, result, iv, expected_iv,
 		       iv_length, key, key_length, iteration);
@@ -525,37 +504,37 @@ int kat_aes_ctr(int iteration, int silent)
 		rc = ica_aes_ctrlist(input_data, encrypt, data_length, key, key_length,
 				 tmp_iv, 1);
 	if (rc) {
-		printf("ica_aes_ctr encrypt failed with rc = %i\n", rc);
+		VV_(printf("ica_aes_ctr encrypt failed with rc = %i\n", rc));
 		dump_ctr_data(iv, iv_length, key, key_length, input_data,
 			      data_length, encrypt);
 	}
-	if (!silent && !rc) {
-		printf("Encrypt:\n");
+	if (!rc) {
+		VV_(printf("Encrypt:\n"));
 		dump_ctr_data(iv, iv_length, key, key_length, input_data,
 			      data_length, encrypt);
 	}
 
 	if (memcmp(result, encrypt, data_length)) {
-		printf("Encryption Result does not match the known ciphertext!\n");
-		printf("Expected data:\n");
+		VV_(printf("Encryption Result does not match the known ciphertext!\n"));
+		VV_(printf("Expected data:\n"));
 		dump_array(result, data_length);
-		printf("Encryption Result:\n");
+		VV_(printf("Encryption Result:\n"));
 		dump_array(encrypt, data_length);
 		rc++;
 	}
 
 	if (memcmp(expected_iv, tmp_iv, iv_length)) {
-		printf("Update of IV does not match the expected IV!\n");
-		printf("Expected IV:\n");
+		VV_(printf("Update of IV does not match the expected IV!\n"));
+		VV_(printf("Expected IV:\n"));
 		dump_array(expected_iv, iv_length);
-		printf("Updated IV:\n");
+		VV_(printf("Updated IV:\n"));
 		dump_array(tmp_iv, iv_length);
-		printf("Original IV:\n");
+		VV_(printf("Original IV:\n"));
 		dump_array(iv, iv_length);
 		rc++;
 	}
 	if (rc) {
-		printf("AES CTR test exited after encryption\n");
+		VV_(printf("AES CTR test exited after encryption\n"));
 		return rc;
 	}
 
@@ -563,34 +542,35 @@ int kat_aes_ctr(int iteration, int silent)
 	rc = ica_aes_ctr(encrypt, decrypt, data_length, key, key_length,
 			 tmp_iv, 32,0);
 	if (rc) {
-		printf("ica_aes_ctr decrypt failed with rc = %i\n", rc);
+		VV_(printf("ica_aes_ctr decrypt failed with rc = %i\n", rc));
 		dump_ctr_data(iv, iv_length, key, key_length, encrypt,
 			      data_length, decrypt);
 		return rc;
 	}
 
 
-	if (!silent && !rc) {
-		printf("Decrypt:\n");
+	if (!rc) {
+		VV_(printf("Decrypt:\n"));
 		dump_ctr_data(iv, iv_length, key, key_length, encrypt,
 			      data_length, decrypt);
 	}
 
 	if (memcmp(decrypt, input_data, data_length)) {
-		printf("Decryption Result does not match the original data!\n");
-		printf("Original data:\n");
+		VV_(printf("Decryption Result does not match the original data!\n"));
+		VV_(printf("Original data:\n"));
 		dump_array(input_data, data_length);
-		printf("Decryption Result:\n");
+		VV_(printf("Decryption Result:\n"));
 		dump_array(decrypt, data_length);
 		rc++;
 	}
 	return rc;
 }
 
+/*
+ * Perform CTR tests.
+ */
 int main(int argc, char **argv)
 {
-	// Default mode is 0. ECB,CBC and CFQ tests will be performed.
-	unsigned int silent = 0;
 	unsigned int endless = 0;
 	int i = 0;
 	int rc = 0;
@@ -601,29 +581,28 @@ int main(int argc, char **argv)
 	unsigned int rdata;
 
 	if (argc > 1) {
-		if (strstr(argv[1], "silent"))
-			silent = 1;
 		if (strstr(argv[1], "endless"))
 			endless = 1;
 	}
+
+	set_verbosity(argc, argv);
 
 	if (!endless) {
 
 		// not endless mode
 		// run the verification tests with known test vectors
 		for(iteration = 1; iteration <= NR_TESTS; iteration++)	{
-			rc = kat_aes_ctr(iteration, silent);
+			rc = kat_aes_ctr(iteration);
 			if (rc) {
-				printf("kat_aes_ctr failed with rc = %i\n", rc);
+				V_(printf("kat_aes_ctr failed with rc = %i\n", rc));
 				error_count++;
 			}
 		}
 		// run random tests
-		silent = 1;
 		for(iteration = 1; iteration <= NR_RANDOM_TESTS; iteration++) {
-			rc = random_aes_ctr(iteration, silent, data_length, iv_length);
+			rc = random_aes_ctr(iteration, data_length, iv_length);
 			if (rc) {
-				printf("random_aes_ctr failed with rc = %i\n", rc);
+				V_(printf("random_aes_ctr failed with rc = %i\n", rc));
 				error_count++;
 			}
 			// add a value between 1 and 8 to data_length
@@ -636,14 +615,12 @@ int main(int argc, char **argv)
 		}
 
 	} else {
-
 		// endless mode
 		while (1) {
-			printf("i = %i\n",i);
-			silent = 1;
-			rc = random_aes_ctr(i, silent, 320, 320);
+			V_(printf("i = %i\n",i));
+			rc = random_aes_ctr(i, 320, 320);
 			if (rc) {
-				printf("random_aes_ctr failed with rc = %i\n", rc);
+				V_(printf("random_aes_ctr failed with rc = %i\n", rc));
 				return rc;
 			}
 			i++;
@@ -652,9 +629,9 @@ int main(int argc, char **argv)
 	}
 
 	if (error_count)
-		printf("%i testcases failed\n", error_count);
+		printf("%i AES-CTR tests failed\n", error_count);
 	else
-		printf("All AES-CTR testcases finished successfully\n");
+		printf("All AES-CTR tests passed.\n");
 
 	return rc;
 }

@@ -15,6 +15,7 @@
 #include <ctype.h>
 #include "ica_api.h"
 #include "s390_crypto.h"
+#include "testcase.h"
 
 #define DATA_LENGHT 32
 #define DES_CIPHER_BLOCK 8
@@ -36,7 +37,6 @@ static int handle_ica_error(int rc, char *message);
 static int is_crypto_card_loaded();
 void create_hw_info();
 int check_hw(int algo_id);
-unsigned int silent = 0;
 void check_icastats(int algo_id, char *stat);
 void des_tests(unsigned char *iv, unsigned char *cmac, unsigned char *ctr);
 void tdes_tests(unsigned char *iv, unsigned char *cmac, unsigned char *ctr);
@@ -49,14 +49,11 @@ int main (int argc, char **argv)
 	int rc = 0;
 	ica_adapter_handle_t adapter_handle;
 
-	if (argc > 1) {
-		if (strstr(argv[1], "silent"))
-			silent = 1;
-	}
-
 	unsigned char *cmac;
 	unsigned char *ctr;
 	unsigned char *iv;
+
+	set_verbosity(argc, argv);
 
 	if((cmac = malloc(AES_CIPHER_BLOCK*sizeof(char))) == NULL){
 		perror("Error in malloc: ");
@@ -77,7 +74,7 @@ int main (int argc, char **argv)
 	 **/
 	rc = ica_open_adapter(&adapter_handle);
 	if (rc != 0) {
-		printf("ica_open_adapter failed and returned %d (0x%x).\n", rc, rc);
+		V_(printf("ica_open_adapter failed and returned %d (0x%x).\n", rc, rc));
 	}
 
 	create_hw_info();
@@ -118,7 +115,7 @@ int main (int argc, char **argv)
 	free(ctr);
 	free(iv);
 
-	printf("All icastats testcases finished successfully\n");
+	printf("All icastats tests passed.\n");
 	return 0;
 }
 
@@ -272,7 +269,7 @@ void check_icastats(int algo_id, char *stat)
 	}
 	/* now there should be a | */
 	if (*p != '|') {
-		fprintf(stderr, "parse error, missing '|' in line '%s'\n", line);
+		V_(fprintf(stderr, "parse error, missing '|' in line '%s'\n", line));
 		goto out;
 	}
 	p++;
@@ -317,16 +314,15 @@ void check_icastats(int algo_id, char *stat)
 				goto out;
 		}
 	} else {
-		fprintf(stderr, "parse error, could not parse 2 or 4 counter values\n");
+		V_(printf("parse error, could not parse 2 or 4 counter values\n"));
 		goto out;
 	}
 out:
 	if (rc == 0) {
-		if (!silent)
-			printf("Test %s SUCCESS.\n", stat);
+		V_(printf("Test %s SUCCESS.\n", stat));
 	} else {
-		fprintf(stderr, "icastats %s test FAILED!\n", stat);
-		fprintf(stderr, "icastats line for %s was '%s'\n", stat, line);
+		printf("icastats %s test FAILED!\n", stat);
+		V_(printf("icastats line for %s was '%s'\n", stat, line));
 		exit(EXIT_FAILURE);
 	}
 }
@@ -336,19 +332,19 @@ static int handle_ica_error(int rc, char *message)
 	printf("Error in %s: ", message);
 	switch (rc) {
 		case 0:
-		  printf("OK\n");
+		  V_(printf("OK\n"));
 		  break;
 		case EINVAL:
-		  printf("Incorrect parameter.\n");
+		  V_(printf("Incorrect parameter.\n"));
 		  break;
 		case EPERM:
-		  printf("Operation not permitted by Hardware.\n");
+		  V_(printf("Operation not permitted by Hardware.\n"));
 		  break;
 		case EIO:
-		  printf("I/O error.\n");
+		  V_(printf("I/O error.\n"));
 		  break;
 		default:
-		  perror("");
+		  V_(perror(""));
 	}
 	return rc;
 }
@@ -364,6 +360,14 @@ void des_tests(unsigned char *iv, unsigned char *cmac, unsigned char *ctr)
 	unsigned char des_key[] = {
 		0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
 	};
+
+#ifdef ICA_FIPS
+	if (ica_fips_status() & ICA_FIPS_MODE) {
+		V_(printf("All icastats DES tests skipped."
+		    " (DES not FIPS approved)\n"));
+		return;
+	}
+#endif /* ICA_FIPS */
 
 	if((out_buffer = malloc(DATA_LENGHT*sizeof(char))) == NULL){
 		perror("Error in malloc: ");
@@ -874,6 +878,4 @@ void aes_tests(unsigned char *iv, unsigned char *cmac, unsigned char *ctr)
 	free(output_buffer);
 	free(nonce);
 }
-
-
 

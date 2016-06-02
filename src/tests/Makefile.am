@@ -7,6 +7,10 @@ else
 OPTS = -O0 -g -Wall -D_LINUX_S390_ -D_GNU_SOURCE -pthread
 endif
 
+if ICA_FIPS
+OPTS += -DICA_FIPS
+endif
+
 LIBS = -L../.libs
 INCLUDE = -I. -I../include -I../../include
 CC = gcc
@@ -31,7 +35,8 @@ TARGETS = icastats_test \
 	  libica_get_version \
 	  libica_get_functionlist \
 	  libica_drbg_test \
-	  libica_drbg_birthdays
+	  libica_drbg_birthdays \
+	  libica_fips_test
 
 all: $(TARGETS)
 

@@ -12,6 +12,7 @@
 #include <strings.h>
 #include <stdlib.h>
 #include "ica_api.h"
+#include "testcase.h"
 
 #define NR_TESTS 12
 #define AES_BLOCK_SIZE 16
@@ -469,28 +470,6 @@ unsigned char NIST_TEST_RESULT_GCM_E12[] = {
 
 unsigned char NIST_CHUNKS_GCM_E12[] = { 16, 16, 16, 12 };
 
-
-void dump_array(unsigned char *ptr, unsigned int size)
-{
-	unsigned char *ptr_end;
-	unsigned char *h;
-	int i = 1;
-
-	h = ptr;
-	ptr_end = ptr + size;
-	while (h < ptr_end) {
-		printf("0x%02x ",*h);
-		h++;
-		if (i == 8) {
-			printf("\n");
-			i = 1;
-		} else {
-			++i;
-		}
-	}
-	printf("\n");
-}
-
 void dump_gcm_data(unsigned char *iv, unsigned int iv_length,
 		   unsigned char *aad, unsigned int aad_length,
 		   unsigned char *key, unsigned int key_length,
@@ -498,17 +477,17 @@ void dump_gcm_data(unsigned char *iv, unsigned int iv_length,
 		   unsigned char *output_data,
 		   unsigned char *t, unsigned int t_size)
 {
-	printf("IV \n");
+	VV_(printf("IV \n"));
 	dump_array(iv, iv_length);
-	printf("AAD \n");
+	VV_(printf("AAD \n"));
 	dump_array(aad, aad_length);
-	printf("Key \n");
+	VV_(printf("Key \n"));
 	dump_array(key, key_length);
-	printf("Input Data\n");
+	VV_(printf("Input Data\n"));
 	dump_array(input_data, data_length);
-	printf("Output Data\n");
+	VV_(printf("Output Data\n"));
 	dump_array(output_data, data_length);
-	printf("T\n");
+	VV_(printf("T\n"));
 	dump_array(t, t_size);
 }
 
@@ -740,7 +719,7 @@ void load_test_data(unsigned char *aad, unsigned int aad_length,
 
 }
 
-int test_gcm_kat(int iteration, int silent)
+int test_gcm_kat(int iteration)
 {
 	unsigned int aad_length;
 	unsigned int data_length;
@@ -752,12 +731,6 @@ int test_gcm_kat(int iteration, int silent)
 	get_sizes(&aad_length, &data_length, &t_length, &iv_length,
 		  &key_length, &num_chunks, iteration);
 
-	if (!silent) {
-		printf("Test Parameters for iteration = %i\n", iteration);
-		printf("key length = %i, data length = %i, tag length = %i,"
-			"iv length = %i aad_length = %i\n", key_length, data_length,
-			t_length, iv_length, aad_length);
-	}
 	unsigned char iv[iv_length];
 	unsigned char input_data[data_length];
 	unsigned char encrypt[data_length];
@@ -771,6 +744,11 @@ int test_gcm_kat(int iteration, int silent)
 
 	int rc = 0;
 
+	VV_(printf("Test Parameters for iteration = %i\n", iteration));
+	VV_(printf("key length = %i, data length = %i, tag length = %i,"
+	    "iv length = %i aad_length = %i\n", key_length, data_length,
+	    t_length, iv_length, aad_length));
+
 	load_test_data(aad, aad_length, input_data, data_length, result,
 		       t_result, t_length, iv, iv_length, key, key_length,
 			   chunks, num_chunks, iteration);
@@ -783,40 +761,40 @@ int test_gcm_kat(int iteration, int silent)
 			 key, key_length,
 			 1);
 	if (rc == EPERM) {
-		printf("ica_aes_gcm returns with EPERM (%d).\n", rc);
-		printf("Operation is not permitted on this machine. Test skipped!\n");
+		VV_(printf("ica_aes_gcm returns with EPERM (%d).\n", rc));
+		VV_(printf("Operation is not permitted on this machine. Test skipped!\n"));
 		return 0;
 	}
 	if (rc) {
-		printf("ica_aes_gcm encrypt failed with rc = %i\n", rc);
+		VV_(printf("ica_aes_gcm encrypt failed with rc = %i\n", rc));
 		dump_gcm_data(iv, iv_length, aad, aad_length, key, key_length,
 			      input_data, data_length, encrypt, t, t_length);
 	}
-	if (!silent && !rc) {
-		printf("Encrypt:\n");
+	if (!rc) {
+		VV_(printf("Encrypt:\n"));
 		dump_gcm_data(iv, iv_length, aad, aad_length, key, key_length,
 			      input_data, data_length, encrypt, t,
 			      t_length);
 	}
 
 	if (memcmp(result, encrypt, data_length)) {
-		printf("Encryption Result does not match the known ciphertext!\n");
-		printf("Expected data:\n");
+		VV_(printf("Encryption Result does not match the known ciphertext!\n"));
+		VV_(printf("Expected data:\n"));
 		dump_array(result, data_length);
-		printf("Encryption Result:\n");
+		VV_(printf("Encryption Result:\n"));
 		dump_array(encrypt, data_length);
 		rc++;
 	}
 	if (memcmp(t, t_result, t_length)) {
-		printf("Tag result does not match the expected tag!\n");
-		printf("Expected tag:\n");
+		VV_(printf("Tag result does not match the expected tag!\n"));
+		VV_(printf("Expected tag:\n"));
 		dump_array(t_result, t_length);
-		printf("Tag Result:\n");
+		VV_(printf("Tag Result:\n"));
 		dump_array(t, t_length);
 		rc++;
 	}
 	if (rc) {
-		printf("GCM test exited after encryption\n");
+		VV_(printf("GCM test exited after encryption\n"));
 		return rc;
 	}
 	rc = ica_aes_gcm(decrypt, data_length,
@@ -827,45 +805,45 @@ int test_gcm_kat(int iteration, int silent)
 			 key, key_length,
 			 0);
 	if (rc == EPERM) {
-		printf("ica_aes_gcm returns with EPERM (%d).\n", rc);
-		printf("Operation is not permitted on this machine. Test skipped!\n");
+		VV_(printf("ica_aes_gcm returns with EPERM (%d).\n", rc));
+		VV_(printf("Operation is not permitted on this machine. Test skipped!\n"));
 		return 0;
 	}
 	if (rc) {
-		printf("ica_aes_gcm decrypt failed with rc = %i\n", rc);
+		VV_(printf("ica_aes_gcm decrypt failed with rc = %i\n", rc));
 		dump_gcm_data(iv, iv_length, aad, aad_length, key, key_length,
 			      encrypt, data_length, decrypt, t,
 			      t_length);
 	}
 
 
-	if (!silent && !rc) {
-		printf("Decrypt:\n");
+	if (!rc) {
+		VV_(printf("Decrypt:\n"));
 		dump_gcm_data(iv, iv_length, aad, aad_length, key, key_length,
 			      encrypt, data_length, decrypt, t,
 			      t_length);
 	}
 
 	if (memcmp(decrypt, input_data, data_length)) {
-		printf("Decryption Result does not match the original data!\n");
-		printf("Original data:\n");
+		VV_(printf("Decryption Result does not match the original data!\n"));
+		VV_(printf("Original data:\n"));
 		dump_array(input_data, data_length);
-		printf("Decryption Result:\n");
+		VV_(printf("Decryption Result:\n"));
 		dump_array(decrypt, data_length);
 		rc++;
 	}
 	if (memcmp(t, t_result, t_length)) {
-		printf("Tag result does not match the expected tag!\n");
-		printf("Expected tag:\n");
+		VV_(printf("Tag result does not match the expected tag!\n"));
+		VV_(printf("Expected tag:\n"));
 		dump_array(t_result, t_length);
-		printf("Tag Result:\n");
+		VV_(printf("Tag Result:\n"));
 		dump_array(t, t_length);
 		rc++;
 	}
 	return rc;
 }
 
-int test_gcm_kat_update(int iteration, int silent)
+int test_gcm_kat_update(int iteration)
 {
 	unsigned int aad_length;
 	unsigned int aad_length_tmp;
@@ -878,12 +856,6 @@ int test_gcm_kat_update(int iteration, int silent)
 	get_sizes(&aad_length, &data_length, &t_length, &iv_length,
 		  &key_length, &num_chunks, iteration);
 
-	if (!silent) {
-		printf("Test Parameters for iteration = %i\n", iteration);
-		printf("key length = %i, data length = %i, tag length = %i,"
-			"iv length = %i aad_length = %i\n", key_length, data_length,
-			t_length, iv_length, aad_length);
-	}
 	unsigned char iv[iv_length];
 	unsigned char input_data[data_length];
 	unsigned char encrypt[data_length];
@@ -905,6 +877,10 @@ int test_gcm_kat_update(int iteration, int silent)
 	unsigned int  sum_C_len;
 	int rc = 0, i;
 
+	VV_(printf("Test Parameters for iteration = %i\n", iteration));
+	VV_(printf("key length = %i, data length = %i, tag length = %i,"
+		"iv length = %i aad_length = %i\n", key_length, data_length,
+		t_length, iv_length, aad_length));
 
 	load_test_data(aad, aad_length, input_data, data_length, result,
 		       t_result, t_length, iv, iv_length, key, key_length,
@@ -934,40 +910,40 @@ int test_gcm_kat_update(int iteration, int silent)
 						  t, t_length, key, key_length, subkey, 1);
 
 	if (rc == EPERM) {
-		printf("ica_aes_gcm returns with EPERM (%d).\n", rc);
-		printf("Operation is not permitted on this machine. Test skipped!\n");
+		VV_(printf("ica_aes_gcm returns with EPERM (%d).\n", rc));
+		VV_(printf("Operation is not permitted on this machine. Test skipped!\n"));
 		return 0;
 	}
 	if (rc) {
-		printf("ica_aes_gcm encrypt failed with rc = %i\n", rc);
+		VV_(printf("ica_aes_gcm encrypt failed with rc = %i\n", rc));
 		dump_gcm_data(iv, iv_length, aad, aad_length, key, key_length,
 			      input_data, data_length, encrypt, t, t_length);
 	}
-	if (!silent && !rc) {
-		printf("Encrypt:\n");
+	if (!rc) {
+		VV_(printf("Encrypt:\n"));
 		dump_gcm_data(iv, iv_length, aad, aad_length, key, key_length,
 			      input_data, data_length, encrypt, running_tag,
 			      t_length);
 	}
 
 	if (memcmp(result, encrypt, data_length)) {
-		printf("Encryption Result does not match the known ciphertext!\n");
-		printf("Expected data:\n");
+		VV_(printf("Encryption Result does not match the known ciphertext!\n"));
+		VV_(printf("Expected data:\n"));
 		dump_array(result, data_length);
-		printf("Encryption Result:\n");
+		VV_(printf("Encryption Result:\n"));
 		dump_array(encrypt, data_length);
 		rc++;
 	}
 	if (memcmp(running_tag, t_result, t_length)) {
-		printf("Tag result does not match the expected tag!\n");
-		printf("Expected tag:\n");
+		VV_(printf("Tag result does not match the expected tag!\n"));
+		VV_(printf("Expected tag:\n"));
 		dump_array(t_result, t_length);
-		printf("Tag Result:\n");
+		VV_(printf("Tag Result:\n"));
 		dump_array(t, t_length);
 		rc++;
 	}
 	if (rc) {
-		printf("GCM test exited after encryption\n");
+		VV_(printf("GCM test exited after encryption\n"));
 		return rc;
 	}
 
@@ -997,79 +973,71 @@ int test_gcm_kat_update(int iteration, int silent)
 
 
 	if (rc == EPERM) {
-		printf("ica_aes_gcm returns with EPERM (%d).\n", rc);
-		printf("Operation is not permitted on this machine. Test skipped!\n");
+		VV_(printf("ica_aes_gcm returns with EPERM (%d).\n", rc));
+		VV_(printf("Operation is not permitted on this machine. Test skipped!\n"));
 		return 0;
 	}
 	if (rc) {
-		printf("ica_aes_gcm decrypt failed with rc = %i\n", rc);
+		VV_(printf("ica_aes_gcm decrypt failed with rc = %i\n", rc));
 		dump_gcm_data(iv, iv_length, aad, aad_length, key, key_length,
 			      encrypt, data_length, decrypt, running_tag,
 			      t_length);
 	}
 
 
-	if (!silent && !rc) {
-		printf("Decrypt:\n");
+	if (!rc) {
+		VV_(printf("Decrypt:\n"));
 		dump_gcm_data(iv, iv_length, aad, aad_length, key, key_length,
 			      encrypt, data_length, decrypt, running_tag,
 			      t_length);
 	}
 
 	if (memcmp(decrypt, input_data, data_length)) {
-		printf("Decryption Result does not match the original data!\n");
-		printf("Original data:\n");
+		VV_(printf("Decryption Result does not match the original data!\n"));
+		VV_(printf("Original data:\n"));
 		dump_array(input_data, data_length);
-		printf("Decryption Result:\n");
+		VV_(printf("Decryption Result:\n"));
 		dump_array(decrypt, data_length);
 		rc++;
 	}
 	if (memcmp(running_tag, t_result, t_length)) {
-		printf("Tag result does not match the expected tag!\n");
-		printf("Expected tag:\n");
+		VV_(printf("Tag result does not match the expected tag!\n"));
+		VV_(printf("Expected tag:\n"));
 		dump_array(t_result, t_length);
-		printf("Tag Result:\n");
+		VV_(printf("Tag Result:\n"));
 		dump_array(t, t_length);
 		rc++;
 	}
 	return rc;
 }
 
+/*
+ * Performs GCM tests.
+ */
 int main(int argc, char **argv)
 {
-	// Default mode is 0. ECB,CBC and CFQ tests will be performed.
-	unsigned int silent = 0;
-	if (argc > 1) {
-		if (strstr(argv[1], "silent"))
-			silent = 1;
-		if (argc == 3)
-			if (strstr(argv[2], "silent"))
-				silent = 1;
-
-	}
-
 	int rc = 0;
 	int error_count = 0;
 	int iteration;
+
+	set_verbosity(argc, argv);
+
 	for(iteration = 1; iteration <= NR_TESTS; iteration++)	{
-
-		rc = test_gcm_kat(iteration, silent);
+		rc = test_gcm_kat(iteration);
 		if (rc) {
-			printf("test_gcm_kat failed with rc = %i\n", rc);
+			V_(printf("test_gcm_kat failed with rc = %i\n", rc));
 			error_count++;
 		}
 
-		rc = test_gcm_kat_update(iteration, silent);
+		rc = test_gcm_kat_update(iteration);
 		if (rc) {
-			printf("test_gcm_kat_update failed with rc = %i\n", rc);
+			V_(printf("test_gcm_kat_update failed with rc = %i\n", rc));
 			error_count++;
 		}
-
-
 	}
 	if (error_count)
-		printf("%i of %i testcases failed\n", error_count, iteration);
+		printf("%i of %i AES-GCM tests failed.\n", error_count, iteration);
 	else
-		printf("All AES-GCM testcases finished successfully.\n");
+		printf("All AES-GCM tests passed.\n");
 	return rc;
 }

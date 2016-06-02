@@ -32,50 +32,6 @@ struct drbg_sha512_ws{
 	unsigned char rsvd2;			/* padding */
 	unsigned char c[DRBG_SHA512_SEED_LEN];	/* C */
 };
-typedef struct drbg_sha512_ws drbg_sha512_ws_t;
-
-/*
- * SHA-512 DRBG mechanism test vector type
- */
-struct drbg_sha512_test_vec{
-	bool no_reseed;
-	bool pr;
-	size_t entropy_len;
-	size_t nonce_len;
-	size_t pers_len;
-	size_t add_len;
-	size_t prnd_len;
-
-	struct{
-		/* Input */
-		unsigned char *entropy;
-		unsigned char *nonce;
-		unsigned char *pers;
-		/* Output */
-		unsigned char *v;
-		unsigned char *c;
-		int reseed_ctr;
-	}inst;
-
-	struct{
-		/* Input */
-		unsigned char *entropy;
-		unsigned char *add;
-		/* Output */
-		unsigned char *v;
-		unsigned char *c;
-		int reseed_ctr;
-	}res, gen1, gen2;
-
-	unsigned char *prnd;
-};
-typedef struct drbg_sha512_test_vec drbg_sha512_test_vec_t;
-
-/*
- * Array of SHA-512 DRBG test vectors for health testing
- */
-extern const drbg_sha512_test_vec_t DRBG_SHA512_TEST_VEC[];
-extern const size_t DRBG_SHA512_TEST_VEC_LEN;
 
 /*
  * SHA-512 DRBG mechanism functions

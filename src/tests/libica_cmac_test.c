@@ -11,10 +11,13 @@
 #include <stdlib.h>
 #include <string.h>
 #include "ica_api.h"
+#include "testcase.h"
 
 #define BYTE 8
 
 #define NUM_TESTS 12
+
+#define AES_BLOCK_SIZE 16
 
 unsigned int key_length[12] = {16, 16, 16, 16, 24, 24, 24, 24, 32, 32, 32,
 				32};
@@ -139,45 +142,14 @@ unsigned int ica_aes_cmac_chaining(unsigned char *, unsigned long,
 
 unsigned int i = 0;
 
-void dump_array(unsigned char *ptr, unsigned int size)
-{
-	unsigned char *ptr_end;
-	unsigned char *h;
-	int i = 1, trunc = 0;
-	int maxsize = 2000;
-
-	puts("Dump:");
-
-	if (size > maxsize) {
-		trunc = size - maxsize;
-		size = maxsize;
-	}
-	h = ptr;
-	ptr_end = ptr + size;
-	while (h < ptr_end) {
-		printf("0x%02x ", *h);
-		h++;
-		if (i == 16) {
-			if (h != ptr_end)
-			printf("\n");
-			i = 1;
-		} else {
-			++i;
-		}
-	}
-	printf("\n");
-	if (trunc > 0)
-	printf("... %d bytes not printed\n", trunc);
-}
 unsigned char *cmac;
 unsigned int cmac_length = 16;
 
-int api_cmac_test(int silent)
+int api_cmac_test(void)
 {
-	if (!silent) {
-		printf("Test of CMAC api\n");
-	}
 	int rc = 0;
+
+	VV_(printf("Test of CMAC api\n"));
 	for (i = 0 ; i < NUM_TESTS; i++) {
 		if (!(cmac = malloc(cmac_length)))
 			return EINVAL;
@@ -187,42 +159,38 @@ int api_cmac_test(int silent)
 				   key[i], key_length[i],
 				   ICA_ENCRYPT));
 		if (rc) {
-			printf("ica_aes_cmac generate failed with errno %d (0x%x)."
-				"\n",rc,rc);
+			VV_(printf("ica_aes_cmac generate failed with errno %d (0x%x)."
+				"\n",rc,rc));
 			return rc;
 		}
 		if (memcmp(cmac, expected_cmac[i], cmac_length) != 0) {
-			printf("This does NOT match the known result. "
-				"Testcase %i failed\n",i);
-			printf("\nOutput MAC for test %d:\n", i);
+			VV_(printf("This does NOT match the known result. "
+				"Testcase %i failed\n",i));
+			VV_(printf("\nOutput MAC for test %d:\n", i));
 			dump_array((unsigned char *)cmac, cmac_length);
-			printf("\nExpected MAC for test %d:\n", i);
+			VV_(printf("\nExpected MAC for test %d:\n", i));
 			dump_array((unsigned char *)expected_cmac[i], 16);
 			free(cmac);
 			return 1;
 		}
-		if (!silent) {
-			printf("Expected MAC has been generated.\n");
-		}
+		VV_(printf("Expected MAC has been generated.\n"));
 		rc = (ica_aes_cmac(message[i], mlen[i],
 				   cmac, cmac_length,
 				   key[i], key_length[i],
 				   ICA_DECRYPT));
 		if (rc) {
-			printf("ica_aes_cmac verify failed with errno %d (0x%x).\n",
-				rc, rc);
+			VV_(printf("ica_aes_cmac verify failed with errno %d (0x%x).\n",
+				rc, rc));
 			free(cmac);
 			return rc;
 		}
 		free(cmac);
-		if (! rc) {
-			if (!silent) {
-				printf("MAC was successful verified. testcase %i "
-				"succeeded\n",i);
-			}
+		if (!rc) {
+			VV_(printf("MAC was successful verified. Test %i "
+			"succeeded\n",i));
 		}
 		else {
-			printf("MAC verification failed for testcase %i "
+			printf("MAC verification failed for test %i "
 				"with RC=%i\n",i,rc);
 			return rc;
 		}
@@ -230,7 +198,6 @@ int api_cmac_test(int silent)
 	return 0;
 }
 
-#define AES_BLOCK_SIZE 16
 
 inline unsigned int ica_aes_cmac_chaining(unsigned char *in,
 					  unsigned long in_length,
@@ -264,12 +231,11 @@ inline unsigned int ica_aes_cmac_chaining(unsigned char *in,
 				 direction);
 }
 
-int api_cmac_chaining_test(int silent)
+int api_cmac_chaining_test(void)
 {
-	if (!silent) {
-		printf("Test of CMAC chaining api\n");
-	}
 	int rc = 0;
+
+	VV_(printf("Test of CMAC chaining api\n"));
 	for (i = 0 ; i < NUM_TESTS; i++) {
 		if (!(cmac = malloc(cmac_length)))
 			return EINVAL;
@@ -279,43 +245,39 @@ int api_cmac_chaining_test(int silent)
 					   key[i], key_length[i],
 					   ICA_ENCRYPT);
 		if (rc) {
-			printf("ica_aes_cmac chaining generate failed with errno %d (0x%x)."
-				"\n",rc,rc);
+			VV_(printf("ica_aes_cmac chaining generate failed with errno %d (0x%x)."
+				"\n",rc,rc));
 			return rc;
 		}
 		if (memcmp(cmac, expected_cmac[i], cmac_length) != 0) {
-			printf("This does NOT match the known result. "
-				"Testcase %i failed\n",i);
-			printf("\nOutput MAC for test %d:\n", i);
+			VV_(printf("This does NOT match the known result. "
+				"Testcase %i failed\n",i));
+			VV_(printf("\nOutput MAC for test %d:\n", i));
 			dump_array((unsigned char *)cmac, cmac_length);
-			printf("\nExpected MAC for test %d:\n", i);
+			VV_(printf("\nExpected MAC for test %d:\n", i));
 			dump_array((unsigned char *)expected_cmac[i], 16);
 			free(cmac);
 			return 1;
 		}
-		if (!silent) {
-			printf("Expected MAC has been generated.\n");
-		}
+		VV_(printf("Expected MAC has been generated.\n"));
 		rc = ica_aes_cmac_chaining(message[i], mlen[i],
 					   cmac, cmac_length,
 					   key[i], key_length[i],
 					   ICA_DECRYPT);
 		if (rc) {
-			printf("ica_aes_cmac verify failed with errno %d (0x%x).\n",
-				rc, rc);
+			VV_(printf("ica_aes_cmac verify failed with errno %d (0x%x).\n",
+				rc, rc));
 			free(cmac);
 			return rc;
 		}
 		free(cmac);
-		if (! rc ) {
-			if (!silent) {
-				printf("MAC was successful verified. testcase %i "
-					"succeeded\n",i);
-			}
+		if (!rc) {
+			VV_(printf("MAC was successful verified. Test %i "
+				"succeeded\n",i));
 		}
 		else {
-			printf("MAC verification failed for testcase %i "
-				"with RC=%i\n",i,rc);
+			VV_(printf("MAC verification failed for test %i "
+				"with RC=%i\n",i,rc));
 			return rc;
 		}
 	}
@@ -325,25 +287,21 @@ int api_cmac_chaining_test(int silent)
 int main(int argc, char **argv)
 {
 	int rc = 0;
-	int silent = 0;
 
-	if (argc > 1) {
-		if (strstr(argv[1], "silent"))
-			silent = 1;
-	}
+	set_verbosity(argc, argv);
 
-	rc = api_cmac_test(silent);
+	rc = api_cmac_test();
 	if (rc) {
 		printf("api_cmac_test failed with rc = %i\n", rc);
 		return rc;
 	}
 
-	rc = api_cmac_chaining_test(silent);
+	rc = api_cmac_chaining_test();
 	if (rc) {
 		printf("api_cmac_test failed with rc = %i\n", rc);
 		return rc;
 	}
 
-	printf("All CMAC tests finished successfully\n");
+	printf("All CMAC tests passed.\n");
 	return 0;
 }

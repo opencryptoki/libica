@@ -14,8 +14,15 @@
 
 #include <string.h>
 #include <errno.h>
+#include <openssl/crypto.h>
 #include <openssl/sha.h>
 
+#include <openssl/opensslconf.h>
+#ifdef OPENSSL_FIPS
+#include <openssl/fips.h>
+#endif /* OPENSSL_FIPS */
+
+#include "fips.h"
 #include "s390_crypto.h"
 #include "s390_sha.h"
 #include "init.h"
@@ -27,6 +34,11 @@ static int s390_sha1_sw(unsigned char *iv, unsigned char *input_data,
 {
 	SHA_CTX ctx;
 	unsigned int vector_length = 20;
+
+#ifdef ICA_FIPS
+	if ((fips & ICA_FIPS_MODE) && (!FIPS_mode()))
+		return EACCES;
+#endif /* ICA_FIPS */
 
 	if (message_part == SHA_MSG_PART_ONLY ||
 	    message_part == SHA_MSG_PART_FIRST) {
@@ -64,6 +76,11 @@ static int s390_sha224_sw(unsigned char *iv, unsigned char *input_data,
 	SHA256_CTX ctx;
 	unsigned int vector_length = 32;
 
+#ifdef ICA_FIPS
+	if ((fips & ICA_FIPS_MODE) && (!FIPS_mode()))
+		return EACCES;
+#endif /* ICA_FIPS */
+
 	if (message_part == SHA_MSG_PART_ONLY ||
 	    message_part == SHA_MSG_PART_FIRST) {
 		SHA224_Init(&ctx);
@@ -96,6 +113,11 @@ static int s390_sha256_sw(unsigned char *iv, unsigned char *input_data,
 {
 	SHA256_CTX ctx;
 	unsigned int vector_length = 32;
+
+#ifdef ICA_FIPS
+	if ((fips & ICA_FIPS_MODE) && (!FIPS_mode()))
+		return EACCES;
+#endif /* ICA_FIPS */
 
 	if (message_part == SHA_MSG_PART_ONLY ||
 	    message_part == SHA_MSG_PART_FIRST) {
@@ -132,6 +154,11 @@ static int s390_sha384_sw(unsigned char *iv, unsigned char *input_data,
 	SHA512_CTX ctx;
 	unsigned int vector_length = 64;
 
+#ifdef ICA_FIPS
+	if ((fips & ICA_FIPS_MODE) && (!FIPS_mode()))
+		return EACCES;
+#endif /* ICA_FIPS */
+
 	if (message_part == SHA_MSG_PART_ONLY ||
 	    message_part == SHA_MSG_PART_FIRST) {
 		SHA384_Init(&ctx);
@@ -166,6 +193,11 @@ int s390_sha512_sw(unsigned char *iv, unsigned char *input_data,
 {
 	SHA512_CTX ctx;
 	unsigned int vector_length = 64;
+
+#ifdef ICA_FIPS
+	if ((fips & ICA_FIPS_MODE) && (!FIPS_mode()))
+		return EACCES;
+#endif /* ICA_FIPS */
 
 	if (message_part == SHA_MSG_PART_ONLY || message_part == SHA_MSG_PART_FIRST) {
 		SHA512_Init(&ctx);

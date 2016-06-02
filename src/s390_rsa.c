@@ -17,8 +17,15 @@
 #include <string.h>
 #include <errno.h>
 #include <stdint.h>
+#include <openssl/crypto.h>
 #include <openssl/rsa.h>
 
+#include <openssl/opensslconf.h>
+#ifdef OPENSSL_FIPS
+#include <openssl/fips.h>
+#endif /* OPENSSL_FIPS */
+
+#include "fips.h"
 #include "s390_rsa.h"
 #include "s390_prng.h"
 
@@ -46,11 +53,17 @@ RSA* rsa_key_generate(unsigned int modulus_bit_length,
 {
 	BN_GENCB cb;
 
+#ifdef ICA_FIPS
+	if ((fips & ICA_FIPS_MODE) && (!FIPS_mode()))
+		return NULL;
+#endif /* ICA_FIPS */
+
 	if (*public_exponent == 0)
 	{
 		do {
-			s390_prng((unsigned char*)public_exponent,
-				  sizeof(unsigned long));
+			if (s390_prng((unsigned char*)public_exponent,
+			    sizeof(unsigned long)) != 0)
+				return NULL;
 		} while (*public_exponent <= 2 || !(*public_exponent % 2));
 	}
 
@@ -62,7 +75,7 @@ RSA* rsa_key_generate(unsigned int modulus_bit_length,
 			BN_free(exp);
 		if (rsa)
 			RSA_free(rsa);
-		return 0;
+		return NULL;
 	}
 
 	BN_set_word(exp, *public_exponent);
@@ -73,7 +86,7 @@ RSA* rsa_key_generate(unsigned int modulus_bit_length,
 		return rsa;
 	}
 
-	return 0;
+	return NULL;
 }
 
 /**
@@ -98,6 +111,11 @@ unsigned int rsa_key_generate_mod_expo(ica_adapter_handle_t deviceHandle,
 				       ica_rsa_key_mod_expo_t *public_key,
 				       ica_rsa_key_mod_expo_t *private_key)
 {
+#ifdef ICA_FIPS
+	if ((fips & ICA_FIPS_MODE) && (!FIPS_mode()))
+		return EACCES;
+#endif /* ICA_FIPS */
+
 	RSA *rsa = rsa_key_generate(modulus_bit_length,
 				    (unsigned long*)(public_key->exponent +
 				    public_key->key_length -
@@ -154,6 +172,11 @@ unsigned int rsa_key_generate_crt(ica_adapter_handle_t deviceHandle,
 				  ica_rsa_key_mod_expo_t *public_key,
 				  ica_rsa_key_crt_t *private_key)
 {
+#ifdef ICA_FIPS
+	if ((fips & ICA_FIPS_MODE) && (!FIPS_mode()))
+		return EACCES;
+#endif /* ICA_FIPS */
+
 	RSA *rsa = rsa_key_generate(modulus_bit_length,
 				    (unsigned long*)(public_key->exponent +
 				    public_key->key_length -
@@ -242,6 +265,11 @@ unsigned int rsa_mod_mult_sw(ica_rsa_modmult_t *pMul)
 	int rc = 0;
 	BN_CTX *ctx = NULL;
 
+#ifdef ICA_FIPS
+	if ((fips & ICA_FIPS_MODE) && (!FIPS_mode()))
+		return EACCES;
+#endif /* ICA_FIPS */
+
 	if ((ctx = BN_CTX_new()) == NULL) {
 		return errno;
 	}
@@ -272,6 +300,11 @@ static unsigned int mod_mul_sw(int fc_1_length, char *fc1, int fc_2_length,
 	BIGNUM *b_fc2 = NULL;
 	BIGNUM *b_mod = NULL;
 	BIGNUM *b_res = NULL;
+
+#ifdef ICA_FIPS
+	if ((fips & ICA_FIPS_MODE) && (!FIPS_mode()))
+		return EACCES;
+#endif /* ICA_FIPS */
 
 	BN_CTX_start(ctx);
 
@@ -336,6 +369,11 @@ unsigned int rsa_mod_expo_sw(ica_rsa_modexpo_t *pMex)
 	int rc = 0;
 	BN_CTX *ctx = NULL;
 
+#ifdef ICA_FIPS
+	if ((fips & ICA_FIPS_MODE) && (!FIPS_mode()))
+		return EACCES;
+#endif /* ICA_FIPS */
+
 	if ((ctx = BN_CTX_new()) == NULL) {
 		return errno;
 	}
@@ -394,6 +432,11 @@ static unsigned int mod_expo_sw(int arg_length, char *arg, int exp_length,
 	BIGNUM *b_res = NULL;
 	BN_CTX *mod_expo_ctx = NULL;
 	int mod_expo_rc = 1;
+
+#ifdef ICA_FIPS
+	if ((fips & ICA_FIPS_MODE) && (!FIPS_mode()))
+		return EACCES;
+#endif /* ICA_FIPS */
 
 	BN_CTX_start(ctx);
 
@@ -472,7 +515,10 @@ unsigned int rsa_crt_sw(ica_rsa_modexpo_crt_t * pCrt)
 	int short_length = 0;
 	BN_CTX *ctx = NULL;
 
-
+#ifdef ICA_FIPS
+	if ((fips & ICA_FIPS_MODE) && (!FIPS_mode()))
+		return EACCES;
+#endif /* ICA_FIPS */
 
 	short_length = (pCrt->inputdatalength+1) / 2;
 	long_length = short_length + 8;
@@ -612,6 +658,11 @@ static unsigned int mod_sw(int arg_length, char *arg, int mod_length,
 	BIGNUM *b_mod = NULL;
 	BIGNUM *b_res = NULL;
 
+#ifdef ICA_FIPS
+	if ((fips & ICA_FIPS_MODE) && (!FIPS_mode()))
+		return EACCES;
+#endif /* ICA_FIPS */
+
 	BN_CTX_start(ctx);
 
 	b_arg = BN_CTX_get(ctx);
@@ -687,6 +738,11 @@ static unsigned int mod_sub_sw(int min_length, char *minu, int sub_length,
 	int pad = 0;
 
 	int min_size, sub_size, dif_size;
+
+#ifdef ICA_FIPS
+	if ((fips & ICA_FIPS_MODE) && (!FIPS_mode()))
+		return EACCES;
+#endif /* ICA_FIPS */
 
 	BIGNUM *b_min = NULL;
 	BIGNUM *b_sub = NULL;
@@ -789,6 +845,11 @@ static unsigned int add_sw(int aug_length, char *aug, int add_length,
 
 	BN_CTX_start(ctx);
 
+#ifdef ICA_FIPS
+	if ((fips & ICA_FIPS_MODE) && (!FIPS_mode()))
+		return EACCES;
+#endif /* ICA_FIPS */
+
 	b_aug = BN_CTX_get(ctx);
 	b_add = BN_CTX_get(ctx);
 	if ((b_res = BN_CTX_get(ctx)) == NULL) {
@@ -852,6 +913,11 @@ static unsigned int mul_sw(int fc_1_length, char *fc1, int fc_2_length,
 	BIGNUM *b_res = NULL;
 
 	BN_CTX_start(ctx);
+
+#ifdef ICA_FIPS
+	if ((fips & ICA_FIPS_MODE) && (!FIPS_mode()))
+		return EACCES;
+#endif /* ICA_FIPS */
 
 	b_fc1 = BN_CTX_get(ctx);
 	b_fc2 = BN_CTX_get(ctx);

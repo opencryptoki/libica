@@ -7,8 +7,10 @@
 #include "queue_t.h"
 #include "sha_tests.h"
 #include "critical_error.h"
+#define VERBOSE_EXTERN
+#include "../testcase.h"
+#undef VERBOSE_EXTERN
 
-static void dump_array(unsigned char *ptr, unsigned int size);
 
 int sha1_new_api_test(test_t * test)
 {
@@ -24,18 +26,16 @@ int sha1_new_api_test(test_t * test)
 			   &sha_context, output);
 
 	if (rc != 0) {
-		printf("ica_sha1 failed with errno %d (0x%x).\n", rc,
-		       (unsigned int)rc);
+		V_(printf("ica_sha1 failed with errno %d (0x%x).\n", rc,
+		       (unsigned int)rc));
 		return rc;
 	}
 
-	if (!silent) {
-		printf("message digest (new api)\n");
-		dump_array(output, SHA_HASH_LENGTH);
-	}
+	VV_(printf("message digest (new api)\n"));
+	dump_array(output, SHA_HASH_LENGTH);
 
 	if (memcmp(output, test->msg_digest, SHA_HASH_LENGTH) != 0) {
-		printf("output is not what it should be.\n");
+		V_(printf("output is not what it should be.\n"));
 		return 2;
 	}
 	return 0;
@@ -54,17 +54,16 @@ int sha224_new_api_test(test_t * test)
 			     &sha256_context, output);
 
 	if (rc != 0) {
-		printf("ica_sha224 failed with errno %d (0x%x).\n", rc,
-		       (unsigned int)rc);
+		V_(printf("ica_sha224 failed with errno %d (0x%x).\n", rc,
+		       (unsigned int)rc));
 		return rc;
 	}
 
-	if (!silent) {
-		printf("message digest (new api)\n");
-		dump_array(output, SHA224_HASH_LENGTH);
-	}
+	VV_(printf("message digest (new api)\n"));
+	dump_array(output, SHA224_HASH_LENGTH);
+
 	if (memcmp(output, test->msg_digest, SHA224_HASH_LENGTH) != 0) {
-		printf("output is not what it should be.\n");
+		V_(printf("output is not what it should be.\n"));
 		return 2;
 	}
 
@@ -84,17 +83,16 @@ int sha256_new_api_test(test_t * test)
 			     &sha256_context, output);
 
 	if (rc != 0) {
-		printf("ica_sha256 failed with errno %d (0x%x).\n", rc,
-		       (unsigned int)rc);
+		V_(printf("ica_sha256 failed with errno %d (0x%x).\n", rc,
+		       (unsigned int)rc));
 		return rc;
 	}
 
-	if (!silent) {
-		printf("message digest (new api)\n");
-		dump_array(output, SHA256_HASH_LENGTH);
-	}
+	VV_(printf("message digest (new api)\n"));
+	dump_array(output, SHA256_HASH_LENGTH);
+
 	if (memcmp(output, test->msg_digest, SHA256_HASH_LENGTH) != 0) {
-		printf("output is not what it should be.\n");
+		V_(printf("output is not what it should be.\n"));
 		return 2;
 	}
 
@@ -114,17 +112,16 @@ int sha384_new_api_test(test_t * test)
 			     &sha512_context, output);
 
 	if (rc != 0) {
-		printf("ica_sha384 failed with errno %d (0x%x).\n", rc,
-		       (unsigned int)rc);
+		V_(printf("ica_sha384 failed with errno %d (0x%x).\n", rc,
+		       (unsigned int)rc));
 		return rc;
 	}
 
-	if (!silent) {
-		printf("message digest (new api)\n");
-		dump_array(output, SHA384_HASH_LENGTH);
-	}
+	VV_(printf("message digest (new api)\n"));
+	dump_array(output, SHA384_HASH_LENGTH);
+
 	if (memcmp(output, test->msg_digest, SHA384_HASH_LENGTH) != 0) {
-		printf("output is not what it should be.\n");
+		V_(printf("output is not what it should be.\n"));
 		return 2;
 	}
 
@@ -144,22 +141,21 @@ int sha512_new_api_test(test_t * test)
 			     &sha512_context, output);
 
 	if (rc != 0) {
-		printf("ica_sha512 failed with errno %d (0x%x).\n", rc,
-		       (unsigned int)rc);
+		V_(printf("ica_sha512 failed with errno %d (0x%x).\n", rc,
+		       (unsigned int)rc));
 		return rc;
 	}
 
-	if (!silent) {
-		printf("message digest (new api)\n");
-		dump_array(output, SHA512_HASH_LENGTH);
-	}
+	VV_(printf("message digest (new api)\n"));
+	dump_array(output, SHA512_HASH_LENGTH);
+
 	if (memcmp(output, test->msg_digest, SHA512_HASH_LENGTH) != 0) {
-		printf("output is not what it should be.\n");
+		V_(printf("output is not what it should be.\n"));
 		return 2;
 	}
 	return 0;
 }
-
+/*
 static void dump_array(unsigned char *ptr, unsigned int size)
 {
 	unsigned char *ptr_end;
@@ -187,3 +183,4 @@ static void dump_array(unsigned char *ptr, unsigned int size)
 	if (trunc > 0)
 		printf("... %d bytes not printed\n", trunc);
 }
+*/

@@ -18,6 +18,7 @@
 
 #include "ica_api.h"
 #include "s390_drbg.h"
+#include "testcase.h"
 
 /*
  * Known answer test types
@@ -79,7 +80,6 @@ typedef struct{
 int main(int argc,
 	 char **argv)
 {
-	bool v = true; /* verbose flag */
 	int i = 0;
 	int failed = 0;
 	int passed = 0;
@@ -95,16 +95,7 @@ int main(int argc,
 	size_t pers_len = sizeof(pers) / sizeof(pers[0]);
 	size_t add_len = sizeof(add) / sizeof(add[0]);
 
-	if(1 < argc){
-		if(strstr(argv[1], "silent")){
-			v = false;
-		}
-		else{
-			fprintf(stderr, "%s: invalid option '%s'\n", argv[0],
-				argv[1]);
-			return -1;
-		}
-	}
+	set_verbosity(argc, argv);
 
 	/*
 	 * drbg_sha512 tests
@@ -199,7 +190,7 @@ int main(int argc,
 	},
 	};
 	for(i = 0; i < sizeof(inst_test) / sizeof(inst_test[0]); i++){
-		if(v) printf("instantiate function: test no. %d", i);
+		V_(printf("instantiate function: test no. %d", i));
 		status = ica_drbg_instantiate(inst_test[i].sh,
 					      inst_test[i].sec,
 					      inst_test[i].pr,
@@ -207,11 +198,11 @@ int main(int argc,
 					      inst_test[i].pers,
 					      inst_test[i].pers_len);
 		if(inst_test[i].rc == status){
-			if(v) printf(" passed\n");
+			V_(printf(" passed\n"));
 			passed++;
 		}
 		else{
-			if(v) printf(" failed\n");
+			V_(printf(" failed\n"));
 			failed++;
 		}
 		ica_drbg_uninstantiate(inst_test[i].sh);
@@ -262,15 +253,15 @@ int main(int argc,
 	},
 	};
 	for(i = 0; i < sizeof(res_test) / sizeof(res_test[0]); i++){
-		if(v) printf("reseed function: test no. %d", i);
+		V_(printf("reseed function: test no. %d", i));
 		status = ica_drbg_reseed(res_test[i].sh, res_test[i].pr,
 					 res_test[i].add, res_test[i].add_len);
 		if(res_test[i].rc == status){
-			if(v) printf(" passed\n");
+			V_(printf(" passed\n"));
 			passed++;
 		}
 		else{
-			if(v) printf(" failed\n");
+			V_(printf(" failed\n"));
 			failed++;
 		}
 	}
@@ -369,7 +360,7 @@ int main(int argc,
 	},
 	};
 	for(i = 0; i < sizeof(gen_test) / sizeof(gen_test[0]); i++){
-		if(v) printf("generate function: test no. %d", i);
+		V_(printf("generate function: test no. %d", i));
 		size_t prnd_len = gen_test[i].prnd_len;
 		unsigned char prnd[prnd_len];
 		status = ica_drbg_generate(gen_test[i].sh, gen_test[i].sec,
@@ -377,11 +368,11 @@ int main(int argc,
 					   gen_test[i].add_len, prnd,
 					   prnd_len);
 		if(gen_test[i].rc == status){
-			if(v) printf(" passed\n");
+			V_(printf(" passed\n"));
 			passed++;
 		}
 		else{
-			if(v) printf(" failed\n");
+			V_(printf(" failed\n"));
 			failed++;
 		}
 	}
@@ -403,14 +394,14 @@ int main(int argc,
 	},
 	};
 	for(i = 0; i < sizeof(uninst_test) / sizeof(uninst_test[0]); i++){
-		if(v) printf("uninstantiate function: test no. %d", i);
+		V_(printf("uninstantiate function: test no. %d", i));
 		status = ica_drbg_uninstantiate(uninst_test[i].sh);
 		if(uninst_test[i].rc == status){
-			if(v) printf(" passed\n");
+			V_(printf(" passed\n"));
 			passed++;
 		}
 		else{
-			if(v) printf(" failed\n");
+			V_(printf(" failed\n"));
 			failed++;
 		}
 	}
@@ -609,24 +600,24 @@ int main(int argc,
 	},
 	};
 	for(i = 0; i < sizeof(ht_test) / sizeof(ht_test[0]); i++){
-		if(v) printf("health test function: test no. %d", i);
+		V_(printf("health test function: test no. %d", i));
 		status = ica_drbg_health_test(ht_test[i].func, ht_test[i].sec,
 					      ht_test[i].pr, ht_test[i].mech);
 		if(ht_test[i].rc == status){
-			if(v) printf(" passed\n");
+			V_(printf(" passed\n"));
 			passed++;
 		}
 		else{
-			if(v) printf(" failed\n");
+			V_(printf(" failed\n"));
 			failed++;
 		}
 	}
 
 	if(failed)
-		printf("ica_drbg testcases: %d passed, %d failed, %d total\n", passed, failed,
+		printf("DRBG tests: %d passed, %d failed, %d total\n", passed, failed,
 		       passed + failed);
 	else
-		printf("ALL ica_drbg tests passed successfully.\n");
+		printf("All DRBG tests passed.\n");
 
 	return 0;
 }

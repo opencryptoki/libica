@@ -1,57 +1,63 @@
 #!/bin/bash
 
+#
 # Libica test suite
 #
-# Test output will be stored in suite.out
-#
-silent=${1}
 
-echo -ne 'Starting libica test suite ...\n'
-echo -ne '-------------------------------------------------- (0%)\r'
-./icastats_test $silent > ./suite.out
-echo -ne '#------------------------------------------------- (2%)\r'
-./libica_3des_cbc_test $silent >> ./suite.out
-./libica_3des_cfb_test $silent >> ./suite.out
-./libica_3des_ctr_test $silent >> ./suite.out
-./libica_3des_ecb_test $silent >> ./suite.out
-./libica_3des_ofb_test $silent >> ./suite.out
-echo -ne '#######------------------------------------------ (15%)\r'
-./libica_aes128_test $silent >> ./suite.out
-./libica_aes192_test $silent >> ./suite.out
-./libica_aes256_test $silent >> ./suite.out
-./libica_aes_cbc_test $silent >> ./suite.out
-./libica_aes_cfb_test $silent >> ./suite.out
-./libica_aes_ctr_test $silent >> ./suite.out
-./libica_aes_ecb_test $silent >> ./suite.out
-./libica_aes_gcm_test $silent >> ./suite.out
-./libica_aes_ofb_test $silent >> ./suite.out
-./libica_aes_xts_test $silent >> ./suite.out
-echo -ne '###############---------------------------------- (30%)\r'
-./libica_cbccs_test $silent >> ./suite.out
-./libica_ccm_test $silent >> ./suite.out
-./libica_cmac_test $silent >> ./suite.out
-echo -ne '######################--------------------------- (45%)\r'
-./libica_des_cbc_test $silent >> ./suite.out
-./libica_des_cfb_test $silent >> ./suite.out
-./libica_des_ctr_test $silent >> ./suite.out
-./libica_des_ecb_test $silent >> ./suite.out
-./libica_des_ofb_test $silent >> ./suite.out
-echo -ne '#############################-------------------- (60%)\r'
-./libica_get_functionlist $silent >> ./suite.out
-./libica_get_version $silent >> ./suite.out
-./libica_keygen_test 512 r $silent >> ./suite.out
-./libica_keygen_test 1024 r $silent >> ./suite.out
-./libica_keygen_test 2048 r $silent >> ./suite.out
-./libica_keygen_test 4096 r $silent >> ./suite.out
-./libica_keygen_test 1234 r $silent >> ./suite.out
-./libica_rng_test $silent >> ./suite.out
-echo -ne '#####################################------------ (70%)\r'
-./libica_rsa_test $silent >> ./suite.out
-./libica_rsa_key_check_test $silent >> ./suite.out
-echo -ne '############################################----- (80%)\r'
-PARMS="libica_sha_test/sha_test_vectors/*"
-./libica_sha_test/libica_sha_test $silent $PARMS >> ./suite.out
-#./libica_sha_test/libica_sha_test 'libica_sha_test/sha_test_vectors/*'
-./libica_drbg_test $silent >> ./suite.out
-echo -ne '################################################# (100%) Done\r'
-echo -ne '\n'
+verbosity=$1
+
+out="./suite.out"
+
+testcases=(
+"libica_fips_test"
+
+"libica_get_functionlist $verbosity"
+"libica_get_version $verbosity"
+"icastats_test $verbosity"
+
+"libica_drbg_test $verbosity"
+
+"libica_des_ecb_test $verbosity"
+"libica_des_cbc_test $verbosity"
+"libica_des_cfb_test $verbosity"
+"libica_des_ofb_test $verbosity"
+"libica_des_ctr_test $verbosity"
+
+"libica_3des_ecb_test $verbosity"
+"libica_3des_cbc_test $verbosity"
+"libica_3des_cfb_test $verbosity"
+"libica_3des_ofb_test $verbosity"
+"libica_3des_ctr_test $verbosity"
+
+"libica_aes128_test $verbosity"
+"libica_aes192_test $verbosity"
+"libica_aes256_test $verbosity"
+"libica_aes_ecb_test $verbosity"
+"libica_aes_cbc_test $verbosity"
+"libica_aes_cfb_test $verbosity"
+"libica_aes_ofb_test $verbosity"
+"libica_aes_ctr_test $verbosity"
+"libica_aes_gcm_test $verbosity"
+"libica_aes_xts_test $verbosity"
+
+"libica_cbccs_test $verbosity"
+"libica_ccm_test $verbosity"
+"libica_cmac_test $verbosity"
+
+"libica_keygen_test $verbosity 1024 r"
+"libica_keygen_test $verbosity 2048 r"
+"libica_keygen_test $verbosity 3072 r"
+"libica_keygen_test $verbosity 4096 r"
+"libica_rsa_key_check_test $verbosity"
+"libica_rsa_test $verbosity"
+
+"libica_sha_test/libica_sha_test $verbosity libica_sha_test/sha_test_vectors/*"
+)
+
+echo -ne "" &> $out;
+for (( i=1; i <= ${#testcases[@]}; i++ ))
+do
+	echo -ne "Running libica test suite (writing to "$out") ... "$i"/"${#testcases[@]}"\r";
+	./${testcases[i-1]} >> $out 2>&1;
+done
+echo -ne "\n";

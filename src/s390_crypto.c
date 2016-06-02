@@ -23,13 +23,15 @@
 #include <string.h>
 #include <stdio.h>
 #include <errno.h>
-#include "s390_crypto.h"
+
+#include "fips.h"
 #include "init.h"
+#include "s390_crypto.h"
 
 unsigned int sha1_switch, sha256_switch, sha512_switch, des_switch,
-             tdes_switch, aes128_switch, aes192_switch, aes256_switch,
-             prng_switch, tdea128_switch, tdea192_switch, sha512_drng_switch,
-             msa4_switch, msa5_switch;
+	     tdes_switch, aes128_switch, aes192_switch, aes256_switch,
+	     prng_switch, tdea128_switch, tdea192_switch, sha512_drng_switch,
+	     msa4_switch, msa5_switch;
 
 s390_supported_function_t s390_kimd_functions[] = {
 	{SHA_1, S390_CRYPTO_SHA_1, &sha1_switch},
@@ -230,12 +232,12 @@ libica_func_list_element_int icaList[] = {
  {DES_OFB,      MSA4, DEA_ENCRYPT, 0, 0},
  {DES_CFB,      MSA4, DEA_ENCRYPT, 0, 0},
  {DES_CTR,      MSA4, DEA_ENCRYPT, 0, 0},
- {DES_CMAC,     MSA4, DEA_ENCRYPT, 0, 0},					// CPACF only (MSA4)
+ {DES_CMAC,     MSA4, DEA_ENCRYPT, 0, 0},				// CPACF only (MSA4)
 
  {DES3_ECB,     KMC,  TDEA_192_ENCRYPT, ICA_FLAG_SW, 0},
  {DES3_CBC,     KMC,  TDEA_192_ENCRYPT, ICA_FLAG_SW, 0},
  {DES3_OFB,     MSA4, TDEA_192_ENCRYPT,           0, 0},
- {DES3_CFB,     MSA4, TDEA_192_ENCRYPT, 	  	  0, 0},
+ {DES3_CFB,     MSA4, TDEA_192_ENCRYPT, 	  0, 0},
  {DES3_CTR,     MSA4, TDEA_192_ENCRYPT,           0, 0},
  {DES3_CMAC,    MSA4, TDEA_192_ENCRYPT,           0, 0},
 
@@ -271,11 +273,11 @@ int s390_initialize_functionlist() {
   unsigned int list_len = sizeof(icaList)/sizeof(libica_func_list_element_int);
 
   unsigned int x;
-  for (x=0; x<list_len; x++) {
+  for (x = 0; x < list_len; x++) {
 	switch ((int)icaList[x].type) {
 	case KIMD:
 		icaList[x].flags = icaList[x].flags |
-		((*s390_kimd_functions[icaList[x].id].enabled)? 4: 0);
+		    ((*s390_kimd_functions[icaList[x].id].enabled)? 4: 0);
 	break;
 	case KMC:
 		icaList[x].flags = icaList[x].flags |
@@ -301,7 +303,7 @@ int s390_initialize_functionlist() {
 				icaList[x].property = icaList[x].property | 1; // 128 bit
 		  }
 		  else if (icaList[x].id == AES_128_XTS_ENCRYPT) { // check for the maximum size
-			if      (*s390_msa4_functions[icaList[AES_256_XTS_ENCRYPT].id].enabled)
+			if (*s390_msa4_functions[icaList[AES_256_XTS_ENCRYPT].id].enabled)
 				icaList[x].property = icaList[x].property | 2; // 256 bit
 			if (*s390_msa4_functions[icaList[AES_128_XTS_ENCRYPT].id].enabled)
 				icaList[x].property = icaList[x].property | 1; // 128 bit
@@ -309,9 +311,10 @@ int s390_initialize_functionlist() {
 	break;
 	case PPNO:
 		icaList[x].flags = icaList[x].flags |
-		((*s390_ppno_functions[icaList[x].id].enabled)? 4: 0);
+		    ((*s390_ppno_functions[icaList[x].id].enabled)? 4: 0);
 	break;
 	default:
+		/* Do nothing. */
 	break;
 	}
   }
@@ -367,6 +370,17 @@ int s390_get_functionlist(libica_func_list_element *pmech_list,
       pmech_list[x].mech_mode_id = icaList[x].mech_mode_id;
       pmech_list[x].flags        = icaList[x].flags;
       pmech_list[x].property     = icaList[x].property;
+#ifdef ICA_FIPS
+	/* Disable the algorithm in the following cases:
+	 * - We are running in FIPS mode and the algorithm is not FIPS
+	 *   approved.
+	 * - We are in an error state. */
+	if (((fips & ICA_FIPS_MODE) && !fips_approved(icaList[x].mech_mode_id))
+	    || fips >> 1) {
+		pmech_list[x].flags = 0;
+		pmech_list[x].property = 0;
+	}
+#endif /* ICA_FIPS */
   }
 
   return 0;

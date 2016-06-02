@@ -26,10 +26,10 @@
 	(((unsigned char *)(mask))[((function) & 0x7F) >> 3] & \
 	(0x80 >> ((function) & 0x07)))
 
-#define KM   	1
-#define KMC  	2
-#define KIMD 	3
-#define MSA4 	4
+#define KM	1
+#define KMC	2
+#define KIMD	3
+#define MSA4	4
 #define ADAPTER 5
 #define PPNO	6
 
@@ -119,10 +119,10 @@ typedef enum {
 	SHA512_DRNG_SEED
 } ppno_functions_t;
 
-extern s390_supported_function_t s390_kmc_functions[PRNG + 1];
-extern s390_supported_function_t s390_msa4_functions[AES_256_XTS_DECRYPT + 1];
-extern s390_supported_function_t s390_kimd_functions[GHASH + 1];
-extern s390_supported_function_t s390_ppno_functions[SHA512_DRNG_SEED + 1];
+extern s390_supported_function_t s390_kmc_functions[];
+extern s390_supported_function_t s390_msa4_functions[];
+extern s390_supported_function_t s390_kimd_functions[];
+extern s390_supported_function_t s390_ppno_functions[];
 
 void s390_crypto_switches_init(void);
 

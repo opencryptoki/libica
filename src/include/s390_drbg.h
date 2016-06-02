@@ -58,6 +58,8 @@
  * DRBG mechanism type
  */
 struct ica_drbg_mech{
+	const char *id;
+
 	/* Mechanism constants */
 	const int highest_supp_sec;
 	const size_t seed_len;

@@ -96,6 +96,8 @@ static inline int s390_sha_hw(unsigned char *iv, unsigned char *input_data,
 	unsigned char *default_iv  = sha_constants[sha_function].default_iv;
 	unsigned int hash_length   = sha_constants[sha_function].hash_length;
 	unsigned int vector_length = sha_constants[sha_function].vector_length;
+	unsigned int hw_function_code
+	    = sha_constants[sha_function].hw_function_code;
 
 	/* A internal buffer for the SHA hash and stream bit length. For SHA512
 	 * this can be at most 128 byte for the hash plus 16 byte for the
@@ -125,8 +127,6 @@ static inline int s390_sha_hw(unsigned char *iv, unsigned char *input_data,
 	     message_part == SHA_MSG_PART_MIDDLE) && (remnant != 0))
 		return EINVAL;
 
-	unsigned int hw_function_code;
-	hw_function_code = sha_constants[sha_function].hw_function_code;
 	if (complete_blocks_length) {
 		rc = s390_kimd(hw_function_code, shabuff, input_data,
 			       complete_blocks_length);

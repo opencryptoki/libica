@@ -42,11 +42,8 @@ void *thread(void *buffer)
 
 int main(int argc, char **argv)
 {
-	long rnd_ex[3] = {0};
-	long ex = 0, pair_found = 0;
-	int status[THREADS[test]];
+	long rnd_ex[3] = {0}, ex, pair_found;
 	int i, j, rc;
-	unsigned char buffer[THREADS[test]][GEN_BYTES[test]];
 	bool toggle;
 
 	if(2 > argc || 4 < argc){
@@ -70,21 +67,29 @@ int main(int argc, char **argv)
 	       "instantiation of ica_drbg\n"
 	       "(the test result is good, if p is close to 0.5 for a large"
 	       " number of random experiments)\n");
+
 	/* perform each of the 3 tests rnd_ex[test] times */
-	for(; test < 3; test++){
+	for(test = 0; test < 3; test++){
 		if(!rnd_ex[test])
 			continue;
 
-		printf("%ld random Experiment(s): %4d threads, "
+		int status[THREADS[test]];
+		unsigned char buffer[THREADS[test]][GEN_BYTES[test]];
+
+		pair_found = 0;
+
+		printf("%ld random Experiment(s): %d threads, "
 		       "%1d bytes/thread generated...\n",
 		       rnd_ex[test], THREADS[test], GEN_BYTES[test]);
 		pthread_t threads[THREADS[test]];
 
-		for(; ex < rnd_ex[test]; ex++){
+		for(ex = 0; ex < rnd_ex[test]; ex++){
 			/* start threads */
 			for(i = 0; i < THREADS[test]; i++){
-				if((rc = pthread_create(&threads[i], NULL,
-							thread, buffer[i]))){
+				while((rc = pthread_create(&threads[i], NULL,
+				      thread, buffer[i])) == EAGAIN)
+					;
+				if(rc){
 					fprintf(stderr,
 						"error: pthread_create: "
 						"%s (%d)\n",
@@ -108,8 +113,8 @@ int main(int argc, char **argv)
 			toggle = false;
 			for(i = 0; i < THREADS[test]; i++){
 				for(j = 0; j < THREADS[test]; j++){
-					if(!memcmp(buffer[i], buffer[j],
-						   GEN_BYTES[test]) && i != j){
+					if(i != j && !memcmp(buffer[i],
+					   buffer[j], GEN_BYTES[test])){
 						pair_found++;
 						toggle = true;
 						break;
@@ -123,5 +128,12 @@ int main(int argc, char **argv)
 		       pair_found, (float)pair_found/ex);
 	}
 
+	/* destroy instantiation */
+	rc = ica_drbg_uninstantiate(&sh);
+	if(rc){
+		fprintf(stderr, "error: ica_drbg_uninstantiate: %s (%d)\n",
+			strerror(rc), rc);
+		exit(1);
+	}
 	return 0;
 }

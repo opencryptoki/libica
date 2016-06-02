@@ -15,8 +15,15 @@
 #ifndef S390_AES_H
 #define S390_AES_H
 #include <openssl/aes.h>
+#include <openssl/crypto.h>
 #include <stdlib.h>
 
+#include <openssl/opensslconf.h>
+#ifdef OPENSSL_FIPS
+#include <openssl/fips.h>
+#endif /* OPENSSL_FIPS */
+
+#include "fips.h"
 #include "ica_api.h"
 #include "icastats.h"
 #include "init.h"
@@ -187,6 +194,11 @@ static inline int s390_aes_ecb_sw(unsigned int function_code,
 	unsigned int key_size = (function_code & 0x0f) *
 				sizeof(ica_aes_key_single_t);
 
+#ifdef ICA_FIPS
+	if ((fips & ICA_FIPS_MODE) && (!FIPS_mode()))
+		return EACCES;
+#endif /* ICA_FIPS */
+
 	if (function_code & S390_CRYPTO_DIRECTION_MASK) {
 		AES_set_decrypt_key(keys, key_size * 8, &aes_key);
 		direction = AES_DECRYPT;
@@ -244,6 +256,11 @@ static inline int s390_aes_cbc_sw(unsigned int function_code,
 	unsigned int direction;
 	unsigned int key_size = (function_code & 0x0f) *
 				sizeof(ica_aes_key_single_t);
+
+#ifdef ICA_FIPS
+	if ((fips & ICA_FIPS_MODE) && (!FIPS_mode()))
+		return EACCES;
+#endif /* ICA_FIPS */
 
 	if (function_code & S390_CRYPTO_DIRECTION_MASK) {
 		AES_set_decrypt_key(keys, key_size * 8, &aes_key);
@@ -390,8 +407,7 @@ static inline int s390_aes_cfb(unsigned int fc, unsigned long data_length,
 		memcpy(rest_in_data, in_data + tmp_data_length,
 		       rest_data_length);
 
-		rc = __s390_aes_cfb(fc, AES_BLOCK_SIZE,
-				    rest_in_data,
+		rc = __s390_aes_cfb(fc, lcfb, rest_in_data,
 				    iv, key, rest_out_data, lcfb);
 		if (rc)
 			return rc;

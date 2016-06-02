@@ -8,47 +8,51 @@
 .\"
 .TH ICAINFO 1 2013-12-06 IBM "icainfo user manual"
 .SH NAME
-icainfo \- show information about cryptographic functions supported by libica
+icainfo \- print information about cryptographic functions supported by libica
 .SH SYNOPSIS
 .B icainfo
 [-v | --version] [-h | --help]
 .SH DESCRIPTION
 .B icainfo
-displays all the cryptographic algorithms and modes of operation supported by
-libica together with implementation details about software and hardware support.
+prints a table that shows libica's support for various cryptographic
+algorithms and information about FIPS support. A sample output is given below:
 .P
 .nf
- function    |    # hardware     |     # software
--------------+-------------------+----------------
-       SHA-1 |        yes        |         yes
-     SHA-224 |        yes        |         yes
-     SHA-256 |        yes        |         yes
-     SHA-384 |        yes        |         yes
-     SHA-512 |        yes        |         yes
-       GHASH |        yes        |          no
-        PRNG |        yes        |         yes
-DRBG-SHA-512 |        yes        |         yes
-      RSA ME |        yes        |         yes
-     RSA CRT |        yes        |         yes
-     DES ECB |        yes        |         yes
-     DES CBC |        yes        |         yes
-     DES OFB |        yes        |          no
-     DES CFB |        yes        |          no
-     DES CTR |        yes        |          no
-    DES CMAC |        yes        |          no
-    3DES ECB |        yes        |         yes
-    3DES CBC |        yes        |         yes
-    3DES OFB |        yes        |          no
-    3DES CFB |        yes        |          no
-    3DES CTR |        yes        |          no
-   3DES CMAC |        yes        |          no
-     AES ECB |        yes        |         yes
-     AES CBC |        yes        |         yes
-     AES OFB |        yes        |          no
-     AES CFB |        yes        |          no
-     AES CTR |        yes        |          no
-    AES CMAC |        yes        |          no
-     AES XTS |        yes        |          no
+      Cryptographic algorithm support
+-------------------------------------------
+ function      | # hardware | # software
+---------------+------------+--------------
+         SHA-1 |    yes     |     yes
+       SHA-224 |    yes     |     yes
+       SHA-256 |    yes     |     yes
+       SHA-384 |    yes     |     yes
+       SHA-512 |    yes     |     yes
+         GHASH |    yes     |      no
+         P_RNG |  blocked   |   blocked
+  DRBG-SHA-512 |    yes     |     yes
+        RSA ME |     no     |     yes
+       RSA CRT |     no     |     yes
+       DES ECB |  blocked   |   blocked
+       DES CBC |  blocked   |   blocked
+       DES OFB |  blocked   |   blocked
+       DES CFB |  blocked   |   blocked
+       DES CTR |  blocked   |   blocked
+      DES CMAC |  blocked   |   blocked
+      3DES ECB |    yes     |     yes
+      3DES CBC |    yes     |     yes
+      3DES OFB |    yes     |      no
+      3DES CFB |    yes     |      no
+      3DES CTR |    yes     |      no
+     3DES CMAC |    yes     |      no
+       AES ECB |    yes     |     yes
+       AES CBC |    yes     |     yes
+       AES OFB |    yes     |      no
+       AES CFB |    yes     |      no
+       AES CTR |    yes     |      no
+      AES CMAC |    yes     |      no
+       AES XTS |    yes     |      no
+-------------------------------------------
+Built-in FIPS support: FIPS mode active.
 .fi
 .SH OPTIONS
 .IP "-v or --version"

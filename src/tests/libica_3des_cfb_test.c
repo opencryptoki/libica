@@ -12,43 +12,23 @@
 #include <strings.h>
 #include <stdlib.h>
 #include "ica_api.h"
+#include "testcase.h"
 
 #define NR_TESTS 12
 #define NR_RANDOM_TESTS 1000
-
-void dump_array(unsigned char *ptr, unsigned int size)
-{
-	unsigned char *ptr_end;
-	unsigned char *h;
-	int i = 1;
-
-	h = ptr;
-	ptr_end = ptr + size;
-	while (h < (unsigned char *)ptr_end) {
-		printf("0x%02x ",(unsigned char ) *h);
-		h++;
-		if (i == 8) {
-			printf("\n");
-			i = 1;
-		} else {
-			++i;
-		}
-	}
-	printf("\n");
-}
 
 void dump_cfb_data(unsigned char *iv, unsigned int iv_length,
 		   unsigned char *key, unsigned int key_length,
 		   unsigned char *input_data, unsigned int data_length,
 		   unsigned char *output_data)
 {
-	printf("IV \n");
+	VV_(printf("IV \n"));
 	dump_array(iv, iv_length);
-	printf("Key \n");
+	VV_(printf("Key \n"));
 	dump_array(key, key_length);
-	printf("Input Data\n");
+	VV_(printf("Input Data\n"));
 	dump_array(input_data, data_length);
-	printf("Output Data\n");
+	VV_(printf("Output Data\n"));
 	dump_array(output_data, data_length);
 }
 
@@ -57,29 +37,29 @@ int load_random_test_data(unsigned char *data, unsigned int data_length,
 			   unsigned char *key, unsigned int key_length)
 {
 	int rc;
+
 	rc = ica_random_number_generate(data_length, data);
 	if (rc) {
-		printf("ica_random_number_generate with rc = %i errnor = %i\n",
-		       rc, errno);
+		VV_(printf("ica_random_number_generate with rc = %i errnor = %i\n",
+		    rc, errno));
 		return rc;
 	}
 	rc = ica_random_number_generate(iv_length, iv);
 	if (rc) {
-		printf("ica_random_number_generate with rc = %i errnor = %i\n",
-		       rc, errno);
+		VV_(printf("ica_random_number_generate with rc = %i errnor = %i\n",
+		    rc, errno));
 		return rc;
 	}
 	rc = ica_random_number_generate(key_length, key);
 	if (rc) {
-		printf("ica_random_number_generate with rc = %i errnor = %i\n",
-		       rc, errno);
+		VV_(printf("ica_random_number_generate with rc = %i errnor = %i\n",
+		    rc, errno));
 		return rc;
 	}
 	return rc;
 }
 
-int random_des_cfb(int iteration, int silent, unsigned int data_length,
-		   unsigned int lcfb)
+int random_des_cfb(int iteration, unsigned int data_length, unsigned int lcfb)
 {
 	unsigned int iv_length = sizeof(ica_des_vector_t);
 	unsigned int key_length = sizeof(ica_des_key_triple_t);
@@ -99,27 +79,25 @@ int random_des_cfb(int iteration, int silent, unsigned int data_length,
 			      key_length);
 	memcpy(tmp_iv, iv, iv_length);
 
-	if (!silent) {
-		printf("Test Parameters for iteration = %i\n", iteration);
-		printf("key length = %i, data length = %i, iv length = %i,"
-			" lcfb = %i\n", key_length, data_length, iv_length, lcfb);
-	}
+	VV_(printf("Test Parameters for iteration = %i\n", iteration));
+	VV_(printf("key length = %i, data length = %i, iv length = %i,"
+	    " lcfb = %i\n", key_length, data_length, iv_length, lcfb));
 
 	rc = ica_3des_cfb(input_data, encrypt, data_length, key, tmp_iv, lcfb,
 			  1);
 	if (rc) {
-		printf("ica_3des_cfb encrypt failed with rc = %i\n", rc);
+		VV_(printf("ica_3des_cfb encrypt failed with rc = %i\n", rc));
 		dump_cfb_data(iv, iv_length, key, key_length, input_data,
 			      data_length, encrypt);
 	}
-	if (!silent && !rc) {
-		printf("Encrypt:\n");
+	if (!rc) {
+		VV_(printf("Encrypt:\n"));
 		dump_cfb_data(iv, iv_length, key, key_length, input_data,
 			      data_length, encrypt);
 	}
 
 	if (rc) {
-		printf("3DES OFB test exited after encryption\n");
+		VV_(printf("3DES OFB test exited after encryption\n"));
 		return rc;
 	}
 
@@ -128,24 +106,24 @@ int random_des_cfb(int iteration, int silent, unsigned int data_length,
 	rc = ica_3des_cfb(encrypt, decrypt, data_length, key, tmp_iv,
 			 lcfb, 0);
 	if (rc) {
-		printf("ica_3des_cfb decrypt failed with rc = %i\n", rc);
+		VV_(printf("ica_3des_cfb decrypt failed with rc = %i\n", rc));
 		dump_cfb_data(iv, iv_length, key, key_length, encrypt,
 			      data_length, decrypt);
 		return rc;
 	}
 
 
-	if (!silent && !rc) {
-		printf("Decrypt:\n");
+	if (!rc) {
+		VV_(printf("Decrypt:\n"));
 		dump_cfb_data(iv, iv_length, key, key_length, encrypt,
 			      data_length, decrypt);
 	}
 
 	if (memcmp(decrypt, input_data, data_length)) {
-		printf("Decryption Result does not match the original data!\n");
-		printf("Original data:\n");
+		VV_(printf("Decryption Result does not match the original data!\n"));
+		VV_(printf("Original data:\n"));
 		dump_array(input_data, data_length);
-		printf("Decryption Result:\n");
+		VV_(printf("Decryption Result:\n"));
 		dump_array(decrypt, data_length);
 		rc++;
 	}
@@ -157,23 +135,19 @@ int main(int argc, char **argv)
 	int rc = 0;
 	int error_count = 0;
 	int iteration;
-	unsigned int silent = 0;
 	unsigned int rdata;
 	unsigned int data_length = 1;
 	unsigned int lcfb = 1;
 	unsigned int j;
 
-	if (argc > 1) {
-		if (strstr(argv[1], "silent"))
-			silent = 1;
-	}
+	set_verbosity(argc, argv);
 
 	for(iteration = 1; iteration <= NR_RANDOM_TESTS; iteration++)	{
 		for (j = 1; j <= 2; j++) {
 			if (!(data_length % lcfb)) {
-				rc = random_des_cfb(iteration, silent, data_length, lcfb);
+				rc = random_des_cfb(iteration, data_length, lcfb);
 				if (rc) {
-					printf("random_des_cfb failed with rc = %i\n", rc);
+					V_(printf("random_des_cfb failed with rc = %i\n", rc));
 					error_count++;
 				}
 			}
@@ -189,15 +163,15 @@ int main(int argc, char **argv)
 		// add a value between 1 and 8 to data_length
 		if (ica_random_number_generate(sizeof(rdata), (unsigned char*) &rdata)) {
 			printf("ica_random_number_generate failed with errnor = %i\n",
-			       errno);
+			    errno);
 			exit(1);
 		}
 		data_length += (rdata % 8) + 1;
 	}
 	if (error_count)
-		printf("%i testcases failed\n", error_count);
+		printf("%i 3DES-CFB tests failed.\n", error_count);
 	else
-		printf("All 3des_cfb testcases finished successfully\n");
+		printf("All 3DES-CFB tests passed.\n");
 
 	return rc;
 }

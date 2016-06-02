@@ -28,6 +28,7 @@
 
 #include "ica_api.h"
 #include "icastats.h"
+#include "fips.h"
 #include "s390_rsa.h"
 #include "s390_crypto.h"
 #include "s390_sha.h"
@@ -45,8 +46,6 @@
 #define DEFAULT3_CRYPT_DEVICE "/dev/zcrypt"
 
 #define MAX_VERSION_LENGTH 16
-
-#define NDEBUG /* turns off assertions */
 
 static unsigned int check_des_parms(unsigned int mode,
 				    unsigned long data_length,
@@ -283,7 +282,7 @@ static unsigned int check_message_part(unsigned int message_part)
 
 unsigned int ica_open_adapter(ica_adapter_handle_t *adapter_handle)
 {
-	char *name;
+	char *name, status_mask[64];
 
 	if (!adapter_handle)
 		return EINVAL;
@@ -300,7 +299,6 @@ unsigned int ica_open_adapter(ica_adapter_handle_t *adapter_handle)
 			*adapter_handle = open(DEFAULT3_CRYPT_DEVICE, O_RDWR);
 	}
 	if (*adapter_handle != -1) {
-		char status_mask[64];
 		/* Test if character device is accessible. */
 		if (!ioctl(*adapter_handle, Z90STAT_STATUS_MASK, &status_mask)) {
 			return 0;
@@ -332,6 +330,11 @@ unsigned int ica_sha1(unsigned int message_part,
 		      unsigned char *output_data)
 {
 	int rc;
+
+#ifdef ICA_FIPS
+	if (fips >> 1)
+		return EACCES;
+#endif /* ICA_FIPS */
 
 	/* check for obvious errors in parms */
 	if ((input_data == NULL) ||
@@ -374,6 +377,11 @@ unsigned int ica_sha224(unsigned int message_part,
 {
 	unsigned int rc;
 
+#ifdef ICA_FIPS
+	if (fips >> 1)
+		return EACCES;
+#endif /* ICA_FIPS */
+
 	/* check for obvious errors in parms */
 	if ((input_data == NULL) ||
 	    (sha256_context == NULL) ||
@@ -407,6 +415,11 @@ unsigned int ica_sha256(unsigned int message_part,
 {
 	unsigned int rc;
 
+#ifdef ICA_FIPS
+	if (fips >> 1)
+		return EACCES;
+#endif /* ICA_FIPS */
+
 	/* check for obvious errors in parms */
 	if ((input_data == NULL) ||
 	    (sha256_context == NULL) ||
@@ -439,6 +452,11 @@ unsigned int ica_sha384(unsigned int message_part,
 			unsigned char *output_data)
 {
 	unsigned int rc;
+
+#ifdef ICA_FIPS
+	if (fips >> 1)
+		return EACCES;
+#endif /* ICA_FIPS */
 
 	/* check for obvious errors in parms */
 	if ((input_data == NULL) ||
@@ -474,6 +492,11 @@ unsigned int ica_sha512(unsigned int message_part,
 {
 	unsigned int rc;
 
+#ifdef ICA_FIPS
+	if (fips >> 1)
+		return EACCES;
+#endif /* ICA_FIPS */
+
 	/* check for obvious errors in parms */
 	if ((input_data == NULL) ||
 	    (sha512_context == NULL) ||
@@ -503,6 +526,11 @@ unsigned int ica_sha512(unsigned int message_part,
 unsigned int ica_random_number_generate(unsigned int output_length,
 					unsigned char *output_data)
 {
+#ifdef ICA_FIPS
+	if (fips >> 1)
+		return EACCES;
+#endif /* ICA_FIPS */
+
 	/* check for obvious errors in parms */
 	if (output_data == NULL)
 		return EINVAL;
@@ -515,6 +543,14 @@ unsigned int ica_rsa_key_generate_mod_expo(ica_adapter_handle_t adapter_handle,
 					   ica_rsa_key_mod_expo_t *public_key,
 					   ica_rsa_key_mod_expo_t *private_key)
 {
+	unsigned int num_ignored_bytes;
+	unsigned char *public_exponent;
+
+#ifdef ICA_FIPS
+	if (fips >> 1)
+		return EACCES;
+#endif /* ICA_FIPS */
+
 	if (public_key->key_length != private_key->key_length)
 		return EINVAL;
 	/* Keys should comply with modulus_bit_length */
@@ -527,9 +563,8 @@ unsigned int ica_rsa_key_generate_mod_expo(ica_adapter_handle_t adapter_handle,
 	/* OpenSSL takes only exponents of type unsigned long, so we have to
 	 * be sure that we give a value of the right size to OpenSSL.
 	 */
-	unsigned int num_ignored_bytes = public_key->key_length -
-					 sizeof(unsigned long);
-	unsigned char *public_exponent = public_key->exponent;
+	num_ignored_bytes = public_key->key_length - sizeof(unsigned long);
+	public_exponent = public_key->exponent;
 
 	for (; num_ignored_bytes; --num_ignored_bytes, ++public_exponent)
 		if (*public_exponent != 0)
@@ -547,6 +582,14 @@ unsigned int ica_rsa_key_generate_crt(ica_adapter_handle_t adapter_handle,
 				      ica_rsa_key_mod_expo_t *public_key,
 				      ica_rsa_key_crt_t *private_key)
 {
+	unsigned int num_ignored_bytes;
+	unsigned char *public_exponent;
+
+#ifdef ICA_FIPS
+	if (fips >> 1)
+		return EACCES;
+#endif /* ICA_FIPS */
+
 	if (public_key->key_length != private_key->key_length)
 		return EINVAL;
 	if ((modulus_bit_length + 7) / 8 != public_key->key_length)
@@ -554,9 +597,8 @@ unsigned int ica_rsa_key_generate_crt(ica_adapter_handle_t adapter_handle,
 	if (public_key->key_length < sizeof(unsigned long))
 		return EINVAL;
 
-	unsigned int num_ignored_bytes = public_key->key_length -
-					sizeof(unsigned long);
-	unsigned char *public_exponent = public_key->exponent;
+	num_ignored_bytes = public_key->key_length - sizeof(unsigned long);
+	public_exponent = public_key->exponent;
 
 	for (; num_ignored_bytes; --num_ignored_bytes, ++public_exponent)
 		if (*public_exponent != 0)
@@ -575,7 +617,12 @@ unsigned int ica_rsa_mod_expo(ica_adapter_handle_t adapter_handle,
 			      unsigned char *output_data)
 {
 	ica_rsa_modexpo_t rb;
-	int rc;
+	int hardware, rc;
+
+#ifdef ICA_FIPS
+	if (fips >> 1)
+		return EACCES;
+#endif /* ICA_FIPS */
 
 	/* check for obvious errors in parms */
 	if (input_data == NULL || rsa_key == NULL || output_data == NULL)
@@ -589,7 +636,7 @@ unsigned int ica_rsa_mod_expo(ica_adapter_handle_t adapter_handle,
 	rb.b_key = (char *)rsa_key->exponent;
 	rb.n_modulus = (char *)rsa_key->modulus;
 
-	int hardware = ALGO_SW;
+	hardware = ALGO_SW;
 	if (adapter_handle == DRIVER_NOT_LOADED)
 		rc = rsa_mod_expo_sw(&rb);
 	else {
@@ -614,6 +661,11 @@ unsigned int ica_rsa_crt_key_check(ica_rsa_key_crt_t *rsa_key)
 	BIGNUM *bn_invq;
 	BN_CTX *ctx;
 	unsigned char *tmp_buf = NULL;
+
+#ifdef ICA_FIPS
+	if (fips >> 1)
+		return EACCES;
+#endif /* ICA_FIPS */
 
 	/* check if p > q  */
 	pq_comp = memcmp( (rsa_key->p + 8), (rsa_key->q), rsa_key->key_length/2);
@@ -663,7 +715,12 @@ unsigned int ica_rsa_crt(ica_adapter_handle_t adapter_handle,
 			 unsigned char *output_data)
 {
 	ica_rsa_modexpo_crt_t rb;
-	int rc;
+	int hardware, rc;
+
+#ifdef ICA_FIPS
+	if (fips >> 1)
+		return EACCES;
+#endif /* ICA_FIPS */
 
 	/* check for obvious errors in parms */
 	if (input_data == NULL || rsa_key == NULL || output_data == NULL)
@@ -683,7 +740,7 @@ unsigned int ica_rsa_crt(ica_adapter_handle_t adapter_handle,
 	rb.bq_key = (char *)rsa_key->dq;
 	rb.u_mult_inv = (char *)rsa_key->qInverse;
 
-	int hardware = ALGO_SW;
+	hardware = ALGO_SW;
 	if (adapter_handle == DRIVER_NOT_LOADED)
 		rc = rsa_crt_sw(&rb);
 	else {
@@ -706,6 +763,11 @@ unsigned int ica_des_encrypt(unsigned int mode,
 			     ica_des_key_single_t *des_key,
 			     unsigned char *output_data)
 {
+#ifdef ICA_FIPS
+	if (fips)
+		return EACCES;
+#endif /* ICA_FIPS */
+
 	if (check_des_parms(mode, data_length, input_data,
 			    (unsigned char *) iv, (unsigned char *) des_key,
 			     output_data))
@@ -730,6 +792,11 @@ unsigned int ica_des_decrypt(unsigned int mode,
 			     ica_des_key_single_t *des_key,
 			     unsigned char *output_data)
 {
+#ifdef ICA_FIPS
+	if (fips)
+		return EACCES;
+#endif /* ICA_FIPS */
+
 	if (check_des_parms(mode, data_length, input_data,
 			    (unsigned char *) iv, (unsigned char *) des_key,
 			     output_data))
@@ -754,6 +821,11 @@ unsigned int ica_3des_encrypt(unsigned int mode,
 			      ica_des_key_triple_t *des_key,
 			      unsigned char *output_data)
 {
+#ifdef ICA_FIPS
+	if (fips >> 1)
+		return EACCES;
+#endif /* ICA_FIPS */
+
 	if (check_des_parms(mode, data_length, input_data,
 			    (unsigned char *) iv, (unsigned char *) des_key,
 			     output_data))
@@ -778,6 +850,11 @@ unsigned int ica_3des_decrypt(unsigned int mode,
 			      ica_des_key_triple_t *des_key,
 			      unsigned char *output_data)
 {
+#ifdef ICA_FIPS
+	if (fips >> 1)
+		return EACCES;
+#endif /* ICA_FIPS */
+
 	if (check_des_parms(mode, data_length, input_data,
 			    (unsigned char *) iv, (unsigned char *) des_key,
 			     output_data))
@@ -803,13 +880,19 @@ unsigned int ica_aes_encrypt(unsigned int mode,
 			     unsigned char *aes_key,
 			     unsigned char *output_data)
 {
+	unsigned int function_code;
+
+#ifdef ICA_FIPS
+	if (fips >> 1)
+		return EACCES;
+#endif /* ICA_FIPS */
+
 	/* check for obvious errors in parms */
 	if (check_aes_parms(mode, data_length, input_data,
 			    (unsigned char *) iv, key_length, aes_key,
 			    output_data))
 		return EINVAL;
 
-	unsigned int function_code;
 	function_code = aes_directed_fc(key_length, ICA_ENCRYPT);
 
 	switch (mode) {
@@ -835,13 +918,19 @@ unsigned int ica_aes_decrypt(unsigned int mode,
 			     unsigned char *aes_key,
 			     unsigned char *output_data)
 {
+	unsigned int function_code;
+
+#ifdef ICA_FIPS
+	if (fips >> 1)
+		return EACCES;
+#endif /* ICA_FIPS */
+
 	/* check for obvious errors in parms */
 	if (check_aes_parms(mode, data_length, input_data,
 			    (unsigned char *) iv, key_length, aes_key,
 			    output_data))
 		return EINVAL;
 
-	unsigned int function_code;
 	function_code = aes_directed_fc(key_length, ICA_DECRYPT);
 
 	switch (mode) {
@@ -863,6 +952,11 @@ unsigned int ica_des_ecb(const unsigned char *in_data, unsigned char *out_data,
 			 unsigned long data_length, unsigned char *key,
 			 unsigned int direction)
 {
+#ifdef ICA_FIPS
+	if (fips)
+		return EACCES;
+#endif /* ICA_FIPS */
+
 	if (check_des_parms(MODE_ECB, data_length, in_data, NULL, key, out_data))
 		return EINVAL;
 
@@ -875,6 +969,11 @@ unsigned int ica_des_cbc(const unsigned char *in_data, unsigned char *out_data,
 			 unsigned char *iv,
 			 unsigned int direction)
 {
+#ifdef ICA_FIPS
+	if (fips)
+		return EACCES;
+#endif /* ICA_FIPS */
+
 	if (check_des_parms(MODE_CBC, data_length, in_data, iv, key, out_data))
 		return EINVAL;
 
@@ -887,6 +986,11 @@ unsigned int ica_des_cbc_cs(const unsigned char *in_data, unsigned char *out_dat
 			    unsigned char *key, unsigned char *iv,
 			    unsigned int direction, unsigned int variant)
 {
+#ifdef ICA_FIPS
+	if (fips)
+		return EACCES;
+#endif /* ICA_FIPS */
+
 	if (check_des_parms(MODE_CBCCS, data_length, in_data, iv, key, out_data))
 		return EINVAL;
 
@@ -900,6 +1004,11 @@ unsigned int ica_des_cfb(const unsigned char *in_data, unsigned char *out_data,
 			 unsigned char *iv, unsigned int lcfb,
 			 unsigned int direction)
 {
+#ifdef ICA_FIPS
+	if (fips)
+		return EACCES;
+#endif /* ICA_FIPS */
+
 	if (check_des_parms(MODE_CFB, data_length, in_data, iv, key, out_data))
 		return EINVAL;
 	/* The cipher feedback has to be between 1 and cipher block size. */
@@ -914,6 +1023,11 @@ unsigned int ica_des_ofb(const unsigned char *in_data, unsigned char *out_data,
 			 unsigned long data_length, unsigned char *key,
 			 unsigned char *iv, unsigned int direction)
 {
+#ifdef ICA_FIPS
+	if (fips)
+		return EACCES;
+#endif /* ICA_FIPS */
+
 	if (check_des_parms(MODE_OFB, data_length, in_data, iv, key, out_data))
 		return EINVAL;
 
@@ -927,6 +1041,11 @@ unsigned int ica_des_ctr(const unsigned char *in_data, unsigned char *out_data,
 			 unsigned char *ctr, unsigned int ctr_width,
 			 unsigned int direction)
 {
+#ifdef ICA_FIPS
+	if (fips)
+		return EACCES;
+#endif /* ICA_FIPS */
+
 	if (check_des_parms(MODE_CTR, data_length, in_data, ctr, key, out_data))
 		return EINVAL;
 
@@ -946,6 +1065,11 @@ unsigned int ica_des_ctrlist(const unsigned char *in_data, unsigned char *out_da
 			     const unsigned char *ctrlist,
 			     unsigned int direction)
 {
+#ifdef ICA_FIPS
+	if (fips)
+		return EACCES;
+#endif /* ICA_FIPS */
+
 	if (check_des_parms(MODE_CTR, data_length, in_data, ctrlist, key, out_data))
 		return EINVAL;
 
@@ -959,6 +1083,11 @@ unsigned int ica_des_cmac(const unsigned char *message, unsigned long message_le
 			  unsigned char *key,
 			  unsigned int direction)
 {
+#ifdef ICA_FIPS
+	if (fips)
+		return EACCES;
+#endif /* ICA_FIPS */
+
 	return ica_des_cmac_last(message, message_length,
 				 mac, mac_length,
 				 key,
@@ -973,6 +1102,11 @@ unsigned int ica_des_cmac_intermediate(const unsigned char *message,
 {
 	unsigned long function_code;
 	int rc;
+
+#ifdef ICA_FIPS
+	if (fips)
+		return EACCES;
+#endif /* ICA_FIPS */
 
 	if (check_cmac_parms(DES_BLOCK_SIZE,
 			     message, message_length,
@@ -1001,6 +1135,11 @@ unsigned int ica_des_cmac_last(const unsigned char *message, unsigned long messa
 	unsigned char tmp_mac[DES_BLOCK_SIZE];
 	unsigned long function_code;
 	int rc;
+
+#ifdef ICA_FIPS
+	if (fips)
+		return EACCES;
+#endif /* ICA_FIPS */
 
 	if (check_cmac_parms(DES_BLOCK_SIZE,
 			     message, message_length,
@@ -1037,6 +1176,11 @@ unsigned int ica_3des_ecb(const unsigned char *in_data, unsigned char *out_data,
 			  unsigned long data_length, unsigned char *key,
 			  unsigned int direction)
 {
+#ifdef ICA_FIPS
+	if (fips >> 1)
+		return EACCES;
+#endif /* ICA_FIPS */
+
 	if (check_des_parms(MODE_ECB, data_length, in_data, NULL, key, out_data))
 		return EINVAL;
 
@@ -1049,6 +1193,11 @@ unsigned int ica_3des_cbc(const unsigned char *in_data, unsigned char *out_data,
 			  unsigned char *iv,
 			  unsigned int direction)
 {
+#ifdef ICA_FIPS
+	if (fips >> 1)
+		return EACCES;
+#endif /* ICA_FIPS */
+
 	if (check_des_parms(MODE_CBC, data_length, in_data, iv, key, out_data))
 		return EINVAL;
 
@@ -1061,6 +1210,11 @@ unsigned int ica_3des_cbc_cs(const unsigned char *in_data, unsigned char *out_da
 			     unsigned char *key, unsigned char *iv,
 			     unsigned int direction, unsigned int variant)
 {
+#ifdef ICA_FIPS
+	if (fips >> 1)
+		return EACCES;
+#endif /* ICA_FIPS */
+
 	if (check_des_parms(MODE_CBCCS, data_length, in_data, iv, key, out_data))
 		return EINVAL;
 
@@ -1074,6 +1228,11 @@ unsigned int ica_3des_cfb(const unsigned char *in_data, unsigned char *out_data,
 			  unsigned char *iv, unsigned int lcfb,
 			  unsigned int direction)
 {
+#ifdef ICA_FIPS
+	if (fips >> 1)
+		return EACCES;
+#endif /* ICA_FIPS */
+
 	if (check_des_parms(MODE_CFB, data_length, in_data, iv, key, out_data))
 		return EINVAL;
 	/* The cipher feedback has to be between 1 and cipher block size. */
@@ -1088,6 +1247,11 @@ unsigned int ica_3des_ofb(const unsigned char *in_data, unsigned char *out_data,
 			  unsigned long data_length, unsigned char *key,
 			  unsigned char *iv, unsigned int direction)
 {
+#ifdef ICA_FIPS
+	if (fips >> 1)
+		return EACCES;
+#endif /* ICA_FIPS */
+
 	if (check_des_parms(MODE_OFB, data_length, in_data, iv, key, out_data))
 		return EINVAL;
 
@@ -1101,6 +1265,11 @@ unsigned int ica_3des_ctr(const unsigned char *in_data, unsigned char *out_data,
 			 unsigned char *ctr, unsigned int ctr_width,
 			 unsigned int direction)
 {
+#ifdef ICA_FIPS
+	if (fips >> 1)
+		return EACCES;
+#endif /* ICA_FIPS */
+
 	if (check_des_parms(MODE_CTR, data_length, in_data, ctr, key, out_data))
 		return EINVAL;
 
@@ -1120,6 +1289,11 @@ unsigned int ica_3des_ctrlist(const unsigned char *in_data, unsigned char *out_d
 			      const unsigned char *ctrlist,
 			      unsigned int direction)
 {
+#ifdef ICA_FIPS
+	if (fips >> 1)
+		return EACCES;
+#endif /* ICA_FIPS */
+
 	if (check_des_parms(MODE_CTR, data_length, in_data, ctrlist, key, out_data))
 		return EINVAL;
 
@@ -1133,6 +1307,11 @@ unsigned int ica_3des_cmac(const unsigned char *message, unsigned long message_l
 			   unsigned char *key,
 			   unsigned int direction)
 {
+#ifdef ICA_FIPS
+	if (fips >> 1)
+		return EACCES;
+#endif /* ICA_FIPS */
+
 	return ica_3des_cmac_last(message, message_length,
 				  mac, mac_length,
 				  key,
@@ -1147,6 +1326,11 @@ unsigned int ica_3des_cmac_intermediate(const unsigned char *message,
 {
 	unsigned long function_code;
 	int rc;
+
+#ifdef ICA_FIPS
+	if (fips >> 1)
+		return EACCES;
+#endif /* ICA_FIPS */
 
 	if (check_cmac_parms(DES_BLOCK_SIZE,
 			     message, message_length,
@@ -1175,6 +1359,11 @@ unsigned int ica_3des_cmac_last(const unsigned char *message, unsigned long mess
 	unsigned char tmp_mac[DES_BLOCK_SIZE];
 	unsigned long function_code;
 	int rc;
+
+#ifdef ICA_FIPS
+	if (fips >> 1)
+		return EACCES;
+#endif /* ICA_FIPS */
 
 	if (check_cmac_parms(DES_BLOCK_SIZE,
 			     message, message_length,
@@ -1213,6 +1402,12 @@ unsigned int ica_aes_ecb(const unsigned char *in_data, unsigned char *out_data,
 			 unsigned int direction)
 {
 	unsigned int function_code;
+
+#ifdef ICA_FIPS
+	if (fips >> 1)
+		return EACCES;
+#endif /* ICA_FIPS */
+
 	if (check_aes_parms(MODE_ECB, data_length, in_data, NULL, key_length,
 			    key, out_data))
 		return EINVAL;
@@ -1227,6 +1422,12 @@ unsigned int ica_aes_cbc(const unsigned char *in_data, unsigned char *out_data,
 			 unsigned int direction)
 {
 	unsigned int function_code;
+
+#ifdef ICA_FIPS
+	if (fips >> 1)
+		return EACCES;
+#endif /* ICA_FIPS */
+
 	if (check_aes_parms(MODE_CBC, data_length, in_data, iv, key_length,
 			    key, out_data))
 		return EINVAL;
@@ -1242,6 +1443,12 @@ unsigned int ica_aes_cbc_cs(const unsigned char *in_data, unsigned char *out_dat
 			    unsigned int direction, unsigned int variant)
 {
 	unsigned int function_code;
+
+#ifdef ICA_FIPS
+	if (fips >> 1)
+		return EACCES;
+#endif /* ICA_FIPS */
+
 	if (check_aes_parms(MODE_CBCCS, data_length, in_data, iv, key_length,
 			    key, out_data))
 		return EINVAL;
@@ -1257,6 +1464,12 @@ unsigned int ica_aes_cfb(const unsigned char *in_data, unsigned char *out_data,
 			 unsigned int direction)
 {
 	unsigned int function_code;
+
+#ifdef ICA_FIPS
+	if (fips >> 1)
+		return EACCES;
+#endif /* ICA_FIPS */
+
 	if (check_aes_parms(MODE_CFB, data_length, in_data, iv, key_length,
 			    key, out_data))
 		return EINVAL;
@@ -1276,6 +1489,11 @@ unsigned int ica_aes_ofb(const unsigned char *in_data, unsigned char *out_data,
 {
 	unsigned int function_code;
 
+#ifdef ICA_FIPS
+	if (fips >> 1)
+		return EACCES;
+#endif /* ICA_FIPS */
+
 	if (check_aes_parms(MODE_OFB, data_length, in_data, iv, key_length,
 			    key, out_data))
 		return EINVAL;
@@ -1291,6 +1509,11 @@ unsigned int ica_aes_ctr(const unsigned char *in_data, unsigned char *out_data,
 			 unsigned int direction)
 {
 	unsigned int function_code;
+
+#ifdef ICA_FIPS
+	if (fips >> 1)
+		return EACCES;
+#endif /* ICA_FIPS */
 
 	if (check_aes_parms(MODE_CTR, data_length, in_data, ctr, key_length,
 			    key, out_data))
@@ -1314,6 +1537,12 @@ unsigned int ica_aes_ctrlist(const unsigned char *in_data, unsigned char *out_da
 			     unsigned int direction)
 {
 	unsigned int function_code;
+
+#ifdef ICA_FIPS
+	if (fips >> 1)
+		return EACCES;
+#endif /* ICA_FIPS */
+
 	if (check_aes_parms(MODE_CTR, data_length, in_data, ctrlist, key_length,
 			    key, out_data))
 		return EINVAL;
@@ -1330,6 +1559,11 @@ unsigned int ica_aes_xts(const unsigned char *in_data, unsigned char *out_data,
 			 unsigned int direction)
 {
 	unsigned int function_code;
+
+#ifdef ICA_FIPS
+	if (fips >> 1)
+		return EACCES;
+#endif /* ICA_FIPS */
 
 	if (check_aes_parms(MODE_XTS, data_length, in_data, tweak, key_length,
 			    key1, out_data))
@@ -1360,6 +1594,11 @@ unsigned int ica_aes_cmac(const unsigned char *message, unsigned long message_le
 			  unsigned char *key, unsigned int key_length,
 			  unsigned int direction)
 {
+#ifdef ICA_FIPS
+	if (fips >> 1)
+		return EACCES;
+#endif /* ICA_FIPS */
+
 	return ica_aes_cmac_last(message, message_length,
 				 mac, mac_length,
 				 key, key_length,
@@ -1374,6 +1613,11 @@ unsigned int ica_aes_cmac_intermediate(const unsigned char *message,
 {
 	unsigned long function_code;
 	int rc;
+
+#ifdef ICA_FIPS
+	if (fips >> 1)
+		return EACCES;
+#endif /* ICA_FIPS */
 
 	if (check_cmac_parms(AES_BLOCK_SIZE,
 			     message, message_length,
@@ -1402,6 +1646,11 @@ unsigned int ica_aes_cmac_last(const unsigned char *message, unsigned long messa
 	unsigned char tmp_mac[AES_BLOCK_SIZE];
 	unsigned long function_code;
 	int rc;
+
+#ifdef ICA_FIPS
+	if (fips >> 1)
+		return EACCES;
+#endif /* ICA_FIPS */
 
 	if (check_cmac_parms(AES_BLOCK_SIZE,
 			     message, message_length,
@@ -1445,6 +1694,11 @@ unsigned int ica_aes_ccm(unsigned char *payload, unsigned long payload_length,
 	unsigned char *mac;
 	unsigned long function_code;
 	int rc;
+
+#ifdef ICA_FIPS
+	if (fips >> 1)
+		return EACCES;
+#endif /* ICA_FIPS */
 
 	if (check_aes_parms(MODE_CCM, payload_length, payload, nonce, key_length,
 			    key, ciphertext_n_mac))
@@ -1491,6 +1745,11 @@ unsigned int ica_aes_gcm(unsigned char *plaintext, unsigned long plaintext_lengt
 	unsigned char tmp_tag[AES_BLOCK_SIZE];
 	unsigned long function_code;
 	int rc;
+
+#ifdef ICA_FIPS
+	if (fips >> 1)
+		return EACCES;
+#endif /* ICA_FIPS */
 
 	if (check_aes_parms(MODE_GCM, plaintext_length, plaintext, iv, key_length,
 			    key, ciphertext))
@@ -1539,6 +1798,11 @@ unsigned int ica_aes_gcm_initialize(const unsigned char *iv,
 {
 	unsigned long function_code;
 
+#ifdef ICA_FIPS
+	if (fips >> 1)
+		return EACCES;
+#endif /* ICA_FIPS */
+
 	function_code = aes_directed_fc(key_length, direction);
 
 	return s390_gcm_initialize(function_code, iv, iv_length,
@@ -1557,6 +1821,11 @@ unsigned int ica_aes_gcm_intermediate(unsigned char *plaintext,
 	unsigned long function_code;
 	int rc, iv_length_dummy = 12;
 
+#ifdef ICA_FIPS
+	if (fips >> 1)
+		return EACCES;
+#endif /* ICA_FIPS */
+
 	if (check_aes_parms(MODE_GCM, plaintext_length, plaintext, cb, key_length,
 			    key, ciphertext))
 		return EINVAL;
@@ -1568,15 +1837,13 @@ unsigned int ica_aes_gcm_intermediate(unsigned char *plaintext,
 	if (direction) {
 		/* encrypt & generate */
 		rc = s390_gcm_intermediate(function_code, plaintext, plaintext_length,
-								   ciphertext, cb, aad, aad_length, tag,
-								   tag_length, key, subkey);
+		    ciphertext, cb, aad, aad_length, tag, tag_length, key, subkey);
 		if (rc)
 			return rc;
 	} else {
 		/* decrypt & verify */
 		rc = s390_gcm_intermediate(function_code, plaintext, plaintext_length,
-								   ciphertext, cb, aad, aad_length, tag,
-								   AES_BLOCK_SIZE, key, subkey);
+		    ciphertext, cb, aad, aad_length, tag, AES_BLOCK_SIZE, key, subkey);
 		if (rc)
 			return rc;
 	}
@@ -1592,6 +1859,11 @@ unsigned int ica_aes_gcm_last( unsigned char *icb,
 {
 	unsigned long function_code;
 	int rc;
+
+#ifdef ICA_FIPS
+	if (fips >> 1)
+		return EACCES;
+#endif /* ICA_FIPS */
 
 	function_code = aes_directed_fc(key_length, direction);
 	if (direction) {
@@ -1621,12 +1893,12 @@ unsigned int ica_get_version(libica_version_info *version_info)
 	char *pch;
 	char *saveptr;
 
+	int length = strnlen(VERSION, MAX_VERSION_LENGTH);
+	char buffer[length+1];
+
 	if (version_info == NULL) {
 		return EINVAL;
 	}
-
-	int length = strnlen(VERSION, MAX_VERSION_LENGTH);
-	char buffer[length+1];
 
 	rc = snprintf(buffer, (length+1), "%s", VERSION);
 	if (rc <= 0) {
@@ -1712,6 +1984,11 @@ int ica_drbg_instantiate(ica_drbg_t **sh,
 {
 	int status;
 
+#ifdef ICA_FIPS
+	if (fips >> 1)
+		return EACCES;
+#endif /* ICA_FIPS */
+
 	status = drbg_mech_valid(mech);
 	if(status)
 		return ica_drbg_error(status);
@@ -1739,6 +2016,11 @@ int ica_drbg_reseed(ica_drbg_t *sh,
 {
 	int status;
 
+#ifdef ICA_FIPS
+	if (fips >> 1)
+		return EACCES;
+#endif /* ICA_FIPS */
+
 	if(!sh)
 		return ica_drbg_error(DRBG_SH_INV);
 	status = drbg_mech_valid(sh->mech);
@@ -1765,6 +2047,11 @@ int ica_drbg_generate(ica_drbg_t *sh,
 {
 	int status;
 
+#ifdef ICA_FIPS
+	if (fips >> 1)
+		return EACCES;
+#endif /* ICA_FIPS */
+
 	if(!sh)
 		return ica_drbg_error(DRBG_SH_INV);
 	status = drbg_mech_valid(sh->mech);
@@ -1783,7 +2070,6 @@ int ica_drbg_generate(ica_drbg_t *sh,
 			assert(!pthread_rwlock_unlock(&sh->mech->lock));
 			return ica_drbg_error(status);
 		}
-		sh->mech->test_ctr = 0;
 	}
 	sh->mech->test_ctr++;
 	assert(!pthread_rwlock_unlock(&sh->mech->lock));
@@ -1846,3 +2132,19 @@ int ica_drbg_health_test(void *func,
 
 	return ica_drbg_error(status);
 }
+
+#ifdef ICA_FIPS
+
+int
+ica_fips_status(void)
+{
+	return fips;
+}
+
+void
+ica_fips_powerup_tests(void)
+{
+	fips_powerup_tests();
+}
+
+#endif /* ICA_FIPS */

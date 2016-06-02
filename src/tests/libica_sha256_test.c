@@ -11,6 +11,7 @@
 #include <stdio.h>
 #include <string.h>
 #include "ica_api.h"
+#include "testcase.h"
 
 #define NUM_FIPS_TESTS 3
 
@@ -59,34 +60,6 @@ unsigned char FIPS_TEST_RESULT[NUM_FIPS_TESTS][SHA256_HASH_LENGTH] =
   },
 };
 
-void dump_array(unsigned char *ptr, unsigned int size)
-{
-  unsigned char *ptr_end;
-  unsigned char *h;
-  int i = 1, trunc = 0;
-
-  if (size > 64) {
-    trunc = size - 64;
-    size = 64;
-  }
-  h = ptr;
-  ptr_end = ptr + size;
-  while (h < ptr_end) {
-    printf("0x%02x ", *h);
-    h++;
-    if (i == 8) {
-      if (h != ptr_end)
-	printf("\n");
-      i = 1;
-    } else {
-     ++i;
-    }
-  }
-  printf("\n");
-  if (trunc > 0)
-    printf("... %d bytes not printed\n", trunc);
-}
-
 int new_api_sha256_test(void)
 {
 	sha256_context_t sha256_context;
@@ -103,29 +76,31 @@ int new_api_sha256_test(void)
 		else
 			memset(input_data, 'a', FIPS_TEST_DATA_SIZE[i]);
 
-		printf("\nOriginal data for test %d:\n", i);
+		VV_(printf("\nOriginal data for test %d:\n", i));
 		dump_array(input_data, FIPS_TEST_DATA_SIZE[i]);
 
 		rc = ica_sha256(SHA_MSG_PART_ONLY, FIPS_TEST_DATA_SIZE[i], input_data,
 				&sha256_context, output_hash);
 
 		if (rc != 0) {
-			printf("icaSha256 failed with errno %d (0x%x).\n", rc, rc);
+			V_(printf("icaSha256 failed with errno %d (0x%x).\n", rc, rc));
 			return rc;
 		}
 
-		printf("\nOutput hash for test %d:\n", i);
+		VV_(printf("\nOutput hash for test %d:\n", i));
 		dump_array(output_hash, output_hash_length);
-		if (memcmp(output_hash, FIPS_TEST_RESULT[i], SHA256_HASH_LENGTH) != 0)
-			printf("This does NOT match the known result.\n");
-		else
-			printf("Yep, it's what it should be.\n");
+		if (memcmp(output_hash, FIPS_TEST_RESULT[i], SHA256_HASH_LENGTH) != 0) {
+			VV_(printf("This does NOT match the known result.\n"));
+		}
+		else {
+			VV_(printf("Yep, it's what it should be.\n"));
+		}
 	}
 
 	// This test is the same as test 2, except that we use the SHA256_CONTEXT and
 	// break it into calls of 1024 bytes each.
-	printf("\nOriginal data for test 2(chunks = 1024) is calls of 1024"
-	       " 'a's at a time\n");
+	V_(printf("\nOriginal data for test 2(chunks = 1024) is calls of 1024"
+	       " 'a's at a time\n"));
 	i = FIPS_TEST_DATA_SIZE[2];
 	while (i > 0) {
 		unsigned int sha_message_part;
@@ -142,24 +117,26 @@ int new_api_sha256_test(void)
 				input_data, &sha256_context, output_hash);
 
 		if (rc != 0) {
-			printf("ica_sha256 failed with errno %d (0x%x) on"
-			       " iteration %d.\n", rc, rc, i);
+			V_(printf("ica_sha256 failed with errno %d (0x%x) on"
+			       " iteration %d.\n", rc, rc, i));
 			return rc;
 		}
 		i -= 1024;
 	}
 
-	printf("\nOutput hash for test 2(chunks = 1024):\n");
+	VV_(printf("\nOutput hash for test 2(chunks = 1024):\n"));
 	dump_array(output_hash, output_hash_length);
-	if (memcmp(output_hash, FIPS_TEST_RESULT[2], SHA256_HASH_LENGTH) != 0)
-		printf("This does NOT match the known result.\n");
-	else
-		printf("Yep, it's what it should be.\n");
+	if (memcmp(output_hash, FIPS_TEST_RESULT[2], SHA256_HASH_LENGTH) != 0) {
+		VV_(printf("This does NOT match the known result.\n"));
+	}
+	else {
+		VV_(printf("Yep, it's what it should be.\n"));
+	}
 
 	// This test is the same as test 2, except that we use the
 	// SHA256_CONTEXT and break it into calls of 64 bytes each.
-	printf("\nOriginal data for test 2(chunks = 64) is calls of 64 'a's at"
-	       " a time\n");
+	V_(printf("\nOriginal data for test 2(chunks = 64) is calls of 64 'a's at"
+	       " a time\n"));
 	i = FIPS_TEST_DATA_SIZE[2];
 	while (i > 0) {
 		unsigned int sha_message_part;
@@ -176,21 +153,23 @@ int new_api_sha256_test(void)
 				input_data, &sha256_context, output_hash);
 
 		if (rc != 0) {
-			printf("ica_sha256 failed with errno %d (0x%x) on iteration"
-			       " %d.\n", rc, rc, i);
+			V_(printf("ica_sha256 failed with errno %d (0x%x) on iteration"
+			       " %d.\n", rc, rc, i));
 			return rc;
 		}
 		i -= 64;
 	}
 
-	printf("\nOutput hash for test 2(chunks = 64):\n");
+	VV_(printf("\nOutput hash for test 2(chunks = 64):\n"));
 	dump_array(output_hash, output_hash_length);
-	if (memcmp(output_hash, FIPS_TEST_RESULT[2], SHA256_HASH_LENGTH) != 0)
-		printf("This does NOT match the known result.\n");
-	else
-		printf("Yep, it's what it should be.\n");
+	if (memcmp(output_hash, FIPS_TEST_RESULT[2], SHA256_HASH_LENGTH) != 0) {
+		VV_(printf("This does NOT match the known result.\n"));
+	}
+	else {
+		VV_(printf("Yep, it's what it should be.\n"));
+	}
 
-	printf("\nAll SHA256 tests completed successfully\n");
+	printf("All SHA256 tests passed.\n");
 
 	return 0;
 }
@@ -198,6 +177,8 @@ int new_api_sha256_test(void)
 int main(int argc, char **argv)
 {
 	int rc = 0;
+
+	set_verbosity(argc, argv);
 
 	rc = new_api_sha256_test();
 	if (rc) {

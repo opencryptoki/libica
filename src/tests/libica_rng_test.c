@@ -10,62 +10,37 @@
 #include <stdio.h>
 #include "ica_api.h"
 #include <string.h>
+#include "testcase.h"
 
 unsigned char R[512];
 
 extern int errno;
 
-void dump_array(unsigned char *ptr, unsigned int size)
-{
-	unsigned char *ptr_end;
-	unsigned char *h;
-	int i = 1;
-
-	h = ptr;
-	ptr_end = ptr + size;
-	while (h < (unsigned char *)ptr_end) {
-		printf("0x%02x ",(unsigned char ) *h);
-		h++;
-		if (i == 8) {
-			printf("\n");
-			i = 1;
-		} else {
-			++i;
-		}
-	}
-	printf("\n");
-}
-
 int main(int argc, char **argv)
 {
 	int rc;
 	ica_adapter_handle_t adapter_handle;
-	unsigned int silent = 0;
 
-	if (argc > 1) {
-		if (strstr(argv[1], "silent"))
-			silent = 1;
-	}
+	set_verbosity(argc, argv);
 
 	rc = ica_open_adapter(&adapter_handle);
 	if (rc != 0) {
-		printf("ica_open_adapter failed and returned %d (0x%x).\n", rc, rc);
+		V_(printf("ica_open_adapter failed and returned %d (0x%x).\n", rc, rc));
 	}
 
 	rc = ica_random_number_generate(sizeof R, R);
 	if (rc != 0) {
-		printf("ica_random_number_generate failed and returned %d (0x%x).\n", rc, rc);
+		V_(printf("ica_random_number_generate failed and returned %d (0x%x).\n", rc, rc));
 #ifdef __s390__
-		if (rc == ENODEV)
-			printf("The usual cause of this on zSeries is that the CPACF instruction is not available.\n");
+		if (rc == ENODEV) {
+			V_(printf("The usual cause of this on zSeries is that the CPACF instruction is not available.\n"));
+		}
 #endif
 		return -1;
 	}
 
-	if (!silent) {
-		dump_array(R, sizeof R);
-		printf("\nWell, does it look random?\n\n");
-	}
+	dump_array(R, sizeof R);
+	VV_(printf("\nWell, does it look random?\n\n"));
 
 	ica_close_adapter(adapter_handle);
 	return 0;

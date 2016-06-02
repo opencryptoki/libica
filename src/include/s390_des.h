@@ -12,11 +12,24 @@
  * Copyright IBM Corp. 2009, 2010, 2011
  */
 
-#include "s390_ctr.h"
-#include <openssl/des.h>
-
 #ifndef S390_DES_H
 #define S390_DES_H
+
+#include <errno.h>
+#include <openssl/crypto.h>
+#include <openssl/des.h>
+#include <stdint.h>
+#include <stdlib.h>
+#include <string.h>
+
+#include <openssl/opensslconf.h>
+#ifdef OPENSSL_FIPS
+#include <openssl/fips.h>
+#endif /* OPENSSL_FIPS */
+
+#include "icastats.h"
+#include "s390_crypto.h"
+#include "s390_ctr.h"
 
 #define DES_BLOCK_SIZE  8
 
@@ -39,6 +52,11 @@ static inline int s390_des_ecb_sw(unsigned int function_code, unsigned long inpu
 		    const unsigned char *input_data, const unsigned char *keys,
 		    unsigned char *output_data)
 {
+#ifdef ICA_FIPS
+	if ((fips & ICA_FIPS_MODE) && (!FIPS_mode()))
+		return EACCES;
+#endif /* ICA_FIPS */
+
 	DES_key_schedule key_schedule1;
 	DES_key_schedule key_schedule2;
 	DES_key_schedule key_schedule3;
@@ -132,6 +150,11 @@ static inline int s390_des_cbc_sw(unsigned int function_code,
 			   const unsigned char *input_data, unsigned char *iv,
 			   const unsigned char *keys, unsigned char *output_data)
 {
+#ifdef ICA_FIPS
+	if ((fips & ICA_FIPS_MODE) && (!FIPS_mode()))
+		return EACCES;
+#endif /* ICA_FIPS */
+
 	DES_key_schedule key_schedule1;
 	DES_key_schedule key_schedule2;
 	DES_key_schedule key_schedule3;
@@ -397,9 +420,8 @@ static inline int s390_des_cfb(unsigned int fc, unsigned long data_length,
 		memcpy(rest_in_data, in_data + tmp_data_length,
 		       rest_data_length);
 
-		rc = __s390_des_cfb(fc, DES_BLOCK_SIZE,
-				    rest_in_data,
-				    iv, key, rest_out_data, lcfb);
+		rc = __s390_des_cfb(fc, lcfb, rest_in_data, iv, key,
+		    rest_out_data, lcfb);
 		if (rc)
 			return rc;
 

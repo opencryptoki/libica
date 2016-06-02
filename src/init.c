@@ -21,6 +21,7 @@
 #include <syslog.h>
 
 #include "init.h"
+#include "fips.h"
 #include "icastats.h"
 #include "s390_prng.h"
 #include "s390_crypto.h"
@@ -101,8 +102,14 @@ void __attribute__ ((constructor)) icainit(void)
 
 		s390_crypto_switches_init();
 
+#ifdef ICA_FIPS
+		fips_init();
+		fips_powerup_tests();
+#else
+		/* The fips_powerup_tests() include the ica_drbg_health_test(). */
 		ica_drbg_health_test(ica_drbg_generate, 256, true,
 				     ICA_DRBG_SHA512);
+#endif /* ICA_FIPS */
 
 		s390_prng_init();
 

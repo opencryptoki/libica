@@ -21,8 +21,9 @@
 #include "s390_drbg_sha512.h"
 #include "icastats.h"
 #include "s390_sha.h"
+#include "test_vec.h"
 
-typedef drbg_sha512_ws_t ws_t; /* local rename */
+typedef struct drbg_sha512_ws ws_t; /* typedef for readability only */
 
 /*
  * Auxiliary functions
@@ -66,8 +67,9 @@ static inline void mod_add(unsigned char *v,
  * SHA-512 DRBG mechanism
  */
 ica_drbg_mech_t DRBG_SHA512 = {
-	/* 10.1 Mechanisms Based on Hash Functions */
+	.id = "SHA-512",
 
+	/* 10.1 Mechanisms Based on Hash Functions */
 	.highest_supp_sec = DRBG_SEC_256,	/* = 256 bits */
 	.seed_len = DRBG_SHA512_SEED_LEN,	/* = 888 bits */
 	.max_pers_len = 256,			/* < 2^35 bits */
@@ -421,11 +423,11 @@ static int test_instantiate(int sec,
 			    bool pr)
 {
 	ica_drbg_t *sh = NULL;
-	const drbg_sha512_test_vec_t *tv;
+	const struct drbg_sha512_tv *tv;
 	int status, i;
 
-	for(i = 0; i < DRBG_SHA512_TEST_VEC_LEN; i++){
-		tv = &DRBG_SHA512_TEST_VEC[i];
+	for(i = 0; i < DRBG_SHA512_TV_LEN; i++){
+		tv = &DRBG_SHA512_TV[i];
 		if(tv->pr != pr)
 			continue;
 
@@ -459,13 +461,13 @@ static int test_reseed(int sec,
 	ws_t ws;
 	ica_drbg_t sh = {.mech = &DRBG_SHA512, .ws = &ws, .sec = sec,
 			 .pr = pr};
-	const drbg_sha512_test_vec_t *tv;
+	const struct drbg_sha512_tv *tv;
 	int status, i;
 
 	drbg_recursive_mutex_init(&sh.lock);
 
-	for(i = 0; i < DRBG_SHA512_TEST_VEC_LEN; i++){
-		tv = &DRBG_SHA512_TEST_VEC[i];
+	for(i = 0; i < DRBG_SHA512_TV_LEN; i++){
+		tv = &DRBG_SHA512_TV[i];
 		if(tv->pr || tv->no_reseed)
 			continue;
 
@@ -496,15 +498,15 @@ static int test_generate(int sec,
 	ica_drbg_t sh = {.mech = &DRBG_SHA512, .ws = &ws, .sec = sec,
 			 .pr = true};
 	int status, i;
-	const drbg_sha512_test_vec_t *tv;
+	const struct drbg_sha512_tv *tv;
 	unsigned char prnd;
 
 	drbg_recursive_mutex_init(&sh.lock);
 
 	/* Use appropriate test vectors for self-test */
 	do{
-		for(i = 0; i < DRBG_SHA512_TEST_VEC_LEN; i++){
-			tv = &DRBG_SHA512_TEST_VEC[i];
+		for(i = 0; i < DRBG_SHA512_TV_LEN; i++){
+			tv = &DRBG_SHA512_TV[i];
 			if(tv->pr != pr)
 				continue;
 

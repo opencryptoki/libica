@@ -17,47 +17,36 @@
 #include <errno.h>
 #include "ica_api.h"
 #include <string.h>
+#include "testcase.h"
 
 int main(int argc, char **argv)
 {
 	libica_version_info version_info;
 	int rc;
 	int failed = 0;
-	unsigned int silent = 0;
 
-	if (argc > 1) {
-		if (strstr(argv[1], "silent"))
-			silent = 1;
-	}
+	set_verbosity(argc, argv);
 
-	if (!silent) {
-		printf("Testing libica API ica_get_version() w/ invalid input (NULL).\n");
-	}
+	V_(printf("Testing libica API ica_get_version() w/ invalid input (NULL).\n"));
 	rc = ica_get_version(NULL);
 	if (rc == EINVAL) {
-		if (!silent) {
-			printf("Test successful\n");
-		}
+		V_(printf("Test successful\n"));
 	}
 	else {
 		printf("Test failed: rc=%x, expected: %x \n", rc, EINVAL);
 		failed++;
 	}
 
-	if (!silent) {
-		printf("Testing libica API ica_get_version_() w/ valid input.\n");
-	}
+	V_(printf("Testing libica API ica_get_version_() w/ valid input.\n"));
 	rc = ica_get_version(&version_info);
 	if (rc == 0) {
-		if (!silent) {
-			printf("Test successful\n");
-			printf("Major_version:%d, minor_version %d, fixpack_version %d\n",
-				version_info.major_version, version_info.minor_version,
-				version_info.fixpack_version);
-		}
+		V_(printf("Test successful\n"));
+		V_(printf("Major_version:%d, minor_version %d, fixpack_version %d\n",
+			version_info.major_version, version_info.minor_version,
+			version_info.fixpack_version));
 	}
 	else {
-		printf("Test failed rc=%d, expected: %d \n", rc, 0);
+		V_(printf("Test failed rc=%d, expected: %d \n", rc, 0));
 		failed++;
 	}
 
@@ -65,7 +54,7 @@ int main(int argc, char **argv)
 		printf("Failed ica_get_version tests: %d\n", failed);
 		return 1;
 	} else {
-		printf("All ica_get_version tests completed sucessfully\n");
+		printf("All ica_get_version tests passed.\n");
 		return 0;
 	}
 }

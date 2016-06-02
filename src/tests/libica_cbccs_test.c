@@ -14,6 +14,7 @@
 #include "ica_api.h"
 #include <stdlib.h>
 #include <openssl/aes.h>
+#include "testcase.h"
 
 /* CBC_CS data */
 unsigned char NIST_KEY[] = {
@@ -168,28 +169,6 @@ unsigned char NIST_NEXT_IV[6][16] = {
 	}
 };
 
-
-void dump_array(char *ptr, int size)
-{
-	char *ptr_end;
-	unsigned char *h;
-	int i = 1;
-
-	h = (unsigned char *)ptr;
-	ptr_end = ptr + size;
-	while (h < (unsigned char *)ptr_end) {
-		printf("0x%02x ",(unsigned char ) *h);
-		h++;
-		if ((i == 16) & (h <(unsigned char *)ptr_end)) {
-			printf("\n");
-			i = 1;
-		} else {
-			++i;
-		}
-	}
-	printf("\n");
-}
-
 int compare_decrypt_result_with_expected_result(
 			unsigned char *, unsigned char *,
 			unsigned int, unsigned char *,
@@ -209,26 +188,26 @@ inline int compare_decrypt_result_with_expected_result(
 	unsigned int test_case_number)
 {
 	if (memcmp(decrypt_out, expected_result, compare_length) != 0) {
-		printf("This does NOT match the original data.\n");
-		printf("Test case number %i for %s with CBC_CS mode failed\n",
-		test_case_number, out_text) ;
-		printf("\nkey \n");
-		dump_array((char *) key, key_length);
-		printf("\nOriginal data:\n");
-		dump_array((char *) expected_result, compare_length);
-		printf("\ntmp iv\n");
-		dump_array((char *) iv, iv_size);
-		printf("\nExpected Result:\n");
-		dump_array((char *) expected_result, compare_length);
-		printf("\nDecrypted data:\n");
-		dump_array((char *) decrypt_out, compare_length);
+		VV_(printf("This does NOT match the original data.\n"));
+		VV_(printf("Test case number %i for %s with CBC_CS mode failed\n",
+		test_case_number, out_text));
+		VV_(printf("\nkey \n"));
+		dump_array(key, key_length);
+		VV_(printf("\nOriginal data:\n"));
+		dump_array(expected_result, compare_length);
+		VV_(printf("\ntmp iv\n"));
+		dump_array(iv, iv_size);
+		VV_(printf("\nExpected Result:\n"));
+		dump_array(expected_result, compare_length);
+		VV_(printf("\nDecrypted data:\n"));
+		dump_array(decrypt_out, compare_length);
 		return 1;
 	}
 	return 0;
 }
 
 
-int test_3des_new_api(unsigned int mode, unsigned int variant, int silent)
+int test_3des_new_api(unsigned int mode, unsigned int variant)
 {
 	/* Test 3des */
 	unsigned int iv_size = sizeof(ica_des_vector_t);
@@ -244,15 +223,15 @@ int test_3des_new_api(unsigned int mode, unsigned int variant, int silent)
 				     NIST_TEST_DATA_LENGTH[i], key[i],
 				     tmp_iv, 1, variant);
 		if (rc) {
-			printf("key \n");
-			dump_array((char *) key[i], 8);
-			printf("\nOriginal data:\n");
-			dump_array((char *) NIST_TEST_DATA[i],
+			VV_(printf("key \n"));
+			dump_array(key[i], 8);
+			VV_(printf("\nOriginal data:\n"));
+			dump_array(NIST_TEST_DATA[i],
 				NIST_TEST_DATA_LENGTH[i]);
-			printf("\ntest iv\n");
-			dump_array((char *) tmp_iv, iv_size);
-			printf("\nica_3des_cbc_cs encrypt testcase %i failed with "
-				"errno %d (0x%x).\n", i, rc, rc);
+			VV_(printf("\ntest iv\n"));
+			dump_array(tmp_iv, iv_size);
+			VV_(printf("\nica_3des_cbc_cs encrypt test %i failed with "
+				"errno %d (0x%x).\n", i, rc, rc));
 			return 1;
 		}
 		memcpy(tmp_iv, NIST_IV, iv_size);
@@ -261,21 +240,21 @@ int test_3des_new_api(unsigned int mode, unsigned int variant, int silent)
 				     NIST_TEST_DATA_LENGTH[i], key[i],
 				     tmp_iv, 0, variant);
 		if (rc) {
-			printf("key \n");
-			dump_array((char *) key[i], 8);
-			printf("\nOriginal data:\n");
-			dump_array((char *) NIST_TEST_DATA[i],
+			VV_(printf("key \n"));
+			dump_array(key[i], 8);
+			VV_(printf("\nOriginal data:\n"));
+			dump_array(NIST_TEST_DATA[i],
 				NIST_TEST_DATA_LENGTH[i]);
-			printf("\noriginal iv\n");
-			dump_array((char *) &iv, iv_size);
-			printf("\ntmp iv\n");
-			dump_array((char *) tmp_iv, iv_size);
-			printf("\nEncrypted data:\n");
-			dump_array((char *) enc_text, NIST_TEST_DATA_LENGTH[i]);
-			printf("\nDecrypted data:\n");
-			dump_array((char *) dec_text, NIST_TEST_DATA_LENGTH[i]);
-			printf("\nica_3des_cbc_cs decrypt testcase %i failed with "
-				"errno %d (0x%x).\n", i, rc, rc);
+			VV_(printf("\noriginal iv\n"));
+			dump_array(iv, iv_size);
+			VV_(printf("\ntmp iv\n"));
+			dump_array(tmp_iv, iv_size);
+			VV_(printf("\nEncrypted data:\n"));
+			dump_array(enc_text, NIST_TEST_DATA_LENGTH[i]);
+			VV_(printf("\nDecrypted data:\n"));
+			dump_array(dec_text, NIST_TEST_DATA_LENGTH[i]);
+			VV_(printf("\nica_3des_cbc_cs decrypt test %i failed with "
+				"errno %d (0x%x).\n", i, rc, rc));
 			return 1;
 		}
 		if (compare_decrypt_result_with_expected_result(dec_text,
@@ -284,15 +263,13 @@ int test_3des_new_api(unsigned int mode, unsigned int variant, int silent)
 				(char *) "3DES", i))
 			return 1;
 		else {
-			if (!silent) {
-				printf("Test case number %i for 3DES with CBC_CS mode was "
-				"successful!\n", i);
-			}
+			VV_(printf("Test case number %i for 3DES with CBC_CS mode was "
+			"successful!\n", i));
 		}
 	}
 	return rc;
 }
-int test_des_new_api(unsigned int mode, unsigned int variant, int silent)
+int test_des_new_api(unsigned int mode, unsigned int variant)
 {
 	/* Test des */
 	unsigned int iv_size = sizeof(ica_des_vector_t);
@@ -302,21 +279,29 @@ int test_des_new_api(unsigned int mode, unsigned int variant, int silent)
 	unsigned int number_of_testcases = 6;
 	int rc = 0, i = 0;
 
+#ifdef ICA_FIPS
+	if (ica_fips_status() & ICA_FIPS_MODE) {
+		printf("All DES-CBC-CS tests skipped."
+		    " (DES not FIPS approved)\n");
+		return 0;
+	}
+#endif /* ICA_FIPS */
+
 	for (i = 0; i < number_of_testcases ; i++) {
 		memcpy(tmp_iv, NIST_IV, iv_size);
 		rc = ica_des_cbc_cs(NIST_TEST_DATA[i], enc_text,
 				    NIST_TEST_DATA_LENGTH[i], key[i],
 				    tmp_iv, 1, variant);
 		if (rc) {
-			printf("key \n");
-			dump_array((char *) key[i], 8);
-			printf("\nOriginal data:\n");
-			dump_array((char *) NIST_TEST_DATA[i],
+			VV_(printf("key \n"));
+			dump_array(key[i], 8);
+			VV_(printf("\nOriginal data:\n"));
+			dump_array(NIST_TEST_DATA[i],
 				NIST_TEST_DATA_LENGTH[i]);
-			printf("\ntest iv\n");
-			dump_array((char *) tmp_iv, iv_size);
-			printf("\nica_des_cbc_cs encrypt testcase %i failed with "
-				"errno %d (0x%x).\n", i, rc, rc);
+			VV_(printf("\ntest iv\n"));
+			dump_array(tmp_iv, iv_size);
+			VV_(printf("\nica_des_cbc_cs encrypt test %i failed with "
+				"errno %d (0x%x).\n", i, rc, rc));
 			return 1;
 		}
 		memcpy(tmp_iv, NIST_IV, iv_size);
@@ -325,21 +310,21 @@ int test_des_new_api(unsigned int mode, unsigned int variant, int silent)
 				    NIST_TEST_DATA_LENGTH[i], key[i],
 				    tmp_iv, 0, variant);
 		if (rc) {
-			printf("key \n");
-			dump_array((char *) key[i], 8);
-			printf("\nOriginal data:\n");
-			dump_array((char *) NIST_TEST_DATA[i],
+			VV_(printf("key \n"));
+			dump_array(key[i], 8);
+			VV_(printf("\nOriginal data:\n"));
+			dump_array(NIST_TEST_DATA[i],
 			NIST_TEST_DATA_LENGTH[i]);
-			printf("\noriginal iv\n");
-			dump_array((char *) &iv, iv_size);
-			printf("\ntmp iv\n");
-			dump_array((char *) tmp_iv, iv_size);
-			printf("\nEncrypted data:\n");
-			dump_array((char *) enc_text, NIST_TEST_DATA_LENGTH[i]);
-			printf("\nDecrypted data:\n");
-			dump_array((char *) dec_text, NIST_TEST_DATA_LENGTH[i]);
-			printf("\nica_des_cbc_cs decrypt testcase %i failed with "
-				"errno %d (0x%x).\n", i, rc, rc);
+			VV_(printf("\noriginal iv\n"));
+			dump_array(iv, iv_size);
+			VV_(printf("\ntmp iv\n"));
+			dump_array(tmp_iv, iv_size);
+			VV_(printf("\nEncrypted data:\n"));
+			dump_array(enc_text, NIST_TEST_DATA_LENGTH[i]);
+			VV_(printf("\nDecrypted data:\n"));
+			dump_array(dec_text, NIST_TEST_DATA_LENGTH[i]);
+			VV_(printf("\nica_des_cbc_cs decrypt test %i failed with "
+				"errno %d (0x%x).\n", i, rc, rc));
 			return 1;
 		}
 		if (compare_decrypt_result_with_expected_result(
@@ -349,15 +334,13 @@ int test_des_new_api(unsigned int mode, unsigned int variant, int silent)
 				(char *) "DES", i))
 			return 1;
 		else {
-			if (!silent) {
-				printf("Test case number %i for DES with CBC_CS mode was "
-				"successful!\n", i);
-			}
+			VV_(printf("Test case number %i for DES with CBC_CS mode was "
+			"successful!\n", i));
 		}
 	}
 	return rc;
 }
-int test_aes_new_api(unsigned int mode, unsigned int variant, int silent)
+int test_aes_new_api(unsigned int mode, unsigned int variant)
 {
 	/* Test with 192 & 256 byte keys */
 	unsigned int iv_size = sizeof(ica_aes_vector_t);
@@ -377,15 +360,15 @@ int test_aes_new_api(unsigned int mode, unsigned int variant, int silent)
 				    NIST_TEST_DATA_LENGTH[i], key[i],
 				    key_size[i], tmp_iv, 1, variant);
 		if (rc) {
-			printf("key \n");
-			dump_array((char *) key[i], key_size[i]);
-			printf("\nOriginal data:\n");
-			dump_array((char *) NIST_TEST_DATA[i],
+			VV_(printf("key \n"));
+			dump_array(key[i], key_size[i]);
+			VV_(printf("\nOriginal data:\n"));
+			dump_array(NIST_TEST_DATA[i],
 				NIST_TEST_DATA_LENGTH[i]);
-			printf("\ntest iv\n");
-			dump_array((char *) tmp_iv, iv_size);
-			printf("\nica_aes_cbc_cs encrypt testcase %i failed with "
-				" errno %d (0x%x).\n", i, rc, rc);
+			VV_(printf("\ntest iv\n"));
+			dump_array(tmp_iv, iv_size);
+			VV_(printf("\nica_aes_cbc_cs encrypt test %i failed with "
+				" errno %d (0x%x).\n", i, rc, rc));
 			return 1;
 		}
 		memcpy(tmp_iv, NIST_IV, iv_size);
@@ -394,21 +377,21 @@ int test_aes_new_api(unsigned int mode, unsigned int variant, int silent)
 				    NIST_TEST_DATA_LENGTH[i], key[i],
 				    key_size[i], tmp_iv, 0, variant);
 		if (rc) {
-			printf("key \n");
-			dump_array((char *) key[i], key_size[i]);
-			printf("\nOriginal data:\n");
-			dump_array((char *) NIST_TEST_DATA[i],
+			VV_(printf("key \n"));
+			dump_array(key[i], key_size[i]);
+			VV_(printf("\nOriginal data:\n"));
+			dump_array(NIST_TEST_DATA[i],
 				NIST_TEST_DATA_LENGTH[i]);
-			printf("\noriginal iv\n");
-			dump_array((char *) &iv, iv_size);
-			printf("\ntmp iv\n");
-			dump_array((char *) tmp_iv, iv_size);
-			printf("\nEncrypted data:\n");
-			dump_array((char *) enc_text, NIST_TEST_DATA_LENGTH[i]);
-			printf("\nDecrypted data:\n");
-			dump_array((char *) dec_text, NIST_TEST_DATA_LENGTH[i]);
-			printf("\nica_aes_cbc_cs decrypt testcase %i failed with "
-				"errno %d (0x%x).\n", i, rc, rc);
+			VV_(printf("\noriginal iv\n"));
+			dump_array(iv, iv_size);
+			VV_(printf("\ntmp iv\n"));
+			dump_array(tmp_iv, iv_size);
+			VV_(printf("\nEncrypted data:\n"));
+			dump_array(enc_text, NIST_TEST_DATA_LENGTH[i]);
+			VV_(printf("\nDecrypted data:\n"));
+			dump_array(dec_text, NIST_TEST_DATA_LENGTH[i]);
+			VV_(printf("\nica_aes_cbc_cs decrypt test %i failed with "
+				"errno %d (0x%x).\n", i, rc, rc));
 			return 1;
 		}
 		if (compare_decrypt_result_with_expected_result(dec_text,
@@ -417,16 +400,14 @@ int test_aes_new_api(unsigned int mode, unsigned int variant, int silent)
 				(i < 3) ? text[0] : text[1], i))
 			return 1;
 		else {
-			if (!silent) {
-				printf("Test case number %i for %s with CBC_CS mode was "
-				"successful!\n", i, (i < 3) ? text[0] : text[1]);
-			}
+			VV_(printf("Test case number %i for %s with CBC_CS mode was "
+			"successful!\n", i, (i < 3) ? text[0] : text[1]));
 		}
 	}
 	return rc;
 }
 
-int test_aes128_new_api(unsigned int mode, int silent)
+int test_aes128_new_api(unsigned int mode)
 {
 	/* AES128 Known Answer Tests*/
 	unsigned int iv_size = sizeof(ica_aes_vector_t);
@@ -445,15 +426,15 @@ int test_aes128_new_api(unsigned int mode, int silent)
 				    NIST_TEST_DATA_LENGTH[i], key,
 				    sizeof(key), tmp_iv, 1, ICA_CBCCS_VARIANT3);
 		if (rc) {
-			printf("key \n");
-			dump_array((char *) key, sizeof(key));
-			printf("\nOriginal data:\n");
-			dump_array((char *) NIST_TEST_DATA[i],
+			VV_(printf("key \n"));
+			dump_array(key, sizeof(key));
+			VV_(printf("\nOriginal data:\n"));
+			dump_array(NIST_TEST_DATA[i],
 				NIST_TEST_DATA_LENGTH[i]);
-			printf("\ntest iv\n");
-			dump_array((char *) tmp_iv, iv_size);
-			printf("\nica_aes_cbc_cs encrypt testcase %i failed with "
-				"errno %d (0x%x).\n", i, rc, rc);
+			VV_(printf("\ntest iv\n"));
+			dump_array(tmp_iv, iv_size);
+			VV_(printf("\nica_aes_cbc_cs encrypt test %i failed with "
+				"errno %d (0x%x).\n", i, rc, rc));
 			return 1;
 		}
 
@@ -475,23 +456,23 @@ int test_aes128_new_api(unsigned int mode, int silent)
 				    NIST_TEST_DATA_LENGTH[i], key, sizeof(key),
 				    tmp_iv, 0, ICA_CBCCS_VARIANT3);
 		if (rc) {
-			printf("key \n");
-			dump_array((char *) key, sizeof(key));
-			printf("\nOriginal data:\n");
-			dump_array((char *) NIST_TEST_DATA[i],
+			VV_(printf("key \n"));
+			dump_array(key, sizeof(key));
+			VV_(printf("\nOriginal data:\n"));
+			dump_array(NIST_TEST_DATA[i],
 				NIST_TEST_DATA_LENGTH[i]);
-			printf("\noriginal iv\n");
-			dump_array((char *) &iv, iv_size);
-			printf("\ntmp iv\n");
-			dump_array((char *) tmp_iv, iv_size);
-			printf("\nkey\n");
-			dump_array((char *) key, sizeof(key));
-			printf("\nEncrypted data:\n");
-			dump_array((char *) enc_text, NIST_TEST_DATA_LENGTH[i]);
-			printf("\nDecrypted data:\n");
-			dump_array((char *) dec_text, NIST_TEST_DATA_LENGTH[i]);
-			printf("\nica_aes_cbc_cs decrypt testcase %i failed"
-				"with errno %d (0x%x).\n", i, rc, rc);
+			VV_(printf("\noriginal iv\n"));
+			dump_array(iv, iv_size);
+			VV_(printf("\ntmp iv\n"));
+			dump_array(tmp_iv, iv_size);
+			VV_(printf("\nkey\n"));
+			dump_array(key, sizeof(key));
+			VV_(printf("\nEncrypted data:\n"));
+			dump_array(enc_text, NIST_TEST_DATA_LENGTH[i]);
+			VV_(printf("\nDecrypted data:\n"));
+			dump_array(dec_text, NIST_TEST_DATA_LENGTH[i]);
+			VV_(printf("\nica_aes_cbc_cs decrypt test %i failed"
+				"with errno %d (0x%x).\n", i, rc, rc));
 			return 1;
 		}
 
@@ -501,10 +482,8 @@ int test_aes128_new_api(unsigned int mode, int silent)
 				(char *) "AES-128", i))
 			return 1;
 		else {
-			if (!silent) {
-				printf("Test case number %i for AES-128 with CBC_CS "
-				"mode was successful!\n", i);
-			}
+			VV_(printf("Test case number %i for AES-128 with CBC_CS "
+			"mode was successful!\n", i));
 		}
 	}
 	return rc;
@@ -515,61 +494,55 @@ int main(int argc, char **argv)
 	unsigned int mode;
 	unsigned int variant;
 	int rc, error_count;
-	unsigned int silent = 0;
 
-	if (argc > 1) {
-		if (strstr(argv[1], "silent"))
-			silent = 1;
-	}
+	set_verbosity(argc, argv);
 
 	mode = MODE_CBCCS;
 	rc = 0;
 	error_count = 0;
 
 	/* known answer tests for AES128 */
-	rc = test_aes128_new_api(mode, silent);
+	rc = test_aes128_new_api(mode);
 	if (rc) {
 		error_count++;
 		printf("test_aes128_new_api for CBC_CS mode with AES-128 "
-		"failed \n");
+		"failed.\n");
 		return rc;
 	}
 
 	for (variant =  ICA_CBCCS_VARIANT1;
 	     variant <= ICA_CBCCS_VARIANT3;
 	     variant++) {
-		if (!silent) {
-			printf("\n--- Test cycle with CBCCS variant %d ---\n", variant);
-		}
+		VV_(printf("\n--- Test cycle with CBCCS variant %d ---\n", variant));
 		/* AES 192 & 256 test */
-		rc = test_aes_new_api(mode, variant, silent);
+		rc = test_aes_new_api(mode, variant);
 		if (rc) {
 			error_count++;
 			printf("test_aes_new_api for CBC_CS mode with AES (192|256) "
-			       "failed \n");
+			       "failed.\n");
 			return rc;
 		}
 
 		/* DES tests */
-		rc = test_des_new_api(mode, variant, silent);
+		rc = test_des_new_api(mode, variant);
 		if (rc) {
 			error_count++;
 			printf("test_des_new_api for CBC_CS mode with DES "
-			       "failed \n");
+			       "failed.\n");
 			return rc;
 		}
 
 		/* 3DES tests */
-		rc = test_3des_new_api(mode, variant, silent);
+		rc = test_3des_new_api(mode, variant);
 		if (rc) {
 			error_count++;
 			printf("test_des_new_api for CBC_CS mode with 3DES "
-			       "failed \n");
+			       "failed.\n");
 			return rc;
 		}
 	}
 
-	printf("All CBC-CS mode tests finished successfully\n");
+	printf("All CBC-CS tests passed.\n");
 	return rc;
 }
 

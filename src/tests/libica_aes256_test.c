@@ -12,6 +12,7 @@
 #include <strings.h>
 #include <stdlib.h>
 #include "ica_api.h"
+#include "testcase.h"
 
 unsigned char NIST_KEY3[] = {
 	0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
@@ -30,29 +31,6 @@ unsigned char NIST_TEST_RESULT[] = {
 	0xea, 0xfc, 0x49, 0x90, 0x4b, 0x49, 0x60, 0x89,
 };
 
-int silent;
-
-void dump_array(unsigned char *ptr, unsigned int size)
-{
-	unsigned char *ptr_end;
-	unsigned char *h;
-	int i = 1;
-
-	h = ptr;
-	ptr_end = ptr + size;
-	while (h < (unsigned char *)ptr_end) {
-		printf("0x%02x ",(unsigned char ) *h);
-		h++;
-		if (i == 8) {
-			printf("\n");
-			i = 1;
-		} else {
-			++i;
-		}
-	}
-	printf("\n");
-}
-
 int test_aes256_new_api(int mode)
 {
 	ica_aes_vector_t iv;
@@ -69,82 +47,80 @@ int test_aes256_new_api(int mode)
 	rc = ica_aes_encrypt(mode, sizeof(NIST_TEST_DATA), NIST_TEST_DATA, &iv,
 			     AES_KEY_LEN256, key, enc_text);
 	if (rc) {
-		printf("ica_aes_encrypt failed with errno %d (0x%x).\n", rc, rc);
+		VV_(printf("ica_aes_encrypt failed with errno %d (0x%x).\n", rc, rc));
 		return 1;
 	}
 
 	if (memcmp(enc_text, NIST_TEST_RESULT, sizeof(NIST_TEST_RESULT)) != 0) {
-		printf("\nOriginal data:\n");
+		VV_(printf("\nOriginal data:\n"));
 		dump_array((unsigned char *) NIST_TEST_DATA, sizeof(NIST_TEST_DATA));
-		printf("\nEncrypted data:\n");
+		VV_(printf("\nEncrypted data:\n"));
 		dump_array((unsigned char *) enc_text, sizeof(enc_text));
-		printf("This does NOT match the known result.\n");
+		VV_(printf("This does NOT match the known result.\n"));
 		return 1;
 	} else {
-		if (!silent) {
-			printf("Yep, it's what it should be.\n");
-		}
+		VV_(printf("Yep, it's what it should be.\n"));
 	}
 
 	bzero(iv, sizeof(iv));
 	rc = ica_aes_decrypt(mode, sizeof(enc_text), enc_text, &iv,
 			     AES_KEY_LEN256, key, dec_text);
 	if (rc) {
-		printf("ica_aes_decrypt failed with errno %d (0x%x).\n", rc, rc);
+		VV_(printf("ica_aes_decrypt failed with errno %d (0x%x).\n", rc, rc));
 		return 1;
 	}
 
 	if (memcmp(dec_text, NIST_TEST_DATA, sizeof(NIST_TEST_DATA)) != 0) {
-		printf("\nOriginal data:\n");
+		VV_(printf("\nOriginal data:\n"));
 		dump_array((unsigned char *) NIST_TEST_DATA, sizeof(NIST_TEST_DATA));
-		printf("\nEncrypted data:\n");
+		VV_(printf("\nEncrypted data:\n"));
 		dump_array((unsigned char *) enc_text, sizeof(enc_text));
-		printf("\nDecrypted data:\n");
+		VV_(printf("\nDecrypted data:\n"));
 		dump_array((unsigned char *) dec_text, sizeof(dec_text));
-		printf("This does NOT match the original data.\n");
+		VV_(printf("This does NOT match the original data.\n"));
 		return 1;
 	} else {
-		if (!silent) {
-			printf("\nOriginal data:\n");
-			dump_array((unsigned char *) NIST_TEST_DATA, sizeof(NIST_TEST_DATA));
-			printf("\nEncrypted data:\n");
-			dump_array((unsigned char *) enc_text, sizeof(enc_text));
-			printf("\nDecrypted data:\n");
-			dump_array((unsigned char *) dec_text, sizeof(dec_text));
-			printf("Successful!\n");
-		}
+		VV_(printf("\nOriginal data:\n"));
+		dump_array((unsigned char *) NIST_TEST_DATA, sizeof(NIST_TEST_DATA));
+		VV_(printf("\nEncrypted data:\n"));
+		dump_array((unsigned char *) enc_text, sizeof(enc_text));
+		VV_(printf("\nDecrypted data:\n"));
+		dump_array((unsigned char *) dec_text, sizeof(dec_text));
+		VV_(printf("Successful!\n"));
 	}
 
 	return 0;
 }
 
+/*
+ * Performs ECB and CBC tests.
+ */
 int main(int argc, char **argv)
 {
-	// Default mode is 0. ECB and CBC tests will be performed.
 	unsigned int mode = 0;
+	int rc = 0;
+	int error_count = 0;
+
 	if (argc > 1) {
 		if (strstr(argv[1], "ecb"))
 			mode = MODE_ECB;
 		if (strstr(argv[1], "cbc"))
 			mode = MODE_CBC;
-		if (strstr(argv[1], "silent"))
-			silent = 1;
-		}
+	}
 	if (argc > 2) {
 		if (strstr(argv[2], "ecb"))
 			mode = MODE_ECB;
 		if (strstr(argv[2], "cbc"))
 			mode = MODE_CBC;
-		if (strstr(argv[2], "silent"))
-			silent = 1;
 	}
+
+	set_verbosity(argc, argv);
 
 	if (mode != 0 && mode != MODE_ECB && mode != MODE_CBC) {
 		printf("Usage: %s [ ecb | cbc ]\n", argv[0]);
 		return -1;
 	}
-	int rc = 0;
-	int error_count = 0;
+
 	if (!mode) {
 	/* This is the standard loop that will perform all testcases */
 		mode = 2;
@@ -152,29 +128,24 @@ int main(int argc, char **argv)
 			rc = test_aes256_new_api(mode);
 			if (rc) {
 				error_count++;
-				printf ("test_aes_new_api mode = %i failed \n", mode);
+				V_(printf ("test_aes_new_api mode = %i failed \n", mode));
 			}
 			else {
-				if (!silent) {
-					printf ("test_aes_new_api mode = %i finished successfully \n", mode);
-				}
+				V_(printf ("test_aes_new_api mode = %i finished.\n", mode));
 			}
 			mode--;
 		}
 		if (error_count)
-			printf("%i testcases failed\n", error_count);
+			printf("%i AES-256-ECB/CBC tests failed.\n", error_count);
 		else
-			printf("All AES256 (ECB/CBC) testcases finished successfully\n");
+			printf("All AES-256-ECB/CBC tests passed.\n");
 	} else {
 	/* Perform only either in ECB or CBC mode */
 		rc = test_aes256_new_api(mode);
 		if (rc)
 			printf("test_aes_new_api mode = %i failed \n", mode);
-		else {
-			if (!silent) {
-				printf("test_aes_new_api mode = %i finished successfully \n", mode);
-			}
-		}
+		else
+			printf("test_aes_new_api mode = %i finished.\n", mode);
 	}
 
 	return rc;

@@ -12,6 +12,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "ica_api.h"
+#include "testcase.h"
 
 #define BYTE 8
 
@@ -90,54 +91,19 @@ unsigned char cipher_text[4][46] = {
  0x5a,0xe0,0xfd,0x1f,0xae,0xc4,0x4c,0xc4,0x84,0x82,0x85,0x29,0x46,0x3c,0xcf,0x72,
  0xb4,0xac,0x6b,0xec,0x93,0xe8,0x59,0x8e,0x7f,0x0d,0xad,0xbc,0xea,0x5b}
 };
-static void dump_array(unsigned char *ptr, unsigned int size)
-{
-	unsigned char *ptr_end;
-	unsigned char *h;
-	int i = 1, trunc = 0;
-	int maxsize = 2000;
 
-	puts("Dump:");
-
-	if (size > maxsize) {
-		trunc = size - maxsize;
-		size = maxsize;
-	}
-
-	h = ptr;
-	ptr_end = ptr + size;
-	while (h < ptr_end) {
-		printf("0x%02x ", *h);
-		h++;
-		if (i == 8) {
-			if (h != ptr_end)
-				printf("\n");
-		i = 1;
-		} else {
-			++i;
-		}
-	}
-	printf("\n");
-	if (trunc > 0)
-		printf("... %d bytes not printed\n", trunc);
-}
-
-int api_ccm_test(int silent)
+int api_ccm_test(void)
 {
 	unsigned char *out_data;
+	int rc = 0;
 
-	if (!silent) {
-		printf("Test of CCM api\n");
-	}
+	VV_(printf("Test of CCM api\n"));
 	while ( i < 65536 ) { // init big assoc_data
 		memcpy(assoc_data[3] + i, repeated_string, 256);
 		i= i + 256;
 	}
-	int rc = 0;
 	for (i = 0; i < NUM_CCM_TESTS; i++) {
-		if (!silent) {
-			printf("\nOriginal data for test %d:\n", i);
-		}
+		VV_(printf("\nOriginal data for test %d:\n", i));
 		if (!(out_data = malloc(cipher_text_length[i])))
 			return EINVAL;
 		memset(out_data, 0, cipher_text_length[i]);
@@ -149,25 +115,21 @@ int api_ccm_test(int silent)
 				  key[i], key_length[i],
 				  ICA_ENCRYPT));
 		if (rc) {
-			printf("icaccm encrypt failed with errno %d (0x%x).\n",
-				 rc, rc);
+			VV_(printf("icaccm encrypt failed with errno %d (0x%x).\n",
+				 rc, rc));
 			return rc;
 		}
-		if (!silent) {
-			printf("\nOutput Cipher text for test %d:\n", i);
-			dump_array(out_data, cipher_text_length[i]);
-			printf("\nExpected Cipher Text for test %d:\n", i);
-			dump_array(cipher_text[i], cipher_text_length[i]);
-		}
+		VV_(printf("\nOutput Cipher text for test %d:\n", i));
+		dump_array(out_data, cipher_text_length[i]);
+		VV_(printf("\nExpected Cipher Text for test %d:\n", i));
+		dump_array(cipher_text[i], cipher_text_length[i]);
 
 		if (memcmp(cipher_text[i], out_data, cipher_text_length[i]) != 0) {
 			printf("This does NOT match the known result.\n");
 			return 1;
 		}
 
-		if (!silent) {
-			printf("Yep, that's how it should be encrypted.\n");
-		}
+		VV_(printf("Yep, that's how it should be encrypted.\n"));
 		// start decrypt / verify
 		memset(payload[i], 0, payload_length[i]);
 		rc = (ica_aes_ccm(out_data, payload_length[i],
@@ -177,25 +139,21 @@ int api_ccm_test(int silent)
 				  key[i], key_length[i],
 				  ICA_DECRYPT));
 		if (rc) {
-			printf("icaccm decrypt failed with errno %d (0x%x).\n",
-				rc,rc);
+			VV_(printf("icaccm decrypt failed with errno %d (0x%x).\n",
+				rc,rc));
 			return rc;
 		}
 
-		if (!silent) {
-			printf("\nOutput payload for test %d:\n", i);
-			dump_array(out_data, payload_length[i]);
-			printf("\nExpected payload for test %d:\n", i);
-			dump_array(payload_after_decrypt[i], payload_length[i]);
-		}
+		VV_(printf("\nOutput payload for test %d:\n", i));
+		dump_array(out_data, payload_length[i]);
+		VV_(printf("\nExpected payload for test %d:\n", i));
+		dump_array(payload_after_decrypt[i], payload_length[i]);
 
 		if (memcmp(out_data, payload_after_decrypt[i],
 				payload_length[i]) == 0 ) {
-			if (!silent) {
-				printf("Yep, payload matches to original.\n");
-			}
+			VV_(printf("Yep, payload matches to original.\n"));
 		} else {
-			printf("This does NOT match the known result.\n");
+			VV_(printf("This does NOT match the known result.\n"));
 			return 1;
 		}
 		free(out_data);
@@ -206,19 +164,15 @@ int api_ccm_test(int silent)
 int main(int argc, char **argv)
 {
 	int rc = 0;
-	int silent = 0;
 
-	if (argc > 1) {
-		if (strstr(argv[1], "silent"))
-			silent = 1;
-	}
+	set_verbosity(argc, argv);
 
-	rc = api_ccm_test(silent);
+	rc = api_ccm_test();
 	if (rc) {
-		printf("api_ccm_test failed with rc = %i\n", rc);
+		printf("api_ccm_test failed with rc = %i.\n", rc);
 		return rc;
 	}
-	printf("All AES-CCM mode tests finished successfully\n");
+	printf("All AES-CCM tests passed.\n");
 	return 0;
 }
 

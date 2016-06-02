@@ -39,7 +39,9 @@
 #define STCK_BUFFER 16
 #endif
 
-/* State handle for the global ica_drbg instantiation. */
+/*
+ * State handle for the global ica_drbg instantiation.
+ */
 ica_drbg_t *ica_drbg_global = ICA_DRBG_NEW_STATE_HANDLE;
 
 sem_t semaphore;
@@ -60,35 +62,40 @@ union zprng_pb_t zPRNG_PB = {{0x0F, 0x2B, 0x8E, 0x63, 0x8C, 0x8E, 0xD2, 0x52,
 unsigned int s390_prng_limit = 4096;
 unsigned long s390_byte_count;
 
+#ifndef ICA_FIPS
 /* Static functions */
 static int s390_add_entropy(void);
 static int s390_prng_sw(unsigned char *output_data,
 			unsigned int output_length);
 static int s390_prng_hw(unsigned char *random_bytes, unsigned int num_bytes);
 static int s390_prng_seed(void *srv, unsigned int count);
+#endif /* ICA_FIPS */
 
 /* Constant */
 #define PRNG_BLK_SZ	8
 
 int s390_prng_init(void)
 {
-	// Create a global ica_drbg instance if sha512 or sha512 drng is
-	// available. However, the old prng is still initialized but
-	// only used as a fallback.
-	if(sha512_switch || sha512_drng_switch){
-		const char *pers = "ica_drbg_global";
-		ica_drbg_instantiate(&ica_drbg_global, 256, true,
-				     ICA_DRBG_SHA512, (unsigned char *)pers,
-				     strlen(pers));
+	int rc = -1;
+	static const char *pers = "ica_drbg_global";
+#ifndef ICA_FIPS
+	FILE *handle;
+	unsigned char seed[16];
+#endif /* ICA_FIPS */
+
+	/*
+	 * Create a global ica_drbg instance if sha512 or sha512 drng is
+	 * available. However, the old prng is still initialized but
+	 * only used as a fallback.
+	 */
+	if (sha512_switch || sha512_drng_switch) {
+		rc = ica_drbg_instantiate(&ica_drbg_global, 256, true,
+		    ICA_DRBG_SHA512, (unsigned char *)pers, strlen(pers));
 	}
 
-	// The old prng code starts here:
+#ifndef ICA_FIPS	/* Old prng code disabled with FIPS built. */
 	sem_init(&semaphore, 0, 1);
-
-	int rc = -1;
-	unsigned char seed[16];
-
-	FILE *handle = fopen("/dev/hwrng", "r");
+	handle = fopen("/dev/hwrng", "r");
 	if (!handle)
 		handle = fopen("/dev/urandom", "r");
 	if (handle) {
@@ -101,13 +108,17 @@ int s390_prng_init(void)
 			rc = EIO;
 	} else
 		rc = ENODEV;
-	// If the original seeding failed, we should try to stir in some
-	// entropy anyway (since we already put out a message).
+	/*
+	 * If the original seeding failed, we should try to stir in some
+	 * entropy anyway (since we already put out a message).
+	 */
 	s390_byte_count = 0;
+#endif /* ICA_FIPS */
 
 	return rc;
 }
 
+#ifndef ICA_FIPS
 /*
  * Adds some entropy to the system.
  *
@@ -116,8 +127,10 @@ int s390_prng_init(void)
  */
 static int s390_add_entropy(void)
 {
+	FILE *handle;
 	unsigned char entropy[4 * STCK_BUFFER];
 	unsigned int K;
+	unsigned char seed[32];
 	int rc = -1;
 
 	if (!prng_switch)
@@ -135,9 +148,8 @@ static int s390_add_entropy(void)
 		rc = 0;
 		memcpy(zPRNG_PB.ch, entropy, sizeof(zPRNG_PB.ch));
 	}
-	unsigned char seed[32];
 	/* Add some additional entropy. */
-	FILE *handle = fopen("/dev/hwrng", "r");
+	handle = fopen("/dev/hwrng", "r");
 	if (!handle)
 		handle = fopen("/dev/urandom", "r");
 	if (handle) {
@@ -159,6 +171,7 @@ static int s390_add_entropy(void)
 
 	return 0;
 }
+#endif /* ICA_FIPS */
 
 
 /*
@@ -168,50 +181,52 @@ static int s390_add_entropy(void)
  */
 int s390_prng(unsigned char *output_data, unsigned int output_length)
 {
-	// Try to use the global ica_drbg instantiation. If it does not exist
-	// or it does not work, the old prng code is used.
-	if(ica_drbg_global){
-		int status = 0;
+	size_t i;
+	int rc = -1;
+	unsigned char *ptr = output_data;
 
-		const size_t
-		q = output_length / ICA_DRBG_SHA512->max_no_of_bytes_per_req;
-		const size_t
-		r = output_length % ICA_DRBG_SHA512->max_no_of_bytes_per_req;
+	const size_t q = output_length
+	    / ICA_DRBG_SHA512->max_no_of_bytes_per_req;
+	const size_t r = output_length
+	    % ICA_DRBG_SHA512->max_no_of_bytes_per_req;
 
-		unsigned char *ptr = output_data;
-		size_t i = 0;
-		for(; i < q; i++){
-			status = ica_drbg_generate(ica_drbg_global, 256, true,
-						   NULL, 0, ptr,
-						   ICA_DRBG_SHA512
-						   ->max_no_of_bytes_per_req);
-			if(status)
+	/*
+	 * Try to use the global ica_drbg instantiation. If it does not exist
+	 * or it does not work, the old prng code is used.
+	 */
+	if (ica_drbg_global) {
+		for (i = 0; i < q; i++) {
+			rc = ica_drbg_generate(ica_drbg_global, 256, true,
+			    NULL, 0, ptr,
+			    ICA_DRBG_SHA512->max_no_of_bytes_per_req);
+			if (rc)
 				break;
 
 			ptr += ICA_DRBG_SHA512->max_no_of_bytes_per_req;
 		}
-		if(!status){
-			status = ica_drbg_generate(ica_drbg_global, 256, true,
-						   NULL, 0, ptr, r);
-			if(!status)
-				return 0;
+		if (r > 0) {
+			rc = ica_drbg_generate(ica_drbg_global, 256, true,
+			    NULL, 0, ptr, r);
 		}
+		if (rc == 0)
+			return 0;
 	}
 
-	// Old prng code starts here:
-	int rc = 1;
-	int hardware = ALGO_HW;
-
+#ifndef ICA_FIPS	/* Old prng code disabled with FIPS built. */
 	if (prng_switch)
 		rc = s390_prng_hw(output_data, output_length);
-	if (rc) {
+	if (rc == 0)
+		stats_increment(ICA_STATS_PRNG, ALGO_HW, ENCRYPT);
+	else {
 		rc = s390_prng_sw(output_data, output_length);
-		hardware = ALGO_SW;
+		stats_increment(ICA_STATS_PRNG, ALGO_SW, ENCRYPT);
 	}
-	stats_increment(ICA_STATS_PRNG, hardware, ENCRYPT);
+#endif /* ICA_FIPS */
+
 	return rc;
 }
 
+#ifndef ICA_FIPS
 static int s390_prng_sw(unsigned char *output_data, unsigned int output_length)
 {
 	FILE *handle = fopen("/dev/urandom", "r");
@@ -303,3 +318,4 @@ static int s390_prng_seed(void *srv, unsigned int count)
 	rc = s390_add_entropy();
 	return rc;
 }
+#endif /* ICA_FIPS */

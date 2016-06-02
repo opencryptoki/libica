@@ -60,15 +60,15 @@ CFLAGS="$CFLAGS $PTHREAD_CFLAGS"
 
 case $target in
      *s390x*)
-          CFLAGS="$CFLAGS -D_LINUX_S390X_ -D_LINUX_S390_ -Wall" 
+          CFLAGS="$CFLAGS -D_LINUX_S390X_ -D_LINUX_S390_ -Wall"
           ;;
      *s390*)
-          CFLAGS="$CFLAGS -D_LINUX_S390_ -m31 -Wall" 
+          CFLAGS="$CFLAGS -D_LINUX_S390_ -m31 -Wall"
           ;;
 esac
 
-
-AC_ARG_ENABLE(debug, 
+dnl --- enable_debug
+AC_ARG_ENABLE(debug,
               [--enable-debug          turn on debugging flags],
               [enable_debug="yes"],[enable_debug="no"])
 AM_CONDITIONAL(DEBUG, test x$enable_debug = xyes)
@@ -77,7 +77,7 @@ if test "x$enable_debug" = xyes; then
 	CFLAGS="$CFLAGS -g -O0 -fstack-protector-all"
 	AC_MSG_RESULT([*** Enabling debugging at user request ***])
 else
-	CFLAGS="$CFLAGS -O2"
+	CFLAGS="$CFLAGS -O2 -DNDEBUG"
 fi
 
 dnl --- enable_testcases
@@ -93,11 +93,23 @@ else
 fi
 AC_SUBST(MAYBE_OPT)
 
+dnl --- enable_fips
+AC_ARG_ENABLE(fips,
+              [--enable-fips          built with FIPS mode support],
+              [enable_fips="yes"],[enable_fips="no"])
+AM_CONDITIONAL(ICA_FIPS, test x$enable_fips = xyes)
+
+if test "x$enable_fips" = xyes; then
+	CFLAGS="$CFLAGS -DICA_FIPS"
+	AC_MSG_RESULT([*** Building libica-fips at user request ***])
+fi
+
 AC_CONFIG_FILES([src/tests/Makefile src/tests/libica_sha_test/Makefile])
 AC_OUTPUT([Makefile src/Makefile include/Makefile doc/Makefile])
 
 echo "CFLAGS=$CFLAGS"
 
 echo "Enabled features:"
+echo "  FIPS build:     $enable_fips"
 echo "  Debug build:    $enable_debug"
 echo "  Testcases:      $enable_testcases"

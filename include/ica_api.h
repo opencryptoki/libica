@@ -84,12 +84,12 @@ typedef ica_adapter_handle_t ICA_ADAPTER_HANDLE;
 /**
  * Symetric encryption/decryption modes
  */
-#define MODE_ECB 		1
-#define MODE_CBC 		2
-#define MODE_CFB 		3
-#define MODE_OFB 		4
-#define MODE_CTR 		5
-#define MODE_XTS 		6
+#define MODE_ECB		1
+#define MODE_CBC		2
+#define MODE_CFB		3
+#define MODE_OFB		4
+#define MODE_CTR		5
+#define MODE_XTS		6
 #define MODE_GCM		7
 #define MODE_CBCCS		8
 #define MODE_CCM		9
@@ -208,6 +208,40 @@ typedef ica_adapter_handle_t ICA_ADAPTER_HANDLE;
  */
 #define ICA_CALL
 
+/*
+ * The following status flags are used to examine the return value of the
+ * status output interface ica_fips_status().
+ */
+
+/*
+ * 'FIPS mode active'-flag
+ */
+#define ICA_FIPS_MODE		1
+
+/*
+ * 'Powerup test failed'-flags
+ */
+/* Cryptographic algorithm test (KAT or pair-wise consistency test) */
+#define ICA_FIPS_CRYPTOALG	2
+/* Software/Firmware integrity test (not implemented yet) */
+#define ICA_FIPS_INTEGRITY	4
+/* Critical functions test (N/A) */
+#define ICA_FIPS_CRITICALFUNC	8
+
+/*
+ * 'Conditional test failed'-flags
+ */
+/* Pair-wise consistency test for public & private keys (N/A) */
+#define ICA_FIPS_CONSISTENCY	16
+/* Software/Firmware load test (N/A) */
+#define ICA_FIPS_LOAD		32
+/* Manual key entry test (N/A) */
+#define ICA_FIPS_KEYENTRY	64
+/* Continuous random number generator test */
+#define ICA_FIPS_RNG		128
+/* Bypass test (N/A) */
+#define ICA_FIPS_BYPASS		256
+
 /**
  * Context for SHA1 operations
  */
@@ -222,7 +256,7 @@ typedef sha_context_t SHA_CONTEXT;
 #define LENGTH_SHA_CONTEXT	sizeof(sha_context_t)
 
 /**
- * Context for SHA256 and SHA128 operations
+ * Context for SHA256 and SHA224 operations
  */
 typedef struct {
 	uint64_t runningLength;
@@ -3600,12 +3634,12 @@ static inline unsigned int aes_directed_fc(unsigned int key_length, int directio
 
 /*
  * ica_drbg: libica's Deterministic Random Bit Generator
- * 	     (conforming to NIST SP 800-90A)
+ *	     (conforming to NIST SP 800-90A)
  *
  * Table of currently supported DRBG mechanisms:
  *
  * DRBG mechanism	supported security	max. byte length
- * 			  strengths (bits)	   of pers / add
+ *			  strengths (bits)	   of pers / add
  * -------------------------------------------------------------
  * DRBG_SHA512		112, 128, 196, 256	       256 / 256
  */
@@ -3630,7 +3664,7 @@ typedef struct ica_drbg ica_drbg_t;
  * only permitted operation. Creation of new DRBG instantiations of
  * this mechanism are not permitted.
  *
- * Catastrophic error flags ( < 0):
+ * Catastrophic error flags ( < 0 ):
  */
 #define ICA_DRBG_HEALTH_TEST_FAIL	(-1)
 #define ICA_DRBG_ENTROPY_SOURCE_FAIL	(-2)
@@ -3658,9 +3692,9 @@ typedef struct ica_drbg ica_drbg_t;
  * @return:
  * 0				Success.
  * ENOMEM			Out of memory.
- * EINVAL 			At least one argument is invalid.
- * ENOTSUP 			Prediction resistance or the requested security
- * 				strength is not supported.
+ * EINVAL			At least one argument is invalid.
+ * ENOTSUP			Prediction resistance or the requested security
+ *				strength is not supported.
  * EPERM			Failed to obtain a valid timestamp from clock.
  * ICA_DRBG_HEALTH_TEST_FAIL	Health test failed.
  * ICA_DRBG_ENTROPY_SOURCE_FAIL	Entropy source failed.
@@ -3686,8 +3720,8 @@ int ica_drbg_instantiate(ica_drbg_t **sh,
  * @return:
  * 0				Success.
  * ENOMEM			Out of memory.
- * EINVAL 			At least one argument is invalid.
- * ENOTSUP 			Prediction resistance is not supported.
+ * EINVAL			At least one argument is invalid.
+ * ENOTSUP			Prediction resistance is not supported.
  * ICA_DRBG_HEALTH_TEST_FAIL	Health test failed.
  * ICA_DRBG_ENTROPY_SOURCE_FAIL	Entropy source failed.
  */
@@ -3714,9 +3748,9 @@ int ica_drbg_reseed(ica_drbg_t *sh,
  * @return:
  * 0				Success.
  * ENOMEM			Out of memory.
- * EINVAL 			At least one argument is invalid.
- * ENOTSUP 			Prediction resistance or the requested security
- * 				strength is not supported.
+ * EINVAL			At least one argument is invalid.
+ * ENOTSUP			Prediction resistance or the requested security
+ *				strength is not supported.
  * EPERM			Reseed required.
  * ICA_DRBG_HEALTH_TEST_FAIL	Health test failed.
  * ICA_DRBG_ENTROPY_SOURCE_FAIL	Entropy source failed.
@@ -3738,7 +3772,7 @@ int ica_drbg_generate(ica_drbg_t *sh,
  *
  * @return:
  * 0				Success.
- * EINVAL 			At least one argument is invalid.
+ * EINVAL			At least one argument is invalid.
  */
 int ica_drbg_uninstantiate(ica_drbg_t **sh);
 
@@ -3755,9 +3789,9 @@ int ica_drbg_uninstantiate(ica_drbg_t **sh);
  *
  * @return:
  * 0				Success.
- * EINVAL 			At least one argument is invalid.
- * ENOTSUP 			Prediction resistance or security strength is
- * 				not supported (when testing instantiate).
+ * EINVAL			At least one argument is invalid.
+ * ENOTSUP			Prediction resistance or security strength is
+ *				not supported (when testing instantiate).
  * ICA_DRBG_HEALTH_TEST_FAIL	Health test failed.
  * ICA_DRBG_ENTROPY_SOURCE_FAIL	Entropy source failed.
  */
@@ -3765,5 +3799,26 @@ int ica_drbg_health_test(void *func,
 			 int sec,
 			 bool pr,
 			 ica_drbg_mech_t *mech);
+
+#ifdef ICA_FIPS
+/*
+ * Additional FIPS interfaces are available for built-in FIPS mode.
+ */
+
+/*
+ * FIPS status output interface.
+ *
+ * @return:
+ * Returns flags indicating the module status. See the ICA_FIPS_* flags.
+ */
+int ica_fips_status(void);
+
+/*
+ * FIPS powerups tests.
+ *
+ * The test results can be viewed via the ica_fips_status function.
+ */
+void ica_fips_powerup_tests(void);
+#endif /* ICA_FIPS */
 
 #endif /* __ICA_API_H__ */

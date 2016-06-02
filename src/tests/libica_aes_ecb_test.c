@@ -12,6 +12,7 @@
 #include <strings.h>
 #include <stdlib.h>
 #include "ica_api.h"
+#include "testcase.h"
 
 #define NR_TESTS 7
 #define NR_RANDOM_TESTS 10000
@@ -171,36 +172,15 @@ unsigned char NIST_TEST_RESULT_ECB_E7[] = {
 	0x06, 0x7d, 0x8d, 0x8f, 0x9e, 0x24, 0xec, 0xc7,
 };
 
-void dump_array(unsigned char *ptr, unsigned int size)
-{
-	unsigned char *ptr_end;
-	unsigned char *h;
-	int i = 1;
-
-	h = ptr;
-	ptr_end = ptr + size;
-	while (h < (unsigned char *)ptr_end) {
-		printf("0x%02x ",(unsigned char ) *h);
-		h++;
-		if (i == 8) {
-			printf("\n");
-			i = 1;
-		} else {
-			++i;
-		}
-	}
-	printf("\n");
-}
-
 void dump_ecb_data(unsigned char *key, unsigned int key_length,
 		   unsigned char *input_data, unsigned int data_length,
 		   unsigned char *output_data)
 {
-	printf("Key \n");
+	VV_(printf("Key\n"));
 	dump_array(key, key_length);
-	printf("Input Data\n");
+	VV_(printf("Input Data\n"));
 	dump_array(input_data, data_length);
-	printf("Output Data\n");
+	VV_(printf("Output Data\n"));
 	dump_array(output_data, data_length);
 }
 
@@ -305,18 +285,13 @@ void load_test_data(unsigned char *data, unsigned int data_length,
 
 }
 
-int kat_aes_ecb(int iteration, int silent)
+int kat_aes_ecb(int iteration)
 {
 	unsigned int data_length;
 	unsigned int key_length;
 
 	get_sizes(&data_length, &key_length, iteration);
 
-	if (!silent) {
-		printf("Test Parameters for iteration = %i\n", iteration);
-		printf("key length = %i, data length = %i",
-			key_length, data_length);
-	}
 	unsigned char key[key_length];
 	unsigned char input_data[data_length];
 	unsigned char encrypt[data_length];
@@ -325,55 +300,59 @@ int kat_aes_ecb(int iteration, int silent)
 
 	int rc = 0;
 
+	VV_(printf("Test Parameters for iteration = %i\n", iteration));
+	VV_(printf("key length = %i, data length = %i",
+	    key_length, data_length));
+
 	load_test_data(input_data, data_length, result, key, key_length,
 		       iteration);
 
 	rc = ica_aes_ecb(input_data, encrypt, data_length, key, key_length, 1);
 	if (rc) {
-		printf("ica_aes_ecb encrypt failed with rc = %i\n", rc);
+		VV_(printf("ica_aes_ecb encrypt failed with rc = %i\n", rc));
 		dump_ecb_data(key, key_length, input_data,
 			      data_length, encrypt);
 	}
-	if (!silent && !rc) {
-		printf("Encrypt:\n");
+	if (!rc) {
+		VV_(printf("Encrypt:\n"));
 		dump_ecb_data(key, key_length, input_data,
 			      data_length, encrypt);
 	}
 
 	if (memcmp(result, encrypt, data_length)) {
-		printf("Encryption Result does not match the known ciphertext!\n");
-		printf("Expected data:\n");
+		VV_(printf("Encryption Result does not match the known ciphertext!\n"));
+		VV_(printf("Expected data:\n"));
 		dump_array(result, data_length);
-		printf("Encryption Result:\n");
+		VV_(printf("Encryption Result:\n"));
 		dump_array(encrypt, data_length);
 		rc++;
 	}
 
 	if (rc) {
-		printf("AES ECB test exited after encryption\n");
+		VV_(printf("AES ECB test exited after encryption\n"));
 		return rc;
 	}
 
 	rc = ica_aes_ecb(encrypt, decrypt, data_length, key, key_length, 0);
 	if (rc) {
-		printf("ica_aes_ecb decrypt failed with rc = %i\n", rc);
+		VV_(printf("ica_aes_ecb decrypt failed with rc = %i\n", rc));
 		dump_ecb_data(key, key_length, encrypt,
 			      data_length, decrypt);
 		return rc;
 	}
 
 
-	if (!silent && !rc) {
-		printf("Decrypt:\n");
+	if (!rc) {
+		VV_(printf("Decrypt:\n"));
 		dump_ecb_data(key, key_length, encrypt,
 			      data_length, decrypt);
 	}
 
 	if (memcmp(decrypt, input_data, data_length)) {
-		printf("Decryption Result does not match the original data!\n");
-		printf("Original data:\n");
+		VV_(printf("Decryption Result does not match the original data!\n"));
+		VV_(printf("Original data:\n"));
 		dump_array(input_data, data_length);
-		printf("Decryption Result:\n");
+		VV_(printf("Decryption Result:\n"));
 		dump_array(decrypt, data_length);
 		rc++;
 	}
@@ -384,22 +363,23 @@ int load_random_test_data(unsigned char *data, unsigned int data_length,
 			   unsigned char *key, unsigned int key_length)
 {
 	int rc;
+
 	rc = ica_random_number_generate(data_length, data);
 	if (rc) {
-		printf("ica_random_number_generate with rc = %i errnor = %i\n",
-		       rc, errno);
+		VV_(printf("ica_random_number_generate with rc = %i errnor = %i\n",
+		    rc, errno));
 		return rc;
 	}
 	rc = ica_random_number_generate(key_length, key);
 	if (rc) {
-		printf("ica_random_number_generate with rc = %i errnor = %i\n",
-		       rc, errno);
+		VV_(printf("ica_random_number_generate with rc = %i errnor = %i\n",
+		    rc, errno));
 		return rc;
 	}
 	return rc;
 }
 
-int random_aes_ecb(int iteration, int silent, unsigned int data_length)
+int random_aes_ecb(int iteration, unsigned int data_length)
 {
 	int i;
 	int rc = 0;
@@ -407,92 +387,87 @@ int random_aes_ecb(int iteration, int silent, unsigned int data_length)
 	unsigned char input_data[data_length];
 	unsigned char encrypt[data_length];
 	unsigned char decrypt[data_length];
-for (i = 1; i <= 2; i++) {
 
-	unsigned char key[key_length];
+	for (i = 1; i <= 2; i++) {
+		unsigned char key[key_length];
 
-	memset(encrypt, 0x00, data_length);
-	memset(decrypt, 0x00, data_length);
+		memset(encrypt, 0x00, data_length);
+		memset(decrypt, 0x00, data_length);
 
-	load_random_test_data(input_data, data_length, key, key_length);
+		load_random_test_data(input_data, data_length, key, key_length);
 
-	if (!silent) {
-		printf("Test Parameters for iteration = %i\n", iteration);
-		printf("key length = %i, data length = %i\n", key_length, data_length);
+		VV_(printf("Test Parameters for iteration = %i\n", iteration));
+		VV_(printf("key length = %i, data length = %i\n", key_length, data_length));
+		rc = ica_aes_ecb(input_data, encrypt, data_length, key, key_length, 1);
+		if (rc) {
+			VV_(printf("ica_aes_ecb encrypt failed with rc = %i\n", rc));
+			dump_ecb_data(key, key_length, input_data,
+				      data_length, encrypt);
+		}
+		if (!rc) {
+			VV_(printf("Encrypt:\n"));
+			dump_ecb_data(key, key_length, input_data,
+				      data_length, encrypt);
+		}
+
+		if (rc) {
+			VV_(printf("AES ECB test exited after encryption\n"));
+			return rc;
+		}
+
+		rc = ica_aes_ecb(encrypt, decrypt, data_length, key, key_length, 0);
+		if (rc) {
+			VV_(printf("ica_aes_ecb decrypt failed with rc = %i\n", rc));
+			dump_ecb_data(key, key_length, encrypt,
+				      data_length, decrypt);
+			return rc;
+		}
+
+		if (!rc) {
+			VV_(printf("Decrypt:\n"));
+			dump_ecb_data(key, key_length, encrypt,
+				      data_length, decrypt);
+		}
+
+		if (memcmp(decrypt, input_data, data_length)) {
+			VV_(printf("Decryption Result does not match the original data!\n"));
+			VV_(printf("Original data:\n"));
+			dump_array(input_data, data_length);
+			VV_(printf("Decryption Result:\n"));
+			dump_array(decrypt, data_length);
+			rc++;
+			return rc;
+		}
+		key_length += 8;
 	}
-	rc = ica_aes_ecb(input_data, encrypt, data_length, key, key_length,
-			 1);
-	if (rc) {
-		printf("ica_aes_ecb encrypt failed with rc = %i\n", rc);
-		dump_ecb_data(key, key_length, input_data,
-			      data_length, encrypt);
-	}
-	if (!silent && !rc) {
-		printf("Encrypt:\n");
-		dump_ecb_data(key, key_length, input_data,
-			      data_length, encrypt);
-	}
-
-	if (rc) {
-		printf("AES ECB test exited after encryption\n");
-		return rc;
-	}
-
-	rc = ica_aes_ecb(encrypt, decrypt, data_length, key, key_length, 0);
-	if (rc) {
-		printf("ica_aes_ecb decrypt failed with rc = %i\n", rc);
-		dump_ecb_data(key, key_length, encrypt,
-			      data_length, decrypt);
-		return rc;
-	}
-
-
-	if (!silent && !rc) {
-		printf("Decrypt:\n");
-		dump_ecb_data(key, key_length, encrypt,
-			      data_length, decrypt);
-	}
-
-	if (memcmp(decrypt, input_data, data_length)) {
-		printf("Decryption Result does not match the original data!\n");
-		printf("Original data:\n");
-		dump_array(input_data, data_length);
-		printf("Decryption Result:\n");
-		dump_array(decrypt, data_length);
-		rc++;
-		return rc;
-	}
-	key_length += 8;
-}
 
 	return rc;
 }
 
+/*
+ * Perform CTR tests.
+ */
 int main(int argc, char **argv)
 {
-	// Default mode is 0. ECB,ECB and CFQ tests will be performed.
-	unsigned int silent = 0;
-	if (argc > 1) {
-		if (strstr(argv[1], "silent"))
-			silent = 1;
-	}
 	int rc = 0;
 	int error_count = 0;
 	int iteration;
 	unsigned int data_length = sizeof(ica_aes_vector_t);
+
+	set_verbosity(argc, argv);
+
 	for(iteration = 1; iteration <= NR_TESTS; iteration++)	{
-		rc = kat_aes_ecb(iteration, silent);
+		rc = kat_aes_ecb(iteration);
 		if (rc) {
-			printf("kat_aes_ecb failed with rc = %i\n", rc);
+			V_(printf("kat_aes_ecb failed with rc = %i\n", rc));
 			error_count++;
 		}
 
 	}
 	for(iteration = 1; iteration <= NR_RANDOM_TESTS; iteration++)	{
-		int silent = 1;
-		rc = random_aes_ecb(iteration, silent, data_length);
+		rc = random_aes_ecb(iteration, data_length);
 		if (rc) {
-			printf("random_aes_ecb failed with rc = %i\n", rc);
+			V_(printf("random_aes_ecb failed with rc = %i, %i\n", rc, iteration));
 			error_count++;
 			goto out;
 		}
@@ -500,11 +475,10 @@ int main(int argc, char **argv)
 	}
 
 out:
-
 	if (error_count)
-		printf("%i testcases failed\n", error_count);
+		printf("%i AES-ECB tests failed.\n", error_count);
 	else
-		printf("All AES-ECB testcases finished successfully\n");
+		printf("All AES-ECB tests passed.\n");
 
 	return rc;
 }

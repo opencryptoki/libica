@@ -1,9 +1,17 @@
+#include <errno.h>
+#include <openssl/crypto.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <errno.h>
 #include <string.h>
-#include "ica_api.h"
 #include <sys/time.h>
+
+#include <openssl/opensslconf.h>
+#ifdef OPENSSL_FIPS
+#include <openssl/fips.h>
+#endif /* OPENSSL_FIPS */
+
+#include "ica_api.h"
+#include "testcase.h"
 
 #define ZERO_PADDING 8
 
@@ -15,25 +23,33 @@
 /* print error report after function return */
 static void print_error_report(unsigned int rc_sv, int errno_sv,
 			       const char *func_name);
-/* print bytes in hex */
-static void dump_array(const char *array, int size);
 
 extern int errno;
 
 int main(int argc, char **argv)
 {
+	struct timeval start, end;
 	unsigned int rc = 0, rc_test = 0, expo_type = 0, key_bit_length = 0;
-	unsigned int silent = 0;
-	struct timeval start,end;
+	int argno_expo = 2, argno_key = 1;
+
+	set_verbosity(argc, argv);
+
+	/* first cmd line arg may be verbosity */
+	if (verbosity_ != 0) {
+		argc--;
+		argno_expo++;
+		argno_key++;
+	}
 
 	if(argc < 3){
-		printf( "usage: %s <key_bit_length> (57..4096) <exponent_type> "
-			"(3, 65537 or r [random])\n", argv[0]);
+		printf( "usage: %s [<verbosity> (-v or -vv)] <key_bit_length>"
+		    " (57..4096) <exponent_type> (3, 65537 or r [random])\n",
+		    argv[0]);
 		return EXIT_FAILURE;
 	}
 
-	if((0 == (key_bit_length=strtol(argv[1], &argv[1], 10))) ||
-	   ('\0' != *argv[1]) ){
+	if((0 == (key_bit_length=strtol(argv[argno_key], &argv[argno_key],
+	    10))) || ('\0' != *argv[argno_key]) ){
 		printf( "error - possible values for"
 				" <key_bit_length> are integers"
 				" greater than 0.\n");
@@ -45,11 +61,11 @@ int main(int argc, char **argv)
 		return EXIT_FAILURE;
 	}
 
-	if(0 == (strcmp(argv[2], "3")))
+	if(0 == (strcmp(argv[argno_expo], "3")))
 		expo_type = EXPO_TYPE_3;
-	else if(0 == (strcmp(argv[2], "65537")))
+	else if(0 == (strcmp(argv[argno_expo], "65537")))
 		expo_type = EXPO_TYPE_65537;
-	else if(0 == (strcmp(argv[2], "r")))
+	else if(0 == (strcmp(argv[argno_expo], "r")))
 		expo_type = EXPO_TYPE_R;
 	else {
 		printf( "error -  possible values for <exponent_type>"
@@ -57,14 +73,9 @@ int main(int argc, char **argv)
 		return EXIT_FAILURE;
 	}
 
-	if (argv[3]) {
-		if (strstr(argv[3], "silent"))
-			silent = 1;
-	}
-
-	unsigned char	ciphertext[BITSTOBYTES(key_bit_length)],
-					decrypted[BITSTOBYTES(key_bit_length)],
-					plaintext[BITSTOBYTES(key_bit_length)];
+	unsigned char ciphertext[BITSTOBYTES(key_bit_length)],
+	    decrypted[BITSTOBYTES(key_bit_length)],
+	    plaintext[BITSTOBYTES(key_bit_length)];
 	memset(ciphertext, 0, (size_t) BITSTOBYTES(key_bit_length));
 	memset(decrypted, 0, (size_t) BITSTOBYTES(key_bit_length));
 	memset(plaintext, 0, (size_t) BITSTOBYTES(key_bit_length));
@@ -96,10 +107,8 @@ int main(int argc, char **argv)
 
 	ica_adapter_handle_t adapter_handle = 0;
 
-	if (!silent) {
-		printf("[TEST RSA CRT]\n");
-		printf("generate random plaintext\t...");
-	}
+	V_(printf("[TEST RSA CRT]\n"));
+	V_(printf("generate random plaintext...\n"));
 	if((rc = ica_random_number_generate(BITSTOBYTES(key_bit_length) ,plaintext)) != 0){
 		++rc_test;
 		print_error_report(rc, errno, "ica_random_number_generate");
@@ -108,13 +117,15 @@ int main(int argc, char **argv)
 	/* make sure that plaintext < modulus */
 	plaintext[0] = 0;
 
-	if (!silent) {
-		printf("plaintext:\n");
-		dump_array((char *)plaintext, BITSTOBYTES(key_bit_length));
-	}
+	VV_(printf("plaintext:\n"));
+	dump_array(plaintext, BITSTOBYTES(key_bit_length));
+
 	if((rc = ica_open_adapter(&adapter_handle)) != 0){
 		++rc_test;
 		print_error_report(rc, errno, "ica_open_adapter");
+	}
+	if(adapter_handle == DRIVER_NOT_LOADED) {
+		V_(printf("adapter handle is %d\n", adapter_handle));
 	}
 
 	switch(expo_type){
@@ -138,9 +149,7 @@ int main(int argc, char **argv)
 		return EXIT_FAILURE;
 	}
 
-	if (!silent) {
-		printf("generate keys\t\t\t...\n");
-	}
+	V_(printf("generate keys...\n"));
 
 	gettimeofday(&start, NULL);
 	if((rc = ica_rsa_key_generate_crt(adapter_handle,
@@ -151,88 +160,75 @@ int main(int argc, char **argv)
 		print_error_report(rc, errno, "ica_rsa_key_generate_crt");
 	}
 	gettimeofday(&end, NULL);
-	if (!silent)
-		printf("RSA CRT Key_gen with key length %d took: %06lu µs.\n",
-				key_bit_length, (end.tv_sec*1000000+end.tv_usec)-
-					(start.tv_sec*1000000+start.tv_usec));
+	V_(printf("RSA CRT Key_gen with key length %d took: %06lu µs.\n",
+	    key_bit_length, (end.tv_sec * 1000000 + end.tv_usec)
+	    - (start.tv_sec * 1000000 + start.tv_usec)));
 
-	if (!silent) {
-		printf("public key (e,n):\ne =\n");
-		dump_array((char *) (char *)modexpo_public_key.exponent,
-			BITSTOBYTES(key_bit_length));
-		printf("n =\n");
-		dump_array((char *) (char *)modexpo_public_key.modulus,
-			BITSTOBYTES(key_bit_length));
-		printf("private key (p,q,dp,dq,q^-1):\np =\n");
-		dump_array((char *) (char *) crt_private_key.p,
-			BITSTOBYTES(key_bit_length) / 2 + 1 + ZERO_PADDING);
-		printf("q =\n");
-		dump_array((char *) (char *)crt_private_key.q,
-			BITSTOBYTES(key_bit_length) / 2 + 1);
-		printf("dp =\n");
-		dump_array((char *) (char *)crt_private_key.dp,
-			BITSTOBYTES(key_bit_length) / 2 + 1 +ZERO_PADDING);
-		printf("dq =\n");
-		dump_array((char *) (char *)crt_private_key.dq,
-			BITSTOBYTES(key_bit_length) / 2 + 1);
-		printf("q^-1 =\n");
-		dump_array((char *) (char *)crt_private_key.qInverse,
-			BITSTOBYTES(key_bit_length) / 2 + 1 + ZERO_PADDING);
-	}
+	VV_(printf("public key (e,n):\ne =\n"));
+	dump_array(modexpo_public_key.exponent, BITSTOBYTES(key_bit_length));
+	VV_(printf("n =\n"));
+	dump_array(modexpo_public_key.modulus, BITSTOBYTES(key_bit_length));
+	VV_(printf("private key (p,q,dp,dq,q^-1):\np =\n"));
+	dump_array(crt_private_key.p,
+	    BITSTOBYTES(key_bit_length) / 2 + 1 + ZERO_PADDING);
+	VV_(printf("q =\n"));
+	dump_array(crt_private_key.q, BITSTOBYTES(key_bit_length) / 2 + 1);
+	VV_(printf("dp =\n"));
+	dump_array(crt_private_key.dp,
+	    BITSTOBYTES(key_bit_length) / 2 + 1 +ZERO_PADDING);
+	VV_(printf("dq =\n"));
+	dump_array(crt_private_key.dq, BITSTOBYTES(key_bit_length) / 2 + 1);
+	VV_(printf("q^-1 =\n"));
+	dump_array(crt_private_key.qInverse,
+	    BITSTOBYTES(key_bit_length) / 2 + 1 + ZERO_PADDING);
 
-	if (!silent) {
-		printf("encrypt...\n");
-	}
+	V_(printf("encrypt...\n"));
 	if((rc = ica_rsa_mod_expo(adapter_handle, plaintext, &modexpo_public_key,
 				  ciphertext)) != 0){
 		++rc_test;
 		print_error_report(rc, errno, "ica_rsa_mod_expo");
 	}
 
-	if (!silent) {
-		printf("ciphertext:\n");
-		dump_array((char *) ciphertext, BITSTOBYTES(key_bit_length));
-	}
+	VV_(printf("ciphertext:\n"));
+	dump_array(ciphertext, BITSTOBYTES(key_bit_length));
 
-	if (!silent) {
-		printf("decrypt...\n");
-	}
+	V_(printf("decrypt...\n"));
 	if((rc = ica_rsa_crt(adapter_handle, ciphertext, &crt_private_key,
 				  decrypted)) != 0){
 		++rc_test;
 		print_error_report(rc, errno, "ica_rsa_crt");
 	}
 
-	if (!silent) {
-		printf("result:\n");
-		dump_array((char *) decrypted, BITSTOBYTES(key_bit_length));
-	}
+	VV_(printf("result:\n"));
+	dump_array(decrypted, BITSTOBYTES(key_bit_length));
 
 	if((rc = ica_close_adapter(adapter_handle)) != 0){
 		++rc_test;
 		print_error_report(rc, errno, "ica_close_adapter");
 	}
 
-	if (!silent) {
-		printf("compare ciphertext to plaintext...\n");
-	}
+	V_(printf("compare ciphertext to plaintext...\n"));
 	if(memcmp(plaintext,ciphertext,BITSTOBYTES(key_bit_length)) == 0) {
-		printf("\t\tFAILED\nerror - ciphertext equals plaintext.\n");
+		V_(printf("FAILED\nerror - ciphertext equals plaintext.\n"));
 		++rc_test;
 	}
 
-	if (!silent) {
-		printf("compare result to plaintext...\n");
-	}
+	V_(printf("compare result to plaintext...\n"));
 	if(memcmp(plaintext,decrypted,BITSTOBYTES(key_bit_length)) != 0) {
-		printf("\t\tFAILED\nerror - decryption result doesn't match plaintext.\n");
+		V_(printf("FAILED\nerror - decryption result doesn't match plaintext.\n"));
 		++rc_test;
 	}
 
 	if(0 == rc_test)
-		printf("All Keygen tests passed successfully\n");
-	else
-		printf("Keygen tests failed: %u errors\n",rc_test);
+		printf("All RSA keygen (%u bit) tests passed.\n",
+		    key_bit_length);
+	else {
+		printf("RSA keygen (%u) tests failed: %u errors.",
+		    key_bit_length, rc_test);
+		if (FIPS_mode())
+			printf(" (Parameters might be non FIPS conformant.)");
+		printf("\n");
+	}
 
 	return rc_test;
 }
@@ -240,56 +236,36 @@ int main(int argc, char **argv)
 static void print_error_report(unsigned int rc_sv, int errno_sv,
 			       const char *func_name)
 {
-	printf( "\t\tFAILED\nerror - %s returned %u: ", func_name, rc_sv);
+	V_(printf("FAILED\nerror - %s returned %u: ", func_name, rc_sv));
 	switch (rc_sv) {
 	case EFAULT:
-		printf( "the message authentication failed.\n");
+		V_(printf("the message authentication failed.\n"));
 		break;
 	case EINVAL:
-		printf( "incorrect parameter.\n");
+		V_(printf("incorrect parameter.\n"));
 		break;
 	case EIO:
-		printf( "I/O error.\n");
+		V_(printf("I/O error.\n"));
 		break;
 	case EPERM:
-		printf(
-			"operation not permitted by hardware (CPACF).\n");
+		V_(printf("operation not permitted by hardware (CPACF).\n"));
 		break;
 	case ENODEV:
-		printf( "no such device.\n");
+		V_(printf("no such device.\n"));
 		break;
 	case ENOMEM:
-		printf( "not enough memory.\n");
+		V_(printf("not enough memory.\n"));
 		break;
 	default:
-		printf(
-			"unknown return code. this shouldn't happen.\n");
+		V_(printf("unknown return code. this shouldn't happen.\n"));
 	}
 
-	printf( "\terrno ");
-	if (0 == errno_sv)
-		printf("not set.\n");
-	else
-		printf("set to %d: %s.\n",
-			errno_sv, strerror(errno_sv));
-}
-
-static void dump_array(const char *array, int size)
-{
-	const char *ptr;
-	int i = 1;
-
-	ptr = array;
-	while (ptr < array+size) {
-		printf("0x%02x ",(unsigned char ) *ptr);
-		++ptr;
-		if (8 == i) {
-			printf("\n");
-			i = 1;
-		} else {
-			++i;
-		}
+	V_(printf("errno "));
+	if (0 == errno_sv){
+		V_(printf("not set.\n"));
 	}
-	if((i > 1) && (i <= 8))
-		printf("\n");
+	else{
+		V_(printf("set to %d: %s.\n",
+			errno_sv, strerror(errno_sv)));
+	}
 }
