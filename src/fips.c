@@ -429,16 +429,16 @@ aes_gcm_kat(void) {
 	for (i = 0; i < AES_GCM_TV_LEN; i++) {
 		tv = &AES_GCM_TV[i];
 
-		/* Divide the test vector into two chunks:
-		 * If the test vector's length is no integral multiple of 16
-		 * bytes, the remaining bytes form the second chunk.
-		 * If the text vector's length is an integral multiple of 16,
-		 * say x * 16, then:
-		 * - If x == 1, the last chunk is empty.
-		 * - Otherwise, the last chunk is 16 bytes. */
-		lastlen = tv->len % AES_BLKSIZE;
-		if (lastlen == 0 && tv->len >= 2 * AES_BLKSIZE)
-			lastlen = AES_BLKSIZE;
+		/* Divide the test vector into two chunks. */
+		if (tv->len  <= AES_BLKSIZE)
+			lastlen = 0;
+		else {
+			lastlen = tv->len % AES_BLKSIZE;
+			/* Last chunk can only be 16 bytes long, if test
+			 * vector is at least 32 bytes long. */
+			if (lastlen == 0 && tv->len >= 2 * AES_BLKSIZE)
+				lastlen = AES_BLKSIZE;
+		}
 
 		out = malloc(tv->len);
 		tag = malloc(AES_BLKSIZE);
