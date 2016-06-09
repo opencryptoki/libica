@@ -39,7 +39,7 @@ dump_array(unsigned char array[], size_t len)
 
 	for (i = 1; i <= len; i++) {
 		VV_(printf("0x%02x ", array[i - 1]));
-		if (i % 8 == 0)
+		if ((i % 8 == 0) || (i == len))
 			VV_(printf("\n"));
 	}
 }
