@@ -77,7 +77,6 @@ static int s390_prng_seed(void *srv, unsigned int count);
 int s390_prng_init(void)
 {
 	int rc = -1;
-	static const char *pers = "ica_drbg_global";
 #ifndef ICA_FIPS
 	FILE *handle;
 	unsigned char seed[16];
@@ -90,7 +89,7 @@ int s390_prng_init(void)
 	 */
 	if (sha512_switch || sha512_drng_switch) {
 		rc = ica_drbg_instantiate(&ica_drbg_global, 256, true,
-		    ICA_DRBG_SHA512, (unsigned char *)pers, strlen(pers));
+		    ICA_DRBG_SHA512, (unsigned char *)"GLOBAL INSTANCE", 15);
 	}
 
 #ifndef ICA_FIPS	/* Old prng code disabled with FIPS built. */
@@ -196,7 +195,7 @@ int s390_prng(unsigned char *output_data, unsigned int output_length)
 	 */
 	if (ica_drbg_global) {
 		for (i = 0; i < q; i++) {
-			rc = ica_drbg_generate(ica_drbg_global, 256, true,
+			rc = ica_drbg_generate(ica_drbg_global, 256, false,
 			    NULL, 0, ptr,
 			    ICA_DRBG_SHA512->max_no_of_bytes_per_req);
 			if (rc)
@@ -205,7 +204,7 @@ int s390_prng(unsigned char *output_data, unsigned int output_length)
 			ptr += ICA_DRBG_SHA512->max_no_of_bytes_per_req;
 		}
 		if (r > 0) {
-			rc = ica_drbg_generate(ica_drbg_global, 256, true,
+			rc = ica_drbg_generate(ica_drbg_global, 256, false,
 			    NULL, 0, ptr, r);
 		}
 		if (rc == 0)
