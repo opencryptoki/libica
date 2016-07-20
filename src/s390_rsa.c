@@ -51,8 +51,6 @@ static unsigned int mod_expo_sw(int arg_length, char *arg, int exp_length,
 RSA* rsa_key_generate(unsigned int modulus_bit_length,
 		      unsigned long *public_exponent)
 {
-	BN_GENCB cb;
-
 #ifdef ICA_FIPS
 	if ((fips & ICA_FIPS_MODE) && (!FIPS_mode()))
 		return NULL;
@@ -67,26 +65,38 @@ RSA* rsa_key_generate(unsigned int modulus_bit_length,
 		} while (*public_exponent <= 2 || !(*public_exponent % 2));
 	}
 
-	BIGNUM *exp = BN_new();
 	RSA *rsa = RSA_new();
-
+	BIGNUM *exp = BN_new();
 	if (!exp || !rsa) {
-		if (exp)
-			BN_free(exp);
-		if (rsa)
-			RSA_free(rsa);
+		RSA_free(rsa);
+		BN_free(exp);
 		return NULL;
 	}
+#if OPENSSL_VERSION_NUMBER >= 0x10100000L
+	BN_GENCB *cb = BN_GENCB_new();
+	if(!cb) {
+		RSA_free(rsa);
+		BN_free(exp);
+		return NULL;
+	}
+#else
+	BN_GENCB dummy;
+	BN_GENCB *cb = &dummy;
+#endif /* OPENSSL_VERSION_NUMBER */
 
 	BN_set_word(exp, *public_exponent);
-	BN_GENCB_set_old(&cb, NULL, NULL);
+	BN_GENCB_set_old(cb, NULL, NULL);
 
-	if (RSA_generate_key_ex(rsa, modulus_bit_length, exp, &cb)) {
-		BN_free(exp);
-		return rsa;
+	if (RSA_generate_key_ex(rsa, modulus_bit_length, exp, cb) == 0) {
+		RSA_free(rsa);
+		rsa = NULL;
 	}
 
-	return NULL;
+	BN_free(exp);
+#if OPENSSL_VERSION_NUMBER >= 0x10100000L
+	BN_GENCB_free(cb);
+#endif /* OPENSSL_VERSION_NUMBER */
+	return rsa;
 }
 
 /**
@@ -122,6 +132,15 @@ unsigned int rsa_key_generate_mod_expo(ica_adapter_handle_t deviceHandle,
 				    sizeof(unsigned long)));
 	if (!rsa)
 		return errno;
+
+	BIGNUM *n, *d;
+#if OPENSSL_VERSION_NUMBER >= 0x10100000L
+	RSA_get0_key(rsa, &n, NULL,  &d);
+#else
+	n = rsa->n;
+	d = rsa->d;
+#endif /* OPENSSL_VERSION_NUMBER */
+
 	/* Set key buffers zero to make sure there is no
 	 * unneeded junk in between.
 	 */
@@ -129,24 +148,24 @@ unsigned int rsa_key_generate_mod_expo(ica_adapter_handle_t deviceHandle,
 	memset(private_key->modulus, 0, private_key->key_length);
 	memset(private_key->exponent, 0, private_key->key_length);
 
-	unsigned int bn_length = BN_num_bytes(rsa->n);
+	unsigned int bn_length = BN_num_bytes(n);
 	unsigned int offset = 0;
 
 	if (bn_length < public_key->key_length)
 		offset = public_key->key_length - bn_length;
 	else
 		offset = 0;
-	BN_bn2bin(rsa->n, public_key->modulus + offset);
+	BN_bn2bin(n, public_key->modulus + offset);
 
 	memcpy(private_key->modulus, public_key->modulus,
 	       public_key->key_length);
 
-	bn_length = BN_num_bytes(rsa->d);
+	bn_length = BN_num_bytes(d);
 	if (bn_length < private_key->key_length)
 		offset = private_key->key_length - bn_length;
 	else
 		offset = 0;
-	BN_bn2bin(rsa->d, private_key->exponent + offset);
+	BN_bn2bin(d, private_key->exponent + offset);
 
 	RSA_free(rsa);
 
@@ -184,6 +203,20 @@ unsigned int rsa_key_generate_crt(ica_adapter_handle_t deviceHandle,
 	if (!rsa)
 		return errno;
 
+	BIGNUM *n, *p, *q, *dmp1, *dmq1, *iqmp;
+#if OPENSSL_VERSION_NUMBER >= 0x10100000L
+	RSA_get0_key(rsa, &n, NULL,  NULL);
+	RSA_get0_factors(rsa, &p, &q);
+	RSA_get0_crt_params(rsa, &dmp1, &dmq1, &iqmp);
+#else
+	n = rsa->n;
+	p = rsa->p;
+	q = rsa->q;
+	dmp1 = rsa->dmp1;
+	dmq1 = rsa->dmq1;
+	iqmp = rsa->iqmp;
+#endif /* OPENSSL_VERSION_NUMBER */
+
 	/* Public exponent has already been set, no need to do this here.
 	 * For public key, only modulus needs to be set.
 	 */
@@ -192,12 +225,12 @@ unsigned int rsa_key_generate_crt(ica_adapter_handle_t deviceHandle,
 	/* Make sure that key parts are copied to the end of the buffer */
 	unsigned int offset = 0;
 
-	unsigned int bn_length = BN_num_bytes(rsa->n);
+	unsigned int bn_length = BN_num_bytes(n);
 	if (bn_length < public_key->key_length)
 		offset = public_key->key_length - bn_length;
 	else
 		offset = 0;
-	BN_bn2bin(rsa->n, public_key->modulus + offset);
+	BN_bn2bin(n, public_key->modulus + offset);
 
 	memset(private_key->p, 0, (private_key->key_length+1) / 2 + 8);
 	memset(private_key->q, 0, (private_key->key_length+1) / 2);
@@ -213,45 +246,45 @@ unsigned int rsa_key_generate_crt(ica_adapter_handle_t deviceHandle,
 	 */
 
 	/* Copy p into buffer */
-	bn_length = BN_num_bytes(rsa->p);
+	bn_length = BN_num_bytes(p);
 	if(bn_length < key_part_length)
 		offset = key_part_length - bn_length;
 	else
 		offset = 0;
-	BN_bn2bin(rsa->p, private_key->p + 8 + offset);
+	BN_bn2bin(p, private_key->p + 8 + offset);
 
 	/* Copy q into buffer */
-	bn_length = BN_num_bytes(rsa->q);
+	bn_length = BN_num_bytes(q);
 	if(bn_length < key_part_length)
 		offset = key_part_length - bn_length;
 	else
 		offset = 0;
-	BN_bn2bin(rsa->q, private_key->q + offset);
+	BN_bn2bin(q, private_key->q + offset);
 
 	/* Copy dp into buffer */
-	bn_length = BN_num_bytes(rsa->dmp1);
+	bn_length = BN_num_bytes(dmp1);
 	if(bn_length < key_part_length)
 		offset = key_part_length - bn_length;
 	else
 		offset = 0;
-	BN_bn2bin(rsa->dmp1, private_key->dp + 8 + offset);
+	BN_bn2bin(dmp1, private_key->dp + 8 + offset);
 
 	/* Copy dq into buffer */
-	bn_length = BN_num_bytes(rsa->dmq1);
+	bn_length = BN_num_bytes(dmq1);
 	if(bn_length < key_part_length)
 		offset = key_part_length - bn_length;
 	else
 		offset = 0;
-	BN_bn2bin(rsa->dmq1, private_key->dq + offset);
+	BN_bn2bin(dmq1, private_key->dq + offset);
 
 	/* Copy qInverse into buffer */
-	bn_length = BN_num_bytes(rsa->iqmp);
+	bn_length = BN_num_bytes(iqmp);
 	if(bn_length < key_part_length)
 		offset = key_part_length - bn_length;
 	else
 		offset = 0;
 
-	BN_bn2bin(rsa->iqmp, private_key->qInverse + 8 + offset);
+	BN_bn2bin(iqmp, private_key->qInverse + 8 + offset);
 
 	RSA_free(rsa);
 
