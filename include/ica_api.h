@@ -34,6 +34,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#define ICA_EXPORT __attribute__((__visibility__("default")))
+
 #define ica_adapter_handle_t int
 typedef ica_adapter_handle_t ICA_ADAPTER_HANDLE;
 #define DRIVER_NOT_LOADED -1
@@ -1238,6 +1240,8 @@ unsigned int icaRandomNumberGenerate(ica_adapter_handle_t adapter_handle,
 				     unsigned char *output_data);
 
 struct mech_list_item;
+
+ICA_EXPORT
 void generate_pkcs11_mech_list(struct mech_list_item *head);
 
 /*
@@ -1252,6 +1256,7 @@ void generate_pkcs11_mech_list(struct mech_list_item *head);
  * @return 0 as long as a valid parameter is given.
  * EINVAL for invalid parameter.
  */
+ICA_EXPORT
 unsigned int ica_open_adapter(ica_adapter_handle_t *adapter_handle);
 
 /**
@@ -1261,6 +1266,7 @@ unsigned int ica_open_adapter(ica_adapter_handle_t *adapter_handle);
  * @return 0 if successful.
  * errno of close() if unsuccessful
  */
+ICA_EXPORT
 unsigned int ica_close_adapter(ica_adapter_handle_t adapter_handle);
 
 /**
@@ -1280,6 +1286,7 @@ unsigned int ica_close_adapter(ica_adapter_handle_t adapter_handle);
  * ENODEV if neither /dev/hwrng nor /dev/urandom are available.
  * EIO if the operation fails. This should never happen.
  */
+ICA_EXPORT
 unsigned int ica_random_number_generate(unsigned int output_length,
 					unsigned char *output_data);
 
@@ -1318,6 +1325,7 @@ unsigned int ica_random_number_generate(unsigned int output_length,
  * EINVAL if at least one invalid parameter is given
  * EIO if the operation fails. This should never happen.
  */
+ICA_EXPORT
 unsigned int ica_sha1(unsigned int message_part,
 		      unsigned int input_length,
 		      unsigned char *input_data,
@@ -1361,6 +1369,7 @@ unsigned int ica_sha1(unsigned int message_part,
  * EINVAL if at least one invalid parameter is given
  * EIO if the operation fails. This should never happen.
  */
+ICA_EXPORT
 unsigned int ica_sha224(unsigned int message_part,
 			unsigned int input_length,
 			unsigned char *input_data,
@@ -1402,6 +1411,7 @@ unsigned int ica_sha224(unsigned int message_part,
  * EINVAL if at least one invalid parameter is given
  * EIO if the operation fails. This should never happen.
  */
+ICA_EXPORT
 unsigned int ica_sha256(unsigned int message_part,
 			unsigned int input_length,
 			unsigned char *input_data,
@@ -1445,6 +1455,7 @@ unsigned int ica_sha256(unsigned int message_part,
  * EINVAL if at least one invalid parameter is given
  * EIO if the operation fails. This should never happen.
  */
+ICA_EXPORT
 unsigned int ica_sha384(unsigned int message_part,
 			uint64_t input_length,
 			unsigned char *input_data,
@@ -1486,6 +1497,7 @@ unsigned int ica_sha384(unsigned int message_part,
  * EINVAL if at least one invalid parameter is given
  * EIO if the operation fails. This should never happen.
  */
+ICA_EXPORT
 unsigned int ica_sha512(unsigned int message_part,
 			uint64_t input_length,
 			unsigned char *input_data,
@@ -1514,6 +1526,7 @@ unsigned int ica_sha512(unsigned int message_part,
  * EINVAL if at least one invalid parameter is given.
  * errno of OpenSSL key generation if it should fail.
  */
+ICA_EXPORT
 unsigned int ica_rsa_key_generate_mod_expo(ica_adapter_handle_t adapter_handle,
 					   unsigned int modulus_bit_length,
 					   ica_rsa_key_mod_expo_t *public_key,
@@ -1541,6 +1554,7 @@ unsigned int ica_rsa_key_generate_mod_expo(ica_adapter_handle_t adapter_handle,
  * EINVAL if at least one invalid parameter is given.
  * errno of OpenSSL key generation if it should fail.
  */
+ICA_EXPORT
 unsigned int ica_rsa_key_generate_crt(ica_adapter_handle_t adapter_handle,
 				      unsigned int modulus_bit_length,
 				      ica_rsa_key_mod_expo_t *public_key,
@@ -1568,6 +1582,7 @@ unsigned int ica_rsa_key_generate_crt(ica_adapter_handle_t adapter_handle,
  * ENOMEM if memory allocation fails.
  * EIO if the operation fails. This should never happen.
  */
+ICA_EXPORT
 unsigned int ica_rsa_mod_expo(ica_adapter_handle_t adapter_handle,
 			      unsigned char *input_data,
 			      ica_rsa_key_mod_expo_t *rsa_key,
@@ -1596,6 +1611,7 @@ unsigned int ica_rsa_mod_expo(ica_adapter_handle_t adapter_handle,
  * ENOMEM if memory allocation fails.
  * EIO if the operation fails. This should never happen.
  */
+ICA_EXPORT
 unsigned int ica_rsa_crt(ica_adapter_handle_t adapter_handle,
 			 unsigned char *input_data,
 			 ica_rsa_key_crt_t *rsa_key,
@@ -1613,6 +1629,7 @@ unsigned int ica_rsa_crt(ica_adapter_handle_t adapter_handle,
  *  1 if the key credentials were re-calculated.
  *  ENOMEM if memory allocation fails.
  */
+ICA_EXPORT
 unsigned int ica_rsa_crt_key_check(ica_rsa_key_crt_t *rsa_key);
 
 /**
@@ -1641,6 +1658,7 @@ unsigned int ica_rsa_crt_key_check(ica_rsa_key_crt_t *rsa_key);
  * EINVAL if at least one invalid parameter is given.
  * EIO if the operation fails. This should never happen.
  */
+ICA_EXPORT
 unsigned int ica_des_encrypt(unsigned int mode,
 			     unsigned int data_length,
 			     unsigned char *input_data,
@@ -1675,6 +1693,7 @@ unsigned int ica_des_encrypt(unsigned int mode,
  * EINVAL if at least one invalid parameter is given.
  * EIO if the operation fails. This should never happen.
  */
+ICA_EXPORT
 unsigned int ica_des_decrypt(unsigned int mode,
 			     unsigned int data_length,
 			     unsigned char *input_data,
@@ -1709,6 +1728,7 @@ unsigned int ica_des_decrypt(unsigned int mode,
  * EINVAL if at least one invalid parameter is given.
  * EIO if the operation fails. This should never happen.
  */
+ICA_EXPORT
 unsigned int ica_3des_encrypt(unsigned int mode,
 			      unsigned int data_length,
 			      unsigned char *input_data,
@@ -1743,6 +1763,7 @@ unsigned int ica_3des_encrypt(unsigned int mode,
  * EINVAL if at least one invalid parameter is given.
  * EIO if the operation fails. This should never happen.
  */
+ICA_EXPORT
 unsigned int ica_3des_decrypt(unsigned int mode,
 			      unsigned int data_length,
 			      unsigned char *input_data,
@@ -1779,6 +1800,7 @@ unsigned int ica_3des_decrypt(unsigned int mode,
  * EINVAL if at least one invalid parameter is given.
  * EIO if the operation fails. This should never happen.
  */
+ICA_EXPORT
 unsigned int ica_aes_encrypt(unsigned int mode,
 			     unsigned int data_length,
 			     unsigned char *input_data,
@@ -1816,6 +1838,7 @@ unsigned int ica_aes_encrypt(unsigned int mode,
  * EINVAL if at least one invalid parameter is given.
  * EIO if the operation fails. This should never happen.
  */
+ICA_EXPORT
 unsigned int ica_aes_decrypt(unsigned int mode,
 			     unsigned int data_length,
 			     unsigned char *input_data,
@@ -1854,6 +1877,7 @@ unsigned int ica_aes_decrypt(unsigned int mode,
  * EINVAL if at least one invalid parameter is given.
  * EIO if the operation fails.
  */
+ICA_EXPORT
 unsigned int ica_des_ecb(const unsigned char *in_data, unsigned char *out_data,
 			 unsigned long data_length, unsigned char *key,
 			 unsigned int direction);
@@ -1893,6 +1917,7 @@ unsigned int ica_des_ecb(const unsigned char *in_data, unsigned char *out_data,
  * EINVAL if at least one invalid parameter is given.
  * EIO if the operation fails.
  */
+ICA_EXPORT
 unsigned int ica_des_cbc(const unsigned char *in_data, unsigned char *out_data,
 			 unsigned long data_length, unsigned char *key,
 			 unsigned char *iv,
@@ -1954,6 +1979,7 @@ unsigned int ica_des_cbc(const unsigned char *in_data, unsigned char *out_data,
  * EPERM if required hardware support is not available.
  * EIO if the operation fails.
  */
+ICA_EXPORT
 unsigned int ica_des_cbc_cs(const unsigned char *in_data, unsigned char *out_data,
 			    unsigned long data_length, unsigned char *key,
 			    unsigned char *iv,
@@ -1999,6 +2025,7 @@ unsigned int ica_des_cbc_cs(const unsigned char *in_data, unsigned char *out_dat
  * EPERM if required hardware support is not available.
  * EIO if the operation fails.
  */
+ICA_EXPORT
 unsigned int ica_des_cfb(const unsigned char *in_data, unsigned char *out_data,
 			 unsigned long data_length, unsigned char *key,
 			 unsigned char *iv, unsigned int lcfb,
@@ -2053,6 +2080,7 @@ unsigned int ica_des_cfb(const unsigned char *in_data, unsigned char *out_data,
  * EPERM if required hardware support is not available.
  * EIO if the operation fails.
  */
+ICA_EXPORT
 unsigned int ica_des_ctr(const unsigned char *in_data, unsigned char *out_data,
 			 unsigned long data_length,
 			 unsigned char *key,
@@ -2104,6 +2132,7 @@ unsigned int ica_des_ctr(const unsigned char *in_data, unsigned char *out_data,
  * EPERM if required hardware support is not available.
  * EIO if the operation fails.
  */
+ICA_EXPORT
 unsigned int ica_des_ctrlist(const unsigned char *in_data, unsigned char *out_data,
 			     unsigned long data_length,
 			     unsigned char *key,
@@ -2146,6 +2175,7 @@ unsigned int ica_des_ctrlist(const unsigned char *in_data, unsigned char *out_da
  * EPERM if required hardware support is not available.
  * EIO if the operation fails.
  */
+ICA_EXPORT
 unsigned int ica_des_ofb(const unsigned char *in_data, unsigned char *out_data,
 			 unsigned long data_length, unsigned char *key,
 			 unsigned char *iv, unsigned int direction);
@@ -2190,6 +2220,7 @@ unsigned int ica_des_ofb(const unsigned char *in_data, unsigned char *out_data,
  * EFAULT if direction is 0 and the verification of the message authentication
  * code fails.
  */
+ICA_EXPORT
 unsigned int ica_des_cmac(const unsigned char *message, unsigned long message_length,
 			  unsigned char *mac, unsigned int mac_length,
 			  unsigned char *key,
@@ -2234,6 +2265,7 @@ unsigned int ica_des_cmac(const unsigned char *message, unsigned long message_le
  * EPERM if required hardware support is not available.
  * EIO if the operation fails.
  */
+ICA_EXPORT
 unsigned int ica_des_cmac_intermediate(const unsigned char *message,
 				       unsigned long message_length,
 				       unsigned char *key,
@@ -2290,6 +2322,7 @@ unsigned int ica_des_cmac_intermediate(const unsigned char *message,
  * EFAULT if direction is 0 and the verification of the message authentication
  * code fails.
  */
+ICA_EXPORT
 unsigned int ica_des_cmac_last(const unsigned char *message, unsigned long message_length,
 			       unsigned char *mac, unsigned int mac_length,
 			       unsigned char *key,
@@ -2326,6 +2359,7 @@ unsigned int ica_des_cmac_last(const unsigned char *message, unsigned long messa
  * EINVAL if at least one invalid parameter is given.
  * EIO if the operation fails.
  */
+ICA_EXPORT
 unsigned int ica_3des_ecb(const unsigned char *in_data, unsigned char *out_data,
 			  unsigned long data_length, unsigned char *key,
 			  unsigned int direction);
@@ -2365,6 +2399,7 @@ unsigned int ica_3des_ecb(const unsigned char *in_data, unsigned char *out_data,
  * EINVAL if at least one invalid parameter is given.
  * EIO if the operation fails.
  */
+ICA_EXPORT
 unsigned int ica_3des_cbc(const unsigned char *in_data, unsigned char *out_data,
 			  unsigned long data_length, unsigned char *key,
 			  unsigned char *iv,
@@ -2426,6 +2461,7 @@ unsigned int ica_3des_cbc(const unsigned char *in_data, unsigned char *out_data,
  * EPERM if required hardware support is not available.
  * EIO if the operation fails.
  */
+ICA_EXPORT
 unsigned int ica_3des_cbc_cs(const unsigned char *in_data, unsigned char *out_data,
 			     unsigned long data_length,
 			     unsigned char *key,
@@ -2472,6 +2508,7 @@ unsigned int ica_3des_cbc_cs(const unsigned char *in_data, unsigned char *out_da
  * EPERM if required hardware support is not available.
  * EIO if the operation fails.
  */
+ICA_EXPORT
 unsigned int ica_3des_cfb(const unsigned char *in_data, unsigned char *out_data,
 			  unsigned long data_length, unsigned char *key,
 			  unsigned char *iv, unsigned int lcfb,
@@ -2526,6 +2563,7 @@ unsigned int ica_3des_cfb(const unsigned char *in_data, unsigned char *out_data,
  * EPERM if required hardware support is not available.
  * EIO if the operation fails.
  */
+ICA_EXPORT
 unsigned int ica_3des_ctr(const unsigned char *in_data, unsigned char *out_data,
 			  unsigned long data_length,
 			  unsigned char *key,
@@ -2577,6 +2615,7 @@ unsigned int ica_3des_ctr(const unsigned char *in_data, unsigned char *out_data,
  * EPERM if required hardware support is not available.
  * EIO if the operation fails.
  */
+ICA_EXPORT
 unsigned int ica_3des_ctrlist(const unsigned char *in_data, unsigned char *out_data,
 			      unsigned long data_length,
 			      unsigned char *key,
@@ -2619,6 +2658,7 @@ unsigned int ica_3des_ctrlist(const unsigned char *in_data, unsigned char *out_d
  * EPERM if required hardware support is not available.
  * EIO if the operation fails.
  */
+ICA_EXPORT
 unsigned int ica_3des_ofb(const unsigned char *in_data, unsigned char *out_data,
 			  unsigned long data_length, unsigned char *key,
 			  unsigned char *iv, unsigned int direction);
@@ -2665,6 +2705,7 @@ unsigned int ica_3des_ofb(const unsigned char *in_data, unsigned char *out_data,
  * EFAULT if direction is 0 and the verification of the message authentication
  * code fails.
  */
+ICA_EXPORT
 unsigned int ica_3des_cmac(const unsigned char *message, unsigned long message_length,
 			   unsigned char *mac, unsigned int mac_length,
 			   unsigned char *key,
@@ -2709,6 +2750,7 @@ unsigned int ica_3des_cmac(const unsigned char *message, unsigned long message_l
  * EPERM if required hardware support is not available.
  * EIO if the operation fails.
  */
+ICA_EXPORT
 unsigned int ica_3des_cmac_intermediate(const unsigned char *message, unsigned long message_length,
 					unsigned char *key,
 					unsigned char *iv);
@@ -2764,6 +2806,7 @@ unsigned int ica_3des_cmac_intermediate(const unsigned char *message, unsigned l
  * EFAULT if direction is 0 and the verification of the message authentication
  * code fails.
  */
+ICA_EXPORT
 unsigned int ica_3des_cmac_last(const unsigned char *message, unsigned long message_length,
 				unsigned char *mac, unsigned int mac_length,
 				unsigned char *key, unsigned char *iv,
@@ -2803,6 +2846,7 @@ unsigned int ica_3des_cmac_last(const unsigned char *message, unsigned long mess
  * EINVAL if at least one invalid parameter is given.
  * EIO if the operation fails.
  */
+ICA_EXPORT
 unsigned int ica_aes_ecb(const unsigned char *in_data, unsigned char *out_data,
 			 unsigned long data_length, unsigned char *key,
 			 unsigned int key_length,
@@ -2847,6 +2891,7 @@ unsigned int ica_aes_ecb(const unsigned char *in_data, unsigned char *out_data,
  * EINVAL if at least one invalid parameter is given.
  * EIO if the operation fails.
  */
+ICA_EXPORT
 unsigned int ica_aes_cbc(const unsigned char *in_data, unsigned char *out_data,
 			 unsigned long data_length, unsigned char *key,
 			 unsigned int key_length, unsigned char *iv,
@@ -2913,6 +2958,7 @@ unsigned int ica_aes_cbc(const unsigned char *in_data, unsigned char *out_data,
  * EPERM if required hardware support is not available.
  * EIO if the operation fails.
  */
+ICA_EXPORT
 unsigned int ica_aes_cbc_cs(const unsigned char *in_data, unsigned char *out_data,
 			    unsigned long data_length,
 			    unsigned char *key, unsigned int key_length,
@@ -2963,6 +3009,7 @@ unsigned int ica_aes_cbc_cs(const unsigned char *in_data, unsigned char *out_dat
  * EPERM if required hardware support is not available.
  * EIO if the operation fails.
  */
+ICA_EXPORT
 unsigned int ica_aes_cfb(const unsigned char *in_data, unsigned char *out_data,
 			 unsigned long data_length, unsigned char *key,
 			 unsigned int key_length, unsigned char *iv, unsigned int lcfb,
@@ -3021,6 +3068,7 @@ unsigned int ica_aes_cfb(const unsigned char *in_data, unsigned char *out_data,
  * EPERM if required hardware support is not available.
  * EIO if the operation fails.
  */
+ICA_EXPORT
 unsigned int ica_aes_ctr(const unsigned char *in_data, unsigned char *out_data,
 			 unsigned long data_length,
 			 unsigned char *key, unsigned int key_length,
@@ -3076,6 +3124,7 @@ unsigned int ica_aes_ctr(const unsigned char *in_data, unsigned char *out_data,
  * EPERM if required hardware support is not available.
  * EIO if the operation fails.
  */
+ICA_EXPORT
 unsigned int ica_aes_ctrlist(const unsigned char *in_data, unsigned char *out_data,
 			     unsigned long data_length,
 			     unsigned char *key, unsigned int key_length,
@@ -3122,6 +3171,7 @@ unsigned int ica_aes_ctrlist(const unsigned char *in_data, unsigned char *out_da
  * EPERM if required hardware support is not available.
  * EIO if the operation fails.
  */
+ICA_EXPORT
 unsigned int ica_aes_ofb(const unsigned char *in_data, unsigned char *out_data,
 			 unsigned long data_length, unsigned char *key,
 			 unsigned int key_length, unsigned char *iv,
@@ -3172,6 +3222,7 @@ unsigned int ica_aes_ofb(const unsigned char *in_data, unsigned char *out_data,
  * EIO if the operation fails.
  * EFAULT if direction is 0 and the verification of the message authentication code fails.
  */
+ICA_EXPORT
 unsigned int ica_aes_cmac(const unsigned char *message, unsigned long message_length,
 			  unsigned char *mac, unsigned int mac_length,
 			  unsigned char *key, unsigned int key_length,
@@ -3221,6 +3272,7 @@ unsigned int ica_aes_cmac(const unsigned char *message, unsigned long message_le
  * EPERM if required hardware support is not available.
  * EIO if the operation fails.
  */
+ICA_EXPORT
 unsigned int ica_aes_cmac_intermediate(const unsigned char *message,
 				       unsigned long message_length,
 				       unsigned char *key, unsigned int key_length,
@@ -3283,6 +3335,7 @@ unsigned int ica_aes_cmac_intermediate(const unsigned char *message,
  * EFAULT if direction is 0 and the verification of the message authentication
  * code fails.
  */
+ICA_EXPORT
 unsigned int ica_aes_cmac_last(const unsigned char *message, unsigned long message_length,
 			       unsigned char *mac, unsigned int mac_length,
 			       unsigned char *key, unsigned int key_length,
@@ -3336,6 +3389,7 @@ unsigned int ica_aes_cmac_last(const unsigned char *message, unsigned long messa
  * EPERM if required hardware support is not available.
  * EIO if the operation fails.
  */
+ICA_EXPORT
 unsigned int ica_aes_xts(const unsigned char *in_data, unsigned char *out_data,
 			 unsigned long data_length,
 			 unsigned char *key1, unsigned char *key2,
@@ -3409,6 +3463,7 @@ unsigned int ica_aes_xts(const unsigned char *in_data, unsigned char *out_data,
  * EFAULT if direction is 0 and the verification of the message authentication
  * code fails.
  */
+ICA_EXPORT
 unsigned int ica_aes_ccm(unsigned char *payload, unsigned long payload_length,
 			 unsigned char *ciphertext_n_mac, unsigned int mac_length,
 			 const unsigned char *assoc_data, unsigned long assoc_data_length,
@@ -3527,6 +3582,7 @@ unsigned int ica_aes_ccm(unsigned char *payload, unsigned long payload_length,
  * EFAULT if direction is 0 and the verification of the message authentication
  * code fails.
  */
+ICA_EXPORT
 unsigned int ica_aes_gcm(unsigned char *plaintext, unsigned long plaintext_length,
 			 unsigned char *ciphertext,
 			 const unsigned char *iv, unsigned int iv_length,
@@ -3535,12 +3591,14 @@ unsigned int ica_aes_gcm(unsigned char *plaintext, unsigned long plaintext_lengt
 			 unsigned char *key, unsigned int key_length,
 			 unsigned int direction);
 
+ICA_EXPORT
 unsigned int ica_aes_gcm_initialize(const unsigned char *iv,
 					unsigned int iv_length,
 					unsigned char *key, unsigned int key_length,
 					unsigned char *icb, unsigned char *ucb,
 					unsigned char *subkey, unsigned int direction);
 
+ICA_EXPORT
 unsigned int ica_aes_gcm_intermediate(unsigned char *plaintext,
 					unsigned long plaintext_length, unsigned char *ciphertext,
 					unsigned char *ucb,
@@ -3549,6 +3607,7 @@ unsigned int ica_aes_gcm_intermediate(unsigned char *plaintext,
 					unsigned char *key, unsigned int key_length,
 					unsigned char *subkey, unsigned int direction);
 
+ICA_EXPORT
 unsigned int ica_aes_gcm_last(unsigned char *icb, unsigned long aad_length,
 					unsigned long ciph_length, unsigned char *tag,
 					unsigned char *final_tag, unsigned int final_tag_length,
@@ -3565,10 +3624,13 @@ unsigned int ica_aes_gcm_last(unsigned char *icb, unsigned long aad_length,
  *         EIO if version could not be determined
  *         EINVAL if parameter version_info is NULL
  */
+ICA_EXPORT
 unsigned int ica_get_version(libica_version_info *version_info);
 
+ICA_EXPORT
 int s390_initialize_functionlist(void);
 
+ICA_EXPORT
 int s390_get_functionlist(libica_func_list_element *pmech_list,
 			  unsigned int *pmech_list_len);
 
@@ -3599,6 +3661,7 @@ int s390_get_functionlist(libica_func_list_element *pmech_list,
  *   ica_get_functionlist() with a valid pointer @list to an array of
  *   libica_func_list_element structures with @mech_list_len elements.
  */
+ICA_EXPORT
 unsigned int ica_get_functionlist(libica_func_list_element *pmech_list,
 					unsigned int *pmech_list_len);
 
@@ -3645,6 +3708,7 @@ static inline unsigned int aes_directed_fc(unsigned int key_length, int directio
  */
 typedef struct ica_drbg_mech ica_drbg_mech_t;
 
+ICA_EXPORT
 extern ica_drbg_mech_t *const ICA_DRBG_SHA512;
 
 /*
@@ -3699,6 +3763,7 @@ typedef struct ica_drbg ica_drbg_t;
  * ICA_DRBG_HEALTH_TEST_FAIL	Health test failed.
  * ICA_DRBG_ENTROPY_SOURCE_FAIL	Entropy source failed.
  */
+ICA_EXPORT
 int ica_drbg_instantiate(ica_drbg_t **sh,
 			 int sec,
 			 bool pr,
@@ -3725,6 +3790,7 @@ int ica_drbg_instantiate(ica_drbg_t **sh,
  * ICA_DRBG_HEALTH_TEST_FAIL	Health test failed.
  * ICA_DRBG_ENTROPY_SOURCE_FAIL	Entropy source failed.
  */
+ICA_EXPORT
 int ica_drbg_reseed(ica_drbg_t *sh,
 		    bool pr,
 		    const unsigned char *add,
@@ -3755,6 +3821,7 @@ int ica_drbg_reseed(ica_drbg_t *sh,
  * ICA_DRBG_HEALTH_TEST_FAIL	Health test failed.
  * ICA_DRBG_ENTROPY_SOURCE_FAIL	Entropy source failed.
  */
+ICA_EXPORT
 int ica_drbg_generate(ica_drbg_t *sh,
 		      int sec,
 		      bool pr,
@@ -3774,6 +3841,7 @@ int ica_drbg_generate(ica_drbg_t *sh,
  * 0				Success.
  * EINVAL			At least one argument is invalid.
  */
+ICA_EXPORT
 int ica_drbg_uninstantiate(ica_drbg_t **sh);
 
 /*
@@ -3795,6 +3863,7 @@ int ica_drbg_uninstantiate(ica_drbg_t **sh);
  * ICA_DRBG_HEALTH_TEST_FAIL	Health test failed.
  * ICA_DRBG_ENTROPY_SOURCE_FAIL	Entropy source failed.
  */
+ICA_EXPORT
 int ica_drbg_health_test(void *func,
 			 int sec,
 			 bool pr,
@@ -3811,6 +3880,7 @@ int ica_drbg_health_test(void *func,
  * @return:
  * Returns flags indicating the module status. See the ICA_FIPS_* flags.
  */
+ICA_EXPORT
 int ica_fips_status(void);
 
 /*
@@ -3818,6 +3888,7 @@ int ica_fips_status(void);
  *
  * The test results can be viewed via the ica_fips_status function.
  */
+ICA_EXPORT
 void ica_fips_powerup_tests(void);
 #endif /* ICA_FIPS */
 

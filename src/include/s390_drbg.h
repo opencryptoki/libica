@@ -20,8 +20,6 @@
 
 #include <pthread.h>
 
-#include "ica_api.h"
-
 #define DRBG_ADD_ENTROPY_LEN	18	/* bytes of entropy input used in
 					   addition to the required minimum */
 #define DRBG_NONCE_LEN	16		/* byte length of nonce */

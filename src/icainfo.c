@@ -215,9 +215,9 @@ int main(int argc, char **argv)
 		for(j=0;j<mech_len;j++){
 			if(crypt_map[i].algo_id == pmech_list[j].mech_mode_id){
 #ifdef ICA_FIPS
-				if (((fips & ICA_FIPS_MODE)
+				if (((ica_fips_status() & ICA_FIPS_MODE)
 				    && !fips_approved(pmech_list[j].mech_mode_id))
-				    || fips >> 1) {
+				    || ica_fips_status() >> 1) {
 					printf("%14s |  blocked   "
 						"|   blocked\n",
 						crypt_map[i].name);
@@ -257,7 +257,7 @@ int main(int argc, char **argv)
 #ifdef ICA_FIPS
 	printf("Built-in FIPS support: FIPS mode %s.\n",
 	    ica_fips_status() & ICA_FIPS_MODE ? "active" : "inactive");
-	if (fips >> 1)
+	if (ica_fips_status() >> 1)
 		printf("FIPS SELF-TEST FAILURE. CHECK THE SYSLOG.\n");
 #else
 	printf("No built-in FIPS support.\n");

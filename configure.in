@@ -60,7 +60,7 @@ CFLAGS="$CFLAGS $PTHREAD_CFLAGS"
 
 case $target in
      *s390x*)
-          CFLAGS="$CFLAGS -D_LINUX_S390X_ -D_LINUX_S390_ -Wall"
+          CFLAGS="$CFLAGS -D_LINUX_S390X_ -D_LINUX_S390_ -Wall -fvisibility=hidden"
           ;;
      *s390*)
           CFLAGS="$CFLAGS -D_LINUX_S390_ -m31 -Wall"
