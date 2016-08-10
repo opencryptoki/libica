@@ -24,7 +24,6 @@
 #include <stdint.h>
 #include <linux/types.h>
 #include <stdbool.h>
-#include <assert.h>
 
 #include "ica_api.h"
 #include "icastats.h"
@@ -1971,7 +1970,7 @@ static inline int ica_drbg_error(int status)
 	case DRBG_ENTROPY_SOURCE_FAIL:
 		return ICA_DRBG_ENTROPY_SOURCE_FAIL;
 	default:
-		assert(!"unreachable");
+		return -1;	/* unreachable */
 	}
 }
 
@@ -1994,9 +1993,9 @@ int ica_drbg_instantiate(ica_drbg_t **sh,
 		return ica_drbg_error(status);
 
 	/* Run instantiate health test (11.3.2). */
-	assert(!pthread_rwlock_wrlock(&mech->lock));
+	pthread_rwlock_wrlock(&mech->lock);
 	status = drbg_health_test(drbg_instantiate, sec, pr, mech);
-	assert(!pthread_rwlock_unlock(&mech->lock));
+	pthread_rwlock_unlock(&mech->lock);
 	if(status)
 		return ica_drbg_error(status);
 
@@ -2060,29 +2059,27 @@ int ica_drbg_generate(ica_drbg_t *sh,
 
 	/* Run generate and reseed health tests before first use of these
 	 * functions and when indicated by the test counter (11.3.3). */
-	assert(!pthread_rwlock_wrlock(&sh->mech->lock));
+	pthread_rwlock_wrlock(&sh->mech->lock);
 	if(!(sh->mech->test_ctr %= sh->mech->test_intervall)){
 		status = drbg_health_test(drbg_reseed, sec, pr, sh->mech);
 		if(!status)
 			status = drbg_health_test(drbg_generate, sec, pr,
 						  sh->mech);
 		if(status){
-			assert(!pthread_rwlock_unlock(&sh->mech->lock));
+			pthread_rwlock_unlock(&sh->mech->lock);
 			return ica_drbg_error(status);
 		}
 	}
 	sh->mech->test_ctr++;
-	assert(!pthread_rwlock_unlock(&sh->mech->lock));
+	pthread_rwlock_unlock(&sh->mech->lock);
 
 	/* Generate. */
 	status = pthread_rwlock_rdlock(&sh->mech->lock);
 	if(EAGAIN == status)
 		return ica_drbg_error(DRBG_REQUEST_INV);
-	else if(status)
-		assert(!status);
 	status = drbg_generate(sh, sec, pr, add, add_len, false, NULL, 0, prnd,
 			       prnd_len);
-	assert(!pthread_rwlock_unlock(&sh->mech->lock));
+	pthread_rwlock_unlock(&sh->mech->lock);
 	if(0 > status)
 		sh->mech->error_state = status;
 
@@ -2114,7 +2111,7 @@ int ica_drbg_health_test(void *func,
 		return ica_drbg_error(status);
 
 	/* Health test. */
-	assert(!pthread_rwlock_wrlock(&mech->lock));
+	pthread_rwlock_wrlock(&mech->lock);
 	if(ica_drbg_instantiate == func)
 		status = drbg_health_test(drbg_instantiate, sec, pr, mech);
 	else if(ica_drbg_reseed == func)
@@ -2128,7 +2125,7 @@ int ica_drbg_health_test(void *func,
 	}
 	else
 		status = DRBG_REQUEST_INV;
-	assert(!pthread_rwlock_unlock(&mech->lock));
+	pthread_rwlock_unlock(&mech->lock);
 
 	return ica_drbg_error(status);
 }

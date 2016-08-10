@@ -18,7 +18,6 @@
 #ifndef S390_DRBG_H
 #define S390_DRBG_H
 
-#include <assert.h>
 #include <pthread.h>
 
 #include "ica_api.h"
@@ -264,9 +263,9 @@ static inline void drbg_recursive_mutex_init(pthread_mutex_t *lock)
 {
 	pthread_mutexattr_t attr;
 
-	assert(!pthread_mutexattr_init(&attr));
-	assert(!pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE));
-	assert(!pthread_mutex_init(lock, &attr));
+	pthread_mutexattr_init(&attr);
+	pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE);
+	pthread_mutex_init(lock, &attr);
 }
 
 #endif

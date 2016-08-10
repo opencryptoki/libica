@@ -246,9 +246,9 @@ int drbg_reseed(ica_drbg_t *sh,
 	}
 
 	/* steps 6 and 7 */
-	assert(!pthread_mutex_lock(&sh->lock));
+	pthread_mutex_lock(&sh->lock);
 	status = sh->mech->reseed(sh->ws, add, add_len, entropy, entropy_len);
-	assert(!pthread_mutex_unlock(&sh->lock));
+	pthread_mutex_unlock(&sh->lock);
 	if(0 > status)
 		set_error_state(sh->mech, status);
 
@@ -306,14 +306,14 @@ int drbg_generate(ica_drbg_t *sh,
 
 	/* step 7 */
 _reseed_req_:
-	assert(!pthread_mutex_lock(&sh->lock));
+	pthread_mutex_lock(&sh->lock);
 	if(pr || reseed_required){
 		/* steps 7.1 and 7.3 */
 		status = drbg_reseed(sh, pr, add, add_len, test_mode,
 				     test_entropy, test_entropy_len);
 		/* step 7.2 */
 		if(status){
-			assert(!pthread_mutex_unlock(&sh->lock));
+			pthread_mutex_unlock(&sh->lock);
 			return status;	/* return reseed status */
 		}
 		/* step 7.4 */
@@ -325,7 +325,7 @@ _reseed_req_:
 
 	/* steps 8 and 10 */
 	status = sh->mech->generate(sh->ws, add, add_len, prnd, prnd_len);
-	assert(!pthread_mutex_unlock(&sh->lock));
+	pthread_mutex_unlock(&sh->lock);
 
 	/* step 9 */
 	if(DRBG_RESEED_REQUIRED == status){
@@ -359,15 +359,15 @@ int drbg_uninstantiate(ica_drbg_t **sh,
 		return status;
 
 	/* step 2 */
-	assert(!pthread_mutex_lock(&(*sh)->lock));
+	pthread_mutex_lock(&(*sh)->lock);
 	status = (*sh)->mech->uninstantiate(&(*sh)->ws, test_mode);
 	if(status){
 		if(0 > status)
 			set_error_state((*sh)->mech, status);
 		return status;	/* return uninstantiate status */
 	}
-	assert(!pthread_mutex_unlock(&(*sh)->lock));
-	assert(!pthread_mutex_destroy(&(*sh)->lock));
+	pthread_mutex_unlock(&(*sh)->lock);
+	pthread_mutex_destroy(&(*sh)->lock);
 	drbg_zmem(*sh, sizeof(ica_drbg_t));
 	if(test_mode)
 		status = drbg_check_zmem(*sh, sizeof(ica_drbg_t));
@@ -874,8 +874,7 @@ static int set_error_state(ica_drbg_mech_t *mech,
 		    mech->id);
 		break;
 	default:
-		assert(!"unreachable");
-		break;
+		break;	/* unreachable */
 	}
 #endif /* ICA_FIPS */
 

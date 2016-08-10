@@ -1,4 +1,3 @@
-#include <assert.h>
 #include <openssl/crypto.h>
 #include <openssl/opensslv.h>
 #include <stdio.h>
@@ -22,10 +21,13 @@ main(void)
 
 	printf("Kernel FIPS flag (%s) is ", FIPS_FLAG);
 	if ((fd = fopen(FIPS_FLAG, "r")) != NULL) {
-		assert(fread(&fips_flag, sizeof(fips_flag), 1, fd) == 1);
+		if (fread(&fips_flag, sizeof(fips_flag), 1, fd) == 1) {
+			fips_flag -= '0';
+			printf("%d.", fips_flag);
+		} else {
+			printf("not readable.");
+		}
 		fclose(fd);
-		fips_flag -= '0';
-		printf("%d.", fips_flag);
 	}
 	else {
 		fips_flag = 0;
