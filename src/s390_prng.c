@@ -62,6 +62,9 @@ union zprng_pb_t zPRNG_PB = {{0x0F, 0x2B, 0x8E, 0x63, 0x8C, 0x8E, 0xD2, 0x52,
 unsigned int s390_prng_limit = 4096;
 unsigned long s390_byte_count;
 
+static const char *const PRNG_SEI_LIST[] = {"/dev/hwrng", "/dev/prandom",
+    "/dev/urandom", NULL /* last list element */};
+
 #ifndef ICA_FIPS
 /* Static functions */
 static int s390_add_entropy(void);
@@ -79,6 +82,7 @@ int s390_prng_init(void)
 	int rc = -1;
 #ifndef ICA_FIPS
 	FILE *handle;
+	int i;
 	unsigned char seed[16];
 #endif /* ICA_FIPS */
 
@@ -94,19 +98,23 @@ int s390_prng_init(void)
 
 #ifndef ICA_FIPS	/* Old prng code disabled with FIPS built. */
 	sem_init(&semaphore, 0, 1);
-	handle = fopen("/dev/hwrng", "r");
-	if (!handle)
-		handle = fopen("/dev/urandom", "r");
-	if (handle) {
-		rc = fread(seed, sizeof(seed), 1, handle);
-		fclose(handle);
-		if (1 == rc)
-			rc = s390_prng_seed(seed, sizeof(seed) /
-					    sizeof(long long));
-		else
-			rc = EIO;
-	} else
-		rc = ENODEV;
+
+	rc = ENODEV;
+	for(i = 0; PRNG_SEI_LIST[i] != NULL; i++){
+		handle = fopen(PRNG_SEI_LIST[i], "r");
+		if(handle){
+			rc = fread(seed, sizeof(seed), 1, handle);
+			fclose(handle);
+			if(rc == 1) {
+				rc = s390_prng_seed(seed, sizeof(seed) /
+				    sizeof(long long));
+				break;
+			} else {
+				rc = EIO;
+			}
+		}
+	}
+
 	/*
 	 * If the original seeding failed, we should try to stir in some
 	 * entropy anyway (since we already put out a message).
@@ -130,7 +138,7 @@ static int s390_add_entropy(void)
 	unsigned char entropy[4 * STCK_BUFFER];
 	unsigned int K;
 	unsigned char seed[32];
-	int rc = -1;
+	int rc;
 
 	if (!prng_switch)
 		return ENOTSUP;
@@ -144,31 +152,32 @@ static int s390_add_entropy(void)
 			      sizeof(entropy)) < 0) {
 			return EIO;
 		}
-		rc = 0;
 		memcpy(zPRNG_PB.ch, entropy, sizeof(zPRNG_PB.ch));
 	}
 	/* Add some additional entropy. */
-	handle = fopen("/dev/hwrng", "r");
-	if (!handle)
-		handle = fopen("/dev/urandom", "r");
-	if (handle) {
-		rc = fread(seed, sizeof(seed), 1, handle);
-		fclose(handle);
-		if (1 == rc){
-			rc = s390_kmc(0x43, zPRNG_PB.ch, seed, seed,
-				      sizeof(seed));
-			if (rc >= 0)
-				memcpy(zPRNG_PB.ch, seed, sizeof(seed));
-			else
-				return EIO;
+	rc = ENODEV;
+	for(K = 0; PRNG_SEI_LIST[K] != NULL; K++){
+		handle = fopen(PRNG_SEI_LIST[K], "r");
+		if(handle){
+			rc = fread(seed, sizeof(seed), 1, handle);
+			fclose(handle);
+			if(rc == 1) {
+				rc = s390_kmc(0x43, zPRNG_PB.ch, seed, seed,
+				    sizeof(seed));
+				if (rc >= 0) {
+					memcpy(zPRNG_PB.ch, seed, sizeof(seed));
+					rc = 0;
+				} else {
+					rc = EIO;
+				}
+				break;
+			} else {
+				rc = EIO;
+			}
 		}
-		else
-			return EIO;
 	}
-	else
-		return ENODEV;
 
-	return 0;
+	return rc;
 }
 #endif /* ICA_FIPS */
 
