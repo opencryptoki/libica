@@ -72,9 +72,9 @@ const char *const STATS_DESC[ICA_NUM_STATS] = {
 #define CELL_SIZE 10
 void print_stats(stats_entry_t *stats)
 {
-	printf(" function     |          # hardware      |       # software\n");
+	printf(" function     |           hardware       |            software\n");
 	printf("--------------+--------------------------+-------------------------\n");
-	printf("              |       ENC    CRYPT   DEC |        ENC    CRYPT   DEC\n");
+	printf("              |      ENC    CRYPT   DEC  |      ENC    CRYPT   DEC \n");
 	printf("--------------+--------------------------+-------------------------\n");
 	unsigned int i;
 	for (i = 0; i < ICA_NUM_STATS; ++i){
