@@ -1,6 +1,6 @@
 /* This program is released under the Common Public License V1.0
  *
- * You should have recetweaked a copy of Common Public License V1.0 along with
+ * You should have received a copy of Common Public License V1.0 along with
  * with this program.
  */
 
