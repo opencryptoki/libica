@@ -62,10 +62,10 @@ union zprng_pb_t zPRNG_PB = {{0x0F, 0x2B, 0x8E, 0x63, 0x8C, 0x8E, 0xD2, 0x52,
 unsigned int s390_prng_limit = 4096;
 unsigned long s390_byte_count;
 
+#ifndef ICA_FIPS
 static const char *const PRNG_SEI_LIST[] = {"/dev/hwrng", "/dev/prandom",
     "/dev/urandom", NULL /* last list element */};
 
-#ifndef ICA_FIPS
 /* Static functions */
 static int s390_add_entropy(void);
 static int s390_prng_sw(unsigned char *output_data,

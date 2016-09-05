@@ -72,7 +72,7 @@ static inline void __fill_des_ctrlist(uint8_t *ctrlist, size_t ctrlistlen,
 	if (ctr_bits >= 64)
 		mask = 0ULL;
 	else
-		mask = ~0ULL << (ctr_bits - 64);
+		mask = ~0ULL << ctr_bits;
 
 	*iv &= mask;
 	for (block = (uint64_t *)ctrlist; block < (uint64_t *)ctrlist +

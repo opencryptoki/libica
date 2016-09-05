@@ -133,7 +133,7 @@ unsigned int rsa_key_generate_mod_expo(ica_adapter_handle_t deviceHandle,
 	if (!rsa)
 		return errno;
 
-	BIGNUM *n, *d;
+	const BIGNUM *n, *d;
 #if OPENSSL_VERSION_NUMBER >= 0x10100000L
 	RSA_get0_key(rsa, &n, NULL,  &d);
 #else
@@ -203,7 +203,7 @@ unsigned int rsa_key_generate_crt(ica_adapter_handle_t deviceHandle,
 	if (!rsa)
 		return errno;
 
-	BIGNUM *n, *p, *q, *dmp1, *dmq1, *iqmp;
+	const BIGNUM *n, *p, *q, *dmp1, *dmq1, *iqmp;
 #if OPENSSL_VERSION_NUMBER >= 0x10100000L
 	RSA_get0_key(rsa, &n, NULL,  NULL);
 	RSA_get0_factors(rsa, &p, &q);
