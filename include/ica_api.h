@@ -331,14 +331,8 @@ typedef struct {
 	unsigned int property;
 } libica_func_list_element;
 
-struct mech_list_item;
-
 typedef struct ica_drbg_mech ica_drbg_mech_t;
 typedef struct ica_drbg ica_drbg_t;
-
-
-ICA_EXPORT
-void generate_pkcs11_mech_list(struct mech_list_item *head);
 
 /*
  * NEW FUNCTION PROTOTYPES
