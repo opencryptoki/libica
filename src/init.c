@@ -18,11 +18,15 @@
 #include <stdlib.h>
 #include <string.h>
 #include <openssl/rand.h>
+#include <openssl/crypto.h>
+#include <semaphore.h>
+#include <pthread.h>
 #include <syslog.h>
 
 #include "init.h"
 #include "fips.h"
 #include "icastats.h"
+#include "s390_rsa.h"
 #include "s390_prng.h"
 #include "s390_crypto.h"
 #include "ica_api.h"
@@ -80,12 +84,60 @@ void end_sigill_section(struct sigaction *oldact, sigset_t *oldset)
 	sigprocmask(SIG_SETMASK, oldset, 0);
 }
 
+static pthread_mutex_t *openssl_locks;
+
+static void openssl_lock_callback(int mode, int num, char *file, int line)
+{
+	if (mode & CRYPTO_LOCK) {
+		pthread_mutex_lock(&(openssl_locks[num]));
+	}
+	else {
+		pthread_mutex_unlock(&(openssl_locks[num]));
+	}
+}
+
+static unsigned long get_thread_id(void)
+{
+	return (unsigned long)pthread_self();
+}
+
+static void init_openssl_locks(void)
+{
+	int i, crypt_num_locks;
+
+	crypt_num_locks = CRYPTO_num_locks();
+	openssl_locks = (pthread_mutex_t *)
+			OPENSSL_malloc(crypt_num_locks *
+				       sizeof(pthread_mutex_t));
+	for (i = 0; i < CRYPTO_num_locks(); i++) {
+		pthread_mutex_init(&(openssl_locks[i]),NULL);
+	}
+
+	CRYPTO_set_id_callback((unsigned long (*)())get_thread_id);
+	CRYPTO_set_locking_callback((void (*)
+		(int, int, const char*, int))openssl_lock_callback);
+
+	sem_init(&openssl_crypto_lock_mtx, 0, crypt_num_locks);
+}
+
+static void free_openssl_locks(void)
+{
+	int i;
+
+	CRYPTO_set_locking_callback(NULL);
+	for (i = 0; i < CRYPTO_num_locks(); i++)
+		pthread_mutex_destroy(&(openssl_locks[i]));
+
+	OPENSSL_free(openssl_locks);
+}
+
 void openssl_init(void)
 {
 	/* initial seed the openssl random generator */
 	unsigned char random_data[64];
 	s390_prng(random_data, sizeof(random_data));
 	RAND_seed(random_data, sizeof(random_data));
+	init_openssl_locks();
 }
 
 /* Switches have to be done first. Otherwise we will not have hw support
@@ -122,4 +174,5 @@ void __attribute__ ((constructor)) icainit(void)
 void __attribute__ ((destructor)) icaexit(void)
 {
 	stats_munmap(SHM_CLOSE);
+	free_openssl_locks();
 }

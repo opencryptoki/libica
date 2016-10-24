@@ -19,6 +19,9 @@
 #include <stdint.h>
 #include <openssl/crypto.h>
 #include <openssl/rsa.h>
+#include <openssl/crypto.h>
+#include <pthread.h>
+#include <semaphore.h>
 
 #include <openssl/opensslconf.h>
 #ifdef OPENSSL_FIPS
@@ -48,9 +51,23 @@ static unsigned int mod_expo_sw(int arg_length, char *arg, int exp_length,
 				char *exp, int mod_length, char *mod,
 				int *res_length, char *res, BN_CTX *ctx);
 
-RSA* rsa_key_generate(unsigned int modulus_bit_length,
-		      unsigned long *public_exponent)
+struct thread_data
 {
+	unsigned int mod_bit_length;
+	unsigned long *pub_exp;
+	RSA     *rsa;
+};
+
+static void *__rsa_key_generate(void *ptr)
+{
+	struct thread_data *pth_data;
+	unsigned int modulus_bit_length;
+	unsigned long *public_exponent;
+
+	pth_data = (struct thread_data*)ptr;
+	modulus_bit_length = pth_data->mod_bit_length;
+	public_exponent = pth_data->pub_exp;
+
 #ifdef ICA_FIPS
 	if ((fips & ICA_FIPS_MODE) && (!FIPS_mode()))
 		return NULL;
@@ -90,13 +107,41 @@ RSA* rsa_key_generate(unsigned int modulus_bit_length,
 	if (RSA_generate_key_ex(rsa, modulus_bit_length, exp, cb) == 0) {
 		RSA_free(rsa);
 		rsa = NULL;
+		pth_data->rsa = NULL;
 	}
 
 	BN_free(exp);
 #if OPENSSL_VERSION_NUMBER >= 0x10100000L
 	BN_GENCB_free(cb);
 #endif /* OPENSSL_VERSION_NUMBER */
-	return rsa;
+	pth_data->rsa = rsa;
+	return 0;
+}
+
+
+RSA* rsa_key_generate(unsigned int modulus_bit_length,
+		      unsigned long *public_exponent)
+{
+	pthread_t tid;
+	struct thread_data th_data;
+	int rc;
+
+	sem_wait(&openssl_crypto_lock_mtx);
+
+	th_data.mod_bit_length = modulus_bit_length;
+	th_data.pub_exp = public_exponent;
+	rc = pthread_create(&(tid), NULL, (void *)&__rsa_key_generate,
+			    (void *)(&th_data));
+	if (rc)
+		return 0;
+	rc = pthread_join(tid, NULL);
+
+	if (!rc && th_data.rsa) {
+		sem_post(&openssl_crypto_lock_mtx);
+		return th_data.rsa;
+	}
+	sem_post(&openssl_crypto_lock_mtx);
+	return NULL;
 }
 
 /**
