@@ -1,3 +1,9 @@
+v3.0.0
+ - [FEATURE] Added FIPS mode.
+ - [PATCH] Sanitized exported symbols.
+ - [PATCH] Removed deprecated APIs. Marked some APIs as deprecated.
+ - [PATCH] Adapted to OpenSSL v1.1.0.
+ - [PATCH] RSA key generation is thread-save now.
 v2.6.2
  - [PATCH] Performance improvements for des-ctr, 3des-ctr and aes-ctr
 v2.6.1
