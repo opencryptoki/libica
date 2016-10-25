@@ -35,6 +35,7 @@
 #include <stdint.h>
 
 #define ICA_EXPORT __attribute__((__visibility__("default")))
+#define ICA_DEPRECATED __attribute__((deprecated))
 
 #define ica_adapter_handle_t int
 typedef ica_adapter_handle_t ICA_ADAPTER_HANDLE;
@@ -66,15 +67,6 @@ typedef ica_adapter_handle_t ICA_ADAPTER_HANDLE;
 #define ICA_CBCCS_VARIANT1	1
 #define ICA_CBCCS_VARIANT2	2
 #define ICA_CBCCS_VARIANT3	3
-
-/**
- * @deprecated
- * Use MODE_ECB, MODE_CBC instead.
- */
-#define MODE_DES_ECB		MODE_ECB
-#define MODE_DES_CBC		MODE_CBC
-#define MODE_AES_ECB		MODE_ECB
-#define MODE_AES_CBC		MODE_CBC
 
 #define ICA_FLAG_SHW 4 /* static hardware support (symmetric ops - CPACF) */
 #define ICA_FLAG_DHW 2 /* dynamic hardware support (asymmetric ops - CEX) */
@@ -276,7 +268,6 @@ typedef unsigned char ica_aes_key_single_t[8];
 typedef unsigned char ica_aes_key_len_128_t[16];
 typedef unsigned char ica_aes_key_len_192_t[24];
 typedef unsigned char ica_aes_key_len_256_t[32];
-#define ica_aes_key_t ica_key_t
 
 /**
  * Libica version information
@@ -333,10 +324,6 @@ typedef struct {
 
 typedef struct ica_drbg_mech ica_drbg_mech_t;
 typedef struct ica_drbg ica_drbg_t;
-
-/*
- * NEW FUNCTION PROTOTYPES
- */
 
 /**
  * Opens the specified adapter
@@ -748,7 +735,7 @@ unsigned int ica_rsa_crt_key_check(ica_rsa_key_crt_t *rsa_key);
  * EINVAL if at least one invalid parameter is given.
  * EIO if the operation fails. This should never happen.
  */
-ICA_EXPORT
+ICA_EXPORT ICA_DEPRECATED
 unsigned int ica_des_encrypt(unsigned int mode,
 			     unsigned int data_length,
 			     unsigned char *input_data,
@@ -783,7 +770,7 @@ unsigned int ica_des_encrypt(unsigned int mode,
  * EINVAL if at least one invalid parameter is given.
  * EIO if the operation fails. This should never happen.
  */
-ICA_EXPORT
+ICA_EXPORT ICA_DEPRECATED
 unsigned int ica_des_decrypt(unsigned int mode,
 			     unsigned int data_length,
 			     unsigned char *input_data,
@@ -818,7 +805,7 @@ unsigned int ica_des_decrypt(unsigned int mode,
  * EINVAL if at least one invalid parameter is given.
  * EIO if the operation fails. This should never happen.
  */
-ICA_EXPORT
+ICA_EXPORT ICA_DEPRECATED
 unsigned int ica_3des_encrypt(unsigned int mode,
 			      unsigned int data_length,
 			      unsigned char *input_data,
@@ -853,7 +840,7 @@ unsigned int ica_3des_encrypt(unsigned int mode,
  * EINVAL if at least one invalid parameter is given.
  * EIO if the operation fails. This should never happen.
  */
-ICA_EXPORT
+ICA_EXPORT ICA_DEPRECATED
 unsigned int ica_3des_decrypt(unsigned int mode,
 			      unsigned int data_length,
 			      unsigned char *input_data,
@@ -890,7 +877,7 @@ unsigned int ica_3des_decrypt(unsigned int mode,
  * EINVAL if at least one invalid parameter is given.
  * EIO if the operation fails. This should never happen.
  */
-ICA_EXPORT
+ICA_EXPORT ICA_DEPRECATED
 unsigned int ica_aes_encrypt(unsigned int mode,
 			     unsigned int data_length,
 			     unsigned char *input_data,
@@ -928,7 +915,7 @@ unsigned int ica_aes_encrypt(unsigned int mode,
  * EINVAL if at least one invalid parameter is given.
  * EIO if the operation fails. This should never happen.
  */
-ICA_EXPORT
+ICA_EXPORT ICA_DEPRECATED
 unsigned int ica_aes_decrypt(unsigned int mode,
 			     unsigned int data_length,
 			     unsigned char *input_data,
