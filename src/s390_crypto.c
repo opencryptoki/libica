@@ -146,6 +146,8 @@ void set_switches(int msa)
 	 * kimd query and do not need to over the whole array. Therfore there
 	 * is also no distict setting of the switch needed in form
 	 * msa4_switch = 1. */
+
+	/* kmc query */
 	memset(mask, 0, sizeof(mask));
 	if (msa) {
 		if (begin_sigill_section(&oldact, &oldset) == 0) {
@@ -162,13 +164,14 @@ void set_switches(int msa)
 		*s390_kmc_functions[n].enabled = on;
 	}
 
+	/* kimd query */
+	memset(mask, 0, sizeof(mask));
 	if (msa) {
 		if (begin_sigill_section(&oldact, &oldset) == 0) {
 			s390_kimd(S390_CRYPTO_QUERY, mask, (void *) 0, 0);
 			end_sigill_section(&oldact, &oldset);
 		}
 	}
-
 	for (n = 0; n < (sizeof(s390_kimd_functions) /
 			 sizeof(s390_supported_function_t)); n++) {
 		if (S390_CRYPTO_TEST_MASK(mask, s390_kimd_functions[n].hw_fc))
@@ -178,6 +181,8 @@ void set_switches(int msa)
 		*s390_kimd_functions[n].enabled = on;
 	}
 
+	/* ppno query */
+	memset(mask, 0, sizeof(mask));
 	if (5 <= msa) {
 		msa5_switch = 1;
 		if (begin_sigill_section(&oldact, &oldset) == 0) {
@@ -185,7 +190,6 @@ void set_switches(int msa)
 			end_sigill_section(&oldact, &oldset);
 		}
 	}
-
 	for (n = 0; n < (sizeof(s390_ppno_functions) /
 			 sizeof(s390_supported_function_t)); n++) {
 		if (S390_CRYPTO_TEST_MASK(mask, s390_ppno_functions[n].hw_fc))
@@ -256,7 +260,7 @@ libica_func_list_element_int icaList[] = {
  {RSA_KEY_GEN_ME,  	ADAPTER, 0, ICA_FLAG_SW, 		0},	// SW (openssl)
  {RSA_KEY_GEN_CRT, 	ADAPTER, 0, ICA_FLAG_SW, 		0},	// SW (openssl)
 
- {SHA512_DRNG, PPNO, SHA512_DRNG_GEN, ICA_FLAG_SHW | ICA_FLAG_SW, 0},
+ {SHA512_DRNG, PPNO, SHA512_DRNG_GEN, ICA_FLAG_SW, 0},
 
 /* available for the MSA4 instruction */
 /* available for the RSA instruction */
