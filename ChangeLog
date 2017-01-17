@@ -1,3 +1,5 @@
+v3.0.2
+ - [PATCH] Fix locking callbacks for openSSL APIs.
 v3.0.1
  - [PATCH] Fixed msa level detection on zEC/BC12 GA1 and predecessors.
 v3.0.0
