@@ -125,6 +125,7 @@ static void free_openssl_locks(void)
 	int i;
 
 	CRYPTO_set_locking_callback(NULL);
+	CRYPTO_set_id_callback(NULL);
 	for (i = 0; i < CRYPTO_num_locks(); i++)
 		pthread_mutex_destroy(&(openssl_locks[i]));
 
