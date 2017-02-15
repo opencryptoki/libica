@@ -16,7 +16,6 @@
 
 #include <openssl/bn.h>
 #include <asm/zcrypt.h>
-#include <semaphore.h>
 #include "ica_api.h"
 
 typedef struct ica_rsa_modexpo ica_rsa_modexpo_t;
@@ -41,7 +40,5 @@ unsigned int rsa_key_generate_crt(ica_adapter_handle_t deviceHandle,
 unsigned int rsa_crt_sw(ica_rsa_modexpo_crt_t * pCrt);
 unsigned int rsa_mod_mult_sw(ica_rsa_modmult_t * pMul);
 unsigned int rsa_mod_expo_sw(ica_rsa_modexpo_t *pMex);
-
-sem_t openssl_crypto_lock_mtx;
 #endif
 
