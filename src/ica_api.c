@@ -871,6 +871,9 @@ unsigned int ica_rsa_mod_expo(ica_adapter_handle_t adapter_handle,
 	if (input_data == NULL || rsa_key == NULL || output_data == NULL)
 		return EINVAL;
 
+	if (rsa_key->key_length < sizeof(unsigned long))
+		return EINVAL;
+
 	/* fill driver structure */
 	rb.inputdata = (char *)input_data;
 	rb.inputdatalength = rsa_key->key_length;
@@ -967,6 +970,9 @@ unsigned int ica_rsa_crt(ica_adapter_handle_t adapter_handle,
 
 	/* check for obvious errors in parms */
 	if (input_data == NULL || rsa_key == NULL || output_data == NULL)
+		return EINVAL;
+
+	if (rsa_key->key_length < sizeof(unsigned long))
 		return EINVAL;
 
 	/* fill driver structure */
