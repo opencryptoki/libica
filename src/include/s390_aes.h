@@ -31,6 +31,116 @@
 #include "s390_ctr.h"
 
 #define AES_BLOCK_SIZE 16
+#define GCM_RECOMMENDED_IV_LENGTH 12
+
+#define HS_FLAG 	0x400;
+#define LAAD_FLAG 	0x200;
+#define LPC_FLAG 	0x100;
+
+
+static inline int s390_aes_gcm_hw(unsigned int function_code,
+				  const unsigned char *input_data, unsigned char *output_data,
+				  unsigned long input_length,
+				  unsigned char *key,
+				  unsigned char *j0, unsigned long j0_width,
+				  unsigned char *ctr, unsigned long ctr_width,
+				  const unsigned char *aad, unsigned long aad_length,
+				  const unsigned char *subkey_h,
+				  unsigned char *tag, unsigned long tag_length,
+				  unsigned int laad, unsigned int lpc)
+{
+	struct {
+		char reserved[12];
+		unsigned int cv;
+		ica_aes_vector_t tag;
+		ica_aes_vector_t subkey_h;
+		unsigned long long total_aad_length;
+		unsigned long long total_input_length;
+		ica_aes_vector_t j0;
+		ica_aes_key_len_256_t key;
+	} parm_block;
+
+	unsigned int rc = 0;
+	unsigned int key_size = (function_code & 0x0f) * sizeof(ica_aes_key_single_t);
+
+	memset(&parm_block, 0, sizeof(parm_block));
+	memcpy(&parm_block.tag, tag, AES_BLOCK_SIZE);
+	memcpy(&parm_block.subkey_h, subkey_h, AES_BLOCK_SIZE);
+	memcpy(&parm_block.key, key, key_size);
+
+	if (laad && lpc) {
+		parm_block.total_aad_length = aad_length*8; // total length in bits
+		parm_block.total_input_length = input_length*8; // total length in bits
+		parm_block.cv = input_length / AES_BLOCK_SIZE + 1;
+	}
+
+	if (ctr) {
+		memcpy(&parm_block.cv, &ctr[GCM_RECOMMENDED_IV_LENGTH], sizeof(int));
+		memcpy(&parm_block.j0, ctr, GCM_RECOMMENDED_IV_LENGTH);
+		unsigned int* cv;
+		cv = (unsigned int*)&(parm_block.j0[GCM_RECOMMENDED_IV_LENGTH]);
+		*cv = 1;
+	}
+
+	if (j0)
+		memcpy(&parm_block.j0, j0, AES_BLOCK_SIZE);
+
+	// Set flags ...
+	function_code = function_code | HS_FLAG;  // subkey flag is always = 1
+	if (laad)
+		function_code = function_code | LAAD_FLAG;
+	if (lpc)
+		function_code = function_code | LPC_FLAG;
+
+	if (input_data == NULL)
+		input_length = 0;
+	if (aad == NULL)
+		aad_length = 0;
+	if (input_length == 0 && aad_length == 0)
+		parm_block.cv++;
+
+	rc = s390_kma(function_code, &parm_block,
+			  output_data, input_data, input_length,
+			  aad, aad_length);
+
+	if (rc >= 0) {
+		memcpy(tag, &parm_block.tag, AES_BLOCK_SIZE);
+		if (ctr)
+			memcpy(&ctr[GCM_RECOMMENDED_IV_LENGTH], &parm_block.cv, sizeof(int)); // not in last call
+		return 0;
+	} else
+		return EIO;
+}
+
+static inline int s390_aes_gcm(unsigned int fc, const unsigned char *in_data,
+			unsigned char *out_data, unsigned long data_length,
+			unsigned char *key,
+			unsigned char *j0, unsigned int j0_width,
+			unsigned char *ctr, unsigned int ctr_width,
+			const unsigned char *aad, unsigned long aad_length,
+			unsigned char *subkey_h, unsigned char *tag,
+			unsigned long tag_length, unsigned int laad,
+			unsigned int lpc)
+{
+	int rc = 1;
+	int hardware = ALGO_HW;
+
+	if (*s390_kma_functions[fc].enabled)
+		rc = s390_aes_gcm_hw(s390_kma_functions[fc].hw_fc,
+				     in_data, out_data, data_length,
+				     key, j0, j0_width, ctr, ctr_width, aad, aad_length,
+				     subkey_h, tag, tag_length, laad, lpc);
+	if (rc)
+		return rc;
+
+	stats_increment(ICA_STATS_AES_GCM,
+			hardware,
+			(s390_kma_functions[fc].hw_fc &
+			S390_CRYPTO_DIRECTION_MASK) == 0 ?
+			ENCRYPT:DECRYPT);
+
+	return rc;
+}
 
 static inline int __s390_aes_ctrlist(unsigned int fc, unsigned long data_length,
 				     const unsigned char *in_data,

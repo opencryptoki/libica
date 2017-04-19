@@ -4,6 +4,7 @@
 #ifndef TESTCASE_H
 #define TESTCASE_H
 
+#include <errno.h>
 #include <stddef.h>
 #include <string.h>
 
@@ -45,7 +46,7 @@ dump_array(unsigned char array[], size_t len)
 }
 
 static inline int
-sha3_available()
+sha3_available(void)
 {
 	sha3_224_context_t sha3_224_context;
 	unsigned char output_hash[SHA3_224_HASH_LENGTH];

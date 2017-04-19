@@ -319,36 +319,71 @@ static inline int s390_gcm(unsigned int function_code,
 
 	/* prepate initial counter for cipher */
 	memcpy(tmp_ctr, j0, AES_BLOCK_SIZE);
-	__inc_aes_ctr((struct uint128 *)tmp_ctr, GCM_CTR_WIDTH);
 
-	/* en-/decrypt payload */
-	if (function_code % 2) {
-		/* decrypt */
-		rc = s390_aes_ctr(UNDIRECTED_FC(function_code),
-				  ciphertext, plaintext, text_length,
-				  key, tmp_ctr, GCM_CTR_WIDTH);
+	if (!msa8_switch) {
+
+		/**
+		 * simulate aes-gcm with aes-ctr and ghash.
+		 */
+
+		__inc_aes_ctr((struct uint128 *)tmp_ctr, GCM_CTR_WIDTH);
+
+		/* en-/decrypt payload */
+		if (function_code % 2) {
+			/* decrypt */
+			rc = s390_aes_ctr(UNDIRECTED_FC(function_code),
+					  ciphertext, plaintext, text_length,
+					  key, tmp_ctr, GCM_CTR_WIDTH);
+			if (rc)
+				return rc;
+		} else {
+			/* encrypt */
+			rc = s390_aes_ctr(UNDIRECTED_FC(function_code),
+					  plaintext, ciphertext, text_length,
+					  key, tmp_ctr, GCM_CTR_WIDTH);
+			if (rc)
+				return rc;
+		}
+
+		/* generate authentication tag */
+		rc = s390_gcm_authenticate(ciphertext, text_length,
+					   aad, aad_length,
+					   subkey_h, tmp_tag);
 		if (rc)
 			return rc;
+
+		/* encrypt tag */
+		return s390_aes_ctr(UNDIRECTED_FC(function_code),
+					tmp_tag, tag, tag_length,
+					key, j0, GCM_CTR_WIDTH);
+
 	} else {
-		/* encrypt */
-		rc = s390_aes_ctr(UNDIRECTED_FC(function_code),
-				  plaintext, ciphertext, text_length,
-				  key, tmp_ctr, GCM_CTR_WIDTH);
-		if (rc)
-			return rc;
-	}
 
-	/* generate authentication tag */
-	rc = s390_gcm_authenticate(ciphertext, text_length,
-				   aad, aad_length,
-				   subkey_h, tmp_tag);
-	if (rc)
+		/**
+		 * use the aes-gcm support via CPACF.
+		 */
+
+		if (function_code % 2) {
+			/* decrypt */
+			rc = s390_aes_gcm(function_code,
+					  ciphertext, plaintext, text_length,
+					  key, j0, GCM_CTR_WIDTH,
+					  tmp_ctr, GCM_CTR_WIDTH,
+					  aad, aad_length, subkey_h,
+					  tag, tag_length, 1, 1);
+		} else {
+			/* encrypt */
+			memset(tag, 0, AES_BLOCK_SIZE);
+			rc = s390_aes_gcm(function_code,
+					  plaintext, ciphertext, text_length,
+					  key, j0, GCM_CTR_WIDTH,
+					  tmp_ctr, GCM_CTR_WIDTH,
+					  aad, aad_length, subkey_h,
+					  tag, tag_length, 1, 1);
+		}
+
 		return rc;
-
-	/* encrypt tag */
-	return s390_aes_ctr(UNDIRECTED_FC(function_code),
-			    tmp_tag, tag, tag_length,
-			    key, j0, GCM_CTR_WIDTH);
+	}
 }
 
 static inline int s390_gcm_initialize(unsigned int function_code,
@@ -373,11 +408,64 @@ static inline int s390_gcm_initialize(unsigned int function_code,
 	/* calculate initial counter, based on iv */
 	__compute_j0(iv, iv_length, subkey, icb);
 
-	/* prepate usage counter for cipher */
+	/* prepare usage counter for cipher */
 	memcpy(ucb, icb, AES_BLOCK_SIZE);
-	__inc_aes_ctr((struct uint128 *)ucb, GCM_CTR_WIDTH);
+
+	if (!msa8_switch) // KMA increases the ctr internally
+		__inc_aes_ctr((struct uint128 *)ucb, GCM_CTR_WIDTH);
 
 	return 0;
+}
+
+static inline void inc_ctr(unsigned char* ctr)
+{
+    unsigned int* cv;
+
+	cv = (unsigned int*)&ctr[12];
+	*cv = *cv + 1;
+}
+
+static inline int set_laad(unsigned int aad_length, unsigned int text_length)
+{
+	if ((aad_length > 0 && text_length > 0) || aad_length == 0)
+		return 1;
+	else
+		return 0;
+}
+
+/**
+ * processes the last partial plaintext/ciphertext (< 16 bytes) and calculates
+ * the last intermediate tag using the old code path. This is not possible with
+ * KMA, because KMA cannot process partial blocks before s390_gcm_last.
+ */
+static inline int s390_gcm_last_intermediate(unsigned int function_code,
+				unsigned char *plaintext, unsigned long text_length,
+				unsigned char *ciphertext,
+				unsigned char *ctr,
+				unsigned char *aad, unsigned long aad_length,
+				unsigned char *tag, unsigned long tag_length,
+				unsigned char *key, unsigned char *subkey)
+{
+	unsigned int rc;
+
+	inc_ctr(ctr); // Old code needs ctr+1 ...
+
+	if (function_code % 2)
+		// decrypt
+		rc = s390_aes_ctr(UNDIRECTED_FC(function_code), ciphertext, plaintext,
+						  text_length, key, ctr, GCM_CTR_WIDTH);
+	else
+		// encrypt
+		rc = s390_aes_ctr(UNDIRECTED_FC(function_code), plaintext, ciphertext,
+						  text_length, key, ctr, GCM_CTR_WIDTH);
+	if (rc)
+		return rc;
+
+	/* generate last intermediate authentication tag */
+	rc = s390_gcm_authenticate_intermediate(ciphertext, text_length, aad,
+		aad_length, subkey, tag);
+
+	return rc;
 }
 
 static inline int s390_gcm_intermediate(unsigned int function_code,
@@ -393,26 +481,70 @@ static inline int s390_gcm_intermediate(unsigned int function_code,
 	if (!msa4_switch)
 		return EPERM;
 
-	/* en-/decrypt payload */
-	if (function_code % 2) {
-		/* decrypt */
-		rc = s390_aes_ctr(UNDIRECTED_FC(function_code), ciphertext, plaintext,
-						  text_length, key, ctr, GCM_CTR_WIDTH);
-		if (rc)
-			return rc;
-	} else {
-		/* encrypt */
-		rc = s390_aes_ctr(UNDIRECTED_FC(function_code), plaintext, ciphertext,
-						  text_length, key, ctr, GCM_CTR_WIDTH);
-		if (rc)
-			return rc;
-	}
+	if (!msa8_switch) {
 
-	/* generate authentication tag */
-	rc = s390_gcm_authenticate_intermediate(ciphertext, text_length, aad,
-	    aad_length, subkey, tag);
-	if (rc)
-		return rc;
+		/* en-/decrypt payload */
+		if (function_code % 2) {
+			/* decrypt */
+			rc = s390_aes_ctr(UNDIRECTED_FC(function_code), ciphertext, plaintext,
+							  text_length, key, ctr, GCM_CTR_WIDTH);
+			if (rc)
+				return rc;
+		} else {
+			/* encrypt */
+			rc = s390_aes_ctr(UNDIRECTED_FC(function_code), plaintext, ciphertext,
+							  text_length, key, ctr, GCM_CTR_WIDTH);
+			if (rc)
+				return rc;
+		}
+
+		/* generate authentication tag */
+		rc = s390_gcm_authenticate_intermediate(ciphertext, text_length, aad,
+			aad_length, subkey, tag);
+		if (rc)
+			return rc;
+
+	} else {
+
+		unsigned int laad = set_laad(aad_length, text_length);
+
+		if (function_code % 2) {
+			/* decrypt */
+			if (text_length >= AES_BLOCK_SIZE) {
+
+				return s390_aes_gcm(function_code,
+						  ciphertext, plaintext, (text_length/AES_BLOCK_SIZE)*AES_BLOCK_SIZE, key,
+						  NULL, 0, // j0, j0_length not used here
+						  ctr, GCM_CTR_WIDTH,
+						  aad, aad_length, subkey,
+						  tag, tag_length, laad, 0);
+			} else {
+
+				return s390_gcm_last_intermediate(function_code,
+						plaintext, text_length, ciphertext,
+						ctr, aad, aad_length, tag, tag_length,
+						key, subkey);
+			}
+
+		} else {
+			/* encrypt */
+			if (text_length >= AES_BLOCK_SIZE) {
+
+				return s390_aes_gcm(function_code,
+						  plaintext, ciphertext, (text_length/AES_BLOCK_SIZE)*AES_BLOCK_SIZE, key,
+						  NULL, 0, // j0, j0_length not used here
+						  ctr, GCM_CTR_WIDTH,
+						  aad, aad_length, subkey,
+						  tag, tag_length, laad, 0);
+			} else {
+
+				return s390_gcm_last_intermediate(function_code,
+						plaintext, text_length, ciphertext,
+						ctr, aad, aad_length, tag, tag_length,
+						key, subkey);
+			}
+		}
+	}
 
 	return 0;
 }
@@ -425,14 +557,26 @@ static inline int s390_gcm_last(unsigned int function_code, unsigned char *icb,
 	unsigned char tmp_tag[AES_BLOCK_SIZE];
 	int rc;
 
-	/* generate authentication tag */
-	memcpy(tmp_tag, tag, tag_length);
-	rc = s390_gcm_authenticate_last(aad_length, ciph_length, subkey, tmp_tag);
-	if (rc)
-		return rc;
+	if (!msa8_switch) {
 
-	/* encrypt tag */
-	return s390_aes_ctr(UNDIRECTED_FC(function_code), tmp_tag, tag, tag_length,
-						key, icb, GCM_CTR_WIDTH);
+		/* generate authentication tag */
+		memcpy(tmp_tag, tag, tag_length);
+		rc = s390_gcm_authenticate_last(aad_length, ciph_length, subkey, tmp_tag);
+		if (rc)
+			return rc;
+
+		/* encrypt tag */
+		return s390_aes_ctr(UNDIRECTED_FC(function_code), tmp_tag, tag, tag_length,
+							key, icb, GCM_CTR_WIDTH);
+
+	} else {
+
+		return s390_aes_gcm(function_code,
+				  NULL, NULL, ciph_length,
+				  key, icb, GCM_CTR_WIDTH,
+				  NULL, 0,
+				  NULL, aad_length, subkey,
+				  tag, tag_length, 1, 1);
+	}
 }
 #endif

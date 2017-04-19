@@ -32,6 +32,7 @@
 #define MSA4	4
 #define ADAPTER 5
 #define PPNO	6
+#define MSA8	7
 
 enum s390_crypto_instruction {
 	S390_CRYPTO_DIRECTION_MASK = 0x80,
@@ -78,6 +79,14 @@ enum s390_crypto_function {
 	S390_CRYPTO_AES_128_XTS_DECRYPT = 0x32 | 0x80,
 	S390_CRYPTO_AES_256_XTS_ENCRYPT = 0x34,
 	S390_CRYPTO_AES_256_XTS_DECRYPT = 0x34 | 0x80,
+	/* GCM */
+	S390_CRYPTO_AES_128_GCM_ENCRYPT = 0x12,
+	S390_CRYPTO_AES_128_GCM_DECRYPT = 0x12 | 0x80,
+	S390_CRYPTO_AES_192_GCM_ENCRYPT = 0x13,
+	S390_CRYPTO_AES_192_GCM_DECRYPT = 0x13 | 0x80,
+	S390_CRYPTO_AES_256_GCM_ENCRYPT = 0x14,
+	S390_CRYPTO_AES_256_GCM_DECRYPT = 0x14 | 0x80,
+
 	/*
 	 * The S390_PRNG is only available for the KMC instruction.
 	 */
@@ -92,7 +101,7 @@ enum s390_crypto_function {
 extern unsigned int sha1_switch, sha256_switch, sha512_switch, sha3_switch, des_switch,
 	     tdes_switch, aes128_switch, aes192_switch, aes256_switch,
 	     prng_switch, tdea128_switch, tdea192_switch, sha512_drng_switch,
-	     msa4_switch, msa5_switch;
+	     msa4_switch, msa5_switch, msa8_switch;
 
 typedef struct {
 	unsigned int dummy_fc;
@@ -133,6 +142,7 @@ typedef enum {
 
 extern s390_supported_function_t s390_kmc_functions[];
 extern s390_supported_function_t s390_msa4_functions[];
+extern s390_supported_function_t s390_kma_functions[];
 extern s390_supported_function_t s390_kimd_functions[];
 extern s390_supported_function_t s390_ppno_functions[];
 
@@ -188,6 +198,43 @@ static inline int s390_kmac(unsigned long func, void *param,
 		: "+a"(__src), "+d"(__src_len)
 		: "d"(__func), "a"(__param)
 		: "cc", "memory");
+	return func ? src_len - __src_len : __src_len;
+}
+
+/**
+ * s390_kma:
+ * @func: the function code passed to KMA; see s390_kma_functions
+ * @param: address of parameter block; see POP for details on each func
+ * @dest: address of destination memory area
+ * @src: address of source memory area
+ * @src_len: length of src operand in bytes
+ * @aad: address of optional additional authenticated data
+ * @aad_len: length of aad operand in bytes
+ *
+ * Executes the KMA (CIPHER MESSAGE WITH AUTHENTICATION) operation of the CPU.
+ *
+ * Returns -1 for failure, 0 for the query func, number of processed
+ * bytes for encryption/decryption funcs
+ */
+static inline int s390_kma(unsigned long func, void *param, unsigned char *dest,
+		      const unsigned char *src, long src_len,
+		      const unsigned char *aad, long aad_len)
+{
+	register long __func asm("0") = func;
+	register void *__param asm("1") = param;
+	register const unsigned char *__src asm("2") = src;
+	register long __src_len asm("3") = src_len;
+	register unsigned char *__dest asm("4") = dest;
+	register const unsigned char *__aad asm("6") = aad;
+	register long __aad_len asm("7") = aad_len;
+
+	asm volatile(
+		"0:	.insn	rrf,0xb9290000,%2,%0,%3,0 \n"
+		"1:	brc	1,0b \n" /* handle partial completion */
+		: "+a" (__src), "+d" (__src_len), "+a" (__dest), "+a" (__aad), "+d" (__aad_len)
+		: "d" (__func), "a" (__param)
+		: "cc", "memory");
+
 	return func ? src_len - __src_len : __src_len;
 }
 

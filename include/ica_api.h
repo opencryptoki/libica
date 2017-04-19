@@ -114,6 +114,7 @@ typedef ica_adapter_handle_t ICA_ADAPTER_HANDLE;
 #define AES_CCM         69
 #define AES_GCM         70
 #define AES_XTS         71
+#define AES_GCM_KMA     72
 #define P_RNG           80
 #define RSA_ME          90
 #define RSA_CRT         91
@@ -297,6 +298,15 @@ typedef enum {
 /* PRNG only for KMC */
 	PRNG,
 } kmc_functions_t;
+
+typedef enum {
+	AES_128_GCM_ENCRYPT,
+	AES_128_GCM_DECRYPT,
+	AES_192_GCM_ENCRYPT,
+	AES_192_GCM_DECRYPT,
+	AES_256_GCM_ENCRYPT,
+	AES_256_GCM_DECRYPT,
+} kma_functions_t;
 
 typedef struct {
 	unsigned int key_length;

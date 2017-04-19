@@ -99,6 +99,7 @@ static struct crypt_pair crypt_map[] = {
 	{"AES CTR", AES_CTR},
 	{"AES CMAC", AES_CMAC},
 	{"AES XTS", AES_XTS},
+	{"AES GCM", AES_GCM},
 	{NULL,0}
 };
 

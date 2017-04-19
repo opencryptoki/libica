@@ -2000,6 +2000,8 @@ unsigned int ica_aes_gcm(unsigned char *plaintext, unsigned long plaintext_lengt
 	if (check_gcm_parms(plaintext_length, aad, aad_length, tag, tag_length, iv_length))
 		return EINVAL;
 
+	memset(tmp_tag, 0, sizeof(tmp_tag));
+
 	function_code = aes_directed_fc(key_length, direction);
 	if (direction) {
 		/* encrypt & generate */

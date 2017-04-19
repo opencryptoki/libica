@@ -22,6 +22,7 @@
 #include <fcntl.h>
 #include <string.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <errno.h>
 
 #include "fips.h"
@@ -32,7 +33,7 @@
 unsigned int sha1_switch, sha256_switch, sha512_switch, sha3_switch, des_switch,
 	     tdes_switch, aes128_switch, aes192_switch, aes256_switch,
 	     prng_switch, tdea128_switch, tdea192_switch, sha512_drng_switch,
-	     msa4_switch, msa5_switch;
+	     msa4_switch, msa5_switch, msa8_switch;
 
 s390_supported_function_t s390_kimd_functions[] = {
 	{SHA_1, S390_CRYPTO_SHA_1, &sha1_switch},
@@ -89,6 +90,19 @@ s390_supported_function_t s390_ppno_functions[] = {
 	{SHA512_DRNG_SEED, S390_CRYPTO_SHA512_DRNG_SEED, &sha512_drng_switch},
 };
 
+s390_supported_function_t s390_kma_functions[] = {
+	{0, 0, &msa8_switch},
+	{0, 0, &msa8_switch},
+	{0, 0, &msa8_switch},
+	{0, 0, &msa8_switch},
+	{AES_128_GCM_ENCRYPT, S390_CRYPTO_AES_128_GCM_ENCRYPT, &msa8_switch},
+	{AES_128_GCM_DECRYPT, S390_CRYPTO_AES_128_GCM_DECRYPT, &msa8_switch},
+	{AES_192_GCM_ENCRYPT, S390_CRYPTO_AES_192_GCM_ENCRYPT, &msa8_switch},
+	{AES_192_GCM_DECRYPT, S390_CRYPTO_AES_192_GCM_DECRYPT, &msa8_switch},
+	{AES_256_GCM_ENCRYPT, S390_CRYPTO_AES_256_GCM_ENCRYPT, &msa8_switch},
+	{AES_256_GCM_DECRYPT, S390_CRYPTO_AES_256_GCM_DECRYPT, &msa8_switch}
+};
+
 int read_cpuinfo(void)
 {
 	int msa = 0;
@@ -111,19 +125,19 @@ int read_cpuinfo(void)
 int read_facility_bits(void)
 {
 	int msa = 0;
-	unsigned long long facility_bits[2] = {0};
+	unsigned long long facility_bits[3] = {0};
 	struct sigaction oldact;
 	sigset_t oldset;
 	int rc = -1;
 
 	rc = begin_sigill_section(&oldact, &oldset);
 	if (!rc) {
-		rc = __stfle(facility_bits, 2);
+		rc = __stfle(facility_bits, 3);
 		end_sigill_section(&oldact, &oldset);
 	}
 	/* __stfle always returns the no. of double words needed to store the
-	 * facility bits. This quantity is machine dependent. However, we just
-	 * need the first two double words. */
+	 * facility bits. This quantity is machine dependent. With MSA8, we
+	 * need the first three double words. */
 	if(rc >= 2){
 		if(facility_bits[0] & (1ULL << (63 - 17)))
 			msa = 1;
@@ -133,6 +147,23 @@ int read_facility_bits(void)
 			msa = 4;
 		if(facility_bits[0] & (1ULL << (63 - 57)))
 			msa = 5;
+		if (facility_bits[2] & (1ULL << (191 - 146)))
+			msa = 8;
+	}
+
+	/**
+	 * allow specifying the MSA level via environment variable
+	 * to simulate older hardware.
+	 */
+	char* s = getenv("MSA");
+	int env_msa;
+
+	if (s) {
+#ifdef ICA_DEBUG
+		printf("msa from getenv: [%s] \n", s);
+#endif
+		if (sscanf(s, "%d", &env_msa) == 1)
+			msa = env_msa > msa ? msa : env_msa;
 	}
 
 	return msa;
@@ -207,6 +238,24 @@ void set_switches(int msa)
 			on = 0;
 		*s390_ppno_functions[n].enabled = on;
 	}
+
+	/* kma query */
+	memset(mask, 0, sizeof(mask));
+	if (8 <= msa) {
+		msa8_switch = 1;
+		if (begin_sigill_section(&oldact, &oldset) == 0) {
+			s390_kma(S390_CRYPTO_QUERY, mask, NULL, NULL, 0, NULL, 0);
+			end_sigill_section(&oldact, &oldset);
+		}
+	}
+	for (n = 0; n < (sizeof(s390_kma_functions) /
+			 sizeof(s390_supported_function_t)); n++) {
+		if (S390_CRYPTO_TEST_MASK(mask, s390_kma_functions[n].hw_fc))
+			on = 1;
+		else
+			on = 0;
+		*s390_kma_functions[n].enabled = on;
+	}
 }
 
 void s390_crypto_switches_init(void)
@@ -267,7 +316,7 @@ libica_func_list_element_int icaList[] = {
  {AES_CTR,      MSA4, AES_128_ENCRYPT,           0, 0},
  {AES_CMAC,     MSA4, AES_128_ENCRYPT,           0, 0},
  {AES_CCM,      MSA4, AES_128_ENCRYPT, 	         0, 0},
- {AES_GCM,      MSA4, AES_128_ENCRYPT,           0, 0},
+ {AES_GCM,      MSA8, AES_128_GCM_ENCRYPT,       0, 0},
  {AES_XTS,      MSA4, AES_128_XTS_ENCRYPT,       0, 0},
  {P_RNG,    		ADAPTER, 0, ICA_FLAG_SHW | ICA_FLAG_SW, 0},	// SHW (CPACF) + SW
  {RSA_ME, 		ADAPTER, 0, ICA_FLAG_DHW | ICA_FLAG_SW, 0x0F},	// DHW (CEX) + SW / 512,1024,2048, 4096 bit key length
@@ -331,6 +380,18 @@ int s390_initialize_functionlist() {
 	case PPNO:
 		icaList[x].flags = icaList[x].flags |
 		    ((*s390_ppno_functions[icaList[x].id].enabled)? 4: 0);
+	break;
+	case MSA8:
+		icaList[x].flags = icaList[x].flags |
+		((*s390_kma_functions[icaList[x].id].enabled)? 4: 0);
+		if (icaList[x].id == AES_128_GCM_ENCRYPT) { // check for the maximum size
+			if (*s390_kma_functions[icaList[AES_256_GCM_ENCRYPT].id].enabled)
+				icaList[x].property = icaList[x].property | 4; // 256 bit
+			if (*s390_kma_functions[icaList[AES_192_GCM_ENCRYPT].id].enabled)
+				icaList[x].property = icaList[x].property | 2; // 192 bit
+			if (*s390_kma_functions[icaList[AES_128_GCM_ENCRYPT].id].enabled)
+				icaList[x].property = icaList[x].property | 1; // 128 bit
+		}
 	break;
 	default:
 		/* Do nothing. */

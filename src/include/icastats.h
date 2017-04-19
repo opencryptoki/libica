@@ -68,6 +68,7 @@ typedef enum stats_fields {
 	ICA_STATS_AES_CTR,
 	ICA_STATS_AES_CMAC,
 	ICA_STATS_AES_XTS,
+	ICA_STATS_AES_GCM,
 
 	/* number of counters */
 	ICA_NUM_STATS
@@ -108,7 +109,8 @@ typedef enum stats_fields {
 	"AES CFB",	\
 	"AES CTR",	\
 	"AES CMAC",	\
-	"AES XTS"
+	"AES XTS",  \
+	"AES GCM"
 
 
 
