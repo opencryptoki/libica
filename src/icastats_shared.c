@@ -71,6 +71,12 @@ int stats_mmap(int user)
 
 		if (stats_shm_handle == NOT_INITIALIZED)
 			return -1;
+
+		if (user > 0 && geteuid() == 0) {
+			if (fchown(stats_shm_handle, user, user) == -1)
+				return -1;
+		}
+
 		if (ftruncate(stats_shm_handle, STATS_SHM_SIZE) == -1)
 			return -1;
 
