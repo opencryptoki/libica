@@ -193,6 +193,9 @@ int s390_prng(unsigned char *output_data, unsigned int output_length)
 	int rc = -1;
 	unsigned char *ptr = output_data;
 
+	if (output_length == 0)
+		return 0;
+
 	const size_t q = output_length
 	    / ICA_DRBG_SHA512->max_no_of_bytes_per_req;
 	const size_t r = output_length
