@@ -1,3 +1,9 @@
+v3.1.0
+ - [FEATURE] Add KMA support for AES-GCM.
+ - [FEATURE] Add SHA-3 support.
+ - [PATCH] Reject RSA keys with invalid key-length.
+ - [PATCH] Allow zero output length for ica_random_number_generate.
+ - [PATCH] icastats: Correct owner of shared segment when root creates it.
 v3.0.2
  - [PATCH] Fix locking callbacks for openSSL APIs.
 v3.0.1
