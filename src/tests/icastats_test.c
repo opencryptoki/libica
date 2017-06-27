@@ -554,15 +554,25 @@ void tdes_tests(unsigned char *iv, unsigned char *cmac, unsigned char *ctr)
 	free(out_buffer);
 }
 
+#define SHA3_PARMBLOCK_LENGTH     200
+#define SHAKE128_64_HASH_LENGTH    64
+#define SHAKE256_256_HASH_LENGTH  256
+
 void sha_tests()
 {
 	int rc = 0;
 	unsigned char hash[SHA512_HASH_LENGTH];
+	unsigned char shake[SHAKE256_256_HASH_LENGTH];
 
 	sha_context_t sha_context0;
 	sha256_context_t sha_context1;
 	sha512_context_t sha_context2;
-
+	sha3_224_context_t sha3_224_context;
+	sha3_256_context_t sha3_256_context;
+	sha3_384_context_t sha3_384_context;
+	sha3_512_context_t sha3_512_context;
+	shake_128_context_t shake_128_context;
+	shake_256_context_t shake_256_context;
 
 	system("icastats -r");
 	rc = ica_sha1(SHA_MSG_PART_ONLY, DATA_LENGHT,
@@ -598,6 +608,53 @@ void sha_tests()
 	if(rc)
 		exit(handle_ica_error(rc, "ica_sha512"));
 	check_icastats(SHA512, "SHA-512");
+
+	if (check_hw(SHA3_224)) {
+		system("icastats -r");
+		rc = ica_sha3_224(SHA_MSG_PART_ONLY, DATA_LENGHT,
+				plain_data, &sha3_224_context, hash);
+		if(rc)
+			exit(handle_ica_error(rc, "ica_sha3_224"));
+		check_icastats(SHA3_224, "SHA3-224");
+
+		system("icastats -r");
+		rc = ica_sha3_256(SHA_MSG_PART_ONLY, DATA_LENGHT,
+				plain_data, &sha3_256_context, hash);
+		if(rc)
+			exit(handle_ica_error(rc, "ica_sha3_256"));
+		check_icastats(SHA3_256, "SHA3-256");
+
+		system("icastats -r");
+		rc = ica_sha3_384(SHA_MSG_PART_ONLY, DATA_LENGHT,
+				plain_data, &sha3_384_context, hash);
+		if(rc)
+			exit(handle_ica_error(rc, "ica_sha3_384"));
+		check_icastats(SHA3_384, "SHA3-384");
+
+		system("icastats -r");
+		rc = ica_sha3_512(SHA_MSG_PART_ONLY, DATA_LENGHT,
+				plain_data, &sha3_512_context, hash);
+		if(rc)
+			exit(handle_ica_error(rc, "ica_sha3_512"));
+		check_icastats(SHA3_512, "SHA3-512");
+
+		system("icastats -r");
+		rc = ica_shake_128(SHA_MSG_PART_ONLY, DATA_LENGHT,
+				plain_data, &shake_128_context, shake,
+				SHAKE128_64_HASH_LENGTH);
+		if(rc)
+			exit(handle_ica_error(rc, "ica_shake_128"));
+		check_icastats(SHAKE128, "SHAKE-128");
+
+		system("icastats -r");
+		rc = ica_shake_256(SHA_MSG_PART_ONLY, DATA_LENGHT,
+					plain_data, &shake_256_context, shake,
+					SHAKE256_256_HASH_LENGTH);
+		if(rc)
+			exit(handle_ica_error(rc, "ica_shake_256"));
+		check_icastats(SHAKE256, "SHAKE-256");
+
+	}
 }
 
 void rsa_tests(ica_adapter_handle_t handle)

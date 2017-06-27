@@ -341,8 +341,9 @@ int drbg_sha512_generate(void *ws,
 	_0x03v[0] = 0x03;
 	memcpy(_0x03v + 1, ((ws_t *)ws)->v, sizeof(((ws_t *)ws)->v));
 	status = s390_sha_hw(SHA_512_DEFAULT_IV, _0x03v, sizeof(_0x03v), h,
-			     SHA_MSG_PART_ONLY, &shabuff[0], &shabuff[1],
-			     SHA_512);
+				sha_constants[SHA_512].hash_length,
+			    SHA_MSG_PART_ONLY, &shabuff[0], &shabuff[1],
+			    SHA_512);
 	if(status){
 		status = DRBG_HEALTH_TEST_FAIL;
 		goto _exit_;
@@ -595,8 +596,9 @@ static int generate_add(ws_t *ws,
 	memcpy(_0x02v + 1, ws->v, sizeof(ws->v));
 	memcpy(_0x02v + 1 + sizeof(ws->v), add, add_len);
 	status = s390_sha_hw(SHA_512_DEFAULT_IV, _0x02v, _0x02v_len, w,
-			     SHA_MSG_PART_ONLY, &shabuff[0], &shabuff[1],
-			     SHA_512);
+				sha_constants[SHA_512].hash_length,
+			    SHA_MSG_PART_ONLY, &shabuff[0], &shabuff[1],
+			    SHA_512);
 	if(status){
 		status = DRBG_HEALTH_TEST_FAIL;
 		goto _exit_;
@@ -643,7 +645,8 @@ static int hashgen(const unsigned char *v,
 	/* step 4 */
 	for(i = 1; i <= m; i++){
 		status = s390_sha_hw(SHA_512_DEFAULT_IV, data, sizeof(data),
-				     w_i, SHA_MSG_PART_ONLY, &shabuff[0],
+				     w_i, sha_constants[SHA_512].hash_length,
+				     SHA_MSG_PART_ONLY, &shabuff[0],
 				     &shabuff[1], SHA_512);
 		if(status){
 			status = DRBG_HEALTH_TEST_FAIL;

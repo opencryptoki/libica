@@ -44,6 +44,25 @@ static unsigned char SHA_512_DEFAULT_IV[] = {
 	0x1f, 0x83, 0xd9, 0xab, 0xfb, 0x41, 0xbd, 0x6b, 0x5b, 0xe0, 0xcd, 0x19,
 	0x13, 0x7e, 0x21, 0x79 };
 
+static unsigned char SHA_3_DEFAULT_IV[] = {
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
+
 typedef struct {
 	unsigned int hw_function_code;
 	unsigned int hash_length;
@@ -57,7 +76,13 @@ static const SHA_CONSTANTS sha_constants[] = {
 	{S390_CRYPTO_SHA_256, 28, 32, 64, SHA_224_DEFAULT_IV},
 	{S390_CRYPTO_SHA_256, 32, 32, 64, SHA_256_DEFAULT_IV},
 	{S390_CRYPTO_SHA_512, 48, 64, 128, SHA_384_DEFAULT_IV},
-	{S390_CRYPTO_SHA_512, 64, 64, 128, SHA_512_DEFAULT_IV}
+	{S390_CRYPTO_SHA_512, 64, 64, 128, SHA_512_DEFAULT_IV},
+	{S390_CRYPTO_SHA_3_224, 28, 200, 144, SHA_3_DEFAULT_IV},
+	{S390_CRYPTO_SHA_3_256, 32, 200, 136, SHA_3_DEFAULT_IV},
+	{S390_CRYPTO_SHA_3_384, 48, 200, 104, SHA_3_DEFAULT_IV},
+	{S390_CRYPTO_SHA_3_512, 64, 200, 72, SHA_3_DEFAULT_IV},
+	{S390_CRYPTO_SHAKE_128, 0, 200, 168, SHA_3_DEFAULT_IV},
+	{S390_CRYPTO_SHAKE_256, 0, 200, 136, SHA_3_DEFAULT_IV}
 };
 
 int s390_sha1(unsigned char *iv, unsigned char *input_data,
@@ -82,8 +107,51 @@ int s390_sha512(unsigned char *iv, unsigned char *input_data,
 		unsigned int message_part, uint64_t *running_length_lo,
 		uint64_t *running_length_hi);
 
+int s390_sha3_224(unsigned char *iv, unsigned char *input_data,
+		unsigned int input_length, unsigned char *output_data,
+		unsigned int message_part, uint64_t *running_length);
+
+int s390_sha3_256(unsigned char *iv, unsigned char *input_data,
+		unsigned int input_length, unsigned char *output_data,
+		unsigned int message_part, uint64_t *running_length);
+
+int s390_sha3_384(unsigned char *iv, unsigned char *input_data,
+		uint64_t input_length, unsigned char *output_data,
+		unsigned int message_part, uint64_t *running_length_lo,
+		uint64_t *running_length_hi);
+
+int s390_sha3_512(unsigned char *iv, unsigned char *input_data,
+		uint64_t input_length, unsigned char *output_data,
+		unsigned int message_part, uint64_t *running_length_lo,
+		uint64_t *running_length_hi);
+
+int s390_shake_128(unsigned char *iv, unsigned char *input_data,
+		uint64_t input_length, unsigned char *output_data, unsigned int output_length,
+		unsigned int message_part, uint64_t *running_length_lo,
+		uint64_t *running_length_hi);
+
+int s390_shake_256(unsigned char *iv, unsigned char *input_data,
+		uint64_t input_length, unsigned char *output_data, unsigned int output_length,
+		unsigned int message_part, uint64_t *running_length_lo,
+		uint64_t *running_length_hi);
+
+int s390_shake_hw(unsigned char *iv, unsigned char *input_data,
+		       uint64_t input_length, unsigned char *output_data, unsigned int output_length,
+		       unsigned int message_part, uint64_t *running_length_lo,
+		       uint64_t *running_length_hi, kimd_functions_t sha_function);
+
+static inline int is_shake(unsigned int n)
+{
+	return (n >= SHAKE_128 && n <= SHAKE_256 ? 1 : 0);
+}
+
+static inline int is_sha3(unsigned int n)
+{
+	return (n >= SHA_3_224 && n <= SHA_3_512 ? 1 : 0);
+}
+
 static inline int s390_sha_hw(unsigned char *iv, unsigned char *input_data,
-		       uint64_t input_length, unsigned char *output_data,
+		       uint64_t input_length, unsigned char *output_data, unsigned int output_length,
 		       unsigned int message_part, uint64_t *running_length_lo,
 		       uint64_t *running_length_hi, kimd_functions_t sha_function)
 {
@@ -94,15 +162,15 @@ static inline int s390_sha_hw(unsigned char *iv, unsigned char *input_data,
 	int complete_blocks_length = 0;
 
 	unsigned char *default_iv  = sha_constants[sha_function].default_iv;
-	unsigned int hash_length   = sha_constants[sha_function].hash_length;
+	unsigned int hash_length   = output_length;
 	unsigned int vector_length = sha_constants[sha_function].vector_length;
 	unsigned int hw_function_code
 	    = sha_constants[sha_function].hw_function_code;
 
-	/* A internal buffer for the SHA hash and stream bit length. For SHA512
-	 * this can be at most 128 byte for the hash plus 16 byte for the
+	/* A internal buffer for the SHA hash and stream bit length. For SHA3/SHAKE
+	 * this can be at most 200 bytes for the parmblock plus 16 bytes for the
 	 * stream length. */
-	unsigned char shabuff[128 + 16];
+	unsigned char shabuff[200+16];
 
 	if (input_length) {
 		remnant = input_length % sha_constants[sha_function].block_length;
@@ -128,8 +196,14 @@ static inline int s390_sha_hw(unsigned char *iv, unsigned char *input_data,
 		return EINVAL;
 
 	if (complete_blocks_length) {
-		rc = s390_kimd(hw_function_code, shabuff, input_data,
-			       complete_blocks_length);
+		if (is_shake(sha_function))
+			rc = s390_kimd_shake(hw_function_code, shabuff, output_data,
+					   output_length, input_data,
+					   complete_blocks_length);
+		else
+			rc = s390_kimd(hw_function_code, shabuff, input_data,
+					   complete_blocks_length);
+
 		if (rc > 0) {
 		/* Check for overflow in sum_lo */
 			sum_lo += rc;
@@ -158,14 +232,29 @@ static inline int s390_sha_hw(unsigned char *iv, unsigned char *input_data,
 			memcpy(shabuff + vector_length,
 			       (unsigned char *)&sum_lo, sizeof(sum_lo));
 		}
-		rc = s390_klmd(hw_function_code, shabuff,
-			       input_data + complete_blocks_length, remnant);
+
+		if (is_shake(sha_function))
+			rc = s390_klmd_shake(hw_function_code, shabuff, output_data,
+					   output_length,
+					   input_data + complete_blocks_length, remnant);
+		else
+			rc = s390_klmd(hw_function_code, shabuff,
+					   input_data + complete_blocks_length, remnant);
+
 		if (rc > 0)
 			rc = 0;
 	}
 
 	if (rc == 0) {
-		memcpy((void *)output_data, shabuff, hash_length);
+
+		/**
+		 * Here we copy the correct final hash to the caller provided buffer.
+		 * But not for SHAKE. In this case s390_klmd_shake already copied the output
+		 * (that may be longer than shabuff!) directly to output_data.
+		 */
+		if (!is_shake(sha_function))
+			memcpy((void *)output_data, shabuff, hash_length);
+
 		if (message_part != SHA_MSG_PART_FINAL &&
 		    message_part != SHA_MSG_PART_ONLY) {
 			memcpy((void *)iv, shabuff, vector_length);

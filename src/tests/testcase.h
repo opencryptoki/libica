@@ -44,4 +44,18 @@ dump_array(unsigned char array[], size_t len)
 	}
 }
 
+static inline int
+sha3_available()
+{
+	sha3_224_context_t sha3_224_context;
+	unsigned char output_hash[SHA3_224_HASH_LENGTH];
+	unsigned char test_data[] = { 0x61,0x62,0x63 };
+	int rc=0;
+
+	rc = ica_sha3_224(SHA_MSG_PART_ONLY, sizeof(test_data), test_data,
+			&sha3_224_context, output_hash);
+
+	return (rc == EPERM ? 0 : 1);
+}
+
 #endif /* TESTCASE_H */

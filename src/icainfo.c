@@ -32,7 +32,7 @@
 #include "s390_crypto.h"
 
 #define CMD_NAME "icainfo"
-#define COPYRIGHT "Copyright IBM Corp. 2007, 2014."
+#define COPYRIGHT "Copyright IBM Corp. 2007, 2016."
 
 void print_version(void)
 {
@@ -69,6 +69,12 @@ static struct crypt_pair crypt_map[] = {
 	{"SHA-256", SHA256},
 	{"SHA-384", SHA384},
 	{"SHA-512", SHA512},
+	{"SHA3-224", SHA3_224},
+	{"SHA3-256", SHA3_256},
+	{"SHA3-384", SHA3_384},
+	{"SHA3-512", SHA3_512},
+	{"SHAKE-128", SHAKE128},
+	{"SHAKE-256", SHAKE128},
 	{"GHASH", G_HASH},
 	{"P_RNG", P_RNG},
 	{"DRBG-SHA-512", SHA512_DRNG},

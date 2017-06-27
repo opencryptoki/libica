@@ -18,8 +18,9 @@ CC = gcc
 TARGETS = icastats_test \
 	  libica_des_test libica_3des_test \
 	  libica_aes128_test libica_aes192_test libica_aes256_test \
-	  libica_sha1_test \
-	  libica_sha256_test \
+	  libica_sha1_test libica_sha256_test libica_sha3_224_test \
+	  libica_sha3_256_test libica_sha3_384_test libica_sha3_512_test \
+         libica_shake_128_test libica_shake_256_test \
 	  libica_rsa_test libica_rsa_key_check_test \
 	  libica_rng_test libica_keygen_test \
 	  libica_cmac_test \

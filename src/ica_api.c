@@ -24,6 +24,7 @@
 #include <stdint.h>
 #include <linux/types.h>
 #include <stdbool.h>
+#include <assert.h>
 
 #include "ica_api.h"
 #include "icastats.h"
@@ -520,6 +521,249 @@ unsigned int ica_sha512(unsigned int message_part,
 			   input_data, input_length, output_data, message_part,
 			   (uint64_t *) &sha512_context->runningLengthLow,
 			   (uint64_t *) &sha512_context->runningLengthHigh);
+}
+
+unsigned int ica_sha3_224(unsigned int message_part,
+			unsigned int input_length,
+			unsigned char *input_data,
+			sha3_224_context_t *sha3_224_context,
+			unsigned char *output_data)
+{
+	unsigned int rc;
+
+#ifdef ICA_FIPS
+	if (fips >> 1)
+		return EACCES;
+#endif /* ICA_FIPS */
+
+	/* check for obvious errors in parms */
+	if ((input_data == NULL) ||
+	    (sha3_224_context == NULL) ||
+	    (output_data == NULL))
+		return EINVAL;
+
+	/* make sure some message part is specified */
+	rc = check_message_part(message_part);
+	if (rc)
+		return rc;
+
+	/*
+	 * for FIRST or MIDDLE calls the input
+	 * data length must be a multiple of 144 bytes.
+	 */
+	if ((input_length % 144 != 0) &&
+	    (message_part == SHA_MSG_PART_FIRST ||
+	     message_part == SHA_MSG_PART_MIDDLE))
+		return EINVAL;
+
+	return s390_sha3_224((unsigned char *) &sha3_224_context->sha3_224Hash,
+			   input_data, input_length, output_data, message_part,
+			   (uint64_t *)&sha3_224_context->runningLength);
+}
+
+unsigned int ica_sha3_256(unsigned int message_part,
+			unsigned int input_length,
+			unsigned char *input_data,
+			sha3_256_context_t *sha3_256_context,
+			unsigned char *output_data)
+{
+	unsigned int rc;
+
+#ifdef ICA_FIPS
+	if (fips >> 1)
+		return EACCES;
+#endif /* ICA_FIPS */
+
+	/* check for obvious errors in parms */
+	if ((input_data == NULL) ||
+	    (sha3_256_context == NULL) ||
+	    (output_data == NULL))
+		return EINVAL;
+
+	/* make sure some message part is specified */
+	rc = check_message_part(message_part);
+	if (rc)
+		return rc;
+
+	/*
+	 * for FIRST or MIDDLE calls the input
+	 * data length must be a multiple of 136 bytes.
+	 */
+	if ((input_length % 136 != 0) &&
+	    (message_part == SHA_MSG_PART_FIRST ||
+	     message_part == SHA_MSG_PART_MIDDLE))
+		return EINVAL;
+
+	return s390_sha3_256((unsigned char *) &sha3_256_context->sha3_256Hash,
+			   input_data, input_length, output_data, message_part,
+			   (uint64_t *) &sha3_256_context->runningLength);
+}
+
+unsigned int ica_sha3_384(unsigned int message_part,
+			uint64_t input_length,
+			unsigned char *input_data,
+			sha3_384_context_t *sha3_384_context,
+			unsigned char *output_data)
+{
+	unsigned int rc;
+
+#ifdef ICA_FIPS
+	if (fips >> 1)
+		return EACCES;
+#endif /* ICA_FIPS */
+
+	/* check for obvious errors in parms */
+	if ((input_data == NULL) ||
+	    (sha3_384_context == NULL) ||
+	    (output_data == NULL))
+		return EINVAL;
+
+	/* make sure some message part is specified */
+	rc = check_message_part(message_part);
+	if (rc)
+		return rc;
+
+	/*
+	 * for FIRST or MIDDLE calls the input
+	 * data length must be a multiple of 104 bytes.
+	 */
+	if ((input_length % 104 != 0) &&
+	    (message_part == SHA_MSG_PART_FIRST ||
+	     message_part == SHA_MSG_PART_MIDDLE))
+		return EINVAL;
+
+	return s390_sha3_384((unsigned char *) &sha3_384_context->sha3_384Hash,
+			   input_data, input_length, output_data, message_part,
+			   (uint64_t *) &(sha3_384_context->runningLengthLow),
+			   (uint64_t *) &(sha3_384_context->runningLengthHigh));
+}
+
+unsigned int ica_sha3_512(unsigned int message_part,
+			uint64_t input_length,
+			unsigned char *input_data,
+			sha3_512_context_t *sha3_512_context,
+			unsigned char *output_data)
+{
+	unsigned int rc;
+
+#ifdef ICA_FIPS
+	if (fips >> 1)
+		return EACCES;
+#endif /* ICA_FIPS */
+
+	/* check for obvious errors in parms */
+	if ((input_data == NULL) ||
+	    (sha3_512_context == NULL) ||
+	    (output_data == NULL))
+		return EINVAL;
+
+	/* make sure some message part is specified */
+	rc = check_message_part(message_part);
+	if (rc)
+		return rc;
+
+	/*
+	 * for FIRST or MIDDLE calls the input
+	 * data length must be a multiple of 72 bytes.
+	 */
+	if ((input_length % 72 != 0) &&
+	    (message_part == SHA_MSG_PART_FIRST ||
+	     message_part == SHA_MSG_PART_MIDDLE))
+		return EINVAL;
+
+	return s390_sha3_512((unsigned char *)&sha3_512_context->sha3_512Hash,
+			   input_data, input_length, output_data, message_part,
+			   (uint64_t *) &sha3_512_context->runningLengthLow,
+			   (uint64_t *) &sha3_512_context->runningLengthHigh);
+}
+
+unsigned int ica_shake_128(unsigned int message_part,
+			uint64_t input_length,
+			unsigned char *input_data,
+			shake_128_context_t *shake_128_context,
+			unsigned char *output_data, unsigned int output_length)
+{
+	unsigned int rc;
+
+#ifdef ICA_FIPS
+	if (fips >> 1)
+		return EACCES;
+#endif /* ICA_FIPS */
+
+	/* check for obvious errors in parms */
+	if ((input_data == NULL) ||
+	    (shake_128_context == NULL) ||
+	    (output_length == 0) ||
+	    (output_data == NULL))
+		return EINVAL;
+
+	/* make sure some message part is specified */
+	rc = check_message_part(message_part);
+	if (rc)
+		return rc;
+
+	/*
+	 * for FIRST or MIDDLE calls the input
+	 * data length must be a multiple of 168 bytes.
+	 */
+	if ((input_length % 168 != 0) &&
+	    (message_part == SHA_MSG_PART_FIRST ||
+	     message_part == SHA_MSG_PART_MIDDLE)) {
+		return EINVAL;
+	}
+
+	/* set output_length in context for first call and only call */
+	if ((message_part == SHA_MSG_PART_FIRST || message_part == SHA_MSG_PART_ONLY))
+		shake_128_context->output_length = output_length;
+
+	return s390_shake_128((unsigned char *)&shake_128_context->shake_128Hash,
+			   input_data, input_length, output_data, shake_128_context->output_length,
+			   message_part, (uint64_t *) &shake_128_context->runningLengthLow,
+			   (uint64_t *) &shake_128_context->runningLengthHigh);
+}
+
+unsigned int ica_shake_256(unsigned int message_part,
+			uint64_t input_length,
+			unsigned char *input_data,
+			shake_256_context_t *shake_256_context,
+			unsigned char *output_data, unsigned int output_length)
+{
+	unsigned int rc;
+
+#ifdef ICA_FIPS
+	if (fips >> 1)
+		return EACCES;
+#endif /* ICA_FIPS */
+
+	/* check for obvious errors in parms */
+	if ((input_data == NULL) ||
+	    (shake_256_context == NULL) ||
+	    (output_length == 0) ||
+	    (output_data == NULL))
+		return EINVAL;
+
+	/* make sure some message part is specified */
+	rc = check_message_part(message_part);
+	if (rc)
+		return rc;
+
+	/*
+	 * for FIRST or MIDDLE calls the input
+	 * data length must be a multiple of 136 bytes.
+	 */
+	if ((input_length % 136 != 0) &&
+	    (message_part == SHA_MSG_PART_FIRST ||
+	     message_part == SHA_MSG_PART_MIDDLE))
+		return EINVAL;
+
+	/* set output_length in context for first call and only call */
+	if ((message_part == SHA_MSG_PART_FIRST || message_part == SHA_MSG_PART_ONLY))
+		shake_256_context->output_length = output_length;
+
+	return s390_shake_256((unsigned char *)&shake_256_context->shake_256Hash,
+			   input_data, input_length, output_data, shake_256_context->output_length,
+			   message_part, (uint64_t *) &shake_256_context->runningLengthLow,
+			   (uint64_t *) &shake_256_context->runningLengthHigh);
 }
 
 unsigned int ica_random_number_generate(unsigned int output_length,

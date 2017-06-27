@@ -15,7 +15,7 @@
  *	       Holger Dengler <hd@linux.vnet.ibm.com>
  *	       Ingo Tuchscherer <ingo.tuchscherer.linux.vnet.ibm.com>
  *
- * Copyright IBM Copr. 2007, 2009, 2011, 2013
+ * Copyright IBM Copr. 2007, 2009, 2011, 2013, 2016
  */
 
 #include <stdint.h>
@@ -28,7 +28,8 @@
 #include "init.h"
 #include "s390_crypto.h"
 
-unsigned int sha1_switch, sha256_switch, sha512_switch, des_switch,
+
+unsigned int sha1_switch, sha256_switch, sha512_switch, sha3_switch, des_switch,
 	     tdes_switch, aes128_switch, aes192_switch, aes256_switch,
 	     prng_switch, tdea128_switch, tdea192_switch, sha512_drng_switch,
 	     msa4_switch, msa5_switch;
@@ -39,6 +40,12 @@ s390_supported_function_t s390_kimd_functions[] = {
 	{SHA_256, S390_CRYPTO_SHA_256, &sha256_switch},
 	{SHA_384, S390_CRYPTO_SHA_512, &sha512_switch},
 	{SHA_512, S390_CRYPTO_SHA_512, &sha512_switch},
+	{SHA_3_224, S390_CRYPTO_SHA_3_224, &sha3_switch},
+	{SHA_3_256, S390_CRYPTO_SHA_3_256, &sha3_switch},
+	{SHA_3_384, S390_CRYPTO_SHA_3_384, &sha3_switch},
+	{SHA_3_512, S390_CRYPTO_SHA_3_512, &sha3_switch},
+	{SHAKE_128, S390_CRYPTO_SHAKE_128, &sha3_switch},
+	{SHAKE_256, S390_CRYPTO_SHAKE_256, &sha3_switch},
 	{GHASH, S390_CRYPTO_GHASH, &msa4_switch}
 };
 
@@ -138,6 +145,7 @@ void set_switches(int msa)
 	unsigned int on = 0;
 	struct sigaction oldact;
 	sigset_t oldset;
+
 	/* The function arrays contain integers. Thus to compute the amount of
 	 * their elements the result of sizeof(*functions) has to be divided by
 	 * sizeof(int).
@@ -146,6 +154,7 @@ void set_switches(int msa)
 	 * kimd query and do not need to over the whole array. Therfore there
 	 * is also no distict setting of the switch needed in form
 	 * msa4_switch = 1. */
+
 
 	/* kmc query */
 	memset(mask, 0, sizeof(mask));
@@ -229,6 +238,12 @@ libica_func_list_element_int icaList[] = {
  {SHA256, KIMD, SHA_256		, ICA_FLAG_SW, 0},
  {SHA384, KIMD, SHA_512		, ICA_FLAG_SW, 0},
  {SHA512, KIMD, SHA_512		, ICA_FLAG_SW, 0},
+ {SHA3_224, KIMD, SHA_3_224, 0, 0},
+ {SHA3_256, KIMD, SHA_3_256, 0, 0},
+ {SHA3_384, KIMD, SHA_3_384, 0, 0},
+ {SHA3_512, KIMD, SHA_3_512, 0, 0},
+ {SHAKE128, KIMD, SHAKE_128, 0, 0},
+ {SHAKE256, KIMD, SHAKE_256, 0, 0},
  {G_HASH, KIMD, GHASH		,           0, 0},
 
  {DES_ECB,      KMC,  DEA_ENCRYPT, ICA_FLAG_SW, 0},
@@ -378,7 +393,8 @@ int s390_get_functionlist(libica_func_list_element *pmech_list,
 	/* Disable the algorithm in the following cases:
 	 * - We are running in FIPS mode and the algorithm is not FIPS
 	 *   approved.
-	 * - We are in an error state. */
+	 * - We are in an error state.
+	 * */
 	if (((fips & ICA_FIPS_MODE) && !fips_approved(icaList[x].mech_mode_id))
 	    || fips >> 1) {
 		pmech_list[x].flags = 0;
@@ -389,4 +405,3 @@ int s390_get_functionlist(libica_func_list_element *pmech_list,
 
   return 0;
 }
-

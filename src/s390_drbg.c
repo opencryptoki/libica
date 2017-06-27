@@ -587,6 +587,7 @@ int drbg_hash_df(const unsigned char *input,
 		_tmp[0] = counter;
 		status = s390_sha_hw(SHA_512_DEFAULT_IV, _tmp, _tmp_len,
 				     temp + (i - 1) * DRBG_OUT_LEN,
+				     sha_constants[SHA_512].hash_length,
 				     SHA_MSG_PART_ONLY, &shabuff[0],
 				     &shabuff[1], SHA_512);
 		if(status){

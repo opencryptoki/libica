@@ -35,6 +35,12 @@ typedef enum stats_fields {
 	ICA_STATS_SHA256,
 	ICA_STATS_SHA384,
 	ICA_STATS_SHA512,
+	ICA_STATS_SHA3_224,
+	ICA_STATS_SHA3_256,
+	ICA_STATS_SHA3_384,
+	ICA_STATS_SHA3_512,
+	ICA_STATS_SHAKE_128,
+	ICA_STATS_SHAKE_256,
 	ICA_STATS_GHASH,
 	ICA_STATS_PRNG,
 	ICA_STATS_DRBGSHA512,
@@ -73,6 +79,12 @@ typedef enum stats_fields {
 	"SHA-256",    	\
 	"SHA-384",    	\
 	"SHA-512",    	\
+	"SHA3-224",    	\
+	"SHA3-256",    	\
+	"SHA3-384",    	\
+	"SHA3-512",    	\
+	"SHAKE-128",   	\
+	"SHAKE-256",   	\
 	"GHASH",      	\
 	"P_RNG",      	\
 	"DRBG-SHA-512",	\

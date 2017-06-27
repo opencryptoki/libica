@@ -77,6 +77,12 @@ typedef ica_adapter_handle_t ICA_ADAPTER_HANDLE;
 #define SHA256          3
 #define SHA384          4
 #define SHA512          5
+#define SHA3_224        6
+#define SHA3_256        7
+#define SHA3_384        8
+#define SHA3_512        9
+#define SHAKE128        11
+#define SHAKE256        12
 #define G_HASH          10
 #define DES_ECB         20
 #define DES_CBC         21
@@ -145,6 +151,11 @@ typedef ica_adapter_handle_t ICA_ADAPTER_HANDLE;
 #define SHA256_HASH_LENGTH	32
 #define SHA384_HASH_LENGTH	48
 #define SHA512_HASH_LENGTH	64
+#define SHA3_224_HASH_LENGTH	SHA224_HASH_LENGTH
+#define SHA3_256_HASH_LENGTH	SHA256_HASH_LENGTH
+#define SHA3_384_HASH_LENGTH	SHA384_HASH_LENGTH
+#define SHA3_512_HASH_LENGTH	SHA512_HASH_LENGTH
+#define SHA3_PARMBLOCK_LENGTH   200
 
 /*
  * ica_drbg
@@ -211,6 +222,61 @@ typedef struct {
 	uint64_t runningLengthLow;
 	unsigned char sha512Hash[SHA512_HASH_LENGTH];
 } sha512_context_t;
+
+/**
+ * Context for SHA3_224 operations
+ */
+typedef struct {
+	uint64_t runningLength;
+	unsigned char sha3_224Hash[SHA3_PARMBLOCK_LENGTH];
+} sha3_224_context_t;
+
+/**
+ * Context for SHA3_256 operations
+ */
+typedef struct {
+	uint64_t runningLength;
+	unsigned char sha3_256Hash[SHA3_PARMBLOCK_LENGTH];
+} sha3_256_context_t;
+
+/**
+ * Context for SHA3_384 operations
+ */
+typedef struct {
+	uint64_t runningLengthHigh;
+	uint64_t runningLengthLow;
+	unsigned char sha3_384Hash[SHA3_PARMBLOCK_LENGTH];
+} sha3_384_context_t;
+
+/**
+ * Context for SHA3_512 operations
+ */
+typedef struct {
+	uint64_t runningLengthHigh;
+	uint64_t runningLengthLow;
+	unsigned char sha3_512Hash[SHA3_PARMBLOCK_LENGTH];
+} sha3_512_context_t;
+
+/**
+ * Context for SHAKE_128 operations with variable output length
+ */
+typedef struct {
+	uint64_t runningLengthHigh;
+	uint64_t runningLengthLow;
+	unsigned int output_length;
+	unsigned char shake_128Hash[SHA3_PARMBLOCK_LENGTH];
+} shake_128_context_t;
+
+/**
+ * Context for SHAKE_256 operations with variable output length
+ */
+typedef struct {
+	uint64_t runningLengthHigh;
+	uint64_t runningLengthLow;
+	unsigned int output_length;
+	unsigned char shake_256Hash[SHA3_PARMBLOCK_LENGTH];
+} shake_256_context_t;
+
 
 typedef enum {
 	DEA_ENCRYPT,
@@ -580,6 +646,51 @@ unsigned int ica_sha512(unsigned int message_part,
 			unsigned char *input_data,
 			sha512_context_t *sha512_context,
 			unsigned char *output_data);
+
+ICA_EXPORT
+unsigned int ica_sha3_224(unsigned int message_part,
+			unsigned int input_length,
+			unsigned char *input_data,
+			sha3_224_context_t *sha3_224_context,
+			unsigned char *output_data);
+
+ICA_EXPORT
+unsigned int ica_sha3_256(unsigned int message_part,
+			unsigned int input_length,
+			unsigned char *input_data,
+			sha3_256_context_t *sha3_256_context,
+			unsigned char *output_data);
+
+ICA_EXPORT
+unsigned int ica_sha3_384(unsigned int message_part,
+			uint64_t input_length,
+			unsigned char *input_data,
+			sha3_384_context_t *sha3_384_context,
+			unsigned char *output_data);
+
+ICA_EXPORT
+unsigned int ica_sha3_512(unsigned int message_part,
+			uint64_t input_length,
+			unsigned char *input_data,
+			sha3_512_context_t *sha3_512_context,
+			unsigned char *output_data);
+
+ICA_EXPORT
+unsigned int ica_shake_128(unsigned int message_part,
+			uint64_t input_length,
+			unsigned char *input_data,
+			shake_128_context_t *shake_128_context,
+			unsigned char *output_data,
+			unsigned int output_length);
+
+ICA_EXPORT
+unsigned int ica_shake_256(unsigned int message_part,
+			uint64_t input_length,
+			unsigned char *input_data,
+			shake_256_context_t *shake_256_context,
+			unsigned char *output_data,
+			unsigned int output_length);
+
 
 /**
  * Generate RSA keys in modulus/exponent format.

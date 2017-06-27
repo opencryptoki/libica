@@ -50,6 +50,12 @@ enum s390_crypto_function {
 	S390_CRYPTO_SHA_1 = 0x01,
 	S390_CRYPTO_SHA_256 = 0x02,
 	S390_CRYPTO_SHA_512 = 0x03,
+	S390_CRYPTO_SHA_3_224 = 0x20,
+	S390_CRYPTO_SHA_3_256 = 0x21,
+	S390_CRYPTO_SHA_3_384 = 0x22,
+	S390_CRYPTO_SHA_3_512 = 0x23,
+	S390_CRYPTO_SHAKE_128 = 0x24,
+	S390_CRYPTO_SHAKE_256 = 0x25,
 	S390_CRYPTO_GHASH = 0x41,
 	/*
 	 * The following functions are available for KM,KMC,KMF,KMO,
@@ -83,7 +89,7 @@ enum s390_crypto_function {
 	S390_CRYPTO_SHA512_DRNG_SEED = 0x03 | 0x80
 };
 
-extern unsigned int sha1_switch, sha256_switch, sha512_switch, des_switch,
+extern unsigned int sha1_switch, sha256_switch, sha512_switch, sha3_switch, des_switch,
 	     tdes_switch, aes128_switch, aes192_switch, aes256_switch,
 	     prng_switch, tdea128_switch, tdea192_switch, sha512_drng_switch,
 	     msa4_switch, msa5_switch;
@@ -102,6 +108,12 @@ typedef enum {
 	SHA_256,
 	SHA_384,
 	SHA_512,
+	SHA_3_224,
+	SHA_3_256,
+	SHA_3_384,
+	SHA_3_512,
+	SHAKE_128,
+	SHAKE_256,
 	GHASH
 } kimd_functions_t;
 
@@ -354,6 +366,30 @@ static inline int s390_kmc(unsigned long func, void *param, unsigned char *dest,
  * Returns -1 for failure, 0 for the query func, number of processed
  * bytes for digest funcs
  */
+static inline int s390_kimd_shake(unsigned long func, void *param,
+		unsigned char *dest, long dest_len,
+	     const unsigned char *src, long src_len)
+{
+	register long  __func asm("0") = func;
+	register void *__param asm("1") = param;
+	register unsigned char *__dest asm("2") = dest;
+	register long  __dest_len asm("3") = dest_len;
+	register const unsigned char *__src asm("4") = src;
+	register long  __src_len asm("5") = src_len;
+	int ret = -1;
+
+	asm volatile(
+		"0:      .insn   rre,0xb93e0000,%1,%5\n\t" /* KIMD opcode */
+		"        brc     1,0b\n\t" /* handle partial completion */
+		"        la      %0,0\n\t"
+		: "+d" (ret), "+a"(__dest), "+d"(__dest_len)
+		: "d"(__func), "a"(__param), "a"(__src), "d"(__src_len)
+		: "cc", "memory"
+	);
+
+	return func ? src_len - __src_len : __src_len;
+}
+
 static inline int s390_kimd(unsigned long func, void *param,
 		     const unsigned char *src, long src_len)
 {
@@ -384,8 +420,32 @@ static inline int s390_kimd(unsigned long func, void *param,
  * Returns -1 for failure, 0 for the query func, number of processed
  * bytes for digest funcs
  */
-static inline int s390_klmd(unsigned long func, void *param, const unsigned char *src,
-		     long src_len)
+static inline int s390_klmd_shake(unsigned long func, void *param,
+		unsigned char *dest, long dest_len,
+		const unsigned char *src, long src_len)
+{
+	register long  __func asm("0") = func;
+	register void *__param asm("1") = param;
+	register unsigned char *__dest asm("2") = dest;
+	register long  __dest_len asm("3") = dest_len;
+	register const unsigned char *__src asm("4") = src;
+	register long  __src_len asm("5") = src_len;
+	int ret = -1;
+
+	asm volatile(
+		"0:      .insn   rre,0xb93f0000,%1,%5\n\t" /* KLMD opcode */
+		"        brc     1,0b\n\t" /* handle partial completion */
+		"        la      %0,0\n\t"
+		: "+d" (ret), "+a"(__dest), "+d"(__dest_len)
+		: "d"(__func), "a"(__param), "a"(__src), "d"(__src_len)
+		: "cc", "memory"
+	);
+
+	return func ? src_len - __src_len : __src_len;
+}
+
+static inline int s390_klmd(unsigned long func, void *param,
+		const unsigned char *src, long src_len)
 {
 	register long __func asm("0") = func;
 	register void *__param asm("1") = param;
