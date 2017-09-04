@@ -314,7 +314,26 @@ static inline unsigned int s390_ccm(unsigned int function_code,
 					  key, cipher_ctr, ccm_ctr_width);
 			if (rc)
 				return rc;
+			/* mac */
+			rc = s390_ccm_authenticate(UNDIRECTED_FC(function_code),
+						   payload, payload_length,
+						   assoc_data, assoc_data_length,
+						   nonce, nonce_length,
+						   tag, mac_length,
+						   key, fc_to_key_length(function_code));
+			if (rc)
+				return rc;
 		} else {
+			/* mac */
+			rc = s390_ccm_authenticate(UNDIRECTED_FC(function_code),
+						   payload, payload_length,
+						   assoc_data, assoc_data_length,
+						   nonce, nonce_length,
+						   tag, mac_length,
+						   key, fc_to_key_length(function_code));
+			if (rc)
+				return rc;
+
 			/*encrypt */
 			rc = s390_aes_ctr(UNDIRECTED_FC(function_code),
 					  payload, ciphertext, payload_length,
@@ -323,16 +342,6 @@ static inline unsigned int s390_ccm(unsigned int function_code,
 				return rc;
 		}
 	}
-
-	/* generate tag */
-	rc = s390_ccm_authenticate(UNDIRECTED_FC(function_code),
-				   payload, payload_length,
-				   assoc_data, assoc_data_length,
-				   nonce, nonce_length,
-				   tag, mac_length,
-				   key, fc_to_key_length(function_code));
-	if (rc)
-		return rc;
 
 	/* encrypt tag into mac */
 	return s390_aes_ctr(UNDIRECTED_FC(function_code),
