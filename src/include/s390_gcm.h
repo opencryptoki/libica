@@ -328,8 +328,14 @@ static inline int s390_gcm(unsigned int function_code,
 
 		__inc_aes_ctr((struct uint128 *)tmp_ctr, GCM_CTR_WIDTH);
 
-		/* en-/decrypt payload */
 		if (function_code % 2) {
+			/* mac */
+			rc = s390_gcm_authenticate(ciphertext, text_length,
+						   aad, aad_length,
+						   subkey_h, tmp_tag);
+			if (rc)
+				return rc;
+
 			/* decrypt */
 			rc = s390_aes_ctr(UNDIRECTED_FC(function_code),
 					  ciphertext, plaintext, text_length,
@@ -343,14 +349,14 @@ static inline int s390_gcm(unsigned int function_code,
 					  key, tmp_ctr, GCM_CTR_WIDTH);
 			if (rc)
 				return rc;
-		}
 
-		/* generate authentication tag */
-		rc = s390_gcm_authenticate(ciphertext, text_length,
-					   aad, aad_length,
-					   subkey_h, tmp_tag);
-		if (rc)
-			return rc;
+			/* mac */
+			rc = s390_gcm_authenticate(ciphertext, text_length,
+						   aad, aad_length,
+						   subkey_h, tmp_tag);
+			if (rc)
+				return rc;
+		}
 
 		/* encrypt tag */
 		return s390_aes_ctr(UNDIRECTED_FC(function_code),
@@ -482,9 +488,13 @@ static inline int s390_gcm_intermediate(unsigned int function_code,
 		return EPERM;
 
 	if (!msa8_switch) {
-
-		/* en-/decrypt payload */
 		if (function_code % 2) {
+			/* mac */
+			rc = s390_gcm_authenticate_intermediate(ciphertext, text_length, aad,
+				aad_length, subkey, tag);
+			if (rc)
+				return rc;
+
 			/* decrypt */
 			rc = s390_aes_ctr(UNDIRECTED_FC(function_code), ciphertext, plaintext,
 							  text_length, key, ctr, GCM_CTR_WIDTH);
@@ -496,14 +506,13 @@ static inline int s390_gcm_intermediate(unsigned int function_code,
 							  text_length, key, ctr, GCM_CTR_WIDTH);
 			if (rc)
 				return rc;
+
+			/* mac */
+			rc = s390_gcm_authenticate_intermediate(ciphertext, text_length, aad,
+				aad_length, subkey, tag);
+			if (rc)
+				return rc;
 		}
-
-		/* generate authentication tag */
-		rc = s390_gcm_authenticate_intermediate(ciphertext, text_length, aad,
-			aad_length, subkey, tag);
-		if (rc)
-			return rc;
-
 	} else {
 
 		unsigned int laad = set_laad(aad_length, text_length);
