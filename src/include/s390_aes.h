@@ -220,6 +220,9 @@ static inline int s390_aes_ctr(unsigned int fc, const unsigned char *in_data,
 
 	int rc = 0;
 
+	if (data_length == 0)
+		return 0;
+
 	if (data_length <= AES_BLOCK_SIZE) {
 		/* short message handling */
 		rc = s390_aes_ctrlist(fc, data_length, in_data, ctr,
