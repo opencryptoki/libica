@@ -564,7 +564,11 @@ static inline int s390_gcm_last(unsigned int function_code, unsigned char *icb,
 				unsigned char *key, unsigned char *subkey)
 {
 	unsigned char tmp_tag[AES_BLOCK_SIZE];
+	unsigned char tmp_icb[AES_BLOCK_SIZE];
 	int rc;
+
+	/* dont modify icb buffer */
+	memcpy(tmp_icb, icb, sizeof(tmp_icb));
 
 	if (!msa8_switch) {
 
@@ -576,13 +580,13 @@ static inline int s390_gcm_last(unsigned int function_code, unsigned char *icb,
 
 		/* encrypt tag */
 		return s390_aes_ctr(UNDIRECTED_FC(function_code), tmp_tag, tag, tag_length,
-							key, icb, GCM_CTR_WIDTH);
+							key, tmp_icb, GCM_CTR_WIDTH);
 
 	} else {
 
 		return s390_aes_gcm(function_code,
 				  NULL, NULL, ciph_length,
-				  key, icb, GCM_CTR_WIDTH,
+				  key, tmp_icb, GCM_CTR_WIDTH,
 				  NULL, 0,
 				  NULL, aad_length, subkey,
 				  tag, tag_length, 1, 1);
