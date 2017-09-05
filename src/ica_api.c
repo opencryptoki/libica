@@ -2000,9 +2000,16 @@ unsigned int ica_aes_gcm(unsigned char *plaintext, unsigned long plaintext_lengt
 		return EACCES;
 #endif /* ICA_FIPS */
 
-	if (check_aes_parms(MODE_GCM, plaintext_length, plaintext, iv, key_length,
-			    key, ciphertext))
-		return EINVAL;
+	if (plaintext_length != 0) {
+		if (check_aes_parms(MODE_GCM, plaintext_length, plaintext, iv, key_length,
+				    key, ciphertext))
+			return EINVAL;
+	} else {
+		/* If only aad is processed (ghash), pt/ct may be NULL. */
+		if (check_aes_parms(MODE_GCM, plaintext_length, (unsigned char *)1,
+				    iv, key_length, key, (unsigned char *)1))
+			return EINVAL;
+	}
 	if (check_gcm_parms(plaintext_length, aad, aad_length, tag, tag_length, iv_length))
 		return EINVAL;
 
@@ -2077,9 +2084,16 @@ unsigned int ica_aes_gcm_intermediate(unsigned char *plaintext,
 		return EACCES;
 #endif /* ICA_FIPS */
 
-	if (check_aes_parms(MODE_GCM, plaintext_length, plaintext, cb, key_length,
-			    key, ciphertext))
-		return EINVAL;
+	if (plaintext_length != 0) {
+		if (check_aes_parms(MODE_GCM, plaintext_length, plaintext, cb, key_length,
+				    key, ciphertext))
+			return EINVAL;
+	} else {
+		/* If only aad is processed (ghash), pt/ct may be NULL. */
+		if (check_aes_parms(MODE_GCM, plaintext_length, (unsigned char *)1,
+				    cb, key_length, key, (unsigned char *)1))
+			return EINVAL;
+	}
 	if (check_gcm_parms(plaintext_length, aad, aad_length, tag, tag_length,
 				iv_length_dummy))
 		return EINVAL;
