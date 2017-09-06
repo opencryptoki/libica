@@ -431,14 +431,6 @@ static inline void inc_ctr(unsigned char* ctr)
 	*cv = *cv + 1;
 }
 
-static inline int set_laad(unsigned int aad_length, unsigned int text_length)
-{
-	if ((aad_length > 0 && text_length > 0) || aad_length == 0)
-		return 1;
-	else
-		return 0;
-}
-
 /**
  * processes the last partial plaintext/ciphertext (< 16 bytes) and calculates
  * the last intermediate tag using the old code path. This is not possible with
@@ -453,25 +445,40 @@ static inline int s390_gcm_last_intermediate(unsigned int function_code,
 				unsigned char *key, unsigned char *subkey)
 {
 	unsigned int rc;
+	unsigned char tmp_ctr[16];
 
-	inc_ctr(ctr); // Old code needs ctr+1 ...
+	/*
+	 * The old code needs ctr +1.
+	 * We copy ctr, to not destroy the original ctr.
+	 */
+	memcpy(tmp_ctr, ctr, sizeof(tmp_ctr));
+	inc_ctr(tmp_ctr);
 
-	if (function_code % 2)
-		// decrypt
+	if (function_code % 2) {
+		/* mac */
+		rc = s390_gcm_authenticate_intermediate(ciphertext, text_length, aad,
+			aad_length, subkey, tag);
+		if (rc)
+			return rc;
+		/* decrypt */
 		rc = s390_aes_ctr(UNDIRECTED_FC(function_code), ciphertext, plaintext,
-						  text_length, key, ctr, GCM_CTR_WIDTH);
-	else
-		// encrypt
+						  text_length, key, tmp_ctr, GCM_CTR_WIDTH);
+		if (rc)
+			return rc;
+	} else {
+		/* encrypt */
 		rc = s390_aes_ctr(UNDIRECTED_FC(function_code), plaintext, ciphertext,
-						  text_length, key, ctr, GCM_CTR_WIDTH);
-	if (rc)
-		return rc;
+						  text_length, key, tmp_ctr, GCM_CTR_WIDTH);
+		if (rc)
+			return rc;
+		/* mac */
+		rc = s390_gcm_authenticate_intermediate(ciphertext, text_length, aad,
+			aad_length, subkey, tag);
+		if (rc)
+			return rc;
+	}
 
-	/* generate last intermediate authentication tag */
-	rc = s390_gcm_authenticate_intermediate(ciphertext, text_length, aad,
-		aad_length, subkey, tag);
-
-	return rc;
+	return 0;
 }
 
 static inline int s390_gcm_intermediate(unsigned int function_code,
@@ -482,7 +489,9 @@ static inline int s390_gcm_intermediate(unsigned int function_code,
 				unsigned char *tag, unsigned long tag_length,
 				unsigned char *key, unsigned char *subkey)
 {
-	unsigned int rc;
+	unsigned long bulk;
+	unsigned int rc, laad;
+	unsigned char *in, *out;
 
 	if (!msa4_switch)
 		return EPERM;
@@ -514,44 +523,34 @@ static inline int s390_gcm_intermediate(unsigned int function_code,
 				return rc;
 		}
 	} else {
+		if ((text_length > 0) || (aad_length % AES_BLOCK_SIZE))
+			laad = 1;
+		else
+			laad = 0;
 
-		unsigned int laad = set_laad(aad_length, text_length);
+		bulk = (text_length / AES_BLOCK_SIZE) * AES_BLOCK_SIZE;
+		text_length %= AES_BLOCK_SIZE;
 
-		if (function_code % 2) {
-			/* decrypt */
-			if (text_length >= AES_BLOCK_SIZE) {
+		if (bulk || aad_length) {
+			in = (function_code % 2) ? ciphertext : plaintext;
+			out = (function_code % 2) ? plaintext : ciphertext;
 
-				return s390_aes_gcm(function_code,
-						  ciphertext, plaintext, (text_length/AES_BLOCK_SIZE)*AES_BLOCK_SIZE, key,
-						  NULL, 0, // j0, j0_length not used here
-						  ctr, GCM_CTR_WIDTH,
-						  aad, aad_length, subkey,
-						  tag, tag_length, laad, 0);
-			} else {
-
-				return s390_gcm_last_intermediate(function_code,
-						plaintext, text_length, ciphertext,
-						ctr, aad, aad_length, tag, tag_length,
-						key, subkey);
-			}
-
-		} else {
-			/* encrypt */
-			if (text_length >= AES_BLOCK_SIZE) {
-
-				return s390_aes_gcm(function_code,
-						  plaintext, ciphertext, (text_length/AES_BLOCK_SIZE)*AES_BLOCK_SIZE, key,
-						  NULL, 0, // j0, j0_length not used here
-						  ctr, GCM_CTR_WIDTH,
-						  aad, aad_length, subkey,
-						  tag, tag_length, laad, 0);
-			} else {
-
-				return s390_gcm_last_intermediate(function_code,
-						plaintext, text_length, ciphertext,
-						ctr, aad, aad_length, tag, tag_length,
-						key, subkey);
-			}
+			rc = s390_aes_gcm(function_code,
+					  in, out, bulk, key,
+					  NULL, 0, // j0, j0_length not used here
+					  ctr, GCM_CTR_WIDTH,
+					  aad, aad_length, subkey,
+					  tag, tag_length, laad, 0);
+			if (rc)
+				return rc;
+		}
+		if (text_length) {
+			rc = s390_gcm_last_intermediate(function_code,
+					plaintext + bulk, text_length,
+					ciphertext + bulk, ctr, NULL,
+					0, tag, tag_length, key, subkey);
+			if (rc)
+				return rc;
 		}
 	}
 
