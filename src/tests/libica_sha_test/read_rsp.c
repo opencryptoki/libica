@@ -8,7 +8,7 @@
 
 static int line_to_bytes(char *line, int length);
 
-int read_test_data(FILE * test_data)
+int read_test_data(FILE * test_data, int sha3_flag)
 {
 	char buffer[BUFFER_SIZE];
 	enum { MSG_LENGTH, MSG, MSG_DIGEST } search_term;
@@ -40,6 +40,11 @@ int read_test_data(FILE * test_data)
 				     line_number);
 				return EXIT_FAILURE;
 			}
+
+			/* SHA3 test vector's length is specified in bits. */
+			if (sha3_flag)
+				current_msg_digest_length /= 8;
+
 			switch (current_msg_digest_length) {
 			case NO_LENGTH_SET:
 				continue;
@@ -47,16 +52,16 @@ int read_test_data(FILE * test_data)
 				current_type = SHA1;
 				break;
 			case SHA224_HASH_LENGTH:
-				current_type = SHA224;
+				current_type = sha3_flag ? SHA3_224 : SHA224;
 				break;
 			case SHA256_HASH_LENGTH:
-				current_type = SHA256;
+				current_type = sha3_flag ? SHA3_256 : SHA256;
 				break;
 			case SHA384_HASH_LENGTH:
-				current_type = SHA384;
+				current_type = sha3_flag ? SHA3_384 : SHA384;
 				break;
 			case SHA512_HASH_LENGTH:
-				current_type = SHA512;
+				current_type = sha3_flag ? SHA3_512 : SHA512;
 				break;
 			default:
 				CRITICAL_ERROR("this shouldn't happen.");

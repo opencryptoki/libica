@@ -9,6 +9,6 @@
 extern queue_t queue;
 
 /* read test data from .rsp file into queue */
-int read_test_data(FILE * test_data);
+int read_test_data(FILE * test_data, int sha3_flag);
 
 #endif

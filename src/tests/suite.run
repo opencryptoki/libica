@@ -58,8 +58,8 @@ testcases=(
 "libica_shake_128_test $verbosity"
 "libica_shake_256_test $verbosity"
 
-
 "libica_sha_test/libica_sha_test $verbosity libica_sha_test/sha_test_vectors/*"
+"libica_sha_test/libica_sha_test $verbosity -sha3 libica_sha_test/sha3_test_vectors/*"
 )
 
 echo -ne "" &> $out;

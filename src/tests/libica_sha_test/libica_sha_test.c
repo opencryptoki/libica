@@ -22,17 +22,22 @@ int main(int argc, char *argv[])
 {
 	test_t *curr_test;
 	FILE *test_data;
-	int i, rc;
+	int i, j, rc, sha3_flag, sha3;
 
-	/* first cmd line arg may be verbosity */
-	if ((argc >= 2) && (argv[1][0] == '-')) {
-		set_verbosity(2, argv);
-		i = 2;
+	sha3 = sha3_available();
+	sha3_flag = 0;
+	j = 1;
+	for (i = 1; i < argc; i++) {
+		if (argv[i][0] == '-') {
+			if ((argv[i][1] == 'v') || (argv[i][1] == 'V'))
+				set_verbosity(2, argv);
+			if (!strcasecmp(argv[i],"-sha3"))
+				sha3_flag = 1;
+			j++;
+		}
 	}
-	else
-		i = 1;
 
-	if (argc - i == 0) {
+	if (argc - j == 0) {
 		printf("error: no input files.\n");
 		return EXIT_FAILURE;
 	}
@@ -40,10 +45,10 @@ int main(int argc, char *argv[])
 	queue = new_queue_t();
 
 	/* read test vectors from .rsp file(s) and put on queue */
-	for (; i < argc; i++) {
+	for (i = j; i < argc; i++) {
 		if ((test_data = fopen(argv[i], "r")) != NULL) {
 			VV_(printf("reading test data from %s ... ", argv[i]));
-			if (read_test_data(test_data) == EXIT_SUCCESS) {
+			if (read_test_data(test_data, sha3_flag) == EXIT_SUCCESS) {
 				VV_(printf("done.\n"));
 			}
 			if ((fclose(test_data)) == EOF) {
@@ -89,6 +94,42 @@ int main(int argc, char *argv[])
 			V_(printf("SHA512 ...\n"));
 			rc = sha512_new_api_test(curr_test);
 			break;
+		case SHA3_224:
+			V_(printf("SHA3-224 ...\n"));
+        		if (!sha3) {
+                		printf("Skipping SHA3-224: not available...\n");
+                		rc = 0;
+			} else {
+				rc = sha3_224_api_test(curr_test);
+			}
+			break;
+		case SHA3_256:
+			V_(printf("SHA3-256 ...\n"));
+        		if (!sha3) {
+                		printf("Skipping SHA3-256: not available...\n");
+                		rc = 0;
+			} else {
+				rc = sha3_256_api_test(curr_test);
+			}
+			break;
+		case SHA3_384:
+			V_(printf("SHA3-384 ...\n"));
+        		if (!sha3) {
+                		printf("Skipping SHA3-384: not available...\n");
+                		rc = 0;
+			} else {
+				rc = sha3_384_api_test(curr_test);
+			}
+			break;
+		case SHA3_512:
+			V_(printf("SHA3-512 ...\n"));
+        		if (!sha3) {
+                		printf("Skipping SHA3-512: not available...\n");
+                		rc = 0;
+			} else {
+				rc = sha3_512_api_test(curr_test);
+			}
+			break;
 		default:
 			CRITICAL_ERROR("Unknown algorithm.\n");
 			rc = -1;
@@ -108,11 +149,11 @@ int main(int argc, char *argv[])
 			queue.passed + queue.failed, queue.passed, queue.failed));
 
 	if (queue.failed == 0) {
-		printf("All SHA tests passed.\n");
+		printf("All SHA%s tests passed.\n", sha3_flag ? "3" : "");
 		return EXIT_SUCCESS;
 	}
 	else {
-		printf("SHA tests failed.\n");
+		printf("SHA%s tests failed.\n", sha3_flag ? "3" : "");
 		return EXIT_FAILURE;
 	}
 }
