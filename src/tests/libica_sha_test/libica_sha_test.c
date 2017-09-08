@@ -37,6 +37,11 @@ int main(int argc, char *argv[])
 		}
 	}
 
+	if (!sha3 && sha3_flag) {
+		printf("Skipping SHA3: not available...\n");
+		return EXIT_SUCCESS;
+	}
+
 	if (argc - j == 0) {
 		printf("error: no input files.\n");
 		return EXIT_FAILURE;
@@ -96,39 +101,19 @@ int main(int argc, char *argv[])
 			break;
 		case SHA3_224:
 			V_(printf("SHA3-224 ...\n"));
-        		if (!sha3) {
-                		printf("Skipping SHA3-224: not available...\n");
-                		rc = 0;
-			} else {
-				rc = sha3_224_api_test(curr_test);
-			}
+			rc = sha3_224_api_test(curr_test);
 			break;
 		case SHA3_256:
 			V_(printf("SHA3-256 ...\n"));
-        		if (!sha3) {
-                		printf("Skipping SHA3-256: not available...\n");
-                		rc = 0;
-			} else {
-				rc = sha3_256_api_test(curr_test);
-			}
+			rc = sha3_256_api_test(curr_test);
 			break;
 		case SHA3_384:
 			V_(printf("SHA3-384 ...\n"));
-        		if (!sha3) {
-                		printf("Skipping SHA3-384: not available...\n");
-                		rc = 0;
-			} else {
-				rc = sha3_384_api_test(curr_test);
-			}
+			rc = sha3_384_api_test(curr_test);
 			break;
 		case SHA3_512:
 			V_(printf("SHA3-512 ...\n"));
-        		if (!sha3) {
-                		printf("Skipping SHA3-512: not available...\n");
-                		rc = 0;
-			} else {
-				rc = sha3_512_api_test(curr_test);
-			}
+			rc = sha3_512_api_test(curr_test);
 			break;
 		default:
 			CRITICAL_ERROR("Unknown algorithm.\n");
