@@ -91,9 +91,9 @@ s390_supported_function_t s390_ppno_functions[] = {
 };
 
 s390_supported_function_t s390_kma_functions[] = {
+	{0, 0, &msa8_switch},	/* DEA not supported */
 	{0, 0, &msa8_switch},
-	{0, 0, &msa8_switch},
-	{0, 0, &msa8_switch},
+	{0, 0, &msa8_switch},	/* TDEA not supported */
 	{0, 0, &msa8_switch},
 	{AES_128_GCM_ENCRYPT, S390_CRYPTO_AES_128_GCM_ENCRYPT, &msa8_switch},
 	{AES_128_GCM_DECRYPT, S390_CRYPTO_AES_128_GCM_DECRYPT, &msa8_switch},
@@ -316,7 +316,8 @@ libica_func_list_element_int icaList[] = {
  {AES_CTR,      MSA4, AES_128_ENCRYPT,           0, 0},
  {AES_CMAC,     MSA4, AES_128_ENCRYPT,           0, 0},
  {AES_CCM,      MSA4, AES_128_ENCRYPT, 	         0, 0},
- {AES_GCM,      MSA8, AES_128_GCM_ENCRYPT,       0, 0},
+ {AES_GCM,      MSA4, AES_128_ENCRYPT,           0, 0},
+ {AES_GCM_KMA,  MSA8, AES_128_GCM_ENCRYPT,       0, 0},
  {AES_XTS,      MSA4, AES_128_XTS_ENCRYPT,       0, 0},
  {P_RNG,    		ADAPTER, 0, ICA_FLAG_SHW | ICA_FLAG_SW, 0},	// SHW (CPACF) + SW
  {RSA_ME, 		ADAPTER, 0, ICA_FLAG_DHW | ICA_FLAG_SW, 0x0F},	// DHW (CEX) + SW / 512,1024,2048, 4096 bit key length
@@ -384,14 +385,6 @@ int s390_initialize_functionlist() {
 	case MSA8:
 		icaList[x].flags = icaList[x].flags |
 		((*s390_kma_functions[icaList[x].id].enabled)? 4: 0);
-		if (icaList[x].id == AES_128_GCM_ENCRYPT) { // check for the maximum size
-			if (*s390_kma_functions[icaList[AES_256_GCM_ENCRYPT].id].enabled)
-				icaList[x].property = icaList[x].property | 4; // 256 bit
-			if (*s390_kma_functions[icaList[AES_192_GCM_ENCRYPT].id].enabled)
-				icaList[x].property = icaList[x].property | 2; // 192 bit
-			if (*s390_kma_functions[icaList[AES_128_GCM_ENCRYPT].id].enabled)
-				icaList[x].property = icaList[x].property | 1; // 128 bit
-		}
 	break;
 	default:
 		/* Do nothing. */
