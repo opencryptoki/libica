@@ -856,6 +856,7 @@ unsigned int ica_rsa_crt_key_check(ica_rsa_key_crt_t *rsa_key);
  * EINVAL if at least one invalid parameter is given.
  * EIO if the operation fails. This should never happen.
  */
+/* XXX next major: remove */
 ICA_EXPORT ICA_DEPRECATED
 unsigned int ica_des_encrypt(unsigned int mode,
 			     unsigned int data_length,
@@ -891,6 +892,7 @@ unsigned int ica_des_encrypt(unsigned int mode,
  * EINVAL if at least one invalid parameter is given.
  * EIO if the operation fails. This should never happen.
  */
+/* XXX next major: remove */
 ICA_EXPORT ICA_DEPRECATED
 unsigned int ica_des_decrypt(unsigned int mode,
 			     unsigned int data_length,
@@ -926,6 +928,7 @@ unsigned int ica_des_decrypt(unsigned int mode,
  * EINVAL if at least one invalid parameter is given.
  * EIO if the operation fails. This should never happen.
  */
+/* XXX next major: remove */
 ICA_EXPORT ICA_DEPRECATED
 unsigned int ica_3des_encrypt(unsigned int mode,
 			      unsigned int data_length,
@@ -961,6 +964,7 @@ unsigned int ica_3des_encrypt(unsigned int mode,
  * EINVAL if at least one invalid parameter is given.
  * EIO if the operation fails. This should never happen.
  */
+/* XXX next major: remove */
 ICA_EXPORT ICA_DEPRECATED
 unsigned int ica_3des_decrypt(unsigned int mode,
 			      unsigned int data_length,
@@ -998,6 +1002,7 @@ unsigned int ica_3des_decrypt(unsigned int mode,
  * EINVAL if at least one invalid parameter is given.
  * EIO if the operation fails. This should never happen.
  */
+/* XXX next major: remove */
 ICA_EXPORT ICA_DEPRECATED
 unsigned int ica_aes_encrypt(unsigned int mode,
 			     unsigned int data_length,
@@ -1036,6 +1041,7 @@ unsigned int ica_aes_encrypt(unsigned int mode,
  * EINVAL if at least one invalid parameter is given.
  * EIO if the operation fails. This should never happen.
  */
+/* XXX next major: remove */
 ICA_EXPORT ICA_DEPRECATED
 unsigned int ica_aes_decrypt(unsigned int mode,
 			     unsigned int data_length,
@@ -2825,10 +2831,12 @@ unsigned int ica_aes_gcm_last(unsigned char *icb, unsigned long aad_length,
 ICA_EXPORT
 unsigned int ica_get_version(libica_version_info *version_info);
 
-ICA_EXPORT
+/* XXX next major: dont export, move to s390_crypto.h */
+ICA_EXPORT ICA_DEPRECATED
 int s390_initialize_functionlist(void);
 
-ICA_EXPORT
+/* XXX next major: dont export, move to s390_crypto.h */
+ICA_EXPORT ICA_DEPRECATED
 int s390_get_functionlist(libica_func_list_element *pmech_list,
 			  unsigned int *pmech_list_len);
 
