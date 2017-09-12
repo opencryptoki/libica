@@ -1,0 +1,98 @@
+LIBICA_3.0.0 {
+    global:
+	_fini;
+	_init;
+
+	s390_initialize_functionlist;
+	s390_get_functionlist;
+	ica_get_functionlist;
+	ica_get_version;
+
+	ica_random_number_generate;
+
+	ica_des_encrypt;
+	ica_des_decrypt;
+	ica_des_ecb;
+	ica_des_cbc;
+	ica_des_cbc_cs;
+	ica_des_ctr;
+	ica_des_ctrlist;
+	ica_des_cfb;
+	ica_des_ofb;
+	ica_des_cmac;
+	ica_des_cmac_intermediate;
+	ica_des_cmac_last;
+
+	ica_3des_encrypt;
+	ica_3des_decrypt;
+	ica_3des_ecb;
+	ica_3des_cbc;
+	ica_3des_cbc_cs;
+	ica_3des_ctr;
+	ica_3des_ctrlist;
+	ica_3des_cfb;
+	ica_3des_ofb;
+	ica_3des_cmac;
+	ica_3des_cmac_intermediate;
+	ica_3des_cmac_last;
+
+	ica_aes_encrypt;
+	ica_aes_decrypt;
+	ica_aes_ecb;
+	ica_aes_cbc;
+	ica_aes_cbc_cs;
+	ica_aes_ctr;
+	ica_aes_ctrlist;
+	ica_aes_cfb;
+	ica_aes_ofb;
+	ica_aes_xts;
+	ica_aes_ccm;
+	ica_aes_gcm;
+	ica_aes_gcm_initialize;
+	ica_aes_gcm_intermediate;
+	ica_aes_gcm_last;
+	ica_aes_cmac;
+	ica_aes_cmac_intermediate;
+	ica_aes_cmac_last;
+
+	ica_sha1;
+	ica_sha224;
+	ica_sha256;
+	ica_sha384;
+	ica_sha512;
+
+	ica_open_adapter;
+	ica_close_adapter;
+
+	ica_rsa_key_generate_mod_expo;
+	ica_rsa_key_generate_crt;
+	ica_rsa_mod_expo;
+	ica_rsa_crt;
+	ica_rsa_crt_key_check;
+
+	ICA_DRBG_SHA512;
+	ica_drbg_instantiate;
+	ica_drbg_generate;
+	ica_drbg_reseed;
+	ica_drbg_uninstantiate;
+	ica_drbg_health_test;
+    local: *;
+};
+
+LIBICA_3.0.0_FIPS {
+    global:
+	ica_fips_powerup_tests;
+	ica_fips_status;
+} LIBICA_3.0.0;
+
+LIBICA_3.1.0 {
+    global:
+	ica_sha3_224;
+	ica_sha3_256;
+	ica_sha3_384;
+	ica_sha3_512;
+
+	ica_shake_128;
+	ica_shake_256;
+    local: *;
+} LIBICA_3.0.0;

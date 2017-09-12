@@ -60,10 +60,10 @@ CFLAGS="$CFLAGS $PTHREAD_CFLAGS"
 
 case $target in
      *s390x*)
-          CFLAGS="$CFLAGS -D_LINUX_S390X_ -D_LINUX_S390_ -Wall -fvisibility=hidden"
+          CFLAGS="$CFLAGS -D_LINUX_S390X_ -D_LINUX_S390_ -Wall -fvisibility=hidden -Wl,--version-script=../libica.map"
           ;;
      *s390*)
-          CFLAGS="$CFLAGS -D_LINUX_S390_ -m31 -Wall"
+          CFLAGS="$CFLAGS -D_LINUX_S390_ -m31 -Wall -fvisibility=hidden -Wl,--version-script=../libica.map"
           ;;
 esac
 
