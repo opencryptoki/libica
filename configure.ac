@@ -35,7 +35,7 @@ case "$target" in
           ;;
      *)
           AC_CHECK_HEADER(linux/icaioctl.h, ,
-                          AC_MSG_ERROR([*** Unable to find linux/icaioctl.h])) 
+                          AC_MSG_ERROR([*** Unable to find linux/icaioctl.h]))
           ;;
 esac
 
