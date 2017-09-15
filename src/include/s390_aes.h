@@ -76,10 +76,10 @@ static inline int s390_aes_gcm_hw(unsigned int function_code,
 
 	if (ctr) {
 		memcpy(&parm_block.cv, &ctr[GCM_RECOMMENDED_IV_LENGTH], sizeof(int));
-		memcpy(&parm_block.j0, ctr, GCM_RECOMMENDED_IV_LENGTH);
-		unsigned int* cv;
-		cv = (unsigned int*)&(parm_block.j0[GCM_RECOMMENDED_IV_LENGTH]);
-		*cv = 1;
+		memcpy(&parm_block.j0, ctr, AES_BLOCK_SIZE); //GCM_RECOMMENDED_IV_LENGTH);
+		//unsigned int* cv;
+		//cv = (unsigned int*)&(parm_block.j0[GCM_RECOMMENDED_IV_LENGTH]);
+		//*cv = 1;
 	}
 
 	if (j0)

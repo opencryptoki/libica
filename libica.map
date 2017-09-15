@@ -96,3 +96,14 @@ LIBICA_3.1.0 {
 	ica_shake_256;
     local: *;
 } LIBICA_3.0.0;
+
+LIBICA_3.2.0 {
+    global:
+	ica_aes_gcm_kma_ctx_new;
+	ica_aes_gcm_kma_init;
+	ica_aes_gcm_kma_update;
+	ica_aes_gcm_kma_get_tag;
+	ica_aes_gcm_kma_verify_tag;
+	ica_aes_gcm_kma_ctx_free;
+    local: *;
+} LIBICA_3.1.0;

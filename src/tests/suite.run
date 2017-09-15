@@ -38,6 +38,7 @@ testcases=(
 "libica_aes_ofb_test $verbosity"
 "libica_aes_ctr_test $verbosity"
 "libica_aes_gcm_test $verbosity"
+"libica_aes_gcm_kma_test $verbosity"
 "libica_aes_xts_test $verbosity"
 
 "libica_cbccs_test $verbosity"

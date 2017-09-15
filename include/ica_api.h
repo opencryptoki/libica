@@ -2818,6 +2818,193 @@ unsigned int ica_aes_gcm_last(unsigned char *icb, unsigned long aad_length,
 					unsigned char *key, unsigned int key_length,
 					unsigned char *subkey, unsigned int direction);
 
+/*******************************************************************************
+ *
+ *                       New gcm API based on KMA.
+ */
+
+
+typedef struct kma_ctx_t kma_ctx;
+
+/**
+ * Allocate a gcm context. This context is used by ica_aes_gcm_kma_init(),
+ * ica_aes_gcm_kma_update(), ica_aes_gcm_kma_get_tag(), and
+ * ica_aes_gcm_kma_verify_tag(). It must be freed by
+ * ica_aes_gcm_kma_ctx_free() when no longer needed.
+ *
+ * @return Pointer to opaque kma_ctx structure if success.
+ * NULL if no memory could be allocated.
+ */
+ICA_EXPORT
+kma_ctx* ica_aes_gcm_kma_ctx_new();
+
+/**
+ * Initialize the GCM context.
+ *
+ * @param direction
+ * 0 or 1:
+ * 0 when initialized for decryption.
+ * 1 when initialized for encryption.
+ *
+ * @param iv
+ * Pointer to a readable buffer of size greater than or equal to iv_length
+ * bytes, that contains an initialization vector of size iv_length.
+ *
+ * @param iv_length
+ * Length in bytes of the initialization vector in iv. It must be greater
+ * than 0 and less than 2^61. A length of 12 is recommended.
+ *
+ * @param key
+ * Pointer to a valid AES key.
+ *
+ * @param key_length
+ * Length in bytes of the AES key. Supported sizes are 16, 24, and 32 for
+ * AES-128, AES-192 and AES-256 respectively. Therefore, you can use the
+ * macros: AES_KEY_LEN128, AES_KEY_LEN192, and AES_KEY_LEN256.
+ *
+ * @param ctx
+ * Pointer to a previously allocated gcm context. This buffer is internally used
+ * as a working area by all other ica_aes_gcm_kma API functions and must not be
+ * changed by the application. The ctx must be established by calling ica_aes_gcm_ctx_new()
+ * before any call to any other ica_aes_gcm_kma function, and must be freed by calling
+ * ica_aes_gcm_ctx_free() after the last call to any ica_aes_gcm_kma function.
+ *
+ * @return 0 on success
+ * EINVAL if at least one invalid parameter is given.
+ * EPERM if required hardware support is not available.
+ * EIO if the operation fails.
+ */
+ICA_EXPORT
+int ica_aes_gcm_kma_init(unsigned int direction,
+					const unsigned char *iv, unsigned int iv_length,
+					const unsigned char *key, unsigned int key_length,
+					kma_ctx* ctx);
+
+/**
+ * Perform encryption or decryption with authentication, depending on the
+ * direction specified in ica_aes_gcm_kma_init().
+ *
+ * @param in_data
+ * Pointer to a readable buffer of size greater than or equal to data_length bytes.
+ * If direction equals 1 the in_data must contain a payload message of size
+ * data_length that will be encrypted and authenticated.
+ * If direction equals 0 the in_data buffer must contain an encrypted message
+ * that will be decrypted and verified.
+ *
+ * @param out_data
+ * Pointer to a writable buffer of size greater than or equal to data_length bytes.
+ * If direction equals 1 then the encrypted message from in_data will be written to
+ * that buffer.
+ * If direction equals 0 then the decrypted message from in_data will be written to
+ * that buffer.
+ *
+ * @param data_length
+ * Length in bytes of the message to be en/decrypted. It must be equal or
+ * greater than 0 and less than (2^36)-32.
+ *
+ * @param aad
+ * Pointer to a readable buffer of size greater than or equal to aad_length
+ * bytes. The additional authenticated data in the most significant aad_length
+ * bytes is subject to the authentication code computation but will not be
+ * encrypted.
+ *
+ * @param aad_length
+ * Length in bytes of the additional authenticated data in aad. It must be
+ * equal or greater than 0 and less than 2^61.
+ * In case of ica_aes_gcm_last(), 'aad_length' contains the overall
+ * length of authentication data, cumulated over all intermediate operations.
+ *
+ * @param end_of_aad
+ * 0 or 1:
+ * 0 The application indicates that the current aad is not the last aad chunk. In
+ * this case, the aad_length must be a multiple of the AES block size (16 bytes).
+ * 1 The application indicates that the current aad is a single or last aad chunk,
+ * or the last aad chunk has been provided in an earlier call to ica_aes_gcm_kma.
+ * In this case, aad_length can have any non-negative value.
+ * When both, end_of_aad and end_of_data are specified, the process ends.
+ *
+ * @param end_of_data
+ * 0 or 1:
+ * 0 The application indicates that the current in_data is not the last in_data chunk.
+ * In this case, the data_length must be a multiple of the AES block size (16 bytes).
+ * 1 The application indicates that the current in_data is a single or last in_data
+ * chunk. In this case, aad_length can have any non-negative value. When both, end_of_aad
+ * and end_of_data are specified, the process ends.
+ *
+ * @param ctx
+ * Pointer to gcm context.
+ *
+ * @return 0 on success
+ * EINVAL if at least one invalid parameter is given.
+ * EPERM if required hardware support is not available.
+ * EIO if the operation fails.
+ */
+ICA_EXPORT
+int ica_aes_gcm_kma_update(const unsigned char *in_data,
+		unsigned char *out_data, unsigned long data_length,
+		const unsigned char *aad, unsigned long aad_length,
+		unsigned int end_of_aad, unsigned int end_of_data,
+		kma_ctx* ctx);
+
+/**
+ * Obtain the calculated authentication tag after an encryption process.
+ *
+ * @param tag
+ * Pointer to a writable buffer to return the calculated authentication tag.
+ *
+ * @param tag_length
+ * Length in bytes of the message authentication code tag. Valid tag lengths
+ * are 4, 8, 12, 13, 14, 15, and 16.
+ *
+ * @param ctx
+ * Pointer to gcm context.
+ *
+ * @return 0 on success
+ * EINVAL if at least one invalid parameter is given
+ * EFAULT if direction is 0.
+ */
+ICA_EXPORT
+int ica_aes_gcm_kma_get_tag(unsigned char *tag, unsigned int tag_length,
+		const kma_ctx* ctx);
+
+/**
+ * Verify if the specifed known authentication tag is identical to the
+ * calculated tag after a decryption process.
+ *
+ * @param known_tag
+ * Pointer to a readable buffer containing a known authentication tag.
+ *
+ * @param tag_length
+ * Length in bytes of the message authentication code tag. Valid tag lengths
+ * are 4, 8, 12, 13, 14, 15, and 16.
+ *
+ * @param ctx
+ * Pointer to gcm context.
+ *
+ * @return 0 on success
+ * EINVAL if at least one invalid parameter is given or direction is 1.
+ * EFAULT if the verification of the message authentication code fails.
+ */
+ICA_EXPORT
+int ica_aes_gcm_kma_verify_tag(const unsigned char* known_tag, unsigned int tag_length,
+		const kma_ctx* ctx);
+
+/**
+ * Free gcm context.
+ *
+ * @param ctx
+ * Pointer to gcm context.
+ */
+ICA_EXPORT
+void ica_aes_gcm_kma_ctx_free(kma_ctx* ctx);
+
+
+ /**
+  *
+  *             End of new gcm API based on KMA.
+  *
+  ******************************************************************************/
+
 /**
  * Return libica version information.
  * @param version_info

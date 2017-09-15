@@ -43,6 +43,32 @@ struct pad_meta {
 	uint64_t length_b;
 } __attribute__((packed));
 
+/**
+ * GCM context struct
+ */
+struct kma_ctx_t {
+	unsigned char reserved[12];
+	uint32_t cv;
+	ica_aes_vector_t tag;
+	ica_aes_vector_t subkey_h;
+	uint64_t total_aad_length;
+	uint64_t total_input_length;
+	ica_aes_vector_t j0;
+	ica_aes_key_len_256_t key;
+	// Above this line: KMA parmblock, never change!
+	uint32_t version; /* 0x00 */
+	uint32_t direction;
+	uint32_t key_length;
+	uint32_t subkey_provided;
+	// Below this line: KMA simulation via MSA 4
+	unsigned char* iv;
+	uint32_t iv_length;
+	ica_aes_vector_t ucb;
+	uint32_t done;
+	uint32_t intermediate;
+	uint32_t first_time;
+} __attribute__((packed));
+
 static inline int s390_ghash_hw(unsigned int fc,
 				const unsigned char *in_data,
 				unsigned long data_length,
@@ -590,5 +616,141 @@ static inline int s390_gcm_last(unsigned int function_code, unsigned char *icb,
 				  NULL, aad_length, subkey,
 				  tag, tag_length, 1, 1);
 	}
+}
+
+static inline int is_valid_aes_key_length(unsigned int key_length)
+{
+	switch (key_length) {
+	case 16:
+	case 24:
+	case 32:
+		return 1;
+	default:
+		return 0;
+	}
+}
+
+static inline int is_valid_direction(unsigned int direction)
+{
+	switch (direction) {
+	case ICA_ENCRYPT:
+	case ICA_DECRYPT:
+		return 1;
+	default:
+		return 0;
+	}
+}
+
+static inline int is_valid_tag_length(unsigned int tag_length)
+{
+	switch (tag_length) {
+	case 4:
+	case 8:
+	case 12:
+	case 13:
+	case 14:
+	case 15:
+	case 16:
+		return 1;
+	default:
+		return 0;
+	}
+}
+
+static inline int s390_aes_gcm_simulate_kma_intermediate(const unsigned char *in_data,
+		unsigned char *out_data, unsigned long data_length,
+		const unsigned char *aad, unsigned long aad_length,
+		kma_ctx* ctx)
+{
+	int rc;
+	unsigned int function_code = aes_directed_fc(ctx->key_length, ctx->direction);
+
+	/* Add one to first counter value for MSA 4 code path. */
+	if (!ctx->first_time) {
+		memcpy(&(ctx->ucb), ctx->j0, AES_BLOCK_SIZE);
+		inc_ctr(ctx->ucb);
+		ctx->first_time = 1;
+	}
+
+	if (ctx->direction == ICA_ENCRYPT) {
+		rc = s390_gcm_intermediate(function_code, (unsigned char*)in_data, data_length, out_data,
+				(unsigned char*)&(ctx->ucb), (unsigned char*)aad, aad_length,
+				ctx->tag, AES_BLOCK_SIZE, (unsigned char*)ctx->key, (unsigned char*)ctx->subkey_h);
+	} else {
+		rc = s390_gcm_intermediate(function_code, out_data, data_length, (unsigned char*)in_data,
+				(unsigned char*)&(ctx->ucb), (unsigned char*)aad, aad_length,
+				ctx->tag, AES_BLOCK_SIZE, (unsigned char*)ctx->key, (unsigned char*)ctx->subkey_h);
+	}
+
+	if (rc)
+		return rc;
+
+	ctx->total_aad_length += aad_length;
+	ctx->total_input_length += data_length;
+
+	return 0;
+}
+
+static inline int s390_aes_gcm_simulate_kma_full(const unsigned char *in_data,
+		unsigned char *out_data, unsigned long data_length,
+		const unsigned char *aad, unsigned long aad_length,
+		kma_ctx* ctx)
+{
+	unsigned int function_code = aes_directed_fc(ctx->key_length, ctx->direction);
+
+	if (ctx->direction == ICA_ENCRYPT) {
+		return s390_gcm(function_code, (unsigned char*)in_data, data_length, out_data,
+			      ctx->iv, ctx->iv_length, aad, aad_length,
+			      ctx->tag, AES_BLOCK_SIZE, ctx->key);
+	} else {
+		return s390_gcm(function_code, out_data, data_length, (unsigned char*)in_data,
+			      ctx->iv, ctx->iv_length, aad, aad_length,
+			      ctx->tag, AES_BLOCK_SIZE, ctx->key);
+	}
+}
+
+static inline int s390_aes_gcm_kma(const unsigned char *in_data,
+		unsigned char *out_data, unsigned long data_length,
+		const unsigned char *aad, unsigned long aad_length,
+		unsigned int end_of_aad, unsigned int end_of_data,
+		kma_ctx* ctx)
+{
+	unsigned int function_code = aes_directed_fc(ctx->key_length, ctx->direction);
+	unsigned int hw_fc = 0;
+	int rc;
+
+	/* Set hardware function code */
+	if (*s390_kma_functions[function_code].enabled) {
+		hw_fc = s390_kma_functions[function_code].hw_fc;
+		if (ctx->subkey_provided)
+			hw_fc = hw_fc | HS_FLAG;
+		if (end_of_aad)
+			hw_fc = hw_fc | LAAD_FLAG;
+		if (end_of_data)
+			hw_fc = hw_fc | LPC_FLAG;
+	} else {
+		return EPERM;
+	}
+
+	if (!aad)
+		aad_length = 0;
+
+	if (!in_data || !out_data)
+		data_length = 0;
+
+	/* Actual lengths needed by KMA */
+	ctx->total_aad_length += aad_length*8;
+	ctx->total_input_length += data_length*8;
+
+	/* Call KMA */
+	rc = s390_kma(hw_fc, ctx,
+			out_data, in_data, data_length,
+			aad, aad_length);
+
+	if (rc >= 0) {
+		ctx->subkey_provided = 1;
+		return 0;
+	} else
+		return EIO;
 }
 #endif

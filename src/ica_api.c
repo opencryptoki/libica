@@ -2150,6 +2150,169 @@ unsigned int ica_aes_gcm_last( unsigned char *icb,
 	return 0;
 }
 
+/*************************************************************************************
+ *
+ *                                     GCM(2) API
+ */
+
+kma_ctx* ica_aes_gcm_kma_ctx_new(void)
+{
+	kma_ctx* ctx = malloc(sizeof(kma_ctx));
+	if (!ctx)
+		return NULL;
+
+	memset(ctx, 0, sizeof(kma_ctx));
+
+	return ctx;
+}
+
+int ica_aes_gcm_kma_init(unsigned int direction,
+		const unsigned char *iv, unsigned int iv_length,
+		const unsigned char *key, unsigned int key_length,
+		kma_ctx* ctx)
+{
+	int rc = 0;
+	unsigned long function_code = aes_directed_fc(key_length, direction);
+
+	/* Check for obvious errors */
+	if (!ctx || !key || iv_length == 0 || !is_valid_aes_key_length(key_length) ||
+		!is_valid_direction(direction)) {
+		return EINVAL;
+	}
+
+	memset(ctx, 0, sizeof(kma_ctx));
+	ctx->version = 0x00;
+	ctx->direction = direction;
+	ctx->key_length = key_length;
+	ctx->iv = (unsigned char*)iv;
+	ctx->iv_length = iv_length;
+	memcpy(&(ctx->key), key, key_length);
+
+	/* Calculate subkey_h and j0 depending on iv_length */
+	if (*s390_kma_functions[function_code].enabled && iv_length == GCM_RECOMMENDED_IV_LENGTH) {
+		/* let KMA provide the subkey_h, j0 = iv || 00000001 */
+		memcpy(&(ctx->j0), iv, iv_length);
+		ctx->cv = 1;
+		unsigned int* cv = (unsigned int*)&(ctx->j0[GCM_RECOMMENDED_IV_LENGTH]);
+		*cv = 1;
+	} else {
+		/* Calculate subkey H and initial counter, based on iv */
+		rc = s390_aes_ecb(UNDIRECTED_FC(function_code),
+				AES_BLOCK_SIZE, zero_block,
+				(unsigned char*)key, (unsigned char*)&(ctx->subkey_h));
+		if (rc)
+			return rc;
+		__compute_j0(iv, iv_length, (const unsigned char*)&(ctx->subkey_h),
+				(unsigned char*)&(ctx->j0));
+		unsigned int *cv = (unsigned int*)&(ctx->j0[GCM_RECOMMENDED_IV_LENGTH]);
+		ctx->cv = *cv;
+		ctx->subkey_provided = 1;
+	}
+
+	return rc;
+}
+
+int ica_aes_gcm_kma_update(const unsigned char *in_data,
+		unsigned char *out_data, unsigned long data_length,
+		const unsigned char *aad, unsigned long aad_length,
+		unsigned int end_of_aad, unsigned int end_of_data,
+		kma_ctx* ctx)
+{
+	unsigned int function_code = aes_directed_fc(ctx->key_length, ctx->direction);
+
+#ifdef ICA_FIPS
+	if (fips >> 1)
+		return EACCES;
+#endif /* ICA_FIPS */
+
+	if (data_length > 0 && (!in_data || !out_data))
+		return EFAULT;
+
+	if (!(*s390_kma_functions[function_code].enabled)) {
+
+		if (end_of_aad && end_of_data && !ctx->intermediate) {
+			ctx->done = 1;
+			return s390_aes_gcm_simulate_kma_full(in_data, out_data, data_length,
+									aad, aad_length, ctx);
+		} else {
+			ctx->intermediate = 1;
+			return s390_aes_gcm_simulate_kma_intermediate(in_data, out_data, data_length,
+									aad, aad_length, ctx);
+		}
+
+	} else {
+
+		return s390_aes_gcm_kma(in_data, out_data, data_length,
+								aad, aad_length, end_of_aad, end_of_data, ctx);
+	}
+}
+
+int ica_aes_gcm_kma_get_tag(unsigned char *tag, unsigned int tag_length, const kma_ctx* ctx)
+{
+	int rc=0;
+	unsigned int function_code = aes_directed_fc(ctx->key_length, ctx->direction);
+
+	if (!ctx || !tag || !is_valid_tag_length(tag_length))
+		return EINVAL;
+
+	if (ctx->direction == ICA_DECRYPT)
+		return EFAULT;
+
+	if (!(*s390_kma_functions[function_code].enabled) && !ctx->done) {
+		rc = s390_gcm_last(function_code, (unsigned char*)ctx->j0,
+				ctx->total_aad_length, ctx->total_input_length,
+				(unsigned char*)ctx->tag, AES_BLOCK_SIZE,
+				(unsigned char*)ctx->key, (unsigned char*)ctx->subkey_h);
+		if (rc)
+			return rc;
+	}
+
+	memcpy(tag, ctx->tag, tag_length);
+
+	return 0;
+}
+
+int ica_aes_gcm_kma_verify_tag(const unsigned char* known_tag, unsigned int tag_length, const kma_ctx* ctx)
+{
+	int rc;
+	unsigned int function_code = aes_directed_fc(ctx->key_length, ctx->direction);
+
+	if (!ctx || !known_tag || !is_valid_tag_length(tag_length))
+		return EINVAL;
+
+	if (ctx->direction == ICA_ENCRYPT)
+		return EFAULT;
+
+	if (!(*s390_kma_functions[function_code].enabled) && !ctx->done) {
+		rc = s390_gcm_last(function_code, (unsigned char*)ctx->j0,
+				ctx->total_aad_length, ctx->total_input_length,
+				(unsigned char*)ctx->tag, AES_BLOCK_SIZE,
+				(unsigned char*)ctx->key, (unsigned char*)ctx->subkey_h);
+		if (rc)
+			return rc;
+	}
+
+	if (CRYPTO_memcmp(ctx->tag, known_tag, tag_length) != 0)
+		return EFAULT;
+
+	return 0;
+}
+
+void ica_aes_gcm_kma_ctx_free(kma_ctx* ctx)
+{
+    if (!ctx)
+	return;
+
+    OPENSSL_cleanse((void *)ctx, sizeof(kma_ctx));
+
+    free(ctx);
+}
+
+/**
+ *                             End of GCM(2) API
+ *
+ ***************************************************************************************/
+
 unsigned int ica_get_version(libica_version_info *version_info)
 {
 #ifdef VERSION
