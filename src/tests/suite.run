@@ -52,6 +52,18 @@ testcases=(
 "libica_rsa_key_check_test $verbosity"
 "libica_rsa_test $verbosity"
 
+"libica_ecdh_test $verbosity"
+"libica_ecdsa_test $verbosity"
+"libica_eckeygen_test $verbosity"
+
+"ICAPATH=1 libica_ecdh_test $verbosity"
+"ICAPATH=1 libica_ecdsa_test $verbosity"
+"ICAPATH=1 libica_eckeygen_test $verbosity"
+
+"ICAPATH=2 libica_ecdh_test $verbosity"
+"ICAPATH=2 libica_ecdsa_test $verbosity"
+"ICAPATH=2 libica_eckeygen_test $verbosity"
+
 "libica_sha3_224_test $verbosity"
 "libica_sha3_256_test $verbosity"
 "libica_sha3_384_test $verbosity"

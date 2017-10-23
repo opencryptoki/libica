@@ -107,3 +107,15 @@ LIBICA_3.2.0 {
 	ica_aes_gcm_kma_ctx_free;
     local: *;
 } LIBICA_3.1.0;
+
+LIBICA_3.2.1 {
+    global:
+	ica_ec_key_new;
+	ica_ec_key_init;
+	ica_ec_key_generate;
+	ica_ec_key_free;
+	ica_ecdh_derive_secret;
+	ica_ecdsa_sign;
+	ica_ecdsa_verify;
+    local: *;
+} LIBICA_3.2.0;
