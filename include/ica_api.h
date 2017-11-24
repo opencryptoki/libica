@@ -898,6 +898,42 @@ int ica_ecdsa_verify(ica_adapter_handle_t adapter_handle,
 		const unsigned char *signature, unsigned int signature_length);
 
 /**
+ * provide the public key (X,Y) of the given ICA_EC_KEY.
+ *
+ * @param key
+ * Pointer to a readable ICA_EC_KEY object.
+ *
+ * @param q
+ * Pointer to a writable buffer where (X,Y) is returned.
+ *
+ * @param q_len
+ * Pointer to a unsigned int where the byte length of (X,Y) is returned.
+ *
+ * @return 0 if success
+ * EINVAL if at least one invalid parameter is given.
+ */
+ICA_EXPORT
+int ica_ec_key_get_public_key(ICA_EC_KEY *key, unsigned char *q, unsigned int *q_len);
+
+/**
+ * provide the private key (D) of the given ICA_EC_KEY.
+ *
+ * @param key
+ * Pointer to a readable ICA_EC_KEY object.
+ *
+ * @param q
+ * Pointer to a writable buffer where (D) is returned.
+ *
+ * @param q_len
+ * Pointer to a unsigned int where the byte length of (D) is returned.
+ *
+ * @return 0 if success
+ * EINVAL if at least one invalid parameter is given.
+ */
+ICA_EXPORT
+int ica_ec_key_get_private_key(ICA_EC_KEY *key, unsigned char *d, unsigned int *d_len);
+
+/**
  * Free an ICA_EC_KEY.
  *
  * @param key

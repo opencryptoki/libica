@@ -117,5 +117,7 @@ LIBICA_3.2.1 {
 	ica_ecdh_derive_secret;
 	ica_ecdsa_sign;
 	ica_ecdsa_verify;
+	ica_ec_key_get_public_key;
+	ica_ec_key_get_private_key;
     local: *;
 } LIBICA_3.2.0;
