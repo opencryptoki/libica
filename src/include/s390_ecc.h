@@ -245,6 +245,7 @@ typedef struct {
 } __attribute__((packed)) ECDSA_VERIFY_REPLY;
 
 ECDSA_SIGN_REPLY* make_ecdsa_sign_request(const ICA_EC_KEY *privkey,
+		unsigned char *X, unsigned char *Y,
 		const unsigned char *hash, unsigned int hash_length,
 		struct ica_xcRB* xcrb);
 

@@ -468,7 +468,8 @@ unsigned int make_ecdsa_verify_parmblock(char *pb,
  * makes an ECDSA key structure at given struct and returns its length.
  */
 unsigned int make_ecdsa_private_key_token(unsigned char *kb,
-		const ICA_EC_KEY *privkey, uint8_t curve_type)
+		const ICA_EC_KEY *privkey, unsigned char *X, unsigned char *Y,
+		uint8_t curve_type)
 {
 	ECC_PRIVATE_KEY_TOKEN* kp1;
 	ECC_PUBLIC_KEY_TOKEN* kp2;
@@ -518,8 +519,8 @@ unsigned int make_ecdsa_private_key_token(unsigned char *kb,
 	kp2->pubsec.pub_q_bytelen = 2*privlen + 1; /* bytelen + compress flag */
 
 	kp2->compress_flag = 0x04; /* uncompressed key */
-	memcpy(&kp2->pubkey[0], privkey->X, privlen);
-	memcpy(&kp2->pubkey[privlen+0], privkey->Y, privlen);
+	memcpy(&kp2->pubkey[0], X, privlen);
+	memcpy(&kp2->pubkey[privlen+0], Y, privlen);
 
 	return sizeof(ECC_PRIVATE_KEY_TOKEN)
 			+ privlen
@@ -559,12 +560,15 @@ unsigned int make_ecdsa_public_key_token(ECDSA_PUBLIC_KEY_BLOCK *kb,
 }
 
 /**
- * creates an ECDSA xcrb request message for zcrypt.
+ * creates an ECDSA sign request message for zcrypt. The given private key does usually
+ * not contain a public key (X,Y), but the card requires (X,Y) to be present. The
+ * calling function makes sure that (X,Y) are correctly set.
  *
  * returns a pointer to the control block where the card
  * provides its reply.
  */
 ECDSA_SIGN_REPLY* make_ecdsa_sign_request(const ICA_EC_KEY *privkey,
+		unsigned char *X, unsigned char *Y,
 		const unsigned char *hash, unsigned int hash_length,
 		struct ica_xcRB* xcrb)
 {
@@ -598,10 +602,94 @@ ECDSA_SIGN_REPLY* make_ecdsa_sign_request(const ICA_EC_KEY *privkey,
 	offset = make_cprbx((struct CPRBX *)cbrbmem, parmblock_len, preqcblk, prepcblk);
 	offset += make_ecdsa_sign_parmblock((ECDSA_PARMBLOCK_PART1*)(cbrbmem+offset), hash, hash_length);
 	offset += make_keyblock_length((ECC_KEYBLOCK_LENGTH*)(cbrbmem+offset), keyblock_len);
-	offset += make_ecdsa_private_key_token(cbrbmem+offset, privkey, curve_type);
+	offset += make_ecdsa_private_key_token(cbrbmem+offset, privkey, X, Y, curve_type);
 	finalize_xcrb(xcrb, preqcblk, prepcblk);
 
     return (ECDSA_SIGN_REPLY*)prepcblk;
+}
+
+/**
+ * calculate the public (X,Y) values for the given private key, if necessary.
+ */
+unsigned int provide_pubkey(const ICA_EC_KEY *privkey, unsigned char *X, unsigned char *Y)
+{
+	EC_KEY *eckey = NULL;
+	EC_POINT *pub_key = NULL;
+	const EC_GROUP *group = NULL;
+	BIGNUM *bn_d = NULL, *bn_x = NULL, *bn_y = NULL;
+	char* x_str = NULL;
+	char* y_str = NULL;
+	int privlen = -1;
+	unsigned int i, n, rc;
+
+	if (privkey == NULL || X == NULL || Y == NULL) {
+		return EFAULT;
+	}
+
+	privlen = privlen_from_nid(privkey->nid);
+	if (privlen < 0) {
+		return EFAULT;
+	}
+
+	/* Check if (X,Y) already available */
+	if (privkey->X != NULL && privkey->Y != NULL) {
+		memcpy(X, privkey->X, privlen);
+		memcpy(Y, privkey->Y, privlen);
+		return 0;
+	}
+
+	/* Get (D) as BIGNUM */
+	if ((bn_d = BN_bin2bn(privkey->D, privlen, NULL)) == NULL) {
+		return EFAULT;
+	}
+
+	/* Calculate public (X,Y) values */
+	eckey = EC_KEY_new_by_curve_name(privkey->nid);
+	EC_KEY_set_private_key(eckey, bn_d);
+	group = EC_KEY_get0_group(eckey);
+	pub_key = EC_POINT_new(group);
+	if (!EC_POINT_mul(group, pub_key, bn_d, NULL, NULL, NULL)) {
+		rc = EFAULT;
+		goto end;
+	}
+
+	/* Get (X,Y) as BIGNUMs */
+	bn_x = BN_new();
+	bn_y = BN_new();
+	if (!EC_POINT_get_affine_coordinates_GFp(group, pub_key, bn_x, bn_y, NULL)) {
+		rc = EFAULT;
+		goto end;
+	}
+
+	/* Format (X) as char array, with leading zeros if necessary */
+	x_str = BN_bn2hex(bn_x);
+	n = privlen - strlen(x_str) / 2;
+	for (i = 0; i < n; i++)
+		X[i] = 0x00;
+	BN_bn2bin(bn_x, &(X[n]));
+
+	/* Format (Y) as char array, with leading zeros if necessary */
+	y_str = BN_bn2hex(bn_y);
+	n = privlen - strlen(y_str) / 2;
+	for (i = 0; i < n; i++)
+		Y[i] = 0x00;
+	BN_bn2bin(bn_y, &(Y[n]));
+
+	rc = 0;
+
+end:
+
+	if (pub_key)
+		EC_POINT_free(pub_key);
+	if (eckey)
+		EC_KEY_free(eckey);
+	BN_clear_free(bn_x);
+	BN_clear_free(bn_y);
+	BN_clear_free(bn_d);
+	OPENSSL_free(x_str);
+	OPENSSL_free(y_str);
+
+	return rc;
 }
 
 /**
@@ -616,11 +704,19 @@ unsigned int ecdsa_sign_hw(ica_adapter_handle_t adapter_handle,
 	struct ica_xcRB xcrb;
 	ECDSA_SIGN_REPLY* reply_p;
 	unsigned int privlen = privlen_from_nid(privkey->nid);
+	unsigned char X[MAX_ECC_PRIV_SIZE];
+	unsigned char Y[MAX_ECC_PRIV_SIZE];
 
 	if (adapter_handle == DRIVER_NOT_LOADED)
 		return EFAULT;
 
-	reply_p = make_ecdsa_sign_request(privkey, hash, hash_length, &xcrb);
+	rc = provide_pubkey(privkey, (unsigned char*)&X, (unsigned char*)&Y);
+	if (rc != 0)
+		return EFAULT;
+
+	reply_p = make_ecdsa_sign_request((const ICA_EC_KEY*)privkey,
+			(unsigned char*)&X, (unsigned char*)&Y,
+			hash, hash_length, &xcrb);
 	if (!reply_p)
 		return EFAULT;
 
