@@ -742,7 +742,6 @@ unsigned int ecdsa_sign_sw(const ICA_EC_KEY *privkey,
 {
 	int rc = 1;
     EC_KEY *a = NULL;
-    BIGNUM* xa=NULL; BIGNUM* ya=NULL;
     BIGNUM* r=NULL; BIGNUM* s=NULL;
     ECDSA_SIG* sig = NULL;
     unsigned int privlen = privlen_from_nid(privkey->nid);
@@ -757,8 +756,6 @@ unsigned int ecdsa_sign_sw(const ICA_EC_KEY *privkey,
         goto err;
     }
 
-	xa = BN_bin2bn(privkey->X, privlen, xa);
-	ya = BN_bin2bn(privkey->Y, privlen, ya);
     a = make_eckey(privkey->nid, privkey->D, privlen);
     if (!a)
         goto err;
@@ -787,8 +784,6 @@ unsigned int ecdsa_sign_sw(const ICA_EC_KEY *privkey,
 
 err:
 	ECDSA_SIG_free(sig); /* also frees r and s */
-	BN_clear_free(xa);
-	BN_clear_free(ya);
 	EC_KEY_free(a);
 
 	return (rc);
