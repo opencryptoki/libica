@@ -850,10 +850,6 @@ unsigned int ecdsa_verify_sw(const ICA_EC_KEY *pubkey,
         goto err;
     }
 
-    if (!EC_KEY_check_key(a)) {
-        goto err;
-    }
-
     /* create ECDSA_SIG instance */
     sig = ECDSA_SIG_new();
     r = BN_bin2bn(signature, privlen, r);
@@ -861,8 +857,11 @@ unsigned int ecdsa_verify_sw(const ICA_EC_KEY *pubkey,
     ECDSA_SIG_set0(sig, r, s);
 
     /* create DER form from ECDSA_SIG and verify it */
-    if (ECDSA_do_verify(hash, hash_length, sig, a) < 0)
+    rc = ECDSA_do_verify(hash, hash_length, sig, a);
+    if (rc != 1) {
+	rc = 1;
 	goto err;
+    }
 
     rc = 0;
 
