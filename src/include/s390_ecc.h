@@ -21,9 +21,6 @@
 #define MAX_ECC_PRIV_SIZE	66 /* 521 bits */
 #define MAX_ECDSA_SIG_SIZE	132
 
-#define CURVE_TYPE_PRIME		0x00
-#define CURVE_TYPE_BRAINPOOL	0x01
-
 struct ec_key_t {
 	uint32_t nid;
 	unsigned int key_generated;
@@ -31,6 +28,20 @@ struct ec_key_t {
 	unsigned char* Y;
 	unsigned char* D;
 }; /* ICA_EC_KEY */
+
+/**
+ * Refer to z/OS ICSF Application Programmer's Guide,
+ * Appendix A. ICSF and cryptographic coprocessor return and reason codes
+ */
+#define RS_SIGNATURE_INVALID	429
+
+/**
+ * Refer to z/OS ICSF Application Programmer's Guide,
+ * Appendix B. Key Token Formats
+ */
+
+#define CURVE_TYPE_PRIME		0x00
+#define CURVE_TYPE_BRAINPOOL	0x01
 
 /**
  * CCA token header.
@@ -180,9 +191,6 @@ unsigned int ecdh_hw(ica_adapter_handle_t adapter_handle,
 unsigned int ecdh_sw(const ICA_EC_KEY *privkey_A,
 		const ICA_EC_KEY *pubkey_B, unsigned char *z);
 
-ECDH_REPLY* make_ecdh_request(const ICA_EC_KEY *privkey_A,
-		const ICA_EC_KEY *pubkey_B, struct ica_xcRB* xcrb);
-
 /**
  * ECDSA parmblock.
  */
@@ -244,14 +252,6 @@ typedef struct {
 	uint16_t keylen;
 } __attribute__((packed)) ECDSA_VERIFY_REPLY;
 
-ECDSA_SIGN_REPLY* make_ecdsa_sign_request(const ICA_EC_KEY *privkey,
-		const unsigned char *hash, unsigned int hash_length,
-		struct ica_xcRB* xcrb);
-
-ECDSA_VERIFY_REPLY* make_ecdsa_verify_request(const ICA_EC_KEY *pubkey,
-		const unsigned char *hash, unsigned int hash_length,
-		const unsigned char *signature, struct ica_xcRB* xcrb);
-
 unsigned int ecdsa_sign_hw(ica_adapter_handle_t adapter_handle,
 		const ICA_EC_KEY *privkey, const unsigned char *hash, unsigned int hash_length,
 		unsigned char *signature);
@@ -307,8 +307,6 @@ typedef struct {
 unsigned int eckeygen_hw(ica_adapter_handle_t adapter_handle, ICA_EC_KEY *key);
 
 unsigned int eckeygen_sw(ICA_EC_KEY *key);
-
-ECKEYGEN_REPLY* make_eckeygen_request(ICA_EC_KEY *key, struct ica_xcRB* xcrb);
 
 /**
  * returns 1 if the given data length is valid for Crypto Express, 0 otherwise.
