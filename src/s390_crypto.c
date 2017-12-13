@@ -460,6 +460,5 @@ int s390_get_functionlist(libica_func_list_element *pmech_list,
 	}
 #endif /* ICA_FIPS */
   }
-
   return 0;
 }

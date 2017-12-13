@@ -804,7 +804,7 @@ int ica_ec_key_init(const unsigned char *X, const unsigned char *Y,
  * @return 0 if success
  * EINVAL if at least one invalid parameter is given.
  * ENOMEM if memeory could not be allocated.
- * EFAULT if an internal processing error occurred.
+ * EIO if an internal processing error occurred.
  */
 ICA_EXPORT
 int ica_ec_key_generate(ica_adapter_handle_t adapter_handle, ICA_EC_KEY *key);
@@ -831,7 +831,7 @@ int ica_ec_key_generate(ica_adapter_handle_t adapter_handle, ICA_EC_KEY *key);
  *
  * @return 0 if success
  * EINVAL if at least one invalid parameter is given.
- * EFAULT if an internal processing error occurred.
+ * EIO if an internal processing error occurred.
  */
 ICA_EXPORT
 int ica_ecdh_derive_secret(ica_adapter_handle_t adapter_handle,
@@ -861,7 +861,7 @@ int ica_ecdh_derive_secret(ica_adapter_handle_t adapter_handle,
  *
  * @return 0 if success
  * EINVAL if at least one invalid parameter is given.
- * EFAULT if an internal processing error occurred.
+ * EIO if an internal processing error occurred.
  */
 ICA_EXPORT
 int ica_ecdsa_sign(ica_adapter_handle_t adapter_handle,
@@ -890,12 +890,49 @@ int ica_ecdsa_sign(ica_adapter_handle_t adapter_handle,
  *
  * @return 0 if success
  * EINVAL if at least one invalid parameter is given.
- * EFAULT if an internal processing error occurred.
+ * EIO if an internal processing error occurred.
+ * EFAULT if signature invalid
  */
 ICA_EXPORT
 int ica_ecdsa_verify(ica_adapter_handle_t adapter_handle,
 		const ICA_EC_KEY *pubkey, const unsigned char *hash, unsigned int hash_length,
 		const unsigned char *signature, unsigned int signature_length);
+
+/**
+ * provide the public key (X,Y) of the given ICA_EC_KEY.
+ *
+ * @param key
+ * Pointer to a readable ICA_EC_KEY object.
+ *
+ * @param q
+ * Pointer to a writable buffer where (X,Y) is returned.
+ *
+ * @param q_len
+ * Pointer to a unsigned int where the byte length of (X,Y) is returned.
+ *
+ * @return 0 if success
+ * EINVAL if at least one invalid parameter is given.
+ */
+ICA_EXPORT
+int ica_ec_key_get_public_key(const ICA_EC_KEY *key, unsigned char *q, unsigned int *q_len);
+
+/**
+ * provide the private key (D) of the given ICA_EC_KEY.
+ *
+ * @param key
+ * Pointer to a readable ICA_EC_KEY object.
+ *
+ * @param q
+ * Pointer to a writable buffer where (D) is returned.
+ *
+ * @param q_len
+ * Pointer to a unsigned int where the byte length of (D) is returned.
+ *
+ * @return 0 if success
+ * EINVAL if at least one invalid parameter is given.
+ */
+ICA_EXPORT
+int ica_ec_key_get_private_key(const ICA_EC_KEY *key, unsigned char *d, unsigned int *d_len);
 
 /**
  * Free an ICA_EC_KEY.

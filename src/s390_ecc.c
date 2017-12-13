@@ -73,6 +73,7 @@ EC_KEY *make_eckey(int nid, const unsigned char *p, size_t plen)
     if (!EC_POINT_mul(grp, pub, priv, NULL, NULL, NULL)) {
         goto err;
     }
+
     if (!EC_KEY_set_public_key(k, pub)) {
         goto err;
     }
@@ -165,6 +166,39 @@ unsigned int make_ecc_null_token(ECC_NULL_TOKEN *kb)
 }
 
 /**
+ * determines and returns the default domain. With older zcrypt drivers
+ * it's not possible to specify 0xffff to indicate 'any domain' in a
+ * request CPRB.
+ *
+ * @return domain number (0 ... n, machine dependent) if success
+ *         -1 if error or driver not loaded
+ */
+short get_default_domain(void)
+{
+	const char *domainfile = "/sys/bus/ap/ap_domain";
+	static short domain = -1;
+	int n, temp;
+	FILE *f = NULL;
+
+	if (domain >= 0)
+		return domain;
+
+	f = fopen(domainfile, "r");
+	if (!f)
+		return domain;
+
+	if (fscanf(f, "%d", &temp) != 1)
+		return domain;
+
+	domain = (short)temp;
+
+	if (f)
+		fclose(f);
+
+	return domain;
+}
+
+/**
  * makes a T2 CPRBX at given struct and returns its length.
  */
 unsigned int make_cprbx(struct CPRBX* cprbx, unsigned int parmlen,
@@ -174,7 +208,7 @@ unsigned int make_cprbx(struct CPRBX* cprbx, unsigned int parmlen,
     cprbx->cprb_ver_id = 0x02;
     memcpy(&(cprbx->func_id), "T2", 2);
     cprbx->req_parml = parmlen;
-    cprbx->domain = -1; /* use any domain */
+    cprbx->domain = get_default_domain();
 
     cprbx->rpl_msgbl = CPRBXSIZE + PARMBSIZE;
     cprbx->req_parmb = ((uint8_t *) preqcblk) + CPRBXSIZE;
@@ -295,7 +329,7 @@ void finalize_xcrb(struct ica_xcRB* xcrb, struct CPRBX *preqcblk, struct CPRBX *
  * returns a pointer to the control block where the card
  * provides its reply.
  */
-ECDH_REPLY* make_ecdh_request(const ICA_EC_KEY *privkey_A, const ICA_EC_KEY *pubkey_B,
+static ECDH_REPLY* make_ecdh_request(const ICA_EC_KEY *privkey_A, const ICA_EC_KEY *pubkey_B,
 		struct ica_xcRB* xcrb)
 {
     uint8_t *cbrbmem = NULL;
@@ -344,6 +378,7 @@ ECDH_REPLY* make_ecdh_request(const ICA_EC_KEY *privkey_A, const ICA_EC_KEY *pub
  * and EC public key B (X,Y) via Crypto Express CCA coprocessor.
  *
  * Returns 0 if successful
+ *         EIO if an internal error occurred
  */
 unsigned int ecdh_hw(ica_adapter_handle_t adapter_handle,
 		const ICA_EC_KEY *privkey_A, const ICA_EC_KEY *pubkey_B,
@@ -355,18 +390,18 @@ unsigned int ecdh_hw(ica_adapter_handle_t adapter_handle,
 	unsigned int privlen = privlen_from_nid(privkey_A->nid);
 
 	if (adapter_handle == DRIVER_NOT_LOADED)
-		return EFAULT;
+		return EIO;
 
 	reply_p = make_ecdh_request(privkey_A, pubkey_B, &xcrb);
 	if (!reply_p)
-		return EFAULT;
+		return EIO;
 
 	rc = ioctl(adapter_handle, ZSECSENDCPRB, xcrb);
 	if (rc != 0)
-		return EFAULT;
+		return EIO;
 
 	if (reply_p->key_len-4 != privlen)
-		return EFAULT;
+		return EIO;
 
 	memcpy(z, reply_p->raw_z_value, privlen);
 
@@ -378,13 +413,14 @@ unsigned int ecdh_hw(ica_adapter_handle_t adapter_handle,
  * and EC public key B (X,Y) in software.
  *
  * Returns 0 if successful
+ *         EIO if an internal error occurred
  */
 unsigned int ecdh_sw(const ICA_EC_KEY *privkey_A, const ICA_EC_KEY *pubkey_B,
 		unsigned char *z)
 {
-	int rc = 1;
+	int rc, ret = EIO;
     EC_KEY *a = NULL; EC_KEY *b = NULL;
-    BIGNUM* xb=NULL; BIGNUM* yb=NULL;
+    BIGNUM *xb, *yb;
     unsigned int ztmplen;
     unsigned int privlen = privlen_from_nid(privkey_A->nid);
 
@@ -394,8 +430,8 @@ unsigned int ecdh_sw(const ICA_EC_KEY *privkey_A, const ICA_EC_KEY *pubkey_B,
 #endif /* ICA_FIPS */
 
 	a = make_eckey(privkey_A->nid, privkey_A->D, privlen);
-	xb = BN_bin2bn(pubkey_B->X, privlen, xb);
-	yb = BN_bin2bn(pubkey_B->Y, privlen, yb);
+	xb = BN_bin2bn(pubkey_B->X, privlen, NULL);
+	yb = BN_bin2bn(pubkey_B->Y, privlen, NULL);
 	b = make_public_eckey(privkey_A->nid, xb, yb, privlen);
     if (!a || !b)
         goto err;
@@ -408,7 +444,7 @@ unsigned int ecdh_sw(const ICA_EC_KEY *privkey_A, const ICA_EC_KEY *pubkey_B,
     if (rc == 0)
 	goto err;
 
-    rc = 0;
+    ret = 0;
 
 err:
 	BN_clear_free(xb);
@@ -416,7 +452,7 @@ err:
 	EC_KEY_free(a);
 	EC_KEY_free(b);
 
-	return rc;
+	return ret;
 }
 
 /**
@@ -468,7 +504,8 @@ unsigned int make_ecdsa_verify_parmblock(char *pb,
  * makes an ECDSA key structure at given struct and returns its length.
  */
 unsigned int make_ecdsa_private_key_token(unsigned char *kb,
-		const ICA_EC_KEY *privkey, uint8_t curve_type)
+		const ICA_EC_KEY *privkey, const unsigned char *X, const unsigned char *Y,
+		uint8_t curve_type)
 {
 	ECC_PRIVATE_KEY_TOKEN* kp1;
 	ECC_PUBLIC_KEY_TOKEN* kp2;
@@ -518,8 +555,8 @@ unsigned int make_ecdsa_private_key_token(unsigned char *kb,
 	kp2->pubsec.pub_q_bytelen = 2*privlen + 1; /* bytelen + compress flag */
 
 	kp2->compress_flag = 0x04; /* uncompressed key */
-	memcpy(&kp2->pubkey[0], privkey->X, privlen);
-	memcpy(&kp2->pubkey[privlen+0], privkey->Y, privlen);
+	memcpy(&kp2->pubkey[0], X, privlen);
+	memcpy(&kp2->pubkey[privlen+0], Y, privlen);
 
 	return sizeof(ECC_PRIVATE_KEY_TOKEN)
 			+ privlen
@@ -559,12 +596,15 @@ unsigned int make_ecdsa_public_key_token(ECDSA_PUBLIC_KEY_BLOCK *kb,
 }
 
 /**
- * creates an ECDSA xcrb request message for zcrypt.
+ * creates an ECDSA sign request message for zcrypt. The given private key does usually
+ * not contain a public key (X,Y), but the card requires (X,Y) to be present. The
+ * calling function makes sure that (X,Y) are correctly set.
  *
  * returns a pointer to the control block where the card
  * provides its reply.
  */
-ECDSA_SIGN_REPLY* make_ecdsa_sign_request(const ICA_EC_KEY *privkey,
+static ECDSA_SIGN_REPLY* make_ecdsa_sign_request(const ICA_EC_KEY *privkey,
+		const unsigned char *X, const unsigned char *Y,
 		const unsigned char *hash, unsigned int hash_length,
 		struct ica_xcRB* xcrb)
 {
@@ -598,15 +638,95 @@ ECDSA_SIGN_REPLY* make_ecdsa_sign_request(const ICA_EC_KEY *privkey,
 	offset = make_cprbx((struct CPRBX *)cbrbmem, parmblock_len, preqcblk, prepcblk);
 	offset += make_ecdsa_sign_parmblock((ECDSA_PARMBLOCK_PART1*)(cbrbmem+offset), hash, hash_length);
 	offset += make_keyblock_length((ECC_KEYBLOCK_LENGTH*)(cbrbmem+offset), keyblock_len);
-	offset += make_ecdsa_private_key_token(cbrbmem+offset, privkey, curve_type);
+	offset += make_ecdsa_private_key_token(cbrbmem+offset, privkey, X, Y, curve_type);
 	finalize_xcrb(xcrb, preqcblk, prepcblk);
 
     return (ECDSA_SIGN_REPLY*)prepcblk;
 }
 
 /**
+ * calculate the public (X,Y) values for the given private key, if necessary.
+ */
+unsigned int provide_pubkey(const ICA_EC_KEY *privkey, unsigned char *X, unsigned char *Y)
+{
+	EC_KEY *eckey = NULL;
+	EC_POINT *pub_key = NULL;
+	const EC_GROUP *group = NULL;
+	BIGNUM *bn_d = NULL, *bn_x = NULL, *bn_y = NULL;
+	int privlen = -1;
+	unsigned int i, n, rc;
+
+	if (privkey == NULL || X == NULL || Y == NULL) {
+		return EFAULT;
+	}
+
+	privlen = privlen_from_nid(privkey->nid);
+	if (privlen < 0) {
+		return EFAULT;
+	}
+
+	/* Check if (X,Y) already available */
+	if (privkey->X != NULL && privkey->Y != NULL) {
+		memcpy(X, privkey->X, privlen);
+		memcpy(Y, privkey->Y, privlen);
+		return 0;
+	}
+
+	/* Get (D) as BIGNUM */
+	if ((bn_d = BN_bin2bn(privkey->D, privlen, NULL)) == NULL) {
+		return EFAULT;
+	}
+
+	/* Calculate public (X,Y) values */
+	eckey = EC_KEY_new_by_curve_name(privkey->nid);
+	EC_KEY_set_private_key(eckey, bn_d);
+	group = EC_KEY_get0_group(eckey);
+	pub_key = EC_POINT_new(group);
+	if (!EC_POINT_mul(group, pub_key, bn_d, NULL, NULL, NULL)) {
+		rc = EFAULT;
+		goto end;
+	}
+
+	/* Get (X,Y) as BIGNUMs */
+	bn_x = BN_new();
+	bn_y = BN_new();
+	if (!EC_POINT_get_affine_coordinates_GFp(group, pub_key, bn_x, bn_y, NULL)) {
+		rc = EFAULT;
+		goto end;
+	}
+
+	/* Format (X) as char array, with leading zeros if necessary */
+	n = privlen - BN_num_bytes(bn_x);
+	for (i = 0; i < n; i++)
+		X[i] = 0x00;
+	BN_bn2bin(bn_x, &(X[n]));
+
+	/* Format (Y) as char array, with leading zeros if necessary */
+	n = privlen - BN_num_bytes(bn_y);
+	for (i = 0; i < n; i++)
+		Y[i] = 0x00;
+	BN_bn2bin(bn_y, &(Y[n]));
+
+	rc = 0;
+
+end:
+
+	if (pub_key)
+		EC_POINT_free(pub_key);
+	if (eckey)
+		EC_KEY_free(eckey);
+	BN_clear_free(bn_x);
+	BN_clear_free(bn_y);
+	BN_clear_free(bn_d);
+
+	return rc;
+}
+
+/**
  * creates an ECDSA signature via Crypto Express CCA coprocessor.
- * Returns 0 if successful, 1 otherwise.
+ *
+ * Returns 0 if successful
+ *         EIO if an internal error occurred
  */
 unsigned int ecdsa_sign_hw(ica_adapter_handle_t adapter_handle,
 		const ICA_EC_KEY *privkey, const unsigned char *hash, unsigned int hash_length,
@@ -616,20 +736,27 @@ unsigned int ecdsa_sign_hw(ica_adapter_handle_t adapter_handle,
 	struct ica_xcRB xcrb;
 	ECDSA_SIGN_REPLY* reply_p;
 	unsigned int privlen = privlen_from_nid(privkey->nid);
+	unsigned char X[MAX_ECC_PRIV_SIZE];
+	unsigned char Y[MAX_ECC_PRIV_SIZE];
 
 	if (adapter_handle == DRIVER_NOT_LOADED)
-		return EFAULT;
+		return EIO;
 
-	reply_p = make_ecdsa_sign_request(privkey, hash, hash_length, &xcrb);
+	rc = provide_pubkey(privkey, X, Y);
+	if (rc != 0)
+		return EIO;
+
+	reply_p = make_ecdsa_sign_request((const ICA_EC_KEY*)privkey,
+			X, Y, hash, hash_length, &xcrb);
 	if (!reply_p)
-		return EFAULT;
+		return EIO;
 
 	rc = ioctl(adapter_handle, ZSECSENDCPRB, xcrb);
 	if (rc != 0)
-		return EFAULT;
+		return EIO;
 
 	if (reply_p->vud_len-8 != 2*privlen)
-		return EFAULT;
+		return EIO;
 
 	memcpy(signature, reply_p->signature, reply_p->vud_len-8);
 
@@ -638,15 +765,15 @@ unsigned int ecdsa_sign_hw(ica_adapter_handle_t adapter_handle,
 
 /**
  * creates an ECDSA signature in software using OpenSSL.
- * Returns 0 if successful, 1 otherwise.
+ * Returns 0 if successful
+ *         EIO if an internal error occurred.
  */
 unsigned int ecdsa_sign_sw(const ICA_EC_KEY *privkey,
 		const unsigned char *hash, unsigned int hash_length,
 		unsigned char *signature)
 {
-	int rc = 1;
+	int rc = EIO;
     EC_KEY *a = NULL;
-    BIGNUM* xa=NULL; BIGNUM* ya=NULL;
     BIGNUM* r=NULL; BIGNUM* s=NULL;
     ECDSA_SIG* sig = NULL;
     unsigned int privlen = privlen_from_nid(privkey->nid);
@@ -657,12 +784,6 @@ unsigned int ecdsa_sign_sw(const ICA_EC_KEY *privkey,
 		return EACCES;
 #endif /* ICA_FIPS */
 
-    if ((a = EC_KEY_new_by_curve_name(privkey->nid)) == NULL) {
-        goto err;
-    }
-
-	xa = BN_bin2bn(privkey->X, privlen, xa);
-	ya = BN_bin2bn(privkey->Y, privlen, ya);
     a = make_eckey(privkey->nid, privkey->D, privlen);
     if (!a)
         goto err;
@@ -691,97 +812,9 @@ unsigned int ecdsa_sign_sw(const ICA_EC_KEY *privkey,
 
 err:
 	ECDSA_SIG_free(sig); /* also frees r and s */
-	BN_clear_free(xa);
-	BN_clear_free(ya);
 	EC_KEY_free(a);
 
 	return (rc);
-}
-
-/**
- * verifies an ECDSA signature via Crypto Express CCA coprocessor.
- * Returns 0 if successful, 1 otherwise.
- */
-unsigned int ecdsa_verify_hw(ica_adapter_handle_t adapter_handle,
-		const ICA_EC_KEY *pubkey, const unsigned char *hash, unsigned int hash_length,
-		const unsigned char *signature)
-{
-	int rc;
-	struct ica_xcRB xcrb;
-	ECDSA_VERIFY_REPLY* reply_p;
-
-	if (adapter_handle == DRIVER_NOT_LOADED)
-		return EFAULT;
-
-	reply_p = make_ecdsa_verify_request(pubkey,	hash, hash_length, signature, &xcrb);
-	if (!reply_p)
-		return EFAULT;
-
-	rc = ioctl(adapter_handle, ZSECSENDCPRB, xcrb);
-	if (rc != 0)
-		return EFAULT;
-
-	if (((struct CPRBX*)reply_p)->ccp_rtcode != 0 || ((struct CPRBX*)reply_p)->ccp_rscode != 0)
-		return EFAULT;
-
-	return 0;
-}
-
-/**
- * verifies an ECDSA signature in software using OpenSSL.
- * Returns 0 if successful, 1 otherwise.
- */
-unsigned int ecdsa_verify_sw(const ICA_EC_KEY *pubkey,
-		const unsigned char *hash, unsigned int hash_length,
-		const unsigned char *signature)
-{
-	int rc = 1;
-    EC_KEY *a = NULL;
-    BIGNUM* r=NULL; BIGNUM* s=NULL;
-    BIGNUM* xa=NULL; BIGNUM* ya=NULL;
-    ECDSA_SIG* sig=NULL;
-    unsigned int privlen = privlen_from_nid(pubkey->nid);
-
-#ifdef ICA_FIPS
-	if ((fips & ICA_FIPS_MODE) && (!FIPS_mode()))
-		return EACCES;
-#endif /* ICA_FIPS */
-
-    if ((a = EC_KEY_new_by_curve_name(pubkey->nid)) == NULL) {
-        goto err;
-    }
-
-    /* create public key with given (x,y) */
-	xa = BN_bin2bn(pubkey->X, privlen, xa);
-	ya = BN_bin2bn(pubkey->Y, privlen, ya);
-    a = make_public_eckey(pubkey->nid, xa, ya, privlen);
-    if (!a) {
-        goto err;
-    }
-
-    if (!EC_KEY_check_key(a)) {
-        goto err;
-    }
-
-    /* create ECDSA_SIG instance */
-    sig = ECDSA_SIG_new();
-    r = BN_bin2bn(signature, privlen, r);
-    s = BN_bin2bn(signature+privlen, privlen, s);
-    ECDSA_SIG_set0(sig, r, s);
-
-    /* create DER form from ECDSA_SIG and verify it */
-    if (ECDSA_do_verify(hash, hash_length, sig, a) < 0)
-	goto err;
-
-    rc = 0;
-
-err:
-	BN_clear_free(xa);
-	BN_clear_free(ya);
-	ECDSA_SIG_free(sig);
-    EC_KEY_free(a);
-
-	return rc;
 }
 
 /**
@@ -790,7 +823,7 @@ err:
  * returns a pointer to the control block where the card
  * provides its reply.
  */
-ECDSA_VERIFY_REPLY* make_ecdsa_verify_request(const ICA_EC_KEY *pubkey,
+static ECDSA_VERIFY_REPLY* make_ecdsa_verify_request(const ICA_EC_KEY *pubkey,
 		const unsigned char *hash, unsigned int hash_length,
 		const unsigned char *signature, struct ica_xcRB* xcrb)
 {
@@ -827,6 +860,100 @@ ECDSA_VERIFY_REPLY* make_ecdsa_verify_request(const ICA_EC_KEY *pubkey,
 	finalize_xcrb(xcrb, preqcblk, prepcblk);
 
     return (ECDSA_VERIFY_REPLY*)prepcblk;
+}
+
+/**
+ * verifies an ECDSA signature via Crypto Express CCA coprocessor.
+ *
+ * Returns 0 if successful
+ *         EIO if an internal error occurred
+ *         EFAULT if signature invalid
+ */
+unsigned int ecdsa_verify_hw(ica_adapter_handle_t adapter_handle,
+		const ICA_EC_KEY *pubkey, const unsigned char *hash, unsigned int hash_length,
+		const unsigned char *signature)
+{
+	int rc;
+	struct ica_xcRB xcrb;
+	ECDSA_VERIFY_REPLY* reply_p;
+
+	if (adapter_handle == DRIVER_NOT_LOADED)
+		return EIO;
+
+	reply_p = make_ecdsa_verify_request(pubkey,	hash, hash_length, signature, &xcrb);
+	if (!reply_p)
+		return EIO;
+
+	rc = ioctl(adapter_handle, ZSECSENDCPRB, xcrb);
+	if (rc != 0)
+		return EIO;
+
+	if (((struct CPRBX*)reply_p)->ccp_rtcode == 4 &&
+		((struct CPRBX*)reply_p)->ccp_rscode == RS_SIGNATURE_INVALID)
+		return EFAULT;
+
+	if (((struct CPRBX*)reply_p)->ccp_rtcode != 0 ||
+		((struct CPRBX*)reply_p)->ccp_rscode != 0)
+		return EIO;
+
+	return 0;
+}
+
+/**
+ * verifies an ECDSA signature in software using OpenSSL.
+ *
+ * Returns 0 if successful
+ *         EIO if an internal error occurred
+ *         EFAULT if signature invalid.
+ */
+unsigned int ecdsa_verify_sw(const ICA_EC_KEY *pubkey,
+		const unsigned char *hash, unsigned int hash_length,
+		const unsigned char *signature) {
+	int rc = EIO;
+	EC_KEY *a = NULL;
+	BIGNUM *r, *s, *xa, *ya;
+	ECDSA_SIG* sig = NULL;
+	unsigned int privlen = privlen_from_nid(pubkey->nid);
+
+#ifdef ICA_FIPS
+	if ((fips & ICA_FIPS_MODE) && (!FIPS_mode()))
+	return EACCES;
+#endif /* ICA_FIPS */
+
+	/* create public key with given (x,y) */
+	xa = BN_bin2bn(pubkey->X, privlen, NULL);
+	ya = BN_bin2bn(pubkey->Y, privlen, NULL);
+	a = make_public_eckey(pubkey->nid, xa, ya, privlen);
+	if (!a) {
+		goto err;
+	}
+
+	/* create ECDSA_SIG instance */
+	sig = ECDSA_SIG_new();
+	r = BN_bin2bn(signature, privlen, NULL);
+	s = BN_bin2bn(signature + privlen, privlen, NULL);
+	ECDSA_SIG_set0(sig, r, s);
+
+	/* Verify signature */
+	rc = ECDSA_do_verify(hash, hash_length, sig, a);
+	switch (rc) {
+	case 0: /* signature invalid */
+		rc = EFAULT;
+		break;
+	case 1: /* signature valid */
+		rc = 0;
+		break;
+	default: /* internal error */
+		rc = EIO;
+		break;
+	}
+
+	err: BN_clear_free(xa);
+	BN_clear_free(ya);
+	ECDSA_SIG_free(sig);
+	EC_KEY_free(a);
+
+	return rc;
 }
 
 /**
@@ -892,7 +1019,7 @@ unsigned int make_eckeygen_private_key_token(ECKEYGEN_KEY_TOKEN* kb,
  * returns a pointer to the control block where the card
  * provides its reply.
  */
-ECKEYGEN_REPLY* make_eckeygen_request(ICA_EC_KEY *key, struct ica_xcRB* xcrb)
+static ECKEYGEN_REPLY* make_eckeygen_request(ICA_EC_KEY *key, struct ica_xcRB* xcrb)
 {
     uint8_t *cbrbmem = NULL;
     struct CPRBX *preqcblk, *prepcblk;
@@ -928,7 +1055,9 @@ ECKEYGEN_REPLY* make_eckeygen_request(ICA_EC_KEY *key, struct ica_xcRB* xcrb)
 
 /**
  * generates an EC key via Crypto Express CCA coprocessor.
- * Returns 0 if successful, 1 otherwise.
+ *
+ * Returns 0 if successful
+ *         EIO if an internal error occurred.
  */
 unsigned int eckeygen_hw(ica_adapter_handle_t adapter_handle, ICA_EC_KEY *key)
 {
@@ -941,21 +1070,21 @@ unsigned int eckeygen_hw(ica_adapter_handle_t adapter_handle, ICA_EC_KEY *key)
 
 	reply_p = make_eckeygen_request(key, &xcrb);
 	if (!reply_p)
-		return EFAULT;
+		return EIO;
 
 	rc = ioctl(adapter_handle, ZSECSENDCPRB, xcrb);
 	if (rc != 0)
-		return EFAULT;
+		return EIO;
 
 	if (reply_p->eckey.privsec.formatted_data_len != privlen)
-		return EFAULT;
+		return EIO;
 
 	memcpy(key->D, reply_p->eckey.privkey, privlen);
 
 	p = (unsigned char*)&(reply_p->eckey.privsec) + reply_p->eckey.privsec.section_len;
 	pub_p = (ECC_PUBLIC_KEY_TOKEN*)p;
 	if (pub_p->compress_flag != 0x04)
-		return EFAULT;
+		return EIO;
 
 	memcpy(key->X, (char*)pub_p->pubkey, 2*privlen);
 
@@ -964,16 +1093,17 @@ unsigned int eckeygen_hw(ica_adapter_handle_t adapter_handle, ICA_EC_KEY *key)
 
 /**
  * generates an EC key in software using OpenSSL.
- * Returns 0 if successful, 1 otherwise.
+ *
+ * Returns 0 if successful
+ *         EIO if an internal error occurred.
  */
 unsigned int eckeygen_sw(ICA_EC_KEY *key)
 {
-	int rc = 1;
+	int rc = EIO;
     EC_KEY *a = NULL;
     BIGNUM* d=NULL; BIGNUM *x=NULL; BIGNUM *y=NULL;
     const EC_POINT* q=NULL;
     const EC_GROUP *group=NULL;
-    char* x_str=NULL; char* y_str=NULL; char* d_str=NULL;
     unsigned int privlen = privlen_from_nid(key->nid);
     unsigned int i, n;
 
@@ -989,12 +1119,11 @@ unsigned int eckeygen_sw(ICA_EC_KEY *key)
         goto err;
 
     if (!EC_KEY_generate_key(a))
-	goto err;
+    goto err;
 
     /* provide private key */
     d = (BIGNUM*)EC_KEY_get0_private_key(a);
-    d_str = BN_bn2hex(d);
-    n = privlen - strlen(d_str)/2;
+    n = privlen - BN_num_bytes(d);
     for (i=0;i<n;i++)
 	key->D[i] = 0x00;
     BN_bn2bin(d, &(key->D[n]));
@@ -1007,15 +1136,13 @@ unsigned int eckeygen_sw(ICA_EC_KEY *key)
 	goto err;
 
     /* pub(X) */
-    x_str = BN_bn2hex(x);
-    n = privlen - strlen(x_str)/2;
+    n = privlen - BN_num_bytes(x);
     for (i=0; i<n; i++)
 	key->X[i] = 0x00;
     BN_bn2bin(x, &(key->X[n]));
 
     /* pub(Y) */
-    y_str = BN_bn2hex(y);
-    n = privlen - strlen(y_str)/2;
+    n = privlen - BN_num_bytes(y);
     for (i=0; i<n; i++)
 	key->Y[i] = 0x00;
     BN_bn2bin(y, &(key->Y[n]));
@@ -1027,9 +1154,6 @@ err:
 	EC_KEY_free(a); /* also frees d */
     BN_clear_free(x);
     BN_clear_free(y);
-	OPENSSL_free(d_str);
-	OPENSSL_free(x_str);
-	OPENSSL_free(y_str);
 
 	return rc;
 }
