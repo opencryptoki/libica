@@ -80,7 +80,7 @@ for (( i=1; i <= ${#testcases[@]}; i++ ))
 do
 	echo -ne "Running libica test suite (writing to "$out") ... "$i"/"${#testcases[@]}"\r";
 	echo "Running '${testcases[i-1]}' ..." >> $out;
-	./${testcases[i-1]} >> $out 2>&1;
+	PATH=./:$PATH bash -c "${testcases[i-1]}" >> $out 2>&1;
 	echo -ne "... done\n\n" >> $out;
 done
 echo -ne "\n";
