@@ -337,6 +337,9 @@ static int handle_ica_error(int rc, char *message)
 		case EINVAL:
 		  V_(printf("Incorrect parameter.\n"));
 		  break;
+		case ENODEV:
+		  V_(printf("No hardware device available.\n"));
+		  break;
 		case EPERM:
 		  V_(printf("Operation not permitted by Hardware.\n"));
 		  break;
