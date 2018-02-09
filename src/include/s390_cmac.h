@@ -6,7 +6,7 @@
 
 /**
  * Authors: Ruben Straus <rstraus@de.ibm.com>
- * 	    Holger Dengler <hd@linux.vnet.ibm.com>
+ *	    Holger Dengler <hd@linux.vnet.ibm.com>
  *
  * Copyright IBM Corp. 2010, 2011
  */
@@ -176,7 +176,7 @@ static inline int s390_cmac(unsigned long fc,
 		     unsigned int  mac_length, unsigned char *mac,
 		     unsigned char *iv)
 {
-	int rc;
+	int rc = ENODEV;
 
 	if (*s390_msa4_functions[fc].enabled)
 		rc = s390_cmac_hw(s390_msa4_functions[fc].hw_fc,
@@ -184,11 +184,7 @@ static inline int s390_cmac(unsigned long fc,
 				  key_length, key,
 				  mac_length, mac,
 				  iv);
-	else {
-		return EPERM;
-	}
 
 	return rc;
 }
 #endif
-

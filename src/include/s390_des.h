@@ -200,7 +200,7 @@ static inline int s390_des_ecb(unsigned int fc, unsigned long data_length,
 		 const unsigned char *in_data, unsigned char *key,
 		 unsigned char *out_data)
 {
-	int rc = 1;
+	int rc = ENODEV;
 	int hardware = ALGO_HW;
 
 	if (*s390_kmc_functions[fc].enabled)
@@ -208,6 +208,8 @@ static inline int s390_des_ecb(unsigned int fc, unsigned long data_length,
 				     data_length, in_data, key,
 				     out_data);
 	if (rc) {
+		if (!ica_fallbacks_enabled)
+			return rc;
 		rc = s390_des_ecb_sw(s390_kmc_functions[fc].hw_fc,
 				     data_length, in_data, key,
 				     out_data);
@@ -237,7 +239,7 @@ static inline int s390_des_cbc(unsigned int fc, unsigned long data_length,
 		 const unsigned char *in_data, unsigned char *iv,
 		 const unsigned char *key, unsigned char *out_data)
 {
-	int rc = 1;
+	int rc = ENODEV;
 	int hardware = ALGO_HW;
 
 	if (*s390_kmc_functions[fc].enabled)
@@ -245,6 +247,8 @@ static inline int s390_des_cbc(unsigned int fc, unsigned long data_length,
 				     data_length, in_data, iv, key,
 				     out_data);
 	if (rc) {
+		if (!ica_fallbacks_enabled)
+			return rc;
 		rc = s390_des_cbc_sw(s390_kmc_functions[fc].hw_fc,
 				     data_length, in_data, iv, key,
 				     out_data);
@@ -266,6 +270,7 @@ static inline int s390_des_cbc(unsigned int fc, unsigned long data_length,
 				0 ? ENCRYPT : DECRYPT);
 		break;
 	}
+
 	return rc;
 }
 
@@ -303,33 +308,32 @@ static inline int __s390_des_cfb(unsigned int fc, unsigned long data_length,
 			  const unsigned char *key, unsigned char *out_data,
 			  unsigned int lcfb)
 {
-	int rc = 1;
-	int hardware = ALGO_HW;
+	int rc = ENODEV;
 
 	if (*s390_msa4_functions[fc].enabled)
 		rc = s390_des_cfb_hw(s390_msa4_functions[fc].hw_fc,
 				     data_length, in_data, iv, key,
 				     out_data, lcfb);
-	if (rc) {
-		hardware = ALGO_SW;
-		return EPERM;
-	}
+	if (rc)
+		return rc;
+
 	switch (s390_msa4_functions[fc].hw_fc & S390_CRYPTO_FUNCTION_MASK) {
 	case S390_CRYPTO_DEA_ENCRYPT:
-		stats_increment(ICA_STATS_DES_CFB, hardware,
+		stats_increment(ICA_STATS_DES_CFB, ALGO_HW,
 				(s390_msa4_functions[fc].hw_fc &
 				S390_CRYPTO_DIRECTION_MASK) ==
 				0 ? ENCRYPT : DECRYPT);
 		break;
 	case S390_CRYPTO_TDEA_128_ENCRYPT:
 	case S390_CRYPTO_TDEA_192_ENCRYPT:
-		stats_increment(ICA_STATS_3DES_CFB, hardware,
+		stats_increment(ICA_STATS_3DES_CFB, ALGO_HW,
 				(s390_msa4_functions[fc].hw_fc &
 				S390_CRYPTO_DIRECTION_MASK) ==
 				0 ? ENCRYPT : DECRYPT);
 		break;
 	}
-	return rc;
+
+	return 0;
 }
 
 static inline int s390_des_ofb_hw(unsigned int function_code,
@@ -364,33 +368,32 @@ static inline int __s390_des_ofb(unsigned int fc, unsigned int input_length,
 				 const unsigned char *input_data, unsigned char *iv,
 				 const unsigned char *keys, unsigned char *output_data)
 {
-	int rc = 1;
-	int hardware = ALGO_HW;
+	int rc = ENODEV;
 
 	if (*s390_msa4_functions[fc].enabled)
 		rc = s390_des_ofb_hw(s390_msa4_functions[fc].hw_fc,
 				     input_length, input_data, iv, keys,
 				     output_data);
-	if (rc) {
-		hardware = ALGO_SW;
+	if (rc)
 		return rc;
-	}
+
 	switch (s390_msa4_functions[fc].hw_fc & S390_CRYPTO_FUNCTION_MASK) {
 	case S390_CRYPTO_DEA_ENCRYPT:
-		stats_increment(ICA_STATS_DES_OFB, hardware,
+		stats_increment(ICA_STATS_DES_OFB, ALGO_HW,
 				(s390_msa4_functions[fc].hw_fc &
 				S390_CRYPTO_DIRECTION_MASK) ==
 				0 ? ENCRYPT : DECRYPT);
 		break;
 	case S390_CRYPTO_TDEA_128_ENCRYPT:
 	case S390_CRYPTO_TDEA_192_ENCRYPT:
-		stats_increment(ICA_STATS_3DES_OFB, hardware,
+		stats_increment(ICA_STATS_3DES_OFB, ALGO_HW,
 				(s390_msa4_functions[fc].hw_fc &
 				S390_CRYPTO_DIRECTION_MASK) ==
 				0 ? ENCRYPT : DECRYPT);
 		break;
 	}
-	return rc;
+
+	return 0;
 }
 
 static inline int s390_des_cfb(unsigned int fc, unsigned long data_length,
@@ -475,33 +478,32 @@ static inline int __s390_des_ctrlist(unsigned int fc, unsigned long data_length,
 				     unsigned char *key,
 				     unsigned char *out_data)
 {
-	int rc = EPERM;
-	int hardware = ALGO_HW;
+	int rc = ENODEV;
 
 	if (*s390_msa4_functions[fc].enabled)
 		rc = s390_ctr_hw(s390_msa4_functions[fc].hw_fc,
 				 data_length, in_data, key,
 				 out_data, ctrlist);
-	if (rc) {
-		hardware = ALGO_SW;
+	if (rc)
 		return rc;
-	}
+
 	switch (s390_msa4_functions[fc].hw_fc & S390_CRYPTO_FUNCTION_MASK) {
 	case S390_CRYPTO_DEA_ENCRYPT:
-		stats_increment(ICA_STATS_DES_CTR, hardware,
+		stats_increment(ICA_STATS_DES_CTR, ALGO_HW,
 				(s390_msa4_functions[fc].hw_fc &
 				S390_CRYPTO_DIRECTION_MASK) ==
 				0 ?ENCRYPT: DECRYPT);
 		break;
 	case S390_CRYPTO_TDEA_128_ENCRYPT:
 	case S390_CRYPTO_TDEA_192_ENCRYPT:
-		stats_increment(ICA_STATS_3DES_CTR, hardware,
+		stats_increment(ICA_STATS_3DES_CTR, ALGO_HW,
 				(s390_msa4_functions[fc].hw_fc &
 				S390_CRYPTO_DIRECTION_MASK) ==
 				0 ?ENCRYPT: DECRYPT);
 		break;
 	}
-	return rc;
+
+	return 0;
 }
 
 static inline int s390_des_ctrlist(unsigned int fc, unsigned long data_length,
@@ -615,4 +617,3 @@ free_out:
 }
 
 #endif
-

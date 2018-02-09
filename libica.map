@@ -110,6 +110,7 @@ LIBICA_3.2.0 {
 
 LIBICA_3.3.0 {
     global:
+	ica_set_fallback_mode;
 	ica_ec_key_new;
 	ica_ec_key_init;
 	ica_ec_key_generate;

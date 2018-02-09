@@ -424,6 +424,24 @@ typedef struct ica_drbg_mech ica_drbg_mech_t;
 typedef struct ica_drbg ica_drbg_t;
 
 /**
+ * Definitions for the ica_set_fallback_mode function.
+ */
+#define ICA_FALLBACKS_ENABLED  1
+#define ICA_FALLBACKS_DISABLED 0
+
+/**
+ * Set Libica fallback mode.
+ * With fallbacks enabled (that's the default), when there is no hardware
+ * support available (for example when the crypto cards are offline) Libica
+ * attempts to cover the request by calling Openssl functions as fallback.
+ * With fallback disabled, no attempts will be made to fulfill the request
+ * if there is no hardware support or hardware invocation fails. Instead
+ * the function will return with ENODEV.
+ */
+ICA_EXPORT
+void ica_set_fallback_mode(int fallback_mode);
+
+/**
  * Opens the specified adapter
  * @param adapter_handle Pointer to the file descriptor for the adapter or
  * to DRIVER_NOT_LOADED if opening the crypto adapter failed.
