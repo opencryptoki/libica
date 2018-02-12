@@ -430,6 +430,14 @@ typedef struct ica_drbg ica_drbg_t;
 #define ICA_FALLBACKS_DISABLED 0
 
 /**
+ * Environment variable for defining the default Libica fallback mode.
+ * By default Libica starts with fallbacks enabled. When this environment
+ * variable exists and has a numeric value, the fallback mode is set
+ * via ica_set_fallback_mode().
+ */
+#define ICA_FALLBACK_ENV "LIBICA_FALLBACK_MODE"
+
+/**
  * Set Libica fallback mode.
  * With fallbacks enabled (that's the default), when there is no hardware
  * support available (for example when the crypto cards are offline) Libica
