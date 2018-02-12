@@ -33,7 +33,7 @@
 unsigned int sha1_switch, sha256_switch, sha512_switch, sha3_switch, des_switch,
 	     tdes_switch, aes128_switch, aes192_switch, aes256_switch,
 	     prng_switch, tdea128_switch, tdea192_switch, sha512_drng_switch,
-	     msa4_switch, msa5_switch, msa8_switch;
+	     msa4_switch, msa5_switch, msa8_switch, trng_switch;
 
 s390_supported_function_t s390_kimd_functions[] = {
 	{SHA_1, S390_CRYPTO_SHA_1, &sha1_switch},
@@ -88,6 +88,7 @@ s390_supported_function_t s390_msa4_functions[] = {
 s390_supported_function_t s390_ppno_functions[] = {
 	{SHA512_DRNG_GEN, S390_CRYPTO_SHA512_DRNG_GEN, &sha512_drng_switch},
 	{SHA512_DRNG_SEED, S390_CRYPTO_SHA512_DRNG_SEED, &sha512_drng_switch},
+	{TRNG, S390_CRYPTO_TRNG, &trng_switch},
 };
 
 s390_supported_function_t s390_kma_functions[] = {
