@@ -58,8 +58,9 @@ const size_t DRBG_MECH_LIST_LEN = sizeof(DRBG_MECH_LIST)
 /*
  * DRBG SEI list. The first string (element 0) has the highest priority.
  */
-const char *const DRBG_SEI_LIST[] = {"/dev/hwrng",
-				     "/dev/prandom"};
+const char *const DRBG_SEI_LIST[] = {"/dev/prandom",
+				     "/dev/hwrng",
+				     "/dev/urandom"};
 const size_t DRBG_SEI_LIST_LEN = sizeof(DRBG_SEI_LIST)
 				 / sizeof(DRBG_SEI_LIST[0]);
 
@@ -483,6 +484,7 @@ int drbg_get_entropy_input(bool pr,
 {
 	size_t min_len;
 	size_t priority;
+	size_t i;
 	FILE *fd;
 	int status;
 
@@ -501,17 +503,36 @@ int drbg_get_entropy_input(bool pr,
 	if(entropy_len < min_len || entropy_len > max_len)
 		return DRBG_REQUEST_INV;
 
+	if (!entropy_len) {
+		/* simulate entropy source failure for self-test */
+		return DRBG_ENTROPY_SOURCE_FAIL;
+	}
+
+	memset(entropy, 0, entropy_len);
+
 	for(priority = 0; priority < DRBG_SEI_LIST_LEN; priority++){
 		fd = fopen(DRBG_SEI_LIST[priority], "r");
 		if(fd){
 			status = fread(entropy, entropy_len, 1, fd);
 			fclose(fd);
 			if(status == 1)
-				return 0;
+				break;
 		}
 	}
 
-	return DRBG_ENTROPY_SOURCE_FAIL;
+	if (trng_switch) {
+		unsigned char min[min_len];
+
+		cpacf_trng(NULL, 0, min, min_len);
+		for (i = 0; i < min_len; i++)
+			entropy[i] ^= min[i];
+		drbg_zmem(min, min_len);
+	} else if (priority == DRBG_SEI_LIST_LEN) {
+		/* no entropy source available */
+		return DRBG_ENTROPY_SOURCE_FAIL;
+	}
+
+	return 0;
 }
 
 int drbg_get_nonce(unsigned char *nonce,
