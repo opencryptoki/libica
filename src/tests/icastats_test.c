@@ -810,6 +810,12 @@ void aes_tests(unsigned char *iv, unsigned char *cmac, unsigned char *ctr)
 		0xab, 0xf7, 0x15, 0x88, 0x09, 0xcf, 0x4f, 0x3c,
 
 	};
+	/* xts needs the two keys to be different (fips-build) */
+	unsigned char aes_key2[] = {
+		0x3b, 0x7e, 0x15, 0x16, 0x28, 0xae, 0xd2, 0xa6,
+		0xab, 0xf7, 0x15, 0x88, 0x09, 0xcf, 0x4f, 0x3c,
+
+	};
 
 	unsigned char tweak[] = {
 		0x72, 0xf3, 0xb0, 0x54, 0xcb, 0xdc, 0x2f, 0x9e,
@@ -919,7 +925,7 @@ void aes_tests(unsigned char *iv, unsigned char *cmac, unsigned char *ctr)
 	system("icastats -r");
 	for(mode = 1;mode >= 0;mode--){
 		rc = ica_aes_xts(input_buffer, output_buffer, DATA_LENGHT,
-				 aes_key, aes_key, AES_KEY_LEN128, tweak, mode);
+				 aes_key, aes_key2, AES_KEY_LEN128, tweak, mode);
 
 		if(rc)
 			exit(handle_ica_error(rc, "ica_aes_xts"));
