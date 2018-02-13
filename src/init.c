@@ -19,6 +19,7 @@
 #include <string.h>
 #include <openssl/rand.h>
 #include <syslog.h>
+#include <stdio.h>
 
 #include "init.h"
 #include "fips.h"
@@ -84,6 +85,9 @@ void end_sigill_section(struct sigaction *oldact, sigset_t *oldset)
  * in initialization */
 void __attribute__ ((constructor)) icainit(void)
 {
+	int value;
+	const char *ptr;
+
 	/* some init stuff but only when application is NOT icastats */
 	if (strcmp(program_invocation_name, "icastats")) {
 
@@ -106,6 +110,11 @@ void __attribute__ ((constructor)) icainit(void)
 		s390_prng_init();
 
 		s390_initialize_functionlist();
+
+		/* check for fallback mode environment variable */
+		ptr = getenv(ICA_FALLBACK_ENV);
+		if (ptr && sscanf(ptr, "%i", &value) == 1)
+			ica_set_fallback_mode(value);
 	}
 }
 

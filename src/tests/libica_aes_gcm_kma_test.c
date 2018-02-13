@@ -58,8 +58,8 @@ int test_gcm_kat(int iteration)
 	/* Update for encrypt */
 	rc = ica_aes_gcm_kma_update(input_data, encrypt, data_length, aad, aad_length, 1, 1, ctx);
 
-	if (rc == EPERM) {
-		VV_(printf("ica_aes_gcm returns with EPERM (%d).\n", rc));
+	if (rc == ENODEV) {
+		VV_(printf("ica_aes_gcm returns with ENODEV (%d).\n", rc));
 		VV_(printf("Operation is not permitted on this machine. Test skipped!\n"));
 		return 0;
 	}
@@ -102,8 +102,8 @@ int test_gcm_kat(int iteration)
 	/* Update for decrypt */
 	rc = ica_aes_gcm_kma_update(encrypt, decrypt, data_length, aad, aad_length, 1, 1, ctx);
 
-	if (rc == EPERM) {
-		VV_(printf("ica_aes_gcm returns with EPERM (%d).\n", rc));
+	if (rc == ENODEV) {
+		VV_(printf("ica_aes_gcm returns with ENODEV (%d).\n", rc));
 		VV_(printf("Operation is not permitted on this machine. Test skipped!\n"));
 		return 0;
 	}
@@ -209,8 +209,8 @@ int test_gcm_kat_update(int iteration)
 				ctx);
 	}
 
-	if (rc == EPERM) {
-		VV_(printf("ica_aes_gcm returns with EPERM (%d).\n", rc));
+	if (rc == ENODEV) {
+		VV_(printf("ica_aes_gcm returns with ENODEV (%d).\n", rc));
 		VV_(printf("Operation is not permitted on this machine. Test skipped!\n"));
 		return 0;
 	}
@@ -284,8 +284,8 @@ int test_gcm_kat_update(int iteration)
 				ctx);
 	}
 
-	if (rc == EPERM) {
-		VV_(printf("ica_aes_gcm returns with EPERM (%d).\n", rc));
+	if (rc == ENODEV) {
+		VV_(printf("ica_aes_gcm returns with ENODEV (%d).\n", rc));
 		VV_(printf("Operation is not permitted on this machine. Test skipped!\n"));
 		return 0;
 	}
@@ -408,8 +408,8 @@ int test_gcm_kat_update_aad(int iteration)
 				ctx);
 	}
 
-	if (rc == EPERM) {
-		VV_(printf("ica_aes_gcm returns with EPERM (%d).\n", rc));
+	if (rc == ENODEV) {
+		VV_(printf("ica_aes_gcm returns with ENODEV (%d).\n", rc));
 		VV_(printf("Operation is not permitted on this machine. Test skipped!\n"));
 		return 0;
 	}
@@ -479,8 +479,8 @@ int test_gcm_kat_update_aad(int iteration)
 				ctx);
 	}
 
-	if (rc == EPERM) {
-		VV_(printf("ica_aes_gcm returns with EPERM (%d).\n", rc));
+	if (rc == ENODEV) {
+		VV_(printf("ica_aes_gcm returns with ENODEV (%d).\n", rc));
 		VV_(printf("Operation is not permitted on this machine. Test skipped!\n"));
 		return 0;
 	}
@@ -584,8 +584,8 @@ int test_gcm_kat_update_in_place(int iteration)
 				ctx);
 	}
 
-	if (rc == EPERM) {
-		VV_(printf("ica_aes_gcm returns with EPERM (%d).\n", rc));
+	if (rc == ENODEV) {
+		VV_(printf("ica_aes_gcm returns with ENODEV (%d).\n", rc));
 		VV_(printf("Operation is not permitted on this machine. Test skipped!\n"));
 		return 0;
 	}
@@ -655,8 +655,8 @@ int test_gcm_kat_update_in_place(int iteration)
 				ctx);
 	}
 
-	if (rc == EPERM) {
-		VV_(printf("ica_aes_gcm returns with EPERM (%d).\n", rc));
+	if (rc == ENODEV) {
+		VV_(printf("ica_aes_gcm returns with ENODEV (%d).\n", rc));
 		VV_(printf("Operation is not permitted on this machine. Test skipped!\n"));
 		return 0;
 	}

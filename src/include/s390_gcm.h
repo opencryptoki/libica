@@ -100,7 +100,7 @@ static inline int s390_ghash(const unsigned char *in_data, unsigned long data_le
 		      const unsigned char *key, unsigned char *iv)
 {
 	if (!s390_kimd_functions[GHASH].enabled)
-		return EPERM;
+		return ENODEV;
 
 	return s390_ghash_hw(s390_kimd_functions[GHASH].hw_fc,
 			     in_data, data_length,
@@ -331,7 +331,7 @@ static inline int s390_gcm(unsigned int function_code,
 	unsigned int rc;
 
 	if (!msa4_switch)
-		return EPERM;
+		return ENODEV;
 
 	/* calculate subkey H */
 	rc = s390_aes_ecb(UNDIRECTED_FC(function_code),
@@ -520,7 +520,7 @@ static inline int s390_gcm_intermediate(unsigned int function_code,
 	unsigned char *in, *out;
 
 	if (!msa4_switch)
-		return EPERM;
+		return ENODEV;
 
 	if (!msa8_switch) {
 		if (function_code % 2) {
@@ -729,7 +729,7 @@ static inline int s390_aes_gcm_kma(const unsigned char *in_data,
 		if (end_of_data)
 			hw_fc = hw_fc | LPC_FLAG;
 	} else {
-		return EPERM;
+		return ENODEV;
 	}
 
 	if (!aad)
