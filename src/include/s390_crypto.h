@@ -92,16 +92,17 @@ enum s390_crypto_function {
 	 */
 	S390_CRYPTO_PRNG = 0x43,
 	/*
-	 * The S390_SHA512_DRNG_* functions are available for the PPNO instruction.
+	 * The following functions are available for the PPNO/PRNO instruction.
 	 */
 	S390_CRYPTO_SHA512_DRNG_GEN  = 0x03,
-	S390_CRYPTO_SHA512_DRNG_SEED = 0x03 | 0x80
+	S390_CRYPTO_SHA512_DRNG_SEED = 0x03 | 0x80,
+	S390_CRYPTO_TRNG	     = 0x72
 };
 
 extern unsigned int sha1_switch, sha256_switch, sha512_switch, sha3_switch, des_switch,
 	     tdes_switch, aes128_switch, aes192_switch, aes256_switch,
 	     prng_switch, tdea128_switch, tdea192_switch, sha512_drng_switch,
-	     msa4_switch, msa5_switch, msa8_switch;
+	     msa4_switch, msa5_switch, msa8_switch, trng_switch;
 
 typedef struct {
 	unsigned int dummy_fc;
@@ -137,7 +138,8 @@ typedef enum {
 
 typedef enum {
 	SHA512_DRNG_GEN,
-	SHA512_DRNG_SEED
+	SHA512_DRNG_SEED,
+	TRNG
 } ppno_functions_t;
 
 extern s390_supported_function_t s390_kmc_functions[];
@@ -556,6 +558,32 @@ static inline int s390_ppno(long func,
 
 	return func ? dest_len - __dest_len : 0;
 }
+
+/**
+ * cpacf_trng() - executes the TRNG subfunction of the PRNO instruction
+ * @ucbuf: buffer for unconditioned data
+ * @ucbuf_len: amount of unconditioned data to fetch in bytes
+ * @cbuf: buffer for conditioned data
+ * @cbuf_len: amount of conditioned data to fetch in bytes
+ */
+static inline void cpacf_trng(unsigned char *ucbuf, unsigned long ucbuf_len,
+                              unsigned char *cbuf, unsigned long cbuf_len)
+{
+        register unsigned long r0 asm("0") = (unsigned long) S390_CRYPTO_TRNG;
+        register unsigned long r2 asm("2") = (unsigned long) ucbuf;
+        register unsigned long r3 asm("3") = (unsigned long) ucbuf_len;
+        register unsigned long r4 asm("4") = (unsigned long) cbuf;
+        register unsigned long r5 asm("5") = (unsigned long) cbuf_len;
+
+        asm volatile (
+                "0:     .insn   rre,0xb93c0000,%[ucbuf],%[cbuf]\n"
+                "       brc     1,0b\n"   /* handle partial completion */
+                : [ucbuf] "+a" (r2), [ucbuflen] "+d" (r3),
+                  [cbuf] "+a" (r4), [cbuflen] "+d" (r5)
+                : [fc] "d" (r0)
+                : "cc", "memory");
+}
+
 
 static inline void s390_stckf_hw(void *buf)
 {

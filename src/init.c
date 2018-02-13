@@ -81,14 +81,6 @@ void end_sigill_section(struct sigaction *oldact, sigset_t *oldset)
 	sigprocmask(SIG_SETMASK, oldset, 0);
 }
 
-void openssl_init(void)
-{
-	/* initial seed the openssl random generator */
-	unsigned char random_data[64];
-	s390_prng(random_data, sizeof(random_data));
-	RAND_seed(random_data, sizeof(random_data));
-}
-
 /* Switches have to be done first. Otherwise we will not have hw support
  * in initialization */
 void __attribute__ ((constructor)) icainit(void)
@@ -118,8 +110,6 @@ void __attribute__ ((constructor)) icainit(void)
 		s390_prng_init();
 
 		s390_initialize_functionlist();
-
-		openssl_init();
 
 		/* check for fallback mode environment variable */
 		ptr = getenv(ICA_FALLBACK_ENV);
