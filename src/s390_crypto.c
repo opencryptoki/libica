@@ -173,7 +173,6 @@ void set_switches(int msa)
 {
 	unsigned char mask[16];
 	unsigned int n;
-	unsigned int on = 0;
 	struct sigaction oldact;
 	sigset_t oldset;
 
@@ -196,13 +195,9 @@ void set_switches(int msa)
 		}
 	}
 	for (n = 0; n < (sizeof(s390_kmc_functions) /
-			 sizeof(s390_supported_function_t)); n++) {
+			 sizeof(s390_supported_function_t)); n++)
 		if (S390_CRYPTO_TEST_MASK(mask, s390_kmc_functions[n].hw_fc))
-			on = 1;
-		else
-			on = 0;
-		*s390_kmc_functions[n].enabled = on;
-	}
+			*s390_kmc_functions[n].enabled = 1;
 
 	/* kimd query */
 	memset(mask, 0, sizeof(mask));
@@ -213,13 +208,9 @@ void set_switches(int msa)
 		}
 	}
 	for (n = 0; n < (sizeof(s390_kimd_functions) /
-			 sizeof(s390_supported_function_t)); n++) {
+			 sizeof(s390_supported_function_t)); n++)
 		if (S390_CRYPTO_TEST_MASK(mask, s390_kimd_functions[n].hw_fc))
-			on = 1;
-		else
-			on = 0;
-		*s390_kimd_functions[n].enabled = on;
-	}
+			*s390_kimd_functions[n].enabled = 1;
 
 	/* ppno query */
 	memset(mask, 0, sizeof(mask));
@@ -231,13 +222,9 @@ void set_switches(int msa)
 		}
 	}
 	for (n = 0; n < (sizeof(s390_ppno_functions) /
-			 sizeof(s390_supported_function_t)); n++) {
+			 sizeof(s390_supported_function_t)); n++)
 		if (S390_CRYPTO_TEST_MASK(mask, s390_ppno_functions[n].hw_fc))
-			on = 1;
-		else
-			on = 0;
-		*s390_ppno_functions[n].enabled = on;
-	}
+			*s390_ppno_functions[n].enabled = 1;
 
 	/* kma query */
 	memset(mask, 0, sizeof(mask));
@@ -249,13 +236,9 @@ void set_switches(int msa)
 		}
 	}
 	for (n = 0; n < (sizeof(s390_kma_functions) /
-			 sizeof(s390_supported_function_t)); n++) {
+			 sizeof(s390_supported_function_t)); n++)
 		if (S390_CRYPTO_TEST_MASK(mask, s390_kma_functions[n].hw_fc))
-			on = 1;
-		else
-			on = 0;
-		*s390_kma_functions[n].enabled = on;
-	}
+			*s390_kma_functions[n].enabled = 1;
 }
 
 void s390_crypto_switches_init(void)
@@ -282,30 +265,30 @@ void s390_crypto_switches_init(void)
  * The last filed represent the property flags
  */
 libica_func_list_element_int icaList[] = {
- {SHA1,   KIMD, SHA_1  		, ICA_FLAG_SW, 0},
- {SHA224, KIMD, SHA_256		, ICA_FLAG_SW, 0},
- {SHA256, KIMD, SHA_256		, ICA_FLAG_SW, 0},
- {SHA384, KIMD, SHA_512		, ICA_FLAG_SW, 0},
- {SHA512, KIMD, SHA_512		, ICA_FLAG_SW, 0},
+ {SHA1,   KIMD, SHA_1  , ICA_FLAG_SW, 0},
+ {SHA224, KIMD, SHA_256, ICA_FLAG_SW, 0},
+ {SHA256, KIMD, SHA_256, ICA_FLAG_SW, 0},
+ {SHA384, KIMD, SHA_512, ICA_FLAG_SW, 0},
+ {SHA512, KIMD, SHA_512, ICA_FLAG_SW, 0},
  {SHA3_224, KIMD, SHA_3_224, 0, 0},
  {SHA3_256, KIMD, SHA_3_256, 0, 0},
  {SHA3_384, KIMD, SHA_3_384, 0, 0},
  {SHA3_512, KIMD, SHA_3_512, 0, 0},
  {SHAKE128, KIMD, SHAKE_128, 0, 0},
  {SHAKE256, KIMD, SHAKE_256, 0, 0},
- {G_HASH, KIMD, GHASH		,           0, 0},
+ {G_HASH, KIMD, GHASH, 0, 0},
 
  {DES_ECB,      KMC,  DEA_ENCRYPT, ICA_FLAG_SW, 0},
  {DES_CBC,      KMC,  DEA_ENCRYPT, ICA_FLAG_SW, 0},
  {DES_OFB,      MSA4, DEA_ENCRYPT, 0, 0},
  {DES_CFB,      MSA4, DEA_ENCRYPT, 0, 0},
  {DES_CTR,      MSA4, DEA_ENCRYPT, 0, 0},
- {DES_CMAC,     MSA4, DEA_ENCRYPT, 0, 0},				// CPACF only (MSA4)
+ {DES_CMAC,     MSA4, DEA_ENCRYPT, 0, 0}, // CPACF only (MSA4)
 
  {DES3_ECB,     KMC,  TDEA_192_ENCRYPT, ICA_FLAG_SW, 0},
  {DES3_CBC,     KMC,  TDEA_192_ENCRYPT, ICA_FLAG_SW, 0},
  {DES3_OFB,     MSA4, TDEA_192_ENCRYPT,           0, 0},
- {DES3_CFB,     MSA4, TDEA_192_ENCRYPT, 	  0, 0},
+ {DES3_CFB,     MSA4, TDEA_192_ENCRYPT,           0, 0},
  {DES3_CTR,     MSA4, TDEA_192_ENCRYPT,           0, 0},
  {DES3_CMAC,    MSA4, TDEA_192_ENCRYPT,           0, 0},
 
@@ -315,19 +298,19 @@ libica_func_list_element_int icaList[] = {
  {AES_CFB,      MSA4, AES_128_ENCRYPT,           0, 0},
  {AES_CTR,      MSA4, AES_128_ENCRYPT,           0, 0},
  {AES_CMAC,     MSA4, AES_128_ENCRYPT,           0, 0},
- {AES_CCM,      MSA4, AES_128_ENCRYPT, 	         0, 0},
+ {AES_CCM,      MSA4, AES_128_ENCRYPT,           0, 0},
  {AES_GCM,      MSA4, AES_128_ENCRYPT,           0, 0},
  {AES_GCM_KMA,  MSA8, AES_128_GCM_ENCRYPT,       0, 0},
  {AES_XTS,      MSA4, AES_128_XTS_ENCRYPT,       0, 0},
- {P_RNG,    		ADAPTER, 0, ICA_FLAG_SHW | ICA_FLAG_SW, 0},	// SHW (CPACF) + SW
- {EC_DH,		ADAPTER, 0, ICA_FLAG_DHW | ICA_FLAG_SW, 0x0F},
+ {P_RNG,        ADAPTER, 0, ICA_FLAG_SHW | ICA_FLAG_SW, 0}, // SHW (CPACF) + SW
+ {EC_DH,        ADAPTER, 0, ICA_FLAG_DHW | ICA_FLAG_SW, 0x0F},
  {EC_DSA_SIGN,	ADAPTER, 0, ICA_FLAG_DHW | ICA_FLAG_SW, 0x0F},
  {EC_DSA_VERIFY, ADAPTER, 0, ICA_FLAG_DHW | ICA_FLAG_SW, 0x0F},
- {EC_KGEN,		ADAPTER, 0, ICA_FLAG_DHW | ICA_FLAG_SW, 0x0F},
- {RSA_ME, 		ADAPTER, 0, ICA_FLAG_DHW | ICA_FLAG_SW, 0x0F},	// DHW (CEX) + SW / 512,1024,2048, 4096 bit key length
- {RSA_CRT, 		ADAPTER, 0, ICA_FLAG_DHW | ICA_FLAG_SW, 0x0F},	// DHW (CEX) + SW / 512,1024,2048, 4096 bit key length
- {RSA_KEY_GEN_ME,  	ADAPTER, 0, ICA_FLAG_SW, 		0},	// SW (openssl)
- {RSA_KEY_GEN_CRT, 	ADAPTER, 0, ICA_FLAG_SW, 		0},	// SW (openssl)
+ {EC_KGEN,      ADAPTER, 0, ICA_FLAG_DHW | ICA_FLAG_SW, 0x0F},
+ {RSA_ME,       ADAPTER, 0, ICA_FLAG_DHW | ICA_FLAG_SW, 0x0F}, // DHW (CEX) + SW / 512,1024,2048, 4096 bit key length
+ {RSA_CRT,      ADAPTER, 0, ICA_FLAG_DHW | ICA_FLAG_SW, 0x0F}, // DHW (CEX) + SW / 512,1024,2048, 4096 bit key length
+ {RSA_KEY_GEN_ME, ADAPTER, 0, ICA_FLAG_SW, 0},  // SW (openssl)
+ {RSA_KEY_GEN_CRT, ADAPTER, 0, ICA_FLAG_SW, 0}, // SW (openssl)
 
  {SHA512_DRNG, PPNO, SHA512_DRNG_GEN, ICA_FLAG_SW, 0},
 
@@ -347,52 +330,47 @@ int s390_initialize_functionlist() {
 
   unsigned int x;
   for (x = 0; x < list_len; x++) {
-	switch ((int)icaList[x].type) {
+	libica_func_list_element_int *e = &icaList[x];
+	switch ((int) e->type) {
 	case KIMD:
-		icaList[x].flags = icaList[x].flags |
-		    ((*s390_kimd_functions[icaList[x].id].enabled)? 4: 0);
-	break;
+		e->flags |= *s390_kimd_functions[e->id].enabled ? 4 : 0;
+		break;
 	case KMC:
-		icaList[x].flags = icaList[x].flags |
-		((*s390_kmc_functions[icaList[x].id].enabled)? 4: 0);
-		if (icaList[x].id == AES_128_ENCRYPT) { // check for the maximum size
-		  if (*s390_kmc_functions[icaList[AES_256_ENCRYPT].id].enabled)
-			icaList[x].property = icaList[x].property | 4; // 256 bit
-		  if (*s390_kmc_functions[icaList[AES_192_ENCRYPT].id].enabled)
-			icaList[x].property = icaList[x].property | 2; // 192 bit
-		  if (*s390_kmc_functions[icaList[AES_128_ENCRYPT].id].enabled)
-			icaList[x].property = icaList[x].property | 1; // 128 bit
+		e->flags |= *s390_kmc_functions[e->id].enabled ? 4 : 0;
+		if (e->id == AES_128_ENCRYPT) { // check for the maximum size
+			if (*s390_kmc_functions[icaList[AES_256_ENCRYPT].id].enabled)
+				e->property |= 4; // 256 bit
+			if (*s390_kmc_functions[icaList[AES_192_ENCRYPT].id].enabled)
+				e->property |= 2; // 192 bit
+			if (*s390_kmc_functions[icaList[AES_128_ENCRYPT].id].enabled)
+				e->property |= 1; // 128 bit
 		}
-	break;
+		break;
 	case MSA4:
-		icaList[x].flags = icaList[x].flags |
-		((*s390_msa4_functions[icaList[x].id].enabled)? 4: 0);
-		  if (icaList[x].id == AES_128_ENCRYPT) { // check for the maximum size
+		e->flags |= *s390_msa4_functions[e->id].enabled ? 4 : 0;
+		if (e->id == AES_128_ENCRYPT) { // check for the maximum size
 			if (*s390_msa4_functions[icaList[AES_256_ENCRYPT].id].enabled)
-				icaList[x].property = icaList[x].property | 4; // 256 bit
+				e->property |= 4; // 256 bit
 			if (*s390_msa4_functions[icaList[AES_192_ENCRYPT].id].enabled)
-				icaList[x].property = icaList[x].property | 2; // 192 bit
+				e->property |= 2; // 192 bit
 			if (*s390_msa4_functions[icaList[AES_128_ENCRYPT].id].enabled)
-				icaList[x].property = icaList[x].property | 1; // 128 bit
-		  }
-		  else if (icaList[x].id == AES_128_XTS_ENCRYPT) { // check for the maximum size
+				e->property |= 1; // 128 bit
+		} else if (e->id == AES_128_XTS_ENCRYPT) { // check for the maximum size
 			if (*s390_msa4_functions[icaList[AES_256_XTS_ENCRYPT].id].enabled)
-				icaList[x].property = icaList[x].property | 2; // 256 bit
+				e->property |= 2; // 256 bit
 			if (*s390_msa4_functions[icaList[AES_128_XTS_ENCRYPT].id].enabled)
-				icaList[x].property = icaList[x].property | 1; // 128 bit
+				e->property |= 1; // 128 bit
 		}
-	break;
+		break;
 	case PPNO:
-		icaList[x].flags = icaList[x].flags |
-		    ((*s390_ppno_functions[icaList[x].id].enabled)? 4: 0);
-	break;
+		e->flags |= *s390_ppno_functions[e->id].enabled ? 4 : 0;
+		break;
 	case MSA8:
-		icaList[x].flags = icaList[x].flags |
-		((*s390_kma_functions[icaList[x].id].enabled)? 4: 0);
-	break;
+		e->flags |= *s390_kma_functions[e->id].enabled ? 4 : 0;
+		break;
 	default:
 		/* Do nothing. */
-	break;
+		break;
 	}
   }
   return 0;
