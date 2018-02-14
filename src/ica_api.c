@@ -26,6 +26,7 @@
 #include <stdbool.h>
 #include <assert.h>
 
+#include "init.h"
 #include "ica_api.h"
 #include "icastats.h"
 #include "fips.h"
@@ -47,6 +48,16 @@
 #define DEFAULT3_CRYPT_DEVICE "/dev/zcrypt"
 
 #define MAX_VERSION_LENGTH 16
+
+int ica_fallbacks_enabled = 1;
+
+void ica_set_fallback_mode(int fallback_mode)
+{
+	if (fallback_mode)
+		ica_fallbacks_enabled = 1;
+	else
+		ica_fallbacks_enabled = 0;
+}
 
 static unsigned int check_des_parms(unsigned int mode,
 				    unsigned long data_length,
@@ -896,13 +907,15 @@ unsigned int ica_rsa_mod_expo(ica_adapter_handle_t adapter_handle,
 
 	hardware = ALGO_SW;
 	if (adapter_handle == DRIVER_NOT_LOADED)
-		rc = rsa_mod_expo_sw(&rb);
+		rc = ica_fallbacks_enabled ?
+			rsa_mod_expo_sw(&rb) : ENODEV;
 	else {
 		rc = ioctl(adapter_handle, ICARSAMODEXPO, &rb);
 		if (!rc)
 			hardware = ALGO_HW;
 		else
-			rc = rsa_mod_expo_sw(&rb);
+			rc = ica_fallbacks_enabled ?
+				rsa_mod_expo_sw(&rb) : ENODEV;
 	}
 	if (rc == 0)
 		stats_increment(ICA_STATS_RSA_ME, hardware, ENCRYPT);
@@ -1003,13 +1016,15 @@ unsigned int ica_rsa_crt(ica_adapter_handle_t adapter_handle,
 
 	hardware = ALGO_SW;
 	if (adapter_handle == DRIVER_NOT_LOADED)
-		rc = rsa_crt_sw(&rb);
+		rc = ica_fallbacks_enabled ?
+			rsa_crt_sw(&rb) : ENODEV;
 	else {
 		rc = ioctl(adapter_handle, ICARSACRT, &rb);
 		if(!rc)
 			hardware = ALGO_HW;
 		else
-			rc = rsa_crt_sw(&rb);
+			rc = ica_fallbacks_enabled ?
+				rsa_crt_sw(&rb) : ENODEV;
 	}
 	if (rc == 0)
 		stats_increment(ICA_STATS_RSA_CRT, hardware, ENCRYPT);
@@ -1116,7 +1131,8 @@ int ica_ec_key_generate(ica_adapter_handle_t adapter_handle, ICA_EC_KEY *key)
 		if (rc == 0)
 			hardware = ALGO_HW;
 		else
-			rc = eckeygen_sw(key);
+			rc = ica_fallbacks_enabled ?
+				eckeygen_sw(key) : ENODEV;
 	}
 
 	if (rc == 0)
@@ -1158,7 +1174,8 @@ int ica_ecdh_derive_secret(ica_adapter_handle_t adapter_handle,
 		if (rc == 0)
 			hardware = ALGO_HW;
 		else
-			rc = ecdh_sw(privkey_A, pubkey_B, z);
+			rc = ica_fallbacks_enabled ?
+				ecdh_sw(privkey_A, pubkey_B, z) : ENODEV;
 	}
 
 	if (rc == 0)
@@ -1201,7 +1218,8 @@ int ica_ecdsa_sign(ica_adapter_handle_t adapter_handle,
 		if (rc == 0)
 			hardware = ALGO_HW;
 		else
-			rc = ecdsa_sign_sw(privkey, hash, hash_length, signature);
+			rc = ica_fallbacks_enabled ?
+				ecdsa_sign_sw(privkey, hash, hash_length, signature) : ENODEV;
 	}
 
 	if (rc == 0)
@@ -1244,7 +1262,8 @@ int ica_ecdsa_verify(ica_adapter_handle_t adapter_handle,
 		if (rc == 0)
 			hardware = ALGO_HW;
 		else
-			rc = ecdsa_verify_sw(pubkey, hash, hash_length, signature);
+			rc = ica_fallbacks_enabled ?
+				ecdsa_verify_sw(pubkey, hash, hash_length, signature) : ENODEV;
 	}
 
 	if (rc == 0)

@@ -229,12 +229,14 @@ int s390_sha1(unsigned char *iv, unsigned char *input_data,
 	      unsigned int input_length, unsigned char *output_data,
 	      unsigned int message_part, uint64_t *running_length)
 {
-	int rc = 1;
+	int rc = ENODEV;
 	if (sha1_switch)
 		rc = s390_sha_hw(iv, input_data, input_length, output_data,
 				sha_constants[SHA_1].hash_length,
 				 message_part, running_length, NULL, SHA_1);
 	if (rc) {
+		if (!ica_fallbacks_enabled)
+			return rc;
 		rc = s390_sha1_sw(iv, input_data, input_length, output_data,
 				  message_part, running_length);
 		stats_increment(ICA_STATS_SHA1, ALGO_SW, ENCRYPT);
@@ -248,12 +250,14 @@ int s390_sha224(unsigned char *iv, unsigned char *input_data,
 		unsigned int input_length, unsigned char *output_data,
 		unsigned int message_part, uint64_t *running_length)
 {
-	int rc = 1;
+	int rc = ENODEV;
 	if (sha256_switch)
 		rc = s390_sha_hw(iv, input_data, input_length, output_data,
 				sha_constants[SHA_224].hash_length,
 				 message_part, running_length, NULL, SHA_224);
 	if (rc) {
+		if (!ica_fallbacks_enabled)
+			return rc;
 		rc = s390_sha224_sw(iv, input_data, input_length, output_data,
 				  message_part, running_length);
 		stats_increment(ICA_STATS_SHA224, ALGO_SW, ENCRYPT);
@@ -267,12 +271,14 @@ int s390_sha256(unsigned char *iv, unsigned char *input_data,
 		unsigned int input_length, unsigned char *output_data,
 		unsigned int message_part, uint64_t *running_length)
 {
-	int rc = 1;
+	int rc = ENODEV;
 	if (sha256_switch)
 		rc = s390_sha_hw(iv, input_data, input_length, output_data,
 				sha_constants[SHA_256].hash_length,
 				 message_part, running_length, NULL, SHA_256);
 	if (rc) {
+		if (!ica_fallbacks_enabled)
+			return rc;
 		rc = s390_sha256_sw(iv, input_data, input_length, output_data,
 				    message_part, running_length);
 		stats_increment(ICA_STATS_SHA256, ALGO_SW, ENCRYPT);
@@ -286,13 +292,15 @@ int s390_sha384(unsigned char *iv, unsigned char *input_data,
 		unsigned int message_part, uint64_t *running_length_lo,
 		uint64_t *running_length_hi)
 {
-	int rc = 1;
+	int rc = ENODEV;
 	if (sha512_switch)
 		rc = s390_sha_hw(iv, input_data, input_length, output_data,
 				 sha_constants[SHA_384].hash_length,
 				 message_part, running_length_lo,
 				 running_length_hi, SHA_384);
 	if (rc) {
+		if (!ica_fallbacks_enabled)
+			return rc;
 		rc = s390_sha384_sw(iv, input_data, input_length, output_data,
 				    message_part, running_length_lo,
 				    running_length_hi);
@@ -308,13 +316,15 @@ int s390_sha512(unsigned char *iv, unsigned char *input_data,
 		unsigned int message_part, uint64_t *running_length_lo,
 		uint64_t *running_length_hi)
 {
-	int rc = 1;
+	int rc = ENODEV;
 	if (sha512_switch)
 		rc = s390_sha_hw(iv, input_data, input_length, output_data,
 				sha_constants[SHA_512].hash_length,
 				 message_part, running_length_lo,
 				 running_length_hi, SHA_512);
 	if (rc) {
+		if (!ica_fallbacks_enabled)
+			return rc;
 		rc = s390_sha512_sw(iv, input_data, input_length, output_data,
 				    message_part, running_length_lo,
 				    running_length_hi);
@@ -329,7 +339,7 @@ int s390_sha3_224(unsigned char *iv, unsigned char *input_data,
 		unsigned int input_length, unsigned char *output_data,
 		unsigned int message_part, uint64_t *running_length)
 {
-	int rc = EPERM;
+	int rc = ENODEV;
 
 	if (sha3_switch)
 		rc = s390_sha_hw(iv, input_data, input_length, output_data,
@@ -345,7 +355,7 @@ int s390_sha3_256(unsigned char *iv, unsigned char *input_data,
 		unsigned int input_length, unsigned char *output_data,
 		unsigned int message_part, uint64_t *running_length)
 {
-	int rc = EPERM;
+	int rc = ENODEV;
 
 	if (sha3_switch)
 		rc = s390_sha_hw(iv, input_data, input_length, output_data,
@@ -362,7 +372,7 @@ int s390_sha3_384(unsigned char *iv, unsigned char *input_data,
 		unsigned int message_part, uint64_t *running_length_lo,
 		uint64_t *running_length_hi)
 {
-	int rc = EPERM;
+	int rc = ENODEV;
 
 	if (sha3_switch)
 		rc = s390_sha_hw(iv, input_data, input_length, output_data,
@@ -380,7 +390,7 @@ int s390_sha3_512(unsigned char *iv, unsigned char *input_data,
 		unsigned int message_part, uint64_t *running_length_lo,
 		uint64_t *running_length_hi)
 {
-	int rc = EPERM;
+	int rc = ENODEV;
 
 	if (sha3_switch)
 		rc = s390_sha_hw(iv, input_data, input_length, output_data,
@@ -398,7 +408,7 @@ int s390_shake_128(unsigned char *iv, unsigned char *input_data,
 		unsigned int message_part, uint64_t *running_length_lo,
 		uint64_t *running_length_hi)
 {
-	int rc = EPERM;
+	int rc = ENODEV;
 
 	if (sha3_switch)
 		rc = s390_sha_hw(iv, input_data, input_length, output_data, output_length,
@@ -415,7 +425,7 @@ int s390_shake_256(unsigned char *iv, unsigned char *input_data,
 		unsigned int message_part, uint64_t *running_length_lo,
 		uint64_t *running_length_hi)
 {
-	int rc = EPERM;
+	int rc = ENODEV;
 
 	if (sha3_switch)
 		rc = s390_sha_hw(iv, input_data, input_length, output_data, output_length,
