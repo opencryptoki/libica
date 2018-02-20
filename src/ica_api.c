@@ -1253,6 +1253,28 @@ int ica_ecdsa_verify(ica_adapter_handle_t adapter_handle,
 	return rc;
 }
 
+int ica_ec_key_get_public_key(const ICA_EC_KEY *key, unsigned char *q, unsigned int *q_len)
+{
+    if (!key || !(key->X) || privlen_from_nid(key->nid) < 0)
+    	return EINVAL;
+
+    memcpy(q, key->X, 2*privlen_from_nid(key->nid));
+    *q_len = 2*privlen_from_nid(key->nid);
+
+    return 0;
+}
+
+int ica_ec_key_get_private_key(const ICA_EC_KEY *key, unsigned char *d, unsigned int *d_len)
+{
+    if (!key || !(key->D) || privlen_from_nid(key->nid) < 0)
+    	return EINVAL;
+
+    memcpy(d, key->D, privlen_from_nid(key->nid));
+    *d_len = privlen_from_nid(key->nid);
+
+    return 0;
+}
+
 void ica_ec_key_free(ICA_EC_KEY *key)
 {
     if (!key)
