@@ -405,13 +405,14 @@ static inline int s390_gcm(unsigned int function_code,
 					  tag, tag_length, 1, 1);
 		} else {
 			/* encrypt */
-			memset(tag, 0, AES_BLOCK_SIZE);
+			memset(tmp_tag, 0, AES_BLOCK_SIZE);
 			rc = s390_aes_gcm(function_code,
 					  plaintext, ciphertext, text_length,
 					  key, j0, GCM_CTR_WIDTH,
 					  tmp_ctr, GCM_CTR_WIDTH,
 					  aad, aad_length, subkey_h,
-					  tag, tag_length, 1, 1);
+					  tmp_tag, tag_length, 1, 1);
+			memcpy(tag, tmp_tag, tag_length);
 		}
 
 		return rc;

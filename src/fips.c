@@ -443,7 +443,7 @@ aes_gcm_kat(void) {
 			goto _err_;
 
 		memset(tag, 0, AES_BLKSIZE);
-		memset(out, 0, AES_BLKSIZE);
+		memset(out, 0, tv->len);
 		memset(icb, 0, sizeof(icb));
 		memset(icb, 0, sizeof(ucb));
 		memset(subkey, 0, sizeof(subkey));
