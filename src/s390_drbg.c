@@ -122,8 +122,8 @@ int drbg_instantiate(ica_drbg_t **sh,
 				   (sec + 7) / 8 + DRBG_ADD_ENTROPY_LEN :
 				   test_entropy_len;
 	const size_t nonce_len = !test_mode ? DRBG_NONCE_LEN : test_nonce_len;
-	unsigned char entropy[entropy_len];
-	unsigned char nonce[nonce_len];
+	unsigned char entropy[entropy_len + 1];	/* +1 avoids 0-length VLA */
+	unsigned char nonce[nonce_len + 1];
 
 	/* step 6 */
 	if(!test_mode)			/* use entropy from SEI */
@@ -222,7 +222,7 @@ int drbg_reseed(ica_drbg_t *sh,
 	const size_t entropy_len = !test_mode ?
 				   (sh->sec + 7) / 8 + DRBG_ADD_ENTROPY_LEN :
 				   test_entropy_len;
-	unsigned char entropy[entropy_len];
+	unsigned char entropy[entropy_len + 1];	/* +1 avoids 0-length VLA */
 
 	/* step 4 */
 	if(!test_mode)			/* use entropy from SEI */

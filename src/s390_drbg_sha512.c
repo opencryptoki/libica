@@ -120,7 +120,11 @@ int drbg_sha512_instantiate_ppno(void **ws,
 	/* step 1 */
 	memcpy(seed_material, entropy, entropy_len);
 	memcpy(seed_material + entropy_len, nonce, nonce_len);
-	memcpy(seed_material + entropy_len + nonce_len, pers, pers_len);
+
+	if(pers != NULL){
+		memcpy(seed_material + entropy_len + nonce_len, pers,
+		       pers_len);
+	}
 
 	/* steps 2 - 5 */
 	status = s390_ppno(S390_CRYPTO_SHA512_DRNG_SEED, *ws, NULL, 0,
@@ -206,7 +210,10 @@ int drbg_sha512_reseed_ppno(void *ws,
 
 	/* step 1 (0x01||V is prepended by ppno, see POP)*/
 	memcpy(seed_material, entropy, entropy_len);
-	memcpy(seed_material + entropy_len, add, add_len);
+
+	if(add != NULL){
+		memcpy(seed_material + entropy_len, add, add_len);
+	}
 
 	/* steps 2 - 5 */
 	status = s390_ppno(S390_CRYPTO_SHA512_DRNG_SEED, ws, NULL, 0,
