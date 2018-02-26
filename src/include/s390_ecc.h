@@ -128,7 +128,7 @@ typedef struct {
  * A null key token.
  */
 typedef struct {
-	uint16_t nullkey_len;
+	uint8_t nullkey_len[2];
 	uint8_t nkey[66];
 } ECDH_NULLKEY;
 
