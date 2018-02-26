@@ -851,7 +851,7 @@ static int test_generate_error_handling(ica_drbg_mech_t *mech)
 	test_no++;
 	test_sh.mech = mech;
 	test_sh.sec = mech->highest_supp_sec;
-	for(i = 0; i < sizeof(SEC); i++){
+	for(i = 0; i < sizeof(SEC) / sizeof(SEC[0]); i++){
 		if(SEC[i] > mech->highest_supp_sec)
 			break;
 		status = drbg_generate(&test_sh, SEC[i], true, NULL, 0, true,
