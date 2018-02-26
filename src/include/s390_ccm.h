@@ -51,14 +51,14 @@ typedef union {
 	struct meta_ad_large large;
 } __attribute__((packed)) ad_meta_t;
 
-static inline unsigned int fc_to_key_length(unsigned int function_code)
+static inline unsigned int fc_to_key_length(unsigned int fc)
 {
-	switch(function_code | 0x7F) {
-	case S390_CRYPTO_AES_128_ENCRYPT:
+	switch(UNDIRECTED_FC(fc)) {
+	case AES_128_ENCRYPT:
 		return 128/8;
-	case S390_CRYPTO_AES_192_ENCRYPT:
+	case AES_192_ENCRYPT:
 		return 192/8;
-	case S390_CRYPTO_AES_256_ENCRYPT:
+	case AES_256_ENCRYPT:
 	default:
 		return 256/8;
 	}

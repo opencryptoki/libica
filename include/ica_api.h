@@ -282,6 +282,10 @@ typedef struct {
 	unsigned char shake_256Hash[SHA3_PARMBLOCK_LENGTH];
 } shake_256_context_t;
 
+/*
+ * Assumption: *_ENCRYPT members of the kmc_funktion_t and kma_function_t
+ * enums are even, while *_DECRYPT members are odd.
+ */
 
 typedef enum {
 	DEA_ENCRYPT,
