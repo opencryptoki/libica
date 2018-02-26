@@ -1100,7 +1100,7 @@ const struct aes_ccm_tv AES_CCM_TV[] = {
 .rv = 0,
 },
 {
-.keylen = AES192_KEYLEN,
+.keylen = AES128_KEYLEN,
 .noncelen = 13,
 .adatalen = 32,
 .payloadlen = 24,

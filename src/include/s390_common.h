@@ -14,6 +14,10 @@
 #ifndef S390_COMMON_H
 #define S390_COMMON_H
 
+/*
+ * Assumption: *_ENCRYPT members of the kmc_funktion_t and kma_function_t
+ * enums are even, while *_DECRYPT members are odd.
+ */
 #define UNDIRECTED_FC(x) (((x)/2)*2)
 
 struct uint128 {
