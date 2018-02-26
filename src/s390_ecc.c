@@ -147,7 +147,8 @@ unsigned int make_keyblock_length(ECC_KEYBLOCK_LENGTH *kb, unsigned int len)
  */
 unsigned int make_nullkey(ECDH_NULLKEY* nkey)
 {
-	nkey->nullkey_len = 0x0044;
+	nkey->nullkey_len[0] = 0x00;
+	nkey->nullkey_len[1] = 0x44;
 
 	return sizeof(ECDH_NULLKEY);
 }
