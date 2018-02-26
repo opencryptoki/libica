@@ -362,7 +362,7 @@ int main(int argc,
 	for(i = 0; i < sizeof(gen_test) / sizeof(gen_test[0]); i++){
 		V_(printf("generate function: test no. %d", i));
 		size_t prnd_len = gen_test[i].prnd_len;
-		unsigned char prnd[prnd_len];
+		unsigned char prnd[prnd_len + 1];	/* +1 avoids 0-length VLA */
 		status = ica_drbg_generate(gen_test[i].sh, gen_test[i].sec,
 					   gen_test[i].pr, gen_test[i].add,
 					   gen_test[i].add_len, prnd,
