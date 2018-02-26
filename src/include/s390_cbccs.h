@@ -204,7 +204,7 @@ s390_aes_cbccs_enc(unsigned int fc, const unsigned char *in_data,
 
 	if (rest_data_length) {
 		memset(tmp_in_data, 0, AES_BLOCK_SIZE);
-		memcpy(tmp_in_data, in_data + tmp_data_length, AES_BLOCK_SIZE);
+		memcpy(tmp_in_data, in_data + tmp_data_length, rest_data_length);
 
 		rc = s390_aes_cbc(fc, AES_BLOCK_SIZE, tmp_in_data, iv, key,
 				  out_data + (tmp_data_length - AES_BLOCK_SIZE) +
