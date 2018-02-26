@@ -30,11 +30,14 @@ int test_gcm_kat(int iteration)
 	unsigned char* aad = (unsigned char*)&(gcm_kats[iteration].aad);
 	unsigned char* key = (unsigned char*)&(gcm_kats[iteration].key);
 	unsigned char* t_result = (unsigned char*)&(gcm_kats[iteration].tag);
-	unsigned char encrypt[data_length];
-	unsigned char decrypt[data_length];
 	unsigned char t[t_length];
 
 	int rc = 0;
+
+	unsigned int vla_length = data_length ? data_length : 1;
+
+	unsigned char encrypt[vla_length];
+	unsigned char decrypt[vla_length];
 
 	VV_(printf("Test Parameters for iteration = %i\n", iteration));
 	VV_(printf("key length = %i, data length = %i, tag length = %i,"
@@ -151,10 +154,13 @@ int test_gcm_kat_update(int iteration)
 	unsigned int chunk_len;
 	unsigned int offset;
 	unsigned char *chunk_data;
-	unsigned char encrypt[data_length];
-	unsigned char decrypt[data_length];
 	unsigned char t[t_length];
 	int rc = 0, i;
+
+	unsigned int vla_length = data_length ? data_length : 1;
+
+	unsigned char encrypt[vla_length];
+	unsigned char decrypt[vla_length];
 
 	VV_(printf("Test Parameters for iteration = %i\n", iteration));
 	VV_(printf("key length = %i, data length = %i, tag length = %i,"
@@ -326,8 +332,6 @@ int test_gcm_kat_update_aad(int iteration)
 
 	unsigned char* iv = (unsigned char*)&(gcm_kats[iteration].iv);
 	unsigned char* input_data = (unsigned char*)&(gcm_kats[iteration].data);
-	unsigned char encrypt[data_length];
-	unsigned char decrypt[data_length];
 	unsigned char* result = (unsigned char*)&(gcm_kats[iteration].result);
 	unsigned char* aad = (unsigned char*)&(gcm_kats[iteration].aad);
 	unsigned char* key = (unsigned char*)&(gcm_kats[iteration].key);
@@ -338,6 +342,11 @@ int test_gcm_kat_update_aad(int iteration)
 	unsigned int aad_offset;
 	unsigned char *chunk_data;
 	int rc = 0, i;
+
+	unsigned int vla_length = data_length ? data_length : 1;
+
+	unsigned char encrypt[vla_length];
+	unsigned char decrypt[vla_length];
 
 	VV_(printf("Test Parameters for iteration = %i\n", iteration));
 	VV_(printf("key length = %i, data length = %i, tag length = %i,"
