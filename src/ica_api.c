@@ -1028,7 +1028,7 @@ ICA_EC_KEY* ica_ec_key_new(unsigned int nid, unsigned int *privlen)
 
 #ifdef ICA_FIPS
 	if (fips >> 1)
-		return EACCES;
+		return NULL;
 #endif /* ICA_FIPS */
 
 	/* check for obvious errors in parms */
