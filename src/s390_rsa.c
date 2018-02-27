@@ -544,8 +544,8 @@ static unsigned int mod_expo_sw(int arg_length, char *arg, int exp_length,
 unsigned int rsa_crt_sw(ica_rsa_modexpo_crt_t * pCrt)
 {
 	int rc = 0;
-	int long_length = 0;
-	int short_length = 0;
+	unsigned int long_length = 0;
+	unsigned int short_length = 0;
 	BN_CTX *ctx = NULL;
 
 #ifdef ICA_FIPS
