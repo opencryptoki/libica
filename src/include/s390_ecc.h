@@ -417,13 +417,11 @@ static inline unsigned int getenv_icapath()
 	int env_icapath;
 
 	if (s) {
-#ifdef ICA_DEBUG
-		printf("icapath from getenv: [%s] \n", s);
-#endif
 		if (sscanf(s, "%d", &env_icapath) == 1) {
 			switch (env_icapath) {
 				case 1:	return 1; /* sw only */
 				case 2: return 2; /* hw only */
+				default:   break; /* default */
 			}
 		}
 	}
