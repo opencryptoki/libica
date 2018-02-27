@@ -321,7 +321,7 @@ static int s390_prng_seed(void *srv, unsigned int count)
 
 	// Add entropy using the source randomization value.
 	for (i = 0; i < count; i++) {
-		zPRNG_PB.uint ^= *((uint64_t *) srv + i * 8);
+		zPRNG_PB.uint ^= ((uint64_t *)srv)[i];
 		if ((rc = s390_add_entropy()))
 			break;
 	}
