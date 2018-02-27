@@ -32,7 +32,7 @@ static inline void __inc_des_ctr(uint64_t *iv, int ctr_bits)
 	if (ctr_bits >= 64)
 		mask = 0ULL;
 	else
-		mask = ~0ULL << (ctr_bits - 64);
+		mask = ~0ULL << ctr_bits;
 	*iv &= mask;
 	++ctr;
 	*iv |= ctr & ~mask;
