@@ -608,11 +608,11 @@ static inline void s390_stck(void *buf)
 
 static inline int __stfle(unsigned long long *list, int doublewords)
 {
-	typedef struct { unsigned long long _[doublewords]; } addrtype;
 	register unsigned long __nr asm("0") = doublewords - 1;
 
-	asm volatile(".insn s,0xb2b00000,%0" /* stfle */
-		     : "=m" (*(addrtype *) list), "+d" (__nr) : : "cc");
+	asm volatile(".insn s,0xb2b00000,0(%1)" /* stfle */
+		     : "+d" (__nr) : "a" (list) : "memory", "cc");
+
 	return __nr + 1;
 }
 
