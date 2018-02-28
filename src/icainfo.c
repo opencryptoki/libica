@@ -34,6 +34,13 @@
 #define CMD_NAME "icainfo"
 #define COPYRIGHT "Copyright IBM Corp. 2007, 2016."
 
+#define CARD_AVAILABLE		0x01
+#define CEXnA_AVAILABLE		0x02
+#define CEXnC_AVAILABLE		0x04
+#define CEX4C_AVAILABLE		0x08
+#define CEXnP_AVAILABLE		0x10
+
+
 void print_version(void)
 {
 	printf(CMD_NAME ": libica version " VERSION "\n" COPYRIGHT "\n");
@@ -78,6 +85,10 @@ static struct crypt_pair crypt_map[] = {
 	{"GHASH", G_HASH},
 	{"P_RNG", P_RNG},
 	{"DRBG-SHA-512", SHA512_DRNG},
+	{"ECDH", EC_DH},
+	{"ECDSA Sign", EC_DSA_SIGN},
+	{"ECDSA Verify", EC_DSA_VERIFY},
+	{"ECKGEN", EC_KGEN},
 	{"RSA ME", RSA_ME},
 	{"RSA CRT", RSA_CRT},
 	{"DES ECB", DES_ECB},
@@ -104,66 +115,54 @@ static struct crypt_pair crypt_map[] = {
 };
 
 
-int is_crypto_card_loaded()
+static int search_for_cards()
 {
-	DIR* sysDir;
-	FILE *file;
-	char dev[PATH_MAX] = "/sys/devices/ap/";
-	struct dirent *direntp;
-	char *type = NULL;
-	size_t size;
-	char c;
+	int ret=0, nr, version;
+	char type, fname[80], buf[80];
+	FILE *f;
 
-	if ((sysDir = opendir(dev)) == NULL )
-		return 0;
-
-	while((direntp = readdir(sysDir)) != NULL){
-		if(strstr(direntp->d_name, "card") != 0){
-			snprintf(dev, PATH_MAX, "/sys/devices/ap/%s/type",
-				 direntp->d_name);
-
-			if ((file = fopen(dev, "r")) == NULL){
-				closedir(sysDir);
-				return 0;
+	for (nr = 0; nr <= 0xFF; nr++) {
+		snprintf(fname, sizeof(fname), "/sys/devices/ap/card%02x/type", nr);
+		f = fopen(fname, "r");
+		if (f) {
+			if (fgets(buf, sizeof(buf), f)) {
+				version = 0;
+				type = ' ';
+				sscanf(buf + 3, "%d%c", &version, &type);
+				ret = ret | CARD_AVAILABLE;
+				if (type == 'A') {
+					ret = ret | CEXnA_AVAILABLE;
+				} else if (type == 'C') {
+					ret = ret | CEXnC_AVAILABLE;
+					if (version >= 4) {
+						ret = ret | CEX4C_AVAILABLE;
+					}
+				} else if (type == 'P') {
+					ret = ret | CEXnP_AVAILABLE;
+				}
 			}
-
-			if (getline(&type, &size, file) == -1){
-				fclose(file);
-				closedir(sysDir);
-				return 0;
-			}
-
-			/* ignore \n
-			 * looking for CEX??A and CEX??C
-			 * Skip type CEX??P cards
-			 */
-			if (type[strlen(type)-2] == 'P'){
-				free(type);
-				type = NULL;
-				fclose(file);
-				continue;
-			}
-			free(type);
-			type = NULL;
-			fclose(file);
-
-			snprintf(dev, PATH_MAX, "/sys/devices/ap/%s/online",
-				direntp->d_name);
-			if ((file = fopen(dev, "r")) == NULL){
-				closedir(sysDir);
-				return 0;
-			}
-			if((c = fgetc(file)) == '1'){
-				fclose(file);
-				return 1;
-			}
-			fclose(file);
+			fclose(f);
 		}
 	}
-	closedir(sysDir);
-	return 0;
+
+	return ret;
 }
 
+static inline int card_available(unsigned int flags)
+{
+	if (flags)
+		return 1;
+	else
+		return 0;
+}
+
+static inline int cex4c_available(unsigned int flags)
+{
+	if ((flags & CEX4C_AVAILABLE) == CEX4C_AVAILABLE)
+		return 1;
+	else
+		return 0;
+}
 
 
 int main(int argc, char **argv)
@@ -172,7 +171,7 @@ int main(int argc, char **argv)
 	int index = 0;
 	unsigned int mech_len;
 	libica_func_list_element *pmech_list = NULL;
-	int flag;
+	int flags;
 
 	while ((rc = getopt_long(argc, argv, getopt_string,
 				 getopt_long_options, &index)) != -1) {
@@ -211,7 +210,7 @@ int main(int argc, char **argv)
 		return EXIT_FAILURE;
 	}
 
-	flag = is_crypto_card_loaded();
+	flags = search_for_cards();
 
 	#define CELL_SIZE 3
 
@@ -231,7 +230,36 @@ int main(int argc, char **argv)
 					break;
 				}
 #endif /* ICA_FIPS */
-				if (flag) {
+
+				if (crypt_map[i].algo_id == EC_DH ||
+					crypt_map[i].algo_id == EC_DSA_SIGN ||
+					crypt_map[i].algo_id == EC_DSA_VERIFY ||
+					crypt_map[i].algo_id == EC_KGEN) {
+					/* Functions that need a CEX4C or later */
+					if (cex4c_available(flags)) {
+						printf("%14s |    %*s     |     %*s\n",
+							crypt_map[i].name,
+							CELL_SIZE,
+							pmech_list[j].flags &
+							(ICA_FLAG_SHW | ICA_FLAG_DHW)
+							? "yes" : "no",
+							CELL_SIZE,
+							pmech_list[j].flags & ICA_FLAG_SW
+							? "yes" : "no");
+					} else {
+						printf("%14s |    %*s     |     %*s\n",
+							crypt_map[i].name,
+							CELL_SIZE,
+							pmech_list[j].flags &
+							(ICA_FLAG_SHW)
+							? "yes" : "no",
+							CELL_SIZE,
+							pmech_list[j].flags & ICA_FLAG_SW
+							? "yes" : "no");
+					}
+
+				} else if (card_available(flags)) {
+					/* Functions that need any card */
 					printf("%14s |    %*s     |     %*s\n",
 						crypt_map[i].name,
 						CELL_SIZE,

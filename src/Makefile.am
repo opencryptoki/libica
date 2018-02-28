@@ -4,7 +4,7 @@ lib_LTLIBRARIES = libica.la
 
 libica_la_LDFLAGS = -version-number 3:2:1 $(PACKAGE_VERSION) -lrt -lcrypto
 libica_la_SOURCES = ica_api.c init.c icastats_shared.c \
-		    s390_rsa.c s390_crypto.c \
+		    s390_rsa.c s390_crypto.c s390_ecc.c \
 		    s390_prng.c s390_sha.c s390_drbg.c s390_drbg_sha512.c \
 		    test_vec.c fips.c
 

@@ -116,6 +116,10 @@ typedef ica_adapter_handle_t ICA_ADAPTER_HANDLE;
 #define AES_XTS         71
 #define AES_GCM_KMA     72
 #define P_RNG           80
+#define EC_DH           85
+#define EC_DSA_SIGN     86
+#define EC_DSA_VERIFY   87
+#define EC_KGEN         88
 #define RSA_ME          90
 #define RSA_CRT         91
 #define RSA_KEY_GEN_ME  92
@@ -326,6 +330,20 @@ typedef struct {
 	unsigned char* dq;
 	unsigned char* qInverse;
 } ica_rsa_key_crt_t;
+
+/**
+ *  ECC defines and typedefs
+ */
+typedef struct {
+	unsigned int version;
+	unsigned int encflag;
+	unsigned int curve_nid;
+	unsigned int pubkey_length;
+	unsigned int privkey_length;
+	unsigned char* pub_x;
+	unsigned char* pub_y;
+	unsigned char* priv_d;
+} ica_ecc_key_t;
 
 /**
  *  DES and AES defines and typedefs
@@ -705,6 +723,197 @@ unsigned int ica_shake_256(unsigned int message_part,
 			unsigned char *output_data,
 			unsigned int output_length);
 
+/*******************************************************************************
+ *
+ *                          Begin of ECC API
+ */
+
+typedef struct ec_key_t ICA_EC_KEY;
+
+/**
+ * Allocate and return a new ICA_EC_KEY structure.
+ *
+ * @param nid
+ * The identifier of the elliptic curve, on which the new ICA_EC_KEY
+ * shall be based.
+ *
+ * The following elliptic curves are supported.
+ *
+ * <pre>
+ * NID Value  NID Name (OpenSSL)     Elliptic Curve    D Length (bytes)
+ * ---------  ---------------------- ----------------  ----------------
+ *       409  NID_X9_62_prime192v    secp192r1            24
+ *       713  NID_secp224r1          secp224r1            28
+ *       415  NID_X9_62_prime256v1   secp256r1            32
+ *       715  NID_secp384r1          secp384r1            48
+ *       716  NID_secp521r1          secp521r1            66
+ *       921  NID_brainpoolP160r1    brainpoolP160r1      20
+ *       923  NID_brainpoolP192r1    brainpoolP192r1      24
+ *       925  NID_brainpoolP224r1    brainpoolP224r1      28
+ *       927  NID_brainpoolP256r1    brainpoolP256r1      32
+ *       929  NID_brainpoolP320r1    brainpoolP320r1      40
+ *       931  NID_brainpoolP384r1    brainpoolP384r1      48
+ *       933  NID_brainpoolP512r1    brainpoolP512r1      64
+ * </pre>
+ *
+ * @param privlen
+ * A pointer to an unsigned integer buffer where the length of the
+ * private D-value of the ICA_EC_KEY is returned.
+ *
+ * Note: The lengths of X and Y are the same as the length of D.
+ * Therefore, the public key (X,Y) has twice the length of D.
+ * Also an ECDSA signature has twice the length of D.
+ *
+ * @return Pointer to opaque ICA_EC_KEY structure if success.
+ * NULL if no memory could be allocated, or an unsupported nid is specified.
+ */
+ICA_EXPORT
+ICA_EC_KEY* ica_ec_key_new(unsigned int nid, unsigned int *privlen);
+
+/**
+ * Initialize an ICA_EC_KEY with given private (D) and/or public key
+ * values (X,Y). D may be NULL, if no private key value shall be
+ * specified. X and Y may both be NULL, if no public key shall be
+ * specified. If X is specified, also Y must be specified, and vice
+ * versa.
+ *
+ * @param X
+ * Pointer to the public X-value that shall be assigned to the
+ * ICA_EC_KEY object.
+ *
+ * @param Y
+ * Pointer to the public Y-value that shall be assigned to the
+ * ICA_EC_KEY object.
+ *
+ * @param D
+ * Pointer to the private D-value that shall be assigned to the
+ * ICA_EC_KEY object.
+ *
+ * @return 0 if success
+ * EINVAL if at least one invalid parameter is given.
+ */
+ICA_EXPORT
+int ica_ec_key_init(const unsigned char *X, const unsigned char *Y,
+		const unsigned char *D, ICA_EC_KEY *key);
+
+/**
+ * Generate private and public values for a given ICA_EC_KEY.
+ *
+ * @param adapter_handle
+ * Pointer to a previously opened device handle.
+ *
+ * @param key
+ * Pointer to a previously allocated ICA_EC_KEY object.
+ *
+ * @return 0 if success
+ * EINVAL if at least one invalid parameter is given.
+ * ENOMEM if memeory could not be allocated.
+ * EFAULT if an internal processing error occurred.
+ */
+ICA_EXPORT
+int ica_ec_key_generate(ica_adapter_handle_t adapter_handle, ICA_EC_KEY *key);
+
+/**
+ * Calculate the Diffie-Hellman shared secret (z-value) of a given
+ * private ICA_EC_KEY A (with given D-value) and a given public
+ * ICA_EC_KEY B (with given X and Y values).
+ *
+ * @param privkey_A
+ * A pointer to a private ICA_EC_KEY object.
+ *
+ * @param pubkey_B
+ * A pointer to a public ICA_EC_KEY object.
+ *
+ * @param z
+ * Pointer to a writable buffer where the shared secret (z) is returned.
+ *
+ * @param z_length
+ * The length in bytes of the z buffer. This length must be greater or
+ * equal to privlen, as returned when creating the ICA_EC_KEY objects.
+ * Both keys are supposed to be based on the same elliptic curve, so
+ * both keys have the same lengths of D, and (X,Y).
+ *
+ * @return 0 if success
+ * EINVAL if at least one invalid parameter is given.
+ * EFAULT if an internal processing error occurred.
+ */
+ICA_EXPORT
+int ica_ecdh_derive_secret(ica_adapter_handle_t adapter_handle,
+		const ICA_EC_KEY *privkey_A, const ICA_EC_KEY *pubkey_B,
+		unsigned char *z, unsigned int z_length);
+
+/**
+ * Create an ECDSA signature for the given hash data using the given
+ * private ICA_EC_KEY.
+ *
+ * @param privkey
+ * Pointer to a readable private ICA_EC_KEY object.
+ *
+ * @param hash
+ * Pointer to a readable buffer containing hashed data.
+ *
+ * @param
+ * The length of the hashed data. Supported lengths are
+ * 20, 28, 32, 48, and 64 bytes.
+ *
+ * @param signature
+ * Pointer to a writable buffer where the ECDSA signature is returned.
+ *
+ * @param signature_length
+ * The length of the buffer. It must be greater or equal to 2*privlen
+ * as returned when creating the ICA_EC_KEY object.
+ *
+ * @return 0 if success
+ * EINVAL if at least one invalid parameter is given.
+ * EFAULT if an internal processing error occurred.
+ */
+ICA_EXPORT
+int ica_ecdsa_sign(ica_adapter_handle_t adapter_handle,
+		const ICA_EC_KEY *privkey, const unsigned char *hash, unsigned int hash_length,
+		unsigned char *signature, unsigned int signature_length);
+
+/**
+ * Verify a given ECDSA signature with given hash data and public ICA_EC_KEY.
+ *
+ * @param pubkey
+ * Pointer to a readable public ICA_EC_KEY object.
+ *
+ * @param hash
+ * Pointer to a readable buffer containing hashed data.
+ *
+ * @param
+ * The length of the hashed data. Supported lengths are
+ * 20, 28, 32, 48, and 64 bytes.
+ *
+ * @param signature
+ * Pointer to a writable buffer where the ECDSA signature is returned.
+ *
+ * @param signature_length
+ * The length of the buffer. It must be greater or equal to 2*privlen
+ * as returned when creating the ICA_EC_KEY object.
+ *
+ * @return 0 if success
+ * EINVAL if at least one invalid parameter is given.
+ * EFAULT if an internal processing error occurred.
+ */
+ICA_EXPORT
+int ica_ecdsa_verify(ica_adapter_handle_t adapter_handle,
+		const ICA_EC_KEY *pubkey, const unsigned char *hash, unsigned int hash_length,
+		const unsigned char *signature, unsigned int signature_length);
+
+/**
+ * Free an ICA_EC_KEY.
+ *
+ * @param key
+ * Pointer to ICA_EC_KEY.
+ */
+ICA_EXPORT
+void ica_ec_key_free(ICA_EC_KEY *key);
+
+/*
+ *                             End of ECC API
+ *
+ ******************************************************************************/
 
 /**
  * Generate RSA keys in modulus/exponent format.
