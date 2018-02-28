@@ -52,18 +52,6 @@ testcases=(
 "libica_rsa_key_check_test $verbosity"
 "libica_rsa_test $verbosity"
 
-"libica_ecdh_test $verbosity"
-"libica_ecdsa_test $verbosity"
-"libica_eckeygen_test $verbosity"
-
-"ICAPATH=1 libica_ecdh_test $verbosity"
-"ICAPATH=1 libica_ecdsa_test $verbosity"
-"ICAPATH=1 libica_eckeygen_test $verbosity"
-
-"ICAPATH=2 libica_ecdh_test $verbosity"
-"ICAPATH=2 libica_ecdsa_test $verbosity"
-"ICAPATH=2 libica_eckeygen_test $verbosity"
-
 "libica_sha3_224_test $verbosity"
 "libica_sha3_256_test $verbosity"
 "libica_sha3_384_test $verbosity"
@@ -80,7 +68,7 @@ for (( i=1; i <= ${#testcases[@]}; i++ ))
 do
 	echo -ne "Running libica test suite (writing to "$out") ... "$i"/"${#testcases[@]}"\r";
 	echo "Running '${testcases[i-1]}' ..." >> $out;
-	PATH=./:$PATH bash -c "${testcases[i-1]}" >> $out 2>&1;
+	./${testcases[i-1]} >> $out 2>&1;
 	echo -ne "... done\n\n" >> $out;
 done
 echo -ne "\n";

@@ -23,7 +23,6 @@ TARGETS = icastats_test \
          libica_shake_128_test libica_shake_256_test \
 	  libica_rsa_test libica_rsa_key_check_test \
 	  libica_rng_test libica_keygen_test \
-	  libica_ecdh_test libica_ecdsa_test libica_eckeygen_test \
 	  libica_cmac_test libica_aes_gcm_kma_test \
 	  libica_aes_xts_test libica_aes_gcm_test libica_ccm_test \
 	  libica_aes_ctr_test libica_aes_ofb_test libica_aes_cfb_test \
