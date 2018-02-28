@@ -44,6 +44,10 @@ typedef enum stats_fields {
 	ICA_STATS_GHASH,
 	ICA_STATS_PRNG,
 	ICA_STATS_DRBGSHA512,
+	ICA_STATS_ECDH,
+	ICA_STATS_ECDSA_SIGN,
+	ICA_STATS_ECDSA_VERIFY,
+	ICA_STATS_ECKGEN,
 	ICA_STATS_RSA_ME,
 	ICA_STATS_RSA_CRT, /* add new crypt counters above RSA_CRT
 			      (see print_stats function) */
@@ -89,6 +93,10 @@ typedef enum stats_fields {
 	"GHASH",      	\
 	"P_RNG",      	\
 	"DRBG-SHA-512",	\
+	"ECDH",         \
+	"ECDSA Sign",   \
+	"ECDSA Verify", \
+	"ECKGEN",       \
 	"RSA-ME",     	\
 	"RSA-CRT",    	\
 	"DES ECB",    	\

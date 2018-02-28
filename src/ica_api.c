@@ -30,6 +30,7 @@
 #include "icastats.h"
 #include "fips.h"
 #include "s390_rsa.h"
+#include "s390_ecc.h"
 #include "s390_crypto.h"
 #include "s390_sha.h"
 #include "s390_prng.h"
@@ -1015,6 +1016,262 @@ unsigned int ica_rsa_crt(ica_adapter_handle_t adapter_handle,
 
 	return rc;
 }
+
+/*******************************************************************************
+ *
+ *                          Begin of ECC API
+ */
+
+ICA_EC_KEY* ica_ec_key_new(unsigned int nid, unsigned int *privlen)
+{
+	ICA_EC_KEY *key;
+
+#ifdef ICA_FIPS
+	if (fips >> 1)
+		return NULL;
+#endif /* ICA_FIPS */
+
+	/* check for obvious errors in parms */
+	if (!curve_supported(nid))
+		return NULL;
+
+	if ((key = malloc(sizeof(ICA_EC_KEY))) == NULL)
+		return NULL;
+
+	key->nid = nid;
+	key->X = NULL;
+	key->Y = NULL;
+	key->D = NULL;
+	*privlen = privlen_from_nid(nid);
+
+	return key;
+}
+
+int ica_ec_key_init(const unsigned char *X, const unsigned char *Y,
+		const unsigned char *D, ICA_EC_KEY *key)
+{
+
+#ifdef ICA_FIPS
+	if (fips >> 1)
+		return EACCES;
+#endif /* ICA_FIPS */
+
+	/* check for obvious errors in parms */
+	if (key == NULL)
+		return EINVAL;
+
+	if ((X == NULL && Y != NULL) || (X != NULL && Y == NULL))
+		return EINVAL;
+
+	if (X != NULL && Y != NULL) {
+		key->X = (unsigned char*)X;
+		key->Y = (unsigned char*)Y;
+	}
+
+	if (D != NULL)
+		key->D = (unsigned char*)D;
+
+	key->key_generated = 0;
+
+	return 0;
+}
+
+int ica_ec_key_generate(ica_adapter_handle_t adapter_handle, ICA_EC_KEY *key)
+{
+	int hardware, rc;
+	unsigned int privlen = privlen_from_nid(key->nid);
+	unsigned int icapath = 0;
+
+#ifdef ICA_FIPS
+	if (fips >> 1)
+		return EACCES;
+#endif /* ICA_FIPS */
+
+	/* check for obvious errors in parms */
+	if (key == NULL)
+		return EINVAL;
+
+	/* allocate memory for the 3 key parts */
+	key->X = malloc(3*privlen);
+	if (!key->X)
+		return ENOMEM;
+
+	key->Y = key->X + privlen;
+	key->D = key->Y + privlen;
+	key->key_generated = 1;
+
+	icapath = getenv_icapath();
+	switch (icapath) {
+	case 1: /* hw only */
+		hardware = ALGO_HW;
+		rc = eckeygen_hw(adapter_handle, key);
+		break;
+	case 2: /* sw only */
+		hardware = ALGO_SW;
+		rc = eckeygen_sw(key);
+		break;
+	default: /* hw with sw fallback (default) */
+		hardware = ALGO_SW;
+		rc = eckeygen_hw(adapter_handle, key);
+		if (rc == 0)
+			hardware = ALGO_HW;
+		else
+			rc = eckeygen_sw(key);
+	}
+
+	if (rc == 0)
+		stats_increment(ICA_STATS_ECKGEN, hardware, ENCRYPT);
+
+	return rc;
+}
+
+int ica_ecdh_derive_secret(ica_adapter_handle_t adapter_handle,
+		const ICA_EC_KEY *privkey_A, const ICA_EC_KEY *pubkey_B,
+		unsigned char *z, unsigned int z_length)
+{
+	int hardware, rc;
+	unsigned int privlen = privlen_from_nid(privkey_A->nid);
+	unsigned int icapath = 0;
+
+#ifdef ICA_FIPS
+	if (fips >> 1)
+		return EACCES;
+#endif /* ICA_FIPS */
+
+	/* check for obvious errors in parms */
+	if (z == NULL || z_length < privlen || privkey_A->nid != pubkey_B->nid)
+		return EINVAL;
+
+	icapath = getenv_icapath();
+	switch (icapath) {
+	case 1: /* hw only */
+		hardware = ALGO_HW;
+		rc = ecdh_hw(adapter_handle, privkey_A, pubkey_B, z);
+		break;
+	case 2: /* sw only */
+		hardware = ALGO_SW;
+		rc = ecdh_sw(privkey_A, pubkey_B, z);
+		break;
+	default: /* hw with sw fallback (default) */
+		hardware = ALGO_SW;
+		rc = ecdh_hw(adapter_handle, privkey_A, pubkey_B, z);
+		if (rc == 0)
+			hardware = ALGO_HW;
+		else
+			rc = ecdh_sw(privkey_A, pubkey_B, z);
+	}
+
+	if (rc == 0)
+		stats_increment(ICA_STATS_ECDH, hardware, ENCRYPT);
+
+	return rc;
+}
+
+int ica_ecdsa_sign(ica_adapter_handle_t adapter_handle,
+		const ICA_EC_KEY *privkey, const unsigned char *hash, unsigned int hash_length,
+		unsigned char *signature, unsigned int signature_length)
+{
+	int hardware, rc;
+	unsigned int privlen = privlen_from_nid(privkey->nid);
+	unsigned int icapath = 0;
+
+#ifdef ICA_FIPS
+	if (fips >> 1)
+		return EACCES;
+#endif /* ICA_FIPS */
+
+	/* check for obvious errors in parms */
+	if (privkey == NULL || hash == NULL || !hash_length_valid(hash_length) ||
+		signature == NULL || signature_length < 2*privlen)
+		return EINVAL;
+
+	icapath = getenv_icapath();
+	switch (icapath) {
+	case 1: /* hw only */
+		hardware = ALGO_HW;
+		rc = ecdsa_sign_hw(adapter_handle, privkey, hash, hash_length, signature);
+		break;
+	case 2: /* sw only */
+		hardware = ALGO_SW;
+		rc = ecdsa_sign_sw(privkey, hash, hash_length, signature);
+		break;
+	default: /* hw with sw fallback (default) */
+		hardware = ALGO_SW;
+		rc = ecdsa_sign_hw(adapter_handle, privkey, hash, hash_length, signature);
+		if (rc == 0)
+			hardware = ALGO_HW;
+		else
+			rc = ecdsa_sign_sw(privkey, hash, hash_length, signature);
+	}
+
+	if (rc == 0)
+		stats_increment(ICA_STATS_ECDSA_SIGN, hardware, ENCRYPT);
+
+	return rc;
+}
+
+int ica_ecdsa_verify(ica_adapter_handle_t adapter_handle,
+		const ICA_EC_KEY *pubkey, const unsigned char *hash, unsigned int hash_length,
+		const unsigned char *signature, unsigned int signature_length)
+{
+	int hardware, rc;
+	unsigned int privlen = privlen_from_nid(pubkey->nid);
+	unsigned int icapath = 0;
+
+#ifdef ICA_FIPS
+	if (fips >> 1)
+		return EACCES;
+#endif /* ICA_FIPS */
+
+	/* check for obvious errors in parms */
+	if (pubkey == NULL || hash == NULL || !hash_length_valid(hash_length) ||
+		signature == NULL || signature_length < 2*privlen)
+		return EINVAL;
+
+	icapath = getenv_icapath();
+	switch (icapath) {
+	case 1: /* hw only */
+		hardware = ALGO_HW;
+		rc = ecdsa_verify_hw(adapter_handle, pubkey, hash, hash_length, signature);
+		break;
+	case 2: /* sw only */
+		hardware = ALGO_SW;
+		rc = ecdsa_verify_sw(pubkey, hash, hash_length, signature);
+		break;
+	default: /* hw with sw fallback (default) */
+		hardware = ALGO_SW;
+		rc = ecdsa_verify_hw(adapter_handle, pubkey, hash, hash_length, signature);
+		if (rc == 0)
+			hardware = ALGO_HW;
+		else
+			rc = ecdsa_verify_sw(pubkey, hash, hash_length, signature);
+	}
+
+	if (rc == 0)
+		stats_increment(ICA_STATS_ECDSA_VERIFY, hardware, ENCRYPT);
+
+	return rc;
+}
+
+void ica_ec_key_free(ICA_EC_KEY *key)
+{
+    if (!key)
+	return;
+
+    if (key->key_generated && key->X) {
+	/* free 1 block of memory for X, Y, and D */
+	OPENSSL_cleanse((void *)key->X, 3*privlen_from_nid(key->nid));
+	free(key->X);
+    }
+
+    OPENSSL_cleanse((void *)key, sizeof(ICA_EC_KEY));
+    free(key);
+}
+
+/*
+ *                             End of ECC API
+ *
+ ******************************************************************************/
 
 unsigned int ica_des_encrypt(unsigned int mode,
 			     unsigned int data_length,
