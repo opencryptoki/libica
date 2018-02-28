@@ -1,3 +1,6 @@
+v3.2.1
+ - [FEATURE] Use z14 PRNO-TRNG to seed SHA512-DRBG.
+ - [PATCH] Various bug fixes.
 v3.2.0
  - [FEATURE] New AES-GCM interface.
  - [UPDATE] Add symbol versioning.
