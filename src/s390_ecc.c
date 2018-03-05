@@ -43,9 +43,20 @@ do { \
 #endif
 
 /**
+ * Check if openssl does support this ec curve
+ */
+static int is_supported_openssl_curve(int nid)
+{
+	EC_GROUP *ptr = EC_GROUP_new_by_curve_name(nid);
+	if (ptr)
+		EC_GROUP_free(ptr);
+	return ptr ? 1 : 0;
+}
+
+/**
  * makes a private EC_KEY.
  */
-EC_KEY *make_eckey(int nid, const unsigned char *p, size_t plen)
+static EC_KEY *make_eckey(int nid, const unsigned char *p, size_t plen)
 {
     int ok = 0;
     EC_KEY *k = NULL;
@@ -96,7 +107,7 @@ EC_KEY *make_eckey(int nid, const unsigned char *p, size_t plen)
 /**
  * makes a public EC_KEY.
  */
-EC_KEY *make_public_eckey(int nid, BIGNUM *x, BIGNUM *y, size_t plen)
+static EC_KEY *make_public_eckey(int nid, BIGNUM *x, BIGNUM *y, size_t plen)
 {
     int ok = 0;
     EC_KEY *k = NULL;
@@ -136,7 +147,7 @@ EC_KEY *make_public_eckey(int nid, BIGNUM *x, BIGNUM *y, size_t plen)
 /**
  * makes a keyblock length field at given struct and returns its length.
  */
-unsigned int make_keyblock_length(ECC_KEYBLOCK_LENGTH *kb, unsigned int len)
+static unsigned int make_keyblock_length(ECC_KEYBLOCK_LENGTH *kb, unsigned int len)
 {
 	kb->keyblock_len = len;
 
@@ -146,7 +157,7 @@ unsigned int make_keyblock_length(ECC_KEYBLOCK_LENGTH *kb, unsigned int len)
 /**
  * makes a nullkey token at given struct and returns its length.
  */
-unsigned int make_nullkey(ECDH_NULLKEY* nkey)
+static unsigned int make_nullkey(ECDH_NULLKEY* nkey)
 {
 	nkey->nullkey_len[0] = 0x00;
 	nkey->nullkey_len[1] = 0x44;
@@ -157,7 +168,7 @@ unsigned int make_nullkey(ECDH_NULLKEY* nkey)
 /**
  * makes an ecc null token at given struct.
  */
-unsigned int make_ecc_null_token(ECC_NULL_TOKEN *kb)
+static unsigned int make_ecc_null_token(ECC_NULL_TOKEN *kb)
 {
 	kb->len = 0x0005;
 	kb->flags = 0x0010;
@@ -174,11 +185,11 @@ unsigned int make_ecc_null_token(ECC_NULL_TOKEN *kb)
  * @return domain number (0 ... n, machine dependent) if success
  *         -1 if error or driver not loaded
  */
-short get_default_domain(void)
+static short get_default_domain(void)
 {
 	const char *domainfile = "/sys/bus/ap/ap_domain";
 	static short domain = -1;
-	int n, temp;
+	int temp;
 	FILE *f = NULL;
 
 	if (domain >= 0)
@@ -202,7 +213,7 @@ short get_default_domain(void)
 /**
  * makes a T2 CPRBX at given struct and returns its length.
  */
-unsigned int make_cprbx(struct CPRBX* cprbx, unsigned int parmlen,
+static unsigned int make_cprbx(struct CPRBX* cprbx, unsigned int parmlen,
 		struct CPRBX *preqcblk, struct CPRBX *prepcblk)
 {
     cprbx->cprb_len = CPRBXSIZE;
@@ -221,7 +232,7 @@ unsigned int make_cprbx(struct CPRBX* cprbx, unsigned int parmlen,
 /**
  * makes an ECDH parmblock at given struct and returns its length.
  */
-unsigned int make_ecdh_parmblock(ECDH_PARMBLOCK *pb)
+static unsigned int make_ecdh_parmblock(ECDH_PARMBLOCK *pb)
 {
 	typedef struct {
 		uint16_t vud_len;
@@ -250,7 +261,7 @@ unsigned int make_ecdh_parmblock(ECDH_PARMBLOCK *pb)
 /**
  * makes an ECDH key structure at given struct and returns its length.
  */
-unsigned int make_ecdh_key_token(unsigned char *kb, unsigned int keyblock_length,
+static unsigned int make_ecdh_key_token(unsigned char *kb, unsigned int keyblock_length,
 		const ICA_EC_KEY  *privkey_A, const ICA_EC_KEY *pubkey_B,
 		uint8_t curve_type)
 {
@@ -313,7 +324,7 @@ unsigned int make_ecdh_key_token(unsigned char *kb, unsigned int keyblock_length
 /**
  * finalizes an ica_xcRB struct that is sent to the card.
  */
-void finalize_xcrb(struct ica_xcRB* xcrb, struct CPRBX *preqcblk, struct CPRBX *prepcblk)
+static void finalize_xcrb(struct ica_xcRB* xcrb, struct CPRBX *preqcblk, struct CPRBX *prepcblk)
 {
     memset(xcrb, 0, sizeof(struct ica_xcRB));
     xcrb->agent_ID = 0x4341;
@@ -420,7 +431,8 @@ unsigned int ecdh_sw(const ICA_EC_KEY *privkey_A, const ICA_EC_KEY *pubkey_B,
 		unsigned char *z)
 {
 	int rc, ret = EIO;
-    EC_KEY *a = NULL; EC_KEY *b = NULL;
+	EC_KEY *a = NULL;
+	EC_KEY *b = NULL;
     BIGNUM *xb, *yb;
     unsigned int ztmplen;
     unsigned int privlen = privlen_from_nid(privkey_A->nid);
@@ -429,6 +441,9 @@ unsigned int ecdh_sw(const ICA_EC_KEY *privkey_A, const ICA_EC_KEY *pubkey_B,
 	if ((fips & ICA_FIPS_MODE) && (!FIPS_mode()))
 		return EACCES;
 #endif /* ICA_FIPS */
+
+	if (!is_supported_openssl_curve(privkey_A->nid))
+		return EINVAL;
 
 	a = make_eckey(privkey_A->nid, privkey_A->D, privlen);
 	xb = BN_bin2bn(pubkey_B->X, privlen, NULL);
@@ -441,6 +456,15 @@ unsigned int ecdh_sw(const ICA_EC_KEY *privkey_A, const ICA_EC_KEY *pubkey_B,
     if (ztmplen != privlen)
         goto err;
 
+	/**
+	 * Make sure to use original openssl compute_key method to avoid endless loop
+	 * when being called from IBMCA engine in software fallback.
+	 */
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
+	ECDH_set_method(a, ECDH_OpenSSL());
+#else
+	EC_KEY_set_method(a, EC_KEY_OpenSSL());
+#endif
     rc = ECDH_compute_key(z, privlen, EC_KEY_get0_public_key(b), a, NULL);
     if (rc == 0)
 	goto err;
@@ -459,7 +483,7 @@ err:
 /**
  * makes an ECDSA sign parmblock at given struct and returns its length.
  */
-unsigned int make_ecdsa_sign_parmblock(ECDSA_PARMBLOCK_PART1 *pb,
+static unsigned int make_ecdsa_sign_parmblock(ECDSA_PARMBLOCK_PART1 *pb,
 		const unsigned char *hash, unsigned int hash_length)
 {
 	pb->subfunc_code = 0x5347; /* 'SG' */
@@ -475,7 +499,7 @@ unsigned int make_ecdsa_sign_parmblock(ECDSA_PARMBLOCK_PART1 *pb,
 /**
  * makes an ECDSA verify parmblock at given struct and returns its length.
  */
-unsigned int make_ecdsa_verify_parmblock(char *pb,
+static unsigned int make_ecdsa_verify_parmblock(char *pb,
 		const unsigned char *hash, unsigned int hash_length,
 		const unsigned char *signature, unsigned int signature_len)
 {
@@ -504,7 +528,7 @@ unsigned int make_ecdsa_verify_parmblock(char *pb,
 /**
  * makes an ECDSA key structure at given struct and returns its length.
  */
-unsigned int make_ecdsa_private_key_token(unsigned char *kb,
+static unsigned int make_ecdsa_private_key_token(unsigned char *kb,
 		const ICA_EC_KEY *privkey, const unsigned char *X, const unsigned char *Y,
 		uint8_t curve_type)
 {
@@ -568,7 +592,7 @@ unsigned int make_ecdsa_private_key_token(unsigned char *kb,
 /**
  * makes an ECDSA verify key structure at given struct and returns its length.
  */
-unsigned int make_ecdsa_public_key_token(ECDSA_PUBLIC_KEY_BLOCK *kb,
+static unsigned int make_ecdsa_public_key_token(ECDSA_PUBLIC_KEY_BLOCK *kb,
 		const ICA_EC_KEY *pubkey, uint8_t curve_type)
 {
 	unsigned int privlen = privlen_from_nid(pubkey->nid);
@@ -648,7 +672,7 @@ static ECDSA_SIGN_REPLY* make_ecdsa_sign_request(const ICA_EC_KEY *privkey,
 /**
  * calculate the public (X,Y) values for the given private key, if necessary.
  */
-unsigned int provide_pubkey(const ICA_EC_KEY *privkey, unsigned char *X, unsigned char *Y)
+static unsigned int provide_pubkey(const ICA_EC_KEY *privkey, unsigned char *X, unsigned char *Y)
 {
 	EC_KEY *eckey = NULL;
 	EC_POINT *pub_key = NULL;
@@ -785,13 +809,25 @@ unsigned int ecdsa_sign_sw(const ICA_EC_KEY *privkey,
 		return EACCES;
 #endif /* ICA_FIPS */
 
-    a = make_eckey(privkey->nid, privkey->D, privlen);
+	if (!is_supported_openssl_curve(privkey->nid))
+		return EINVAL;
+
+	a = make_eckey(privkey->nid, privkey->D, privlen);
     if (!a)
         goto err;
 
     if (!EC_KEY_check_key(a))
         goto err;
 
+	/**
+	 * Make sure to use original openssl sign method to avoid endless loop when being
+	 * called from IBMCA engine in software fallback.
+	 */
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
+    ECDSA_set_method(a, ECDSA_OpenSSL());
+#else
+    EC_KEY_set_method(a, EC_KEY_OpenSSL());
+#endif
     sig = ECDSA_do_sign(hash, hash_length, a);
     if (!sig)
 	goto err;
@@ -921,6 +957,9 @@ unsigned int ecdsa_verify_sw(const ICA_EC_KEY *pubkey,
 	return EACCES;
 #endif /* ICA_FIPS */
 
+	if (!is_supported_openssl_curve(pubkey->nid))
+		return EINVAL;
+
 	/* create public key with given (x,y) */
 	xa = BN_bin2bn(pubkey->X, privlen, NULL);
 	ya = BN_bin2bn(pubkey->Y, privlen, NULL);
@@ -935,7 +974,15 @@ unsigned int ecdsa_verify_sw(const ICA_EC_KEY *pubkey,
 	s = BN_bin2bn(signature + privlen, privlen, NULL);
 	ECDSA_SIG_set0(sig, r, s);
 
-	/* Verify signature */
+	/**
+	 * Make sure to use original openssl verify method to avoid endless loop
+	 * when being called from IBMCA engine in software fallback.
+	 */
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
+    ECDSA_set_method(a, ECDSA_OpenSSL());
+#else
+	EC_KEY_set_method(a, EC_KEY_OpenSSL());
+#endif
 	rc = ECDSA_do_verify(hash, hash_length, sig, a);
 	switch (rc) {
 	case 0: /* signature invalid */
@@ -960,7 +1007,7 @@ unsigned int ecdsa_verify_sw(const ICA_EC_KEY *pubkey,
 /**
  * makes an ECKeyGen parmblock at given struct and returns its length.
  */
-unsigned int make_eckeygen_parmblock(ECKEYGEN_PARMBLOCK *pb)
+static unsigned int make_eckeygen_parmblock(ECKEYGEN_PARMBLOCK *pb)
 {
 	pb->subfunc_code = 0x5047; /* 'PG' */
 	pb->rule_array.rule_array_len = 0x000A;
@@ -973,7 +1020,7 @@ unsigned int make_eckeygen_parmblock(ECKEYGEN_PARMBLOCK *pb)
 /**
  * makes an ECKeyGen private key structure at given struct and returns its length.
  */
-unsigned int make_eckeygen_private_key_token(ECKEYGEN_KEY_TOKEN* kb,
+static unsigned int make_eckeygen_private_key_token(ECKEYGEN_KEY_TOKEN* kb,
 		unsigned int nid, uint8_t curve_type)
 {
 	unsigned int privlen = privlen_from_nid(nid);
@@ -1113,11 +1160,27 @@ unsigned int eckeygen_sw(ICA_EC_KEY *key)
 		return EACCES;
 #endif /* ICA_FIPS */
 
+	if (!is_supported_openssl_curve(key->nid))
+		return EINVAL;
+
     if ((a = EC_KEY_new_by_curve_name(key->nid)) == NULL)
         goto err;
 
     if ((group = EC_KEY_get0_group(a)) == NULL)
         goto err;
+
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
+    /* Openssl 1.0.2 does not provide a default ec_key_gen method, so IBMCA does not
+     * override such a function. Therefore nothing to do here.
+     */
+#else
+	/**
+	 * IBMCA overrides the default ec_key_gen method for openssl 1.1.0 and later.
+	 * Make sure to use original openssl method to avoid endless loop when being
+	 * called from IBMCA engine in software fallback.
+	 */
+    EC_KEY_set_method(a, EC_KEY_OpenSSL());
+#endif
 
     if (!EC_KEY_generate_key(a))
     goto err;

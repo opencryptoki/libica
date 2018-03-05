@@ -330,34 +330,36 @@ int main(int argc, char **argv)
 		if (rc) {
 			V_(printf("Shared secret could not be derived, rc=%i.\n",rc));
 			errors++;
-		}
+		} else {
 
-		/* compare result with known result */
-		if (memcmp(shared_secret, ecdh_kats[i].z, ecdh_kats[i].privlen) != 0) {
-			V_(printf("Check 1: priv_A, pub_B: Results do not match.\n"));
-			VV_(printf("Expected result:\n"));
-			dump_array(ecdh_kats[i].z, privlen);
-			VV_(printf("Calculated result:\n"));
-			dump_array(shared_secret, privlen);
-			errors++;
-		}
+			/* compare result with known result */
+			if (memcmp(shared_secret, ecdh_kats[i].z, ecdh_kats[i].privlen) != 0) {
+				V_(printf("Check 1: priv_A, pub_B: Results do not match.\n"));
+				VV_(printf("Expected result:\n"));
+				dump_array(ecdh_kats[i].z, privlen);
+				VV_(printf("Calculated result:\n"));
+				dump_array(shared_secret, privlen);
+				errors++;
+			}
 
-		/* calculate shared secret with priv_B, pub_A */
-		rc = ica_ecdh_derive_secret(adapter_handle, eckey_B, eckey_A,
-				shared_secret, privlen);
-		if (rc) {
-			V_(printf("Shared secret could not be derived, rc=%i.\n",rc));
-			errors++;
-		}
+			/* calculate shared secret with priv_B, pub_A */
+			rc = ica_ecdh_derive_secret(adapter_handle, eckey_B, eckey_A,
+						    shared_secret, privlen);
+			if (rc) {
+				V_(printf("Shared secret could not be derived, rc=%i.\n",rc));
+				errors++;
+			} else {
 
-		/* compare result with known result */
-		if (memcmp(shared_secret, ecdh_kats[i].z, ecdh_kats[i].privlen) != 0) {
-			V_(printf("Check 2: pub(B), priv(A): Results do not match.\n"));
-			VV_(printf("Expected result:\n"));
-			dump_array(ecdh_kats[i].z, privlen);
-			VV_(printf("Calculated result:\n"));
-			dump_array(shared_secret, privlen);
-			errors++;
+				/* compare result with known result */
+				if (memcmp(shared_secret, ecdh_kats[i].z, ecdh_kats[i].privlen) != 0) {
+					V_(printf("Check 2: pub(B), priv(A): Results do not match.\n"));
+					VV_(printf("Expected result:\n"));
+					dump_array(ecdh_kats[i].z, privlen);
+					VV_(printf("Calculated result:\n"));
+					dump_array(shared_secret, privlen);
+					errors++;
+				}
+			}
 		}
 
 		ica_ec_key_free(eckey_A);

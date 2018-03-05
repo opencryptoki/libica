@@ -108,11 +108,13 @@ LIBICA_3.2.0 {
     local: *;
 } LIBICA_3.1.0;
 
-LIBICA_3.2.1 {
+LIBICA_3.3.0 {
     global:
 	ica_ec_key_new;
 	ica_ec_key_init;
 	ica_ec_key_generate;
+	ica_ec_key_get_public_key;
+	ica_ec_key_get_private_key;
 	ica_ec_key_free;
 	ica_ecdh_derive_secret;
 	ica_ecdsa_sign;

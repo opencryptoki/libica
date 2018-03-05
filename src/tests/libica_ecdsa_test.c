@@ -215,15 +215,16 @@ int main(int argc, char **argv)
 			if (rc) {
 				V_(printf("Signature could not be created, rc=%i.\n",rc));
 				errors++;
-			}
+			} else {
 
-			/* verify ECDSA signature */
-			rc = ica_ecdsa_verify(adapter_handle, eckey, hash, hash_length[j],
-					signature, MAX_ECDSA_SIG_SIZE);
+				/* verify ECDSA signature */
+				rc = ica_ecdsa_verify(adapter_handle, eckey, hash, hash_length[j],
+						      signature, MAX_ECDSA_SIG_SIZE);
 
-			if (rc) {
-				V_(printf("Signature could not be verified, rc=%i.\n",rc));
-				errors++;
+				if (rc) {
+					V_(printf("Signature could not be verified, rc=%i.\n",rc));
+					errors++;
+				}
 			}
 		}
 

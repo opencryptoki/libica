@@ -91,26 +91,28 @@ int main(int argc, char **argv)
 		if (rc) {
 			V_(printf("EC key for curve %i could not be generated, rc=%i.\n", eckeygen_tests[i].nid, rc));
 			errors++;
-		}
+		} else {
 
-		for (j = 0; j<NUM_HASH_LENGTHS; j++) {
+			for (j = 0; j<NUM_HASH_LENGTHS; j++) {
 
-			/* calculate ECDSA signature with this key */
-			rc = ica_ecdsa_sign(adapter_handle, eckey, hash, hash_length[j],
-					signature, MAX_ECDSA_SIG_SIZE);
+				/* calculate ECDSA signature with this key */
+				rc = ica_ecdsa_sign(adapter_handle, eckey, hash, hash_length[j],
+						    signature, MAX_ECDSA_SIG_SIZE);
 
-			if (rc) {
-				V_(printf("Signature could not be created, key not usable, rc=%i.\n",rc));
-				errors++;
-			}
+				if (rc) {
+					V_(printf("Signature could not be created, key not usable, rc=%i.\n",rc));
+					errors++;
+				} else {
 
-			/* verify ECDSA signature with this key */
-			rc = ica_ecdsa_verify(adapter_handle, eckey, hash, hash_length[j],
-					signature, MAX_ECDSA_SIG_SIZE);
+					/* verify ECDSA signature with this key */
+					rc = ica_ecdsa_verify(adapter_handle, eckey, hash, hash_length[j],
+							      signature, MAX_ECDSA_SIG_SIZE);
 
-			if (rc) {
-				V_(printf("Signature could not be verified, key not usable, rc=%i.\n",rc));
-				errors++;
+					if (rc) {
+						V_(printf("Signature could not be verified, key not usable, rc=%i.\n",rc));
+						errors++;
+					}
+				}
 			}
 		}
 
