@@ -297,7 +297,7 @@ int main(int argc, char **argv)
 {
 	ica_adapter_handle_t adapter_handle;
 	unsigned int i, rc;
-	unsigned int errors=0;
+	unsigned int errors=0, test_failed=0;
 	unsigned char shared_secret[MAX_ECC_KEY_SIZE];
 	unsigned int privlen = 0;
 	ICA_EC_KEY *eckey_A, *eckey_B;
@@ -316,6 +316,7 @@ int main(int argc, char **argv)
 
 		V_(printf("Testing curve %d \n", ecdh_kats[i].nid));
 
+		test_failed = 0;
 		memset(shared_secret, 0, sizeof(shared_secret));
 
 		eckey_A = ica_ec_key_new(ecdh_kats[i].nid, &privlen);
@@ -329,7 +330,7 @@ int main(int argc, char **argv)
 				shared_secret, privlen);
 		if (rc) {
 			V_(printf("Shared secret could not be derived, rc=%i.\n",rc));
-			errors++;
+			test_failed = 1;
 		} else {
 
 			/* compare result with known result */
@@ -339,7 +340,7 @@ int main(int argc, char **argv)
 				dump_array(ecdh_kats[i].z, privlen);
 				VV_(printf("Calculated result:\n"));
 				dump_array(shared_secret, privlen);
-				errors++;
+				test_failed = 1;
 			}
 
 			/* calculate shared secret with priv_B, pub_A */
@@ -347,7 +348,7 @@ int main(int argc, char **argv)
 						    shared_secret, privlen);
 			if (rc) {
 				V_(printf("Shared secret could not be derived, rc=%i.\n",rc));
-				errors++;
+				test_failed = 1;
 			} else {
 
 				/* compare result with known result */
@@ -357,10 +358,13 @@ int main(int argc, char **argv)
 					dump_array(ecdh_kats[i].z, privlen);
 					VV_(printf("Calculated result:\n"));
 					dump_array(shared_secret, privlen);
-					errors++;
+					test_failed = 1;
 				}
 			}
 		}
+
+		if (test_failed)
+			errors++;
 
 		ica_ec_key_free(eckey_A);
 		ica_ec_key_free(eckey_B);

@@ -183,7 +183,7 @@ int main(int argc, char **argv)
 {
 	ica_adapter_handle_t adapter_handle;
 	unsigned int i, j, rc;
-	unsigned int errors=0;
+	unsigned int errors=0, test_failed=0;
 	unsigned char signature[MAX_ECDSA_SIG_SIZE];
 	unsigned int privlen = 0;
 	ICA_EC_KEY *eckey;
@@ -201,6 +201,7 @@ int main(int argc, char **argv)
 
 		V_(printf("Testing curve %d \n", ecdsa_kats[i].nid));
 
+		test_failed = 0;
 		memset(signature, 0, MAX_ECDSA_SIG_SIZE);
 
 		eckey = ica_ec_key_new(ecdsa_kats[i].nid, &privlen);
@@ -214,7 +215,8 @@ int main(int argc, char **argv)
 
 			if (rc) {
 				V_(printf("Signature could not be created, rc=%i.\n",rc));
-				errors++;
+				test_failed = 1;
+				break;
 			} else {
 
 				/* verify ECDSA signature */
@@ -223,10 +225,14 @@ int main(int argc, char **argv)
 
 				if (rc) {
 					V_(printf("Signature could not be verified, rc=%i.\n",rc));
-					errors++;
+					test_failed = 1;
+					break;
 				}
 			}
 		}
+
+		if (test_failed)
+			errors++;
 
 		ica_ec_key_free(eckey);
 	}

@@ -60,7 +60,7 @@ int main(int argc, char **argv)
 {
 	ica_adapter_handle_t adapter_handle;
 	unsigned int i, j, rc;
-	unsigned int errors=0;
+	unsigned int errors=0, test_failed=0;
 	unsigned char signature[MAX_ECDSA_SIG_SIZE];
 	unsigned char pub_X[MAX_ECC_PRIV_SIZE];
 	unsigned char pub_Y[MAX_ECC_PRIV_SIZE];
@@ -79,6 +79,8 @@ int main(int argc, char **argv)
 	/* Iterate over curves */
 	for (i = 0; i < NUM_ECKEYGEN_TESTS; i++) {
 
+		test_failed = 0;
+
 		memset(pub_X, 0, sizeof(pub_X));
 		memset(pub_Y, 0, sizeof(pub_Y));
 		memset(priv_D, 0, sizeof(priv_D));
@@ -90,7 +92,7 @@ int main(int argc, char **argv)
 		rc = ica_ec_key_generate(adapter_handle, eckey);
 		if (rc) {
 			V_(printf("EC key for curve %i could not be generated, rc=%i.\n", eckeygen_tests[i].nid, rc));
-			errors++;
+			test_failed = 1;
 		} else {
 
 			for (j = 0; j<NUM_HASH_LENGTHS; j++) {
@@ -101,7 +103,8 @@ int main(int argc, char **argv)
 
 				if (rc) {
 					V_(printf("Signature could not be created, key not usable, rc=%i.\n",rc));
-					errors++;
+					test_failed = 1;
+					break;
 				} else {
 
 					/* verify ECDSA signature with this key */
@@ -110,11 +113,15 @@ int main(int argc, char **argv)
 
 					if (rc) {
 						V_(printf("Signature could not be verified, key not usable, rc=%i.\n",rc));
-						errors++;
+						test_failed = 1;
+						break;
 					}
 				}
 			}
 		}
+
+		if (test_failed)
+			errors++;
 
 		ica_ec_key_free(eckey);
 	}
