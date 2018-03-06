@@ -33,10 +33,10 @@ TARGETS = icastats_test \
 	  libica_des_cbc_test libica_3des_cbc_test \
 	  libica_des_ecb_test libica_cbccs_test libica_3des_ecb_test \
 	  libica_des_ofb_test libica_3des_ofb_test \
-	  libica_get_version \
-	  libica_get_functionlist \
+	  libica_get_version_test \
+	  libica_get_functionlist_test \
 	  libica_drbg_test \
-	  libica_drbg_birthdays \
+	  libica_drbg_birthdays_test \
 	  libica_fips_test
 
 all: $(TARGETS)

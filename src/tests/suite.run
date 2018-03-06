@@ -11,8 +11,8 @@ out="./suite.out"
 testcases=(
 "libica_fips_test"
 
-"libica_get_functionlist $verbosity"
-"libica_get_version $verbosity"
+"libica_get_functionlist_test $verbosity"
+"libica_get_version_test $verbosity"
 "icastats_test $verbosity"
 
 "libica_drbg_test $verbosity"
