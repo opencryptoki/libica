@@ -36,6 +36,7 @@ cbccs_last_block_swap(unsigned char *base, unsigned long length,
 		 * two blocks in order */
 		if (rest_length == 0)
 			break;
+		/* fall-through */
 	case 3:
 		/* always switch order of the last two blocks */
 		if (rest_length == 0)
@@ -186,8 +187,7 @@ s390_des_cbccs_dec(unsigned int fc, const unsigned char *in_data,
 static inline unsigned int
 s390_aes_cbccs_enc(unsigned int fc, const unsigned char *in_data,
 		   unsigned char *out_data, unsigned long data_length,
-		   unsigned char *key, unsigned int key_length,
-		   unsigned char *iv, unsigned int variant)
+		   unsigned char *key, unsigned char *iv, unsigned int variant)
 {
 	unsigned int rc;
 	unsigned char tmp_in_data[AES_BLOCK_SIZE];
@@ -220,8 +220,7 @@ s390_aes_cbccs_enc(unsigned int fc, const unsigned char *in_data,
 static inline unsigned int
 s390_aes_cbccs_dec(unsigned int fc, const unsigned char *in_data,
 		   unsigned char *out_data, unsigned long data_length,
-		   unsigned char *key, unsigned int key_length,
-		   unsigned char *iv, unsigned int variant)
+		   unsigned char *key, unsigned char *iv, unsigned int variant)
 {
 	unsigned int rc;
 	unsigned char tmp_in_data[2* AES_BLOCK_SIZE];
@@ -306,14 +305,14 @@ static inline int s390_des_cbccs(unsigned int fc, const unsigned char *in_data,
 
 static inline int s390_aes_cbccs(unsigned int fc, const unsigned char *in_data,
 			  unsigned char *out_data, unsigned long data_length,
-			  unsigned char *key, unsigned int key_length,
-			  unsigned char *iv, unsigned int variant)
+			  unsigned char *key, unsigned char *iv,
+			  unsigned int variant)
 {
 	if (s390_msa4_functions[fc].hw_fc & S390_CRYPTO_DIRECTION_MASK)
 		return s390_aes_cbccs_dec(fc, in_data, out_data, data_length,
-					  key, key_length, iv, variant);
+					  key, iv, variant);
 	else
 		return s390_aes_cbccs_enc(fc, in_data, out_data, data_length,
-					  key, key_length, iv, variant);
+					  key, iv, variant);
 }
 #endif

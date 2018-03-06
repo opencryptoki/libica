@@ -63,7 +63,8 @@ unsigned char FIPS_TEST_RESULT[NUM_FIPS_TESTS][SHA256_HASH_LENGTH] =
 int new_api_sha256_test(void)
 {
 	sha256_context_t sha256_context;
-	int rc = 0, i = 0;
+	int rc = 0;
+	unsigned int i = 0;
 	unsigned char input_data[1000000];
 	unsigned int  output_hash_length = SHA256_HASH_LENGTH;
 	unsigned char output_hash[SHA256_HASH_LENGTH];

@@ -121,6 +121,8 @@ unsigned int rsa_key_generate_mod_expo(ica_adapter_handle_t deviceHandle,
 				       ica_rsa_key_mod_expo_t *public_key,
 				       ica_rsa_key_mod_expo_t *private_key)
 {
+	(void)deviceHandle;	/* suppress unused param warning */
+
 #ifdef ICA_FIPS
 	if ((fips & ICA_FIPS_MODE) && (!FIPS_mode()))
 		return EACCES;
@@ -191,6 +193,8 @@ unsigned int rsa_key_generate_crt(ica_adapter_handle_t deviceHandle,
 				  ica_rsa_key_mod_expo_t *public_key,
 				  ica_rsa_key_crt_t *private_key)
 {
+	(void)deviceHandle;	/* suppress unused param warning */
+
 #ifdef ICA_FIPS
 	if ((fips & ICA_FIPS_MODE) && (!FIPS_mode()))
 		return EACCES;
@@ -613,13 +617,15 @@ unsigned int rsa_crt_sw(ica_rsa_modexpo_crt_t * pCrt)
 		if (rc != -1) {
 			goto err;
 		} else {
-			if (ir_2_length > pCrt->outputdatalength) {
+			if ((unsigned int)ir_2_length
+			    > pCrt->outputdatalength) {
 				memcpy(pCrt->outputdata,
 				       ir2 + (ir_2_length -
 					      pCrt->outputdatalength),
 				       pCrt->outputdatalength);
 			} else {
-				if (ir_2_length < pCrt->outputdatalength) {
+				if ((unsigned int)ir_2_length
+				    < pCrt->outputdatalength) {
 					memset(pCrt->outputdata, 0,
 					       (pCrt->outputdatalength -
 						ir_2_length));

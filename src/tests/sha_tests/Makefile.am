@@ -1,4 +1,4 @@
-OPTS = -O0 -g -Wall -D_LINUX_S390_ -D_GNU_SOURCE
+OPTS = -O3 -g -Wall -Wextra -D_LINUX_S390_ -D_GNU_SOURCE
 LIBS = -L../../.libs
 INCLUDE = -I. -I./include -I../../../include
 SOURCES = libica_sha_test.c queue_t.c sha_tests.c read_rsp.c

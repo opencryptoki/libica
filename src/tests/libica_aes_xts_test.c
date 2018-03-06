@@ -349,6 +349,11 @@ void get_sizes(unsigned int *data_length, unsigned int *tweak_length,
 			*tweak_length = sizeof(NIST_TWEAK_XTS_E5);
 			*key_length = sizeof(NIST_KEY_XTS_E5);
 			break;
+		default:
+			*data_length = 0;
+			*tweak_length = 0;
+			*key_length = 0;
+			break;
 	}
 
 }

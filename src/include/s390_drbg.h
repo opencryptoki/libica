@@ -217,7 +217,7 @@ static inline void drbg_zmem(void *ptr,
 static inline int drbg_check_zmem(void *ptr,
 				  size_t len)
 {
-	int i;
+	size_t i;
 
 	if(!ptr)
 		return DRBG_HEALTH_TEST_FAIL;

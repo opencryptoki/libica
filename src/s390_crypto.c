@@ -407,7 +407,7 @@ int s390_initialize_functionlist() {
  */
 int s390_get_functionlist(libica_func_list_element *pmech_list,
 				      unsigned int *pmech_list_len) {
-  int x;
+  unsigned int x;
 
   if (!pmech_list_len) {
 	return EINVAL;
@@ -416,13 +416,12 @@ int s390_get_functionlist(libica_func_list_element *pmech_list,
   if (!pmech_list) {
 	*pmech_list_len = sizeof(icaList)/sizeof(libica_func_list_element_int);
 	return 0;
-  }
-  else if (*pmech_list_len <
-	  (sizeof(icaList)/sizeof(libica_func_list_element_int)) ) {
+  } else if (*pmech_list_len <
+	     (sizeof(icaList)/sizeof(libica_func_list_element_int)) ) {
 	return EINVAL;
   }
 
-  for (x=0; x<*pmech_list_len; x++) {
+  for (x = 0; x < *pmech_list_len; x++) {
       pmech_list[x].mech_mode_id = icaList[x].mech_mode_id;
       pmech_list[x].flags        = icaList[x].flags;
       pmech_list[x].property     = icaList[x].property;

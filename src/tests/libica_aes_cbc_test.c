@@ -296,15 +296,10 @@ void get_sizes(unsigned int *data_length, unsigned int *iv_length,
 			*iv_length = sizeof(NIST_IV_CBC_E7);
 			*key_length = sizeof(NIST_KEY_CBC_E7);
 			break;
-		case 8:
-			break;
-		case 9:
-			break;
-		case 10:
-			break;
-		case 11:
-			break;
-		case 12:
+		default:
+			*data_length = 0;
+			*iv_length = 0;
+			*key_length = 0;
 			break;
 	}
 
@@ -366,16 +361,6 @@ void load_test_data(unsigned char *data, unsigned int data_length,
 			memcpy(iv, NIST_IV_CBC_E7, iv_length);
 			memcpy(expected_iv, NIST_EXPECTED_IV_CBC_E7, iv_length);
 			memcpy(key, NIST_KEY_CBC_E7, key_length);
-			break;
-		case 8:
-			break;
-		case 9:
-			break;
-		case 10:
-			break;
-		case 11:
-			break;
-		case 12:
 			break;
 	}
 

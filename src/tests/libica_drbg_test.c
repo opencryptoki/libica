@@ -80,7 +80,7 @@ typedef struct{
 int main(int argc,
 	 char **argv)
 {
-	int i = 0;
+	unsigned int i = 0;
 	int failed = 0;
 	int passed = 0;
 	int status = -1;
@@ -190,7 +190,7 @@ int main(int argc,
 	},
 	};
 	for(i = 0; i < sizeof(inst_test) / sizeof(inst_test[0]); i++){
-		V_(printf("instantiate function: test no. %d", i));
+		V_(printf("instantiate function: test no. %u", i));
 		status = ica_drbg_instantiate(inst_test[i].sh,
 					      inst_test[i].sec,
 					      inst_test[i].pr,
@@ -253,7 +253,7 @@ int main(int argc,
 	},
 	};
 	for(i = 0; i < sizeof(res_test) / sizeof(res_test[0]); i++){
-		V_(printf("reseed function: test no. %d", i));
+		V_(printf("reseed function: test no. %u", i));
 		status = ica_drbg_reseed(res_test[i].sh, res_test[i].pr,
 					 res_test[i].add, res_test[i].add_len);
 		if(res_test[i].rc == status){
@@ -360,7 +360,7 @@ int main(int argc,
 	},
 	};
 	for(i = 0; i < sizeof(gen_test) / sizeof(gen_test[0]); i++){
-		V_(printf("generate function: test no. %d", i));
+		V_(printf("generate function: test no. %u", i));
 		size_t prnd_len = gen_test[i].prnd_len;
 		unsigned char prnd[prnd_len + 1];	/* +1 avoids 0-length VLA */
 		status = ica_drbg_generate(gen_test[i].sh, gen_test[i].sec,
@@ -394,7 +394,7 @@ int main(int argc,
 	},
 	};
 	for(i = 0; i < sizeof(uninst_test) / sizeof(uninst_test[0]); i++){
-		V_(printf("uninstantiate function: test no. %d", i));
+		V_(printf("uninstantiate function: test no. %u", i));
 		status = ica_drbg_uninstantiate(uninst_test[i].sh);
 		if(uninst_test[i].rc == status){
 			V_(printf(" passed\n"));
@@ -600,7 +600,7 @@ int main(int argc,
 	},
 	};
 	for(i = 0; i < sizeof(ht_test) / sizeof(ht_test[0]); i++){
-		V_(printf("health test function: test no. %d", i));
+		V_(printf("health test function: test no. %u", i));
 		status = ica_drbg_health_test(ht_test[i].func, ht_test[i].sec,
 					      ht_test[i].pr, ht_test[i].mech);
 		if(ht_test[i].rc == status){

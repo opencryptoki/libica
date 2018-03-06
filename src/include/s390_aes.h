@@ -33,20 +33,21 @@
 #define AES_BLOCK_SIZE 16
 #define GCM_RECOMMENDED_IV_LENGTH 12
 
-#define HS_FLAG 	0x400;
-#define LAAD_FLAG 	0x200;
-#define LPC_FLAG 	0x100;
+#define HS_FLAG		0x400;
+#define LAAD_FLAG	0x200;
+#define LPC_FLAG	0x100;
 
 
 static inline int s390_aes_gcm_hw(unsigned int function_code,
-				  const unsigned char *input_data, unsigned char *output_data,
+				  const unsigned char *input_data,
+				  unsigned char *output_data,
 				  unsigned long input_length,
-				  unsigned char *key,
-				  unsigned char *j0, unsigned long j0_width,
-				  unsigned char *ctr, unsigned long ctr_width,
-				  const unsigned char *aad, unsigned long aad_length,
+				  unsigned char *key, unsigned char *j0,
+				  unsigned char *ctr,
+				  const unsigned char *aad,
+				  unsigned long aad_length,
 				  const unsigned char *subkey_h,
-				  unsigned char *tag, unsigned long tag_length,
+				  unsigned char *tag,
 				  unsigned int laad, unsigned int lpc)
 {
 	struct {
@@ -60,7 +61,7 @@ static inline int s390_aes_gcm_hw(unsigned int function_code,
 		ica_aes_key_len_256_t key;
 	} parm_block;
 
-	unsigned int rc = 0;
+	int rc;
 	unsigned int key_size = (function_code & 0x0f) * sizeof(ica_aes_key_single_t);
 
 	memset(&parm_block, 0, sizeof(parm_block));
@@ -69,17 +70,19 @@ static inline int s390_aes_gcm_hw(unsigned int function_code,
 	memcpy(&parm_block.key, key, key_size);
 
 	if (laad && lpc) {
-		parm_block.total_aad_length = aad_length*8; // total length in bits
-		parm_block.total_input_length = input_length*8; // total length in bits
+		// total length in bits
+		parm_block.total_aad_length = aad_length * 8;
+
+		// total length in bits
+		parm_block.total_input_length = input_length * 8;
+
 		parm_block.cv = input_length / AES_BLOCK_SIZE + 1;
 	}
 
 	if (ctr) {
-		memcpy(&parm_block.cv, &ctr[GCM_RECOMMENDED_IV_LENGTH], sizeof(int));
-		memcpy(&parm_block.j0, ctr, AES_BLOCK_SIZE); //GCM_RECOMMENDED_IV_LENGTH);
-		//unsigned int* cv;
-		//cv = (unsigned int*)&(parm_block.j0[GCM_RECOMMENDED_IV_LENGTH]);
-		//*cv = 1;
+		memcpy(&parm_block.cv, &ctr[GCM_RECOMMENDED_IV_LENGTH],
+		       sizeof(parm_block.cv));
+		memcpy(&parm_block.j0, ctr, AES_BLOCK_SIZE);
 	}
 
 	if (j0)
@@ -99,36 +102,37 @@ static inline int s390_aes_gcm_hw(unsigned int function_code,
 	if (input_length == 0 && aad_length == 0)
 		parm_block.cv++;
 
-	rc = s390_kma(function_code, &parm_block,
-			  output_data, input_data, input_length,
-			  aad, aad_length);
+	rc = s390_kma(function_code, &parm_block, output_data, input_data,
+		      input_length, aad, aad_length);
 
 	if (rc >= 0) {
 		memcpy(tag, &parm_block.tag, AES_BLOCK_SIZE);
-		if (ctr)
-			memcpy(&ctr[GCM_RECOMMENDED_IV_LENGTH], &parm_block.cv, sizeof(int)); // not in last call
+		if (ctr) {
+			// not in last call
+			memcpy(&ctr[GCM_RECOMMENDED_IV_LENGTH], &parm_block.cv,
+			       sizeof(parm_block.cv));
+		}
 		return 0;
-	} else
+	} else {
 		return EIO;
+	}
 }
 
 static inline int s390_aes_gcm(unsigned int fc, const unsigned char *in_data,
 			unsigned char *out_data, unsigned long data_length,
-			unsigned char *key,
-			unsigned char *j0, unsigned int j0_width,
-			unsigned char *ctr, unsigned int ctr_width,
+			unsigned char *key, unsigned char *j0,
+			unsigned char *ctr,
 			const unsigned char *aad, unsigned long aad_length,
 			unsigned char *subkey_h, unsigned char *tag,
-			unsigned long tag_length, unsigned int laad,
-			unsigned int lpc)
+			unsigned int laad, unsigned int lpc)
 {
 	int rc = ENODEV;
 
-	if (*s390_kma_functions[fc].enabled)
-		rc = s390_aes_gcm_hw(s390_kma_functions[fc].hw_fc,
-				     in_data, out_data, data_length,
-				     key, j0, j0_width, ctr, ctr_width, aad, aad_length,
-				     subkey_h, tag, tag_length, laad, lpc);
+	if (*s390_kma_functions[fc].enabled) {
+		rc = s390_aes_gcm_hw(s390_kma_functions[fc].hw_fc, in_data,
+				     out_data, data_length, key, j0, ctr, aad,
+				     aad_length, subkey_h, tag, laad, lpc);
+	}
 	if (rc)
 		return rc;
 
@@ -300,6 +304,7 @@ static inline int s390_aes_ecb_sw(unsigned int function_code,
 				  unsigned char *output_data)
 {
 	AES_KEY aes_key;
+	unsigned long i;
 	unsigned int direction;
 	unsigned int key_size = (function_code & 0x0f) *
 				sizeof(ica_aes_key_single_t);
@@ -316,7 +321,7 @@ static inline int s390_aes_ecb_sw(unsigned int function_code,
 		AES_set_encrypt_key(keys, key_size * 8, &aes_key);
 		direction = AES_ENCRYPT;
 	}
-	int i;
+
 	for (i = 0; i < input_length; i += AES_BLOCK_SIZE) {
 		AES_ecb_encrypt(input_data + i, output_data + i,
 				&aes_key, direction);
@@ -351,8 +356,9 @@ static inline int s390_aes_cbc_hw(unsigned int function_code,
 	if (rc >= 0) {
 		memcpy(iv, &key_buffer.iv, sizeof(ica_aes_vector_t));
 		return 0;
-	} else
+	} else {
 		return EIO;
+	}
 }
 
 static inline int s390_aes_cbc_sw(unsigned int function_code,

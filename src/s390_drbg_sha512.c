@@ -51,7 +51,7 @@ static inline void mod_add(unsigned char *v,
 			   const unsigned char *s,
 			   size_t s_len)
 {
-	int i;
+	size_t i;
 	uint16_t c = 0;
 
 	v = v + DRBG_SHA512_SEED_LEN - 1;
@@ -108,6 +108,8 @@ int drbg_sha512_instantiate_ppno(void **ws,
 {
 	int status;
 
+	(void)sec;	/* suppress unused param warning */
+
 	/* 10.1.1.2 Hash_DRBG Instantiate Process */
 
 	*ws = calloc(1, sizeof(ws_t)); /* buffer must be zero! (see POP) */
@@ -149,6 +151,8 @@ int drbg_sha512_instantiate(void **ws,
 	const size_t seed_material_len = entropy_len + nonce_len + pers_len;
 	unsigned char seed_material[seed_material_len];
 	int status;
+
+	(void)sec;	/* suppress unused param warning */
 
 	/* 10.1.1.2 Hash_DRBG Instantiate Process */
 
@@ -305,7 +309,7 @@ int drbg_sha512_generate_ppno(void *ws,
 	/* steps 3 - 6 */
 	status = s390_ppno(S390_CRYPTO_SHA512_DRNG_GEN, ws, prnd, prnd_len,
 			   NULL, 0);
-	if(status != prnd_len)
+	if(status < 0 || (size_t)status != prnd_len)
 		return DRBG_HEALTH_TEST_FAIL;
 
 	/* step 7 */
@@ -432,7 +436,8 @@ static int test_instantiate(int sec,
 {
 	ica_drbg_t *sh = NULL;
 	const struct drbg_sha512_tv *tv;
-	int status, i;
+	size_t i;
+	int status;
 
 	for(i = 0; i < DRBG_SHA512_TV_LEN; i++){
 		tv = &DRBG_SHA512_TV[i];
@@ -470,7 +475,8 @@ static int test_reseed(int sec,
 	ica_drbg_t sh = {.mech = &DRBG_SHA512, .ws = &ws, .sec = sec,
 			 .pr = pr};
 	const struct drbg_sha512_tv *tv;
-	int status, i;
+	size_t i;
+	int status;
 
 	drbg_recursive_mutex_init(&sh.lock);
 
@@ -505,7 +511,8 @@ static int test_generate(int sec,
 	ws_t ws;
 	ica_drbg_t sh = {.mech = &DRBG_SHA512, .ws = &ws, .sec = sec,
 			 .pr = true};
-	int status, i;
+	size_t i;
+	int status;
 	const struct drbg_sha512_tv *tv;
 	unsigned char prnd;
 

@@ -63,7 +63,8 @@ unsigned char FIPS_TEST_RESULT[NUM_FIPS_TESTS][SHA3_224_HASH_LENGTH] =
 int new_api_sha3_224_test(void)
 {
 	sha3_224_context_t sha3_224_context;
-	int rc = 0, i = 0;
+	int rc = 0;
+	int i = 0;
 	unsigned char input_data[1000000];
 	unsigned int  output_hash_length = SHA3_224_HASH_LENGTH;
 	unsigned char output_hash[SHA3_224_HASH_LENGTH];
@@ -111,7 +112,7 @@ int new_api_sha3_224_test(void)
 		unsigned int sha_message_part;
 		memset(input_data, 'a', 1152);
 
-		if (i == FIPS_TEST_DATA_SIZE[2])
+		if (i == (int)FIPS_TEST_DATA_SIZE[2])
 			sha_message_part = SHA_MSG_PART_FIRST;
 		else if (i <= 1152)
 			sha_message_part = SHA_MSG_PART_FINAL;
@@ -147,7 +148,7 @@ int new_api_sha3_224_test(void)
 		unsigned int sha_message_part;
 		memset(input_data, 'a', 144);
 
-		if (i == FIPS_TEST_DATA_SIZE[2])
+		if (i == (int)FIPS_TEST_DATA_SIZE[2])
 			sha_message_part = SHA_MSG_PART_FIRST;
 		else if (i <= 144)
 			sha_message_part = SHA_MSG_PART_FINAL;

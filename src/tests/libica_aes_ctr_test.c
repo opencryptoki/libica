@@ -325,6 +325,11 @@ void get_sizes(unsigned int *data_length, unsigned int *iv_length,
 			*iv_length = sizeof(NIST_IV_CTR_E7);
 			*key_length = sizeof(NIST_KEY_CTR_E7);
 			break;
+		default:
+			*data_length = 0;
+			*iv_length = 0;
+			*key_length = 0;
+			break;
 	}
 
 }

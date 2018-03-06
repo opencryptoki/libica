@@ -78,7 +78,8 @@ unsigned char FIPS_TEST_RESULT[NUM_FIPS_TESTS][SHAKE128_64_HASH_LENGTH] =
 int new_api_shake_128_test(void)
 {
 	shake_128_context_t shake_128_context;
-	int rc = 0, i = 0;
+	int rc = 0;
+	int i = 0;
 	unsigned char input_data[1000000];
 	unsigned int  output_hash_length = SHAKE128_64_HASH_LENGTH;
 	unsigned char output_hash[SHAKE128_64_HASH_LENGTH];
@@ -125,7 +126,7 @@ int new_api_shake_128_test(void)
 		unsigned int sha_message_part;
 		memset(input_data, 'a', 1008);
 
-		if (i == FIPS_TEST_DATA_SIZE[2])
+		if (i == (int)FIPS_TEST_DATA_SIZE[2])
 			sha_message_part = SHA_MSG_PART_FIRST;
 		else if (i <= 1008)
 			sha_message_part = SHA_MSG_PART_FINAL;
@@ -162,7 +163,7 @@ int new_api_shake_128_test(void)
 		unsigned int sha_message_part;
 		memset(input_data, 'a', 168);
 
-		if (i == FIPS_TEST_DATA_SIZE[2])
+		if (i == (int)FIPS_TEST_DATA_SIZE[2])
 			sha_message_part = SHA_MSG_PART_FIRST;
 		else if (i <= 168)
 			sha_message_part = SHA_MSG_PART_FINAL;

@@ -1,11 +1,14 @@
 src/tests/suite.out
 tags
+.pc/
+patches/
 
 src/icainfo
 src/icastats
 
 aclocal.m4
 autom4te.cache/
+compile
 config.guess
 config.log
 config.status
@@ -22,7 +25,7 @@ doc/Makefile
 include/Makefile
 src/Makefile
 src/tests/Makefile
-src/tests/libica_sha_test/Makefile
+src/tests/sha_tests/Makefile
 
 *.swp
 *.lo
@@ -32,3 +35,4 @@ src/tests/libica_sha_test/Makefile
 src/.deps/
 src/.libs/
 src/tests/*_test
+src/tests/sha_tests/*_test

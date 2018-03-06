@@ -48,7 +48,7 @@ static const size_t FIPS_BLACKLIST_LEN = sizeof(FIPS_BLACKLIST)
 static inline int
 fips_approved(int id)
 {
-        int i;
+        size_t i;
 
         for (i = 0; i < FIPS_BLACKLIST_LEN; i++) {
                 if (id == FIPS_BLACKLIST[i])

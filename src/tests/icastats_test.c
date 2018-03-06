@@ -36,7 +36,7 @@ libica_func_list_element *pmech_list = NULL;
 static int handle_ica_error(int rc, char *message);
 static int is_crypto_card_loaded();
 void create_hw_info();
-int check_hw(int algo_id);
+int check_hw(unsigned int algo_id);
 void check_icastats(int algo_id, char *stat);
 void des_tests(unsigned char *iv, unsigned char *cmac, unsigned char *ctr);
 void tdes_tests(unsigned char *iv, unsigned char *cmac, unsigned char *ctr);
@@ -202,20 +202,20 @@ void create_hw_info()
 /*
  * check if a cryptp operation is supported in hardware
  **/
-int check_hw(int algo_id)
+int check_hw(unsigned int algo_id)
 {
 	int i;
-	for (i=mech_len-1; i >= 0; i--)
+	for (i = mech_len - 1; i >= 0; i--)
 		if (pmech_list[i].mech_mode_id == algo_id)
 			break;
 	if (i < 0) return -1;
 
-	if(hw_flag){
+	if (hw_flag) {
 		if(pmech_list[i].flags & (ICA_FLAG_SHW | ICA_FLAG_DHW))
 			return 1;
 		else
 			return 0;
-	} else{
+	} else {
 		if(pmech_list[i].flags & ICA_FLAG_SHW)
 			return 1;
 		else

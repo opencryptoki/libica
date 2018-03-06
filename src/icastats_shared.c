@@ -62,9 +62,11 @@ static void atomic_add(int *x, int i)
 
 int stats_mmap(int user)
 {
+	char shm_id[NAME_LENGHT];
+
 	if (stats == NULL) {
-		char shm_id[NAME_LENGHT];
-		sprintf(shm_id, "icastats_%d", user == -1? geteuid(): user);
+		sprintf(shm_id, "icastats_%d",
+			user == -1 ? geteuid() : (uid_t)user);
 
 		stats_shm_handle = shm_open(shm_id, O_CREAT | O_RDWR,
 						    S_IRUSR | S_IWUSR);

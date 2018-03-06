@@ -205,9 +205,10 @@ static inline int s390_sha_hw(unsigned char *iv, unsigned char *input_data,
 					   complete_blocks_length);
 
 		if (rc > 0) {
-		/* Check for overflow in sum_lo */
+			/* Check for overflow in sum_lo */
 			sum_lo += rc;
-			if(sum_lo < *running_length_lo || sum_lo < rc)
+			if (sum_lo < *running_length_lo
+			    || sum_lo < (uint64_t)rc)
 				sum_hi += 1;
 			rc = 0;
 		}

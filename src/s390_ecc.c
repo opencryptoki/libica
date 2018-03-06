@@ -114,6 +114,8 @@ static EC_KEY *make_public_eckey(int nid, BIGNUM *x, BIGNUM *y, size_t plen)
     EC_POINT *pub = NULL;
     const EC_GROUP *grp;
 
+    (void)plen;	/* suppress unused param warning. XXX remove plen? */
+
     k = EC_KEY_new_by_curve_name(nid);
     if (!k)
         goto err;
@@ -278,6 +280,9 @@ static unsigned int make_ecdh_key_token(unsigned char *kb, unsigned int keyblock
 			+ sizeof(ECC_PUBLIC_KEY_TOKEN) + 2*privlen;
 
 	unsigned int priv_bitlen = privlen*8;
+
+	(void)keyblock_length;	/* suppress unused param warning. XXX remove param? */
+
 	if (privkey_A->nid == NID_secp521r1) {
 		priv_bitlen = 521;
 	}
@@ -356,7 +361,7 @@ static ECDH_REPLY* make_ecdh_request(const ICA_EC_KEY *privkey_A, const ICA_EC_K
 	unsigned int keyblock_len = 2 + 2*ecdh_key_token_len + 4*sizeof(ECDH_NULLKEY);
 	unsigned int parmblock_len = sizeof(ECDH_PARMBLOCK) + keyblock_len;
 
-	unsigned int curve_type = curve_type_from_nid(privkey_A->nid);
+	int curve_type = curve_type_from_nid(privkey_A->nid);
 	if (curve_type < 0)
 		return NULL;
 
@@ -399,7 +404,7 @@ unsigned int ecdh_hw(ica_adapter_handle_t adapter_handle,
 	int rc;
 	struct ica_xcRB xcrb;
 	ECDH_REPLY* reply_p;
-	unsigned int privlen = privlen_from_nid(privkey_A->nid);
+	int privlen = privlen_from_nid(privkey_A->nid);
 
 	if (adapter_handle == DRIVER_NOT_LOADED)
 		return EIO;
@@ -412,7 +417,7 @@ unsigned int ecdh_hw(ica_adapter_handle_t adapter_handle,
 	if (rc != 0)
 		return EIO;
 
-	if (reply_p->key_len-4 != privlen)
+	if (reply_p->key_len - 4 != privlen)
 		return EIO;
 
 	memcpy(z, reply_p->raw_z_value, privlen);
@@ -534,7 +539,7 @@ static unsigned int make_ecdsa_private_key_token(unsigned char *kb,
 {
 	ECC_PRIVATE_KEY_TOKEN* kp1;
 	ECC_PUBLIC_KEY_TOKEN* kp2;
-	unsigned int privlen = privlen_from_nid(privkey->nid);
+	int privlen = privlen_from_nid(privkey->nid);
 
 	unsigned int ecdsakey_length = 2 + 2 + sizeof(CCA_TOKEN_HDR)
 			+ sizeof(ECC_PRIVATE_KEY_SECTION)
@@ -595,7 +600,7 @@ static unsigned int make_ecdsa_private_key_token(unsigned char *kb,
 static unsigned int make_ecdsa_public_key_token(ECDSA_PUBLIC_KEY_BLOCK *kb,
 		const ICA_EC_KEY *pubkey, uint8_t curve_type)
 {
-	unsigned int privlen = privlen_from_nid(pubkey->nid);
+	int privlen = privlen_from_nid(pubkey->nid);
 	unsigned int this_length = sizeof(ECDSA_PUBLIC_KEY_BLOCK) + 2*privlen;
 
 	unsigned int priv_bitlen = privlen*8;
@@ -635,7 +640,7 @@ static ECDSA_SIGN_REPLY* make_ecdsa_sign_request(const ICA_EC_KEY *privkey,
 {
     uint8_t *cbrbmem = NULL;
     struct CPRBX *preqcblk, *prepcblk;
-    unsigned int privlen = privlen_from_nid(privkey->nid);
+    int privlen = privlen_from_nid(privkey->nid);
 
 	unsigned int ecdsa_key_token_len = 2 + 2 + sizeof(CCA_TOKEN_HDR)
 		+ sizeof(ECC_PRIVATE_KEY_SECTION)
@@ -645,7 +650,7 @@ static ECDSA_SIGN_REPLY* make_ecdsa_sign_request(const ICA_EC_KEY *privkey,
 	unsigned int keyblock_len = 2 + ecdsa_key_token_len;
 	unsigned int parmblock_len = sizeof(ECDSA_PARMBLOCK_PART1) + hash_length + keyblock_len;
 
-	unsigned int curve_type = curve_type_from_nid(privkey->nid);
+	int curve_type = curve_type_from_nid(privkey->nid);
 	if (curve_type < 0)
 		return NULL;
 
@@ -760,7 +765,7 @@ unsigned int ecdsa_sign_hw(ica_adapter_handle_t adapter_handle,
 	int rc;
 	struct ica_xcRB xcrb;
 	ECDSA_SIGN_REPLY* reply_p;
-	unsigned int privlen = privlen_from_nid(privkey->nid);
+	int privlen = privlen_from_nid(privkey->nid);
 	unsigned char X[MAX_ECC_PRIV_SIZE];
 	unsigned char Y[MAX_ECC_PRIV_SIZE];
 
@@ -780,7 +785,7 @@ unsigned int ecdsa_sign_hw(ica_adapter_handle_t adapter_handle,
 	if (rc != 0)
 		return EIO;
 
-	if (reply_p->vud_len-8 != 2*privlen)
+	if (reply_p->vud_len - 8 != 2 * privlen)
 		return EIO;
 
 	memcpy(signature, reply_p->signature, reply_p->vud_len-8);
@@ -880,7 +885,7 @@ static ECDSA_VERIFY_REPLY* make_ecdsa_verify_request(const ICA_EC_KEY *pubkey,
     if (!cbrbmem)
 		return NULL;
 
-	unsigned int curve_type = curve_type_from_nid(pubkey->nid);
+	int curve_type = curve_type_from_nid(pubkey->nid);
 	if (curve_type < 0)
 		return NULL;
 
@@ -1076,7 +1081,7 @@ static ECKEYGEN_REPLY* make_eckeygen_request(ICA_EC_KEY *key, struct ica_xcRB* x
 			+ sizeof(ECC_NULL_TOKEN);
 	unsigned int parmblock_len = sizeof(ECKEYGEN_PARMBLOCK) + keyblock_len;
 
-	unsigned int curve_type = curve_type_from_nid(key->nid);
+	int curve_type = curve_type_from_nid(key->nid);
 	if (curve_type < 0)
 		return NULL;
 

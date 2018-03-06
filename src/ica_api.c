@@ -230,15 +230,31 @@ static unsigned int check_cmac_parms(unsigned int block_size,
 }
 
 static unsigned int check_gcm_parms(unsigned long text_length,
-				    const unsigned char *aad,
 				    unsigned long aad_length,
 				    const unsigned char *tag, unsigned int tag_length,
 				    unsigned int iv_length)
 {
+#ifdef __s390x__
+	/*
+	 * The following comparisions are alaways false on s390 targets
+	 * due to limited range of data type.
+	 */
 	if ((text_length > S390_GCM_MAX_TEXT_LENGTH) ||
-	    (aad_length  > S390_GCM_MAX_AAD_LENGTH) ||
-	    (iv_length   > S390_GCM_MAX_IV_LENGTH) ||
-	    (iv_length == 0))
+	    (aad_length > S390_GCM_MAX_AAD_LENGTH))
+		return EINVAL;
+#else
+	(void)text_length;	/* supporess unused param warning */
+	(void)aad_length;
+#endif
+	/*
+	 * The following check must be done but is commented out because
+	 * comparison is always false due to limited range of data type.
+	 *
+	 * if (iv_length   > S390_GCM_MAX_IV_LENGTH)
+	 *	return EINVAL;
+	 */
+
+	if (iv_length == 0)
 		return EINVAL;
 
 	if (tag == NULL)
@@ -261,7 +277,6 @@ static unsigned int check_gcm_parms(unsigned long text_length,
 }
 
 static unsigned int check_ccm_parms(unsigned long payload_length,
-				    const unsigned char *assoc_data,
 				    unsigned long assoc_data_length,
 				    const unsigned char *mac,
 				    unsigned int mac_length,
@@ -2037,7 +2052,7 @@ unsigned int ica_aes_cbc_cs(const unsigned char *in_data, unsigned char *out_dat
 
 	function_code = aes_directed_fc(key_length, direction);
 	return s390_aes_cbccs(function_code, in_data, out_data, data_length,
-			      key, key_length, iv, variant);
+			      key, iv, variant);
 }
 
 unsigned int ica_aes_cfb(const unsigned char *in_data, unsigned char *out_data,
@@ -2287,8 +2302,7 @@ unsigned int ica_aes_ccm(unsigned char *payload, unsigned long payload_length,
 	if (check_aes_parms(MODE_CCM, payload_length, payload, nonce, key_length,
 			    key, ciphertext_n_mac))
 		return EINVAL;
-	if (check_ccm_parms(payload_length,
-			    assoc_data, assoc_data_length,
+	if (check_ccm_parms(payload_length, assoc_data_length,
 			    ciphertext_n_mac + payload_length, mac_length,
 			    nonce_length))
 		return EINVAL;
@@ -2345,7 +2359,7 @@ unsigned int ica_aes_gcm(unsigned char *plaintext, unsigned long plaintext_lengt
 				    iv, key_length, key, (unsigned char *)1))
 			return EINVAL;
 	}
-	if (check_gcm_parms(plaintext_length, aad, aad_length, tag, tag_length, iv_length))
+	if (check_gcm_parms(plaintext_length, aad_length, tag, tag_length, iv_length))
 		return EINVAL;
 
 	memset(tmp_tag, 0, sizeof(tmp_tag));
@@ -2429,21 +2443,21 @@ unsigned int ica_aes_gcm_intermediate(unsigned char *plaintext,
 				    cb, key_length, key, (unsigned char *)1))
 			return EINVAL;
 	}
-	if (check_gcm_parms(plaintext_length, aad, aad_length, tag, tag_length,
-				iv_length_dummy))
+	if (check_gcm_parms(plaintext_length, aad_length, tag, tag_length,
+			    iv_length_dummy))
 		return EINVAL;
 
 	function_code = aes_directed_fc(key_length, direction);
 	if (direction) {
 		/* encrypt & generate */
 		rc = s390_gcm_intermediate(function_code, plaintext, plaintext_length,
-		    ciphertext, cb, aad, aad_length, tag, tag_length, key, subkey);
+		    ciphertext, cb, aad, aad_length, tag, key, subkey);
 		if (rc)
 			return rc;
 	} else {
 		/* decrypt & verify */
 		rc = s390_gcm_intermediate(function_code, plaintext, plaintext_length,
-		    ciphertext, cb, aad, aad_length, tag, AES_BLOCK_SIZE, key, subkey);
+		    ciphertext, cb, aad, aad_length, tag, key, subkey);
 		if (rc)
 			return rc;
 	}

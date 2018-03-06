@@ -60,10 +60,10 @@ CFLAGS="$CFLAGS $PTHREAD_CFLAGS"
 
 case $target in
      *s390x*)
-          CFLAGS="$CFLAGS -D_LINUX_S390X_ -D_LINUX_S390_ -Wall -fvisibility=hidden -Wl,--version-script=../libica.map"
+          CFLAGS="$CFLAGS -Wall -Wextra -fvisibility=hidden -Wl,--version-script=../libica.map -D_LINUX_S390_ -D_LINUX_S390X_"
           ;;
      *s390*)
-          CFLAGS="$CFLAGS -D_LINUX_S390_ -m31 -Wall -fvisibility=hidden -Wl,--version-script=../libica.map"
+          CFLAGS="$CFLAGS -Wall -Wextra -fvisibility=hidden -Wl,--version-script=../libica.map -D_LINUX_S390_ -m31"
           ;;
 esac
 
@@ -77,7 +77,7 @@ if test "x$enable_debug" = xyes; then
 	CFLAGS="$CFLAGS -g -O0 -fstack-protector-all -DICA_DEBUG"
 	AC_MSG_RESULT([*** Enabling debugging at user request ***])
 else
-	CFLAGS="$CFLAGS -O2"
+	CFLAGS="$CFLAGS -O3"
 fi
 
 dnl --- enable_testcases
@@ -87,7 +87,7 @@ AC_ARG_ENABLE([testcases],
 	[enable_testcases=no])
 
 if test "$enable_testcases" = yes; then
-	MAYBE_OPT="src/tests src/tests/libica_sha_test/"
+	MAYBE_OPT="src/tests src/tests/sha_tests/"
 else
 	MAYBE_OPT=
 fi
@@ -104,7 +104,7 @@ if test "x$enable_fips" = xyes; then
 	AC_MSG_RESULT([*** Building libica-fips at user request ***])
 fi
 
-AC_CONFIG_FILES([src/tests/Makefile src/tests/libica_sha_test/Makefile])
+AC_CONFIG_FILES([src/tests/Makefile src/tests/sha_tests/Makefile])
 AC_OUTPUT([Makefile src/Makefile include/Makefile doc/Makefile])
 
 echo "CFLAGS=$CFLAGS"

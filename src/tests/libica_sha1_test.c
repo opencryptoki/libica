@@ -73,7 +73,8 @@ int new_api_sha_test(void)
 {
 	V_(printf("Test of new sha api\n"));
 	sha_context_t sha_context;
-	int rc = 0, i = 0;
+	int rc = 0;
+	unsigned int i = 0;
 	unsigned char input_data[1000000];
 	unsigned int  output_hash_length = SHA_HASH_LENGTH;
 	unsigned char output_hash[SHA_HASH_LENGTH];

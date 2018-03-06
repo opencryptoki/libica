@@ -24,6 +24,11 @@ int main(int argc, char **argv)
 	int i, rc;
 	struct timeval start,end;
 
+	(void)e;	/* suppress unused var warning */
+	(void)n;
+	(void)input_data;
+	(void)ciphertext;
+
 	set_verbosity(argc, argv);
 
 	/* Iterate over keys (1024, 2048 and 4096 bit length */

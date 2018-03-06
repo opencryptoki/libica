@@ -76,6 +76,10 @@ void get_sizes(unsigned int *data_length,
 			*data_length = sizeof(NIST_TEST_DATA_ECB_E2);
 			*key_length = sizeof(NIST_KEY_ECB_E2);
 			break;
+		default:
+			*data_length = 0;
+			*key_length = 0;
+			break;
 	}
 
 }

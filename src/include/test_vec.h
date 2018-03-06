@@ -87,7 +87,7 @@ struct aes_ccm_tv {
 	unsigned char *adata;
 	unsigned char *payload;
 	unsigned char *ciphertext;
-	int rv;
+	unsigned int rv;
 };
 
 struct aes_gcm_tv {
@@ -102,7 +102,7 @@ struct aes_gcm_tv {
 	unsigned char *aad;
 	unsigned char *tag;
 	unsigned char *ciphertext;
-	int rv;
+	unsigned int rv;
 };
 
 struct aes_xts_tv {
@@ -122,7 +122,7 @@ struct aes_cmac_tv {
 	unsigned char *key;
 	unsigned char *msg;
 	unsigned char *mac;
-	int rv;
+	unsigned int rv;
 };
 
 struct des3_ecb_tv {
@@ -180,7 +180,7 @@ struct des3_cmac_tv {
 	unsigned char key[DES3_KEYLEN];
 	unsigned char *msg;
 	unsigned char *mac;
-	int rv;
+	unsigned int rv;
 };
 
 struct rsa_tv {
@@ -219,7 +219,7 @@ struct drbg_sha512_tv {
 
 		unsigned char *v;
 		unsigned char *c;
-		int reseed_ctr;
+		unsigned int reseed_ctr;
 	} inst;
 
 	struct {
@@ -228,7 +228,7 @@ struct drbg_sha512_tv {
 
 		unsigned char *v;
 		unsigned char *c;
-		int reseed_ctr;
+		unsigned int reseed_ctr;
 	} res, gen1, gen2;
 
 	unsigned char *prnd;

@@ -22,9 +22,9 @@
 int main(int argc, char **argv)
 {
 	libica_func_list_element* libica_func_list;
-	int rc, x;
+	int rc;
 	int failed = 0;
-	unsigned int count;
+	unsigned int count, x;
 
 	set_verbosity(argc, argv);
 
@@ -44,7 +44,7 @@ int main(int argc, char **argv)
 		failed++;
 	}
 	else {
-		for (x=0; x<count; x++) {
+		for (x = 0; x < count; x++) {
 			V_(printf("ID: %d Flags: %d Property: %d\n",
 				libica_func_list[x].mech_mode_id,
 				libica_func_list[x].flags, libica_func_list[x].property));

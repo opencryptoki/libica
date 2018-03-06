@@ -216,15 +216,9 @@ void get_sizes(unsigned int *data_length,
 			*data_length = sizeof(NIST_TEST_DATA_ECB_E7);
 			*key_length = sizeof(NIST_KEY_ECB_E7);
 			break;
-		case 8:
-			break;
-		case 9:
-			break;
-		case 10:
-			break;
-		case 11:
-			break;
-		case 12:
+		default:
+			*data_length = 0;
+			*key_length = 0;
 			break;
 	}
 
@@ -270,16 +264,6 @@ void load_test_data(unsigned char *data, unsigned int data_length,
 			memcpy(data, NIST_TEST_DATA_ECB_E7, data_length);
 			memcpy(result, NIST_TEST_RESULT_ECB_E7, data_length);
 			memcpy(key, NIST_KEY_ECB_E7, key_length);
-			break;
-		case 8:
-			break;
-		case 9:
-			break;
-		case 10:
-			break;
-		case 11:
-			break;
-		case 12:
 			break;
 	}
 

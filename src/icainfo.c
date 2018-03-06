@@ -67,7 +67,7 @@ static struct option getopt_long_options[] = {
 
 struct crypt_pair {
 	char *name;
-	int algo_id;
+	unsigned int algo_id;
 };
 
 static struct crypt_pair crypt_map[] = {
@@ -169,9 +169,10 @@ int main(int argc, char **argv)
 {
 	int rc;
 	int index = 0;
-	unsigned int mech_len;
+	unsigned int mech_len, j;
 	libica_func_list_element *pmech_list = NULL;
 	int flags;
+	int i;
 
 	while ((rc = getopt_long(argc, argv, getopt_string,
 				 getopt_long_options, &index)) != -1) {
@@ -214,11 +215,10 @@ int main(int argc, char **argv)
 
 	#define CELL_SIZE 3
 
-	int i, j;
 	printf(" function      |  hardware  |  software  \n");
 	printf("---------------+------------+------------\n");
-	for(i = 0;crypt_map[i].algo_id;i++){
-		for(j=0;j<mech_len;j++){
+	for(i = 0; crypt_map[i].algo_id; i++){
+		for(j = 0; j < mech_len; j++){
 			if(crypt_map[i].algo_id == pmech_list[j].mech_mode_id){
 #ifdef ICA_FIPS
 				if (((ica_fips_status() & ICA_FIPS_MODE)

@@ -101,7 +101,6 @@ static inline void __compute_meta_b0(const unsigned char *nonce,
 
 static inline void __compute_initial_ctr(const unsigned char *nonce,
 					 unsigned long nonce_length,
-					 unsigned long payload_length,
 					 unsigned char *ctr)
 {
 	struct {
@@ -298,7 +297,7 @@ static inline unsigned int s390_ccm(unsigned int function_code,
 	unsigned int rc;
 
 	/* compute initial counter */
-	__compute_initial_ctr(nonce, nonce_length, payload_length, initial_ctr);
+	__compute_initial_ctr(nonce, nonce_length, initial_ctr);
 	ccm_ctr_width = (15 - nonce_length) * 8;
 
 	if (payload_length) {

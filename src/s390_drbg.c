@@ -118,9 +118,10 @@ int drbg_instantiate(ica_drbg_t **sh,
 
 	/* step 5: Null step. */
 
-	const size_t entropy_len = !test_mode ?
-				   (sec + 7) / 8 + DRBG_ADD_ENTROPY_LEN :
-				   test_entropy_len;
+	const size_t entropy_len = !test_mode ? (size_t)
+						((sec + 7) / 8
+						 + DRBG_ADD_ENTROPY_LEN)
+						: test_entropy_len;
 	const size_t nonce_len = !test_mode ? DRBG_NONCE_LEN : test_nonce_len;
 	unsigned char entropy[entropy_len + 1];	/* +1 avoids 0-length VLA */
 	unsigned char nonce[nonce_len + 1];
@@ -219,9 +220,10 @@ int drbg_reseed(ica_drbg_t *sh,
 	if(add_len > sh->mech->max_add_len)
 		return DRBG_ADD_INV;
 
-	const size_t entropy_len = !test_mode ?
-				   (sh->sec + 7) / 8 + DRBG_ADD_ENTROPY_LEN :
-				   test_entropy_len;
+	const size_t entropy_len = !test_mode ? (size_t)
+						((sh->sec + 7) / 8
+						 + DRBG_ADD_ENTROPY_LEN)
+					        : test_entropy_len;
 	unsigned char entropy[entropy_len + 1];	/* +1 avoids 0-length VLA */
 
 	/* step 4 */
@@ -384,7 +386,8 @@ int drbg_health_test(const void *func,
 		     bool pr,
 		     ica_drbg_mech_t *mech)
 {
-	int status, i;
+	size_t i;
+	int status;
 	const int SEC[] = {DRBG_SEC_112, DRBG_SEC_128, DRBG_SEC_192,
 			   DRBG_SEC_256};
 
@@ -487,6 +490,8 @@ int drbg_get_entropy_input(bool pr,
 	size_t i;
 	FILE *fd;
 	int status;
+
+	(void)pr;	/* suppress unused param warning */
 
 	/* NIST SP800-90C Get_entropy_input */
 
@@ -779,7 +784,8 @@ static int test_generate_error_handling(ica_drbg_mech_t *mech)
 {
 	const int SEC[] = {DRBG_SEC_112, DRBG_SEC_128, DRBG_SEC_192,
 			   DRBG_SEC_256};
-	int test_no = 0, status, i;
+	size_t i;
+	int test_no = 0, status;
 	unsigned char prnd;
 
 	/* Invalid state handle. */

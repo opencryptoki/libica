@@ -155,7 +155,8 @@ int test_gcm_kat_update(int iteration)
 	unsigned int offset;
 	unsigned char *chunk_data;
 	unsigned char t[t_length];
-	int rc = 0, i;
+	int rc = 0;
+	unsigned int i;
 
 	unsigned int vla_length = data_length ? data_length : 1;
 
@@ -193,11 +194,14 @@ int test_gcm_kat_update(int iteration)
 			chunk_data = input_data + offset;
 
 			/* Encrypt */
-			rc = ica_aes_gcm_kma_update(chunk_data, encrypt+offset, chunk_len,
-					aad, aad_length,
-					1, /* end_of_aad */
-					i == num_chunks-1 ? 1 : 0,
-					ctx);
+			rc = ica_aes_gcm_kma_update(chunk_data,
+						    encrypt + offset,
+						    chunk_len,
+						    aad, aad_length,
+						    1, /* end_of_aad */
+						    i == num_chunks - 1 ? 1
+									: 0,
+						    ctx);
 			if (rc)
 				break;
 
@@ -341,7 +345,8 @@ int test_gcm_kat_update_aad(int iteration)
 	unsigned int data_offset;
 	unsigned int aad_offset;
 	unsigned char *chunk_data;
-	int rc = 0, i;
+	int rc = 0;
+	unsigned int i;
 
 	unsigned int vla_length = data_length ? data_length : 1;
 
@@ -539,7 +544,8 @@ int test_gcm_kat_update_in_place(int iteration)
 	unsigned char *chunk_data;
 	unsigned char save_input[MAX_ARRAY_SIZE];
 	unsigned char t[t_length];
-	int rc = 0, i;
+	int rc = 0;
+	unsigned int i;
 
 	VV_(printf("Test Parameters for iteration = %i\n", iteration));
 	VV_(printf("key length = %i, data length = %i, tag length = %i,"
@@ -701,7 +707,7 @@ int main(int argc, char **argv)
 {
 	int rc = 0;
 	int error_count = 0;
-	int iteration;
+	unsigned int iteration;
 
 	set_verbosity(argc, argv);
 

@@ -2,9 +2,9 @@
 #OPTS = -O0 -g -Wall -m31 -D_LINUX_S390_
 
 if DEBUG
-OPTS = -O0 -g -Wall -D_LINUX_S390_ -D_GNU_SOURCE -pthread -fstack-protector-all
+OPTS = -O0 -g -Wall -Wextra -D_LINUX_S390_ -D_GNU_SOURCE -pthread -fstack-protector-all
 else
-OPTS = -O0 -g -Wall -D_LINUX_S390_ -D_GNU_SOURCE -pthread
+OPTS = -O3 -g -Wall -Wextra -D_LINUX_S390_ -D_GNU_SOURCE -pthread
 endif
 
 if ICA_FIPS
@@ -20,7 +20,7 @@ TARGETS = icastats_test \
 	  libica_aes128_test libica_aes192_test libica_aes256_test \
 	  libica_sha1_test libica_sha256_test libica_sha3_224_test \
 	  libica_sha3_256_test libica_sha3_384_test libica_sha3_512_test \
-         libica_shake_128_test libica_shake_256_test \
+	  libica_shake_128_test libica_shake_256_test \
 	  libica_rsa_test libica_rsa_key_check_test \
 	  libica_rng_test libica_keygen_test \
 	  libica_ecdh_test libica_ecdsa_test libica_eckeygen_test \

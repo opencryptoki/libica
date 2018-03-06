@@ -113,8 +113,8 @@ int read_test_data(FILE * test_data, int sha3_flag)
 			if (sscanf(buffer, "MD = %s", buffer)
 			    == 1) {
 				if (((int)strlen(buffer) % 2 != 0)
-				    || (((int)strlen(buffer) / 2) !=
-					current_msg_digest_length)) {
+				    || (((unsigned int)strlen(buffer) / 2)
+					!= current_msg_digest_length)) {
 					printf
 					    ("error:\nincorrect file format [line %u]: message digest length doesn't match test type. closing file.\n",
 					     line_number);

@@ -44,6 +44,8 @@ static void make_envq_key()
 static void sigill_handler(int sig)
 {
 	jmp_buf* envq = pthread_getspecific(envq_key);
+
+	(void)sig;	/* supress unused param warning */
 	if (envq) {
 		longjmp(*envq, EXCEPTION_RV);
 	}

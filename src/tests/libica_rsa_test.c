@@ -44,8 +44,8 @@ static int handle_ica_error(int rc, char *message)
 int main(int argc, char **argv)
 {
 	ica_adapter_handle_t adapter_handle;
-	unsigned char *my_result;
-	unsigned char *my_result2;
+	unsigned char my_result[RESULT_LENGTH];
+	unsigned char my_result2[RESULT_LENGTH];
 	int i, rc;
 	struct timeval start,end;
 
@@ -59,26 +59,24 @@ int main(int argc, char **argv)
 	/* Iterate over key sizes (1024, 2048 and 4096) */
 	for (i = 0; i < 6; i++) {
 		/* encrypt with public key (ME) */
-		V_(printf("modulus size = %d\n", RSA_BYTE_LENGHT[i]));
+		V_(printf("\nmodulus size = %d\n", RSA_BYTE_LENGHT[i]));
 
-		my_result =  malloc(RESULT_LENGTH);
-		bzero(my_result, RESULT_LENGTH);
+		memset(my_result, 0, sizeof(my_result));
+		memset(my_result2, 0, sizeof(my_result2));
 
-		my_result2 = malloc(RESULT_LENGTH);
-		bzero(my_result2, RESULT_LENGTH);
-
-		ica_rsa_key_mod_expo_t mod_expo_key = {RSA_BYTE_LENGHT[i], n[i], e[i]};
+		ica_rsa_key_mod_expo_t mod_expo_key = {RSA_BYTE_LENGHT[i],
+						       n[i], e[i]};
 
 		rc = ica_rsa_mod_expo(adapter_handle, input_data,
-							  &mod_expo_key, my_result);
+				      &mod_expo_key, my_result);
 		if (rc)
 			exit(handle_ica_error(rc, "ica_rsa_key_mod_expo"));
 
-		VV_(printf("\n\n\n\n\n result of encrypt with public key\n"));
+		VV_(printf("result of encrypt with public key\n"));
 		dump_array(my_result, RSA_BYTE_LENGHT[i]);
 		VV_(printf("Ciphertext \n"));
 		dump_array(ciphertext[i], RSA_BYTE_LENGHT[i]);
-		if (memcmp(my_result,ciphertext[i],RSA_BYTE_LENGHT[i])){
+		if (memcmp(my_result, ciphertext[i], RSA_BYTE_LENGHT[i])){
 			printf("Ciphertext mismatch\n");
 			return -1;
 		}
@@ -88,28 +86,27 @@ int main(int argc, char **argv)
 		    = {RSA_BYTE_LENGHT[i], p[i], q[i], dp[i], dq[i], qinv[i]};
 
 		gettimeofday(&start, NULL);
-
 		rc = ica_rsa_crt(adapter_handle, ciphertext[i], &crt_key, my_result2);
 		if(rc)
 			exit(handle_ica_error(rc, "ica_rsa_crt"));
-
 		gettimeofday(&end, NULL);
+
 		V_(printf("RSA decrypt with key[%d] (l=%d) took %06lu µs.\n", i,
 		    RSA_BYTE_LENGHT[i], (end.tv_sec * 1000000 + end.tv_usec)
 		    - (start.tv_sec*1000000+start.tv_usec)));
 
 		VV_(printf("Result of decrypt\n"));
-		dump_array((unsigned char *)my_result2, sizeof(input_data));
+		dump_array((unsigned char *)my_result2, RSA_BYTE_LENGHT[i]);
 		VV_(printf("original data\n"));
-		dump_array(input_data, sizeof(input_data));
-		if (memcmp(input_data,my_result2,sizeof(input_data)) != 0) {
+		dump_array(input_data, RSA_BYTE_LENGHT[i]);
+		if (memcmp(input_data, my_result2, RSA_BYTE_LENGHT[i]) != 0) {
 			printf("Results do not match.  Failure!\n");
 			return -1;
 		}
 
-	} // end loop
+	}
 
-	rc = ica_open_adapter(&adapter_handle);
+	rc = ica_close_adapter(adapter_handle);
 	if (rc != 0) {
 		printf("ica_close_adapter failed and returned %d (0x%x).\n", rc, rc);
 	}

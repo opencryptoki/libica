@@ -86,7 +86,7 @@ static inline int s390_ghash_hw(unsigned int fc,
 	memcpy(parmblock.hash_subkey, subkey, AES_BLOCK_SIZE);
 
 	rc = s390_kimd(fc, &parmblock, in_data, data_length);
-	if(rc == data_length) {
+	if((unsigned long)rc == data_length) {
 		/* All data has been processed */
 		memcpy(iv, parmblock.iv, AES_BLOCK_SIZE);
 		stats_increment(ICA_STATS_GHASH, hardware, ENCRYPT);
@@ -397,21 +397,15 @@ static inline int s390_gcm(unsigned int function_code,
 
 		if (function_code % 2) {
 			/* decrypt */
-			rc = s390_aes_gcm(function_code,
-					  ciphertext, plaintext, text_length,
-					  key, j0, GCM_CTR_WIDTH,
-					  tmp_ctr, GCM_CTR_WIDTH,
-					  aad, aad_length, subkey_h,
-					  tag, tag_length, 1, 1);
+			rc = s390_aes_gcm(function_code, ciphertext, plaintext,
+					  text_length, key, j0, tmp_ctr, aad,
+					  aad_length, subkey_h, tag, 1, 1);
 		} else {
 			/* encrypt */
 			memset(tmp_tag, 0, AES_BLOCK_SIZE);
-			rc = s390_aes_gcm(function_code,
-					  plaintext, ciphertext, text_length,
-					  key, j0, GCM_CTR_WIDTH,
-					  tmp_ctr, GCM_CTR_WIDTH,
-					  aad, aad_length, subkey_h,
-					  tmp_tag, tag_length, 1, 1);
+			rc = s390_aes_gcm(function_code, plaintext, ciphertext,
+					  text_length, key, j0, tmp_ctr, aad,
+					  aad_length, subkey_h, tmp_tag, 1, 1);
 			memcpy(tag, tmp_tag, tag_length);
 		}
 
@@ -468,8 +462,8 @@ static inline int s390_gcm_last_intermediate(unsigned int function_code,
 				unsigned char *ciphertext,
 				unsigned char *ctr,
 				unsigned char *aad, unsigned long aad_length,
-				unsigned char *tag, unsigned long tag_length,
-				unsigned char *key, unsigned char *subkey)
+				unsigned char *tag, unsigned char *key,
+				unsigned char *subkey)
 {
 	unsigned int rc;
 	unsigned char tmp_ctr[16];
@@ -513,8 +507,8 @@ static inline int s390_gcm_intermediate(unsigned int function_code,
 				unsigned char *ciphertext,
 				unsigned char *ctr,
 				unsigned char *aad, unsigned long aad_length,
-				unsigned char *tag, unsigned long tag_length,
-				unsigned char *key, unsigned char *subkey)
+				unsigned char *tag, unsigned char *key,
+				unsigned char *subkey)
 {
 	unsigned long bulk;
 	unsigned int rc, laad;
@@ -562,12 +556,9 @@ static inline int s390_gcm_intermediate(unsigned int function_code,
 			in = (function_code % 2) ? ciphertext : plaintext;
 			out = (function_code % 2) ? plaintext : ciphertext;
 
-			rc = s390_aes_gcm(function_code,
-					  in, out, bulk, key,
-					  NULL, 0, // j0, j0_length not used here
-					  ctr, GCM_CTR_WIDTH,
-					  aad, aad_length, subkey,
-					  tag, tag_length, laad, 0);
+			rc = s390_aes_gcm(function_code, in, out, bulk, key,
+					  NULL, ctr, aad, aad_length, subkey,
+					  tag, laad, 0);
 			if (rc)
 				return rc;
 		}
@@ -575,7 +566,7 @@ static inline int s390_gcm_intermediate(unsigned int function_code,
 			rc = s390_gcm_last_intermediate(function_code,
 					plaintext + bulk, text_length,
 					ciphertext + bulk, ctr, NULL,
-					0, tag, tag_length, key, subkey);
+					0, tag, key, subkey);
 			if (rc)
 				return rc;
 		}
@@ -609,13 +600,9 @@ static inline int s390_gcm_last(unsigned int function_code, unsigned char *icb,
 							key, tmp_icb, GCM_CTR_WIDTH);
 
 	} else {
-
-		return s390_aes_gcm(function_code,
-				  NULL, NULL, ciph_length,
-				  key, tmp_icb, GCM_CTR_WIDTH,
-				  NULL, 0,
-				  NULL, aad_length, subkey,
-				  tag, tag_length, 1, 1);
+		return s390_aes_gcm(function_code, NULL, NULL, ciph_length,
+				    key, tmp_icb, NULL, NULL, aad_length,
+				    subkey, tag, 1, 1);
 	}
 }
 
@@ -674,13 +661,20 @@ static inline int s390_aes_gcm_simulate_kma_intermediate(const unsigned char *in
 	}
 
 	if (ctx->direction == ICA_ENCRYPT) {
-		rc = s390_gcm_intermediate(function_code, (unsigned char*)in_data, data_length, out_data,
-				(unsigned char*)&(ctx->ucb), (unsigned char*)aad, aad_length,
-				ctx->tag, AES_BLOCK_SIZE, (unsigned char*)ctx->key, (unsigned char*)ctx->subkey_h);
+		rc = s390_gcm_intermediate(function_code,
+					   (unsigned char*)in_data,
+					   data_length, out_data,
+					   (unsigned char*)&(ctx->ucb),
+					   (unsigned char*)aad, aad_length,
+					   ctx->tag, (unsigned char*)ctx->key,
+					   (unsigned char*)ctx->subkey_h);
 	} else {
-		rc = s390_gcm_intermediate(function_code, out_data, data_length, (unsigned char*)in_data,
-				(unsigned char*)&(ctx->ucb), (unsigned char*)aad, aad_length,
-				ctx->tag, AES_BLOCK_SIZE, (unsigned char*)ctx->key, (unsigned char*)ctx->subkey_h);
+		rc = s390_gcm_intermediate(function_code, out_data,
+					   data_length, (unsigned char*)in_data,
+					   (unsigned char*)&(ctx->ucb),
+					   (unsigned char*)aad, aad_length,
+					   ctx->tag, (unsigned char*)ctx->key,
+					   (unsigned char*)ctx->subkey_h);
 	}
 
 	if (rc)
