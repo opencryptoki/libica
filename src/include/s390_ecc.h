@@ -23,7 +23,6 @@
 
 struct ec_key_t {
 	uint32_t nid;
-	unsigned int key_generated;
 	unsigned char* X;
 	unsigned char* Y;
 	unsigned char* D;

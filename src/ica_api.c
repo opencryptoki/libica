@@ -1080,6 +1080,7 @@ ICA_EC_KEY* ica_ec_key_new(unsigned int nid, unsigned int *privlen)
 int ica_ec_key_init(const unsigned char *X, const unsigned char *Y,
 		const unsigned char *D, ICA_EC_KEY *key)
 {
+	unsigned int privlen = privlen_from_nid(key->nid);
 
 #ifdef ICA_FIPS
 	if (fips >> 1)
@@ -1093,15 +1094,21 @@ int ica_ec_key_init(const unsigned char *X, const unsigned char *Y,
 	if ((X == NULL && Y != NULL) || (X != NULL && Y == NULL))
 		return EINVAL;
 
+	/* allocate memory for the 3 key parts */
+	key->X = malloc(3*privlen);
+	if (!key->X)
+		return ENOMEM;
+
+	key->Y = key->X + privlen;
+	key->D = key->Y + privlen;
+
 	if (X != NULL && Y != NULL) {
-		key->X = (unsigned char*)X;
-		key->Y = (unsigned char*)Y;
+		memcpy(key->X, X, privlen);
+		memcpy(key->Y, Y, privlen);
 	}
 
 	if (D != NULL)
-		key->D = (unsigned char*)D;
-
-	key->key_generated = 0;
+		memcpy(key->D, D, privlen);
 
 	return 0;
 }
@@ -1128,7 +1135,6 @@ int ica_ec_key_generate(ica_adapter_handle_t adapter_handle, ICA_EC_KEY *key)
 
 	key->Y = key->X + privlen;
 	key->D = key->Y + privlen;
-	key->key_generated = 1;
 
 	icapath = getenv_icapath();
 	switch (icapath) {
@@ -1311,17 +1317,17 @@ int ica_ec_key_get_private_key(const ICA_EC_KEY *key, unsigned char *d, unsigned
 
 void ica_ec_key_free(ICA_EC_KEY *key)
 {
-    if (!key)
-	return;
+	if (!key)
+		return;
 
-    if (key->key_generated && key->X) {
-	/* free 1 block of memory for X, Y, and D */
-	OPENSSL_cleanse((void *)key->X, 3*privlen_from_nid(key->nid));
-	free(key->X);
-    }
+	if (key->X) {
+		/* free 1 block of memory for X, Y, and D */
+		OPENSSL_cleanse((void *)key->X, 3*privlen_from_nid(key->nid));
+		free(key->X);
+	}
 
-    OPENSSL_cleanse((void *)key, sizeof(ICA_EC_KEY));
-    free(key);
+	OPENSSL_cleanse((void *)key, sizeof(ICA_EC_KEY));
+	free(key);
 }
 
 /*
