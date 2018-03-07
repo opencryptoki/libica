@@ -6,7 +6,7 @@
 .\"   nroff -man icainfo.1
 .\" to process this source
 .\"
-.TH ICAINFO 1 2013-12-06 IBM "icainfo user manual"
+.TH ICAINFO 1 2018-03-07 IBM "icainfo user manual"
 .SH NAME
 icainfo \- print information about cryptographic functions supported by libica
 .SH SYNOPSIS
@@ -15,7 +15,14 @@ icainfo \- print information about cryptographic functions supported by libica
 .SH DESCRIPTION
 .B icainfo
 prints a table that shows libica's support for various cryptographic
-algorithms and information about FIPS support. A sample output is given below:
+algorithms and information about FIPS support.
+
+The icainfo output also indicates, whether it is in an error state.
+Algorithms that are not FIPS approved are marked as blocked in both table
+columns when running in FIPS mode. All algorithms are marked as blocked when
+libica is in an error state.
+
+A shortened sample output is given below:
 .P
 .nf
       Cryptographic algorithm support
@@ -32,25 +39,7 @@ algorithms and information about FIPS support. A sample output is given below:
   DRBG-SHA-512 |    yes     |     yes
         RSA ME |     no     |     yes
        RSA CRT |     no     |     yes
-       DES ECB |  blocked   |   blocked
-       DES CBC |  blocked   |   blocked
-       DES OFB |  blocked   |   blocked
-       DES CFB |  blocked   |   blocked
-       DES CTR |  blocked   |   blocked
-      DES CMAC |  blocked   |   blocked
-      3DES ECB |    yes     |     yes
-      3DES CBC |    yes     |     yes
-      3DES OFB |    yes     |      no
-      3DES CFB |    yes     |      no
-      3DES CTR |    yes     |      no
-     3DES CMAC |    yes     |      no
-       AES ECB |    yes     |     yes
-       AES CBC |    yes     |     yes
-       AES OFB |    yes     |      no
-       AES CFB |    yes     |      no
-       AES CTR |    yes     |      no
-      AES CMAC |    yes     |      no
-       AES XTS |    yes     |      no
+           ...
 -------------------------------------------
 Built-in FIPS support: FIPS mode active.
 .fi
