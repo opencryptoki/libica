@@ -58,15 +58,15 @@ static int is_supported_openssl_curve(int nid)
  */
 static EC_KEY *make_eckey(int nid, const unsigned char *p, size_t plen)
 {
-    int ok = 0;
-    EC_KEY *k = NULL;
-    BIGNUM *priv = NULL;
-    EC_POINT *pub = NULL;
-    const EC_GROUP *grp;
+	int ok = 0;
+	EC_KEY *k = NULL;
+	BIGNUM *priv = NULL;
+	EC_POINT *pub = NULL;
+	const EC_GROUP *grp;
 
-    if ((k = EC_KEY_new_by_curve_name(nid)) == NULL) {
-        goto err;
-    }
+	if ((k = EC_KEY_new_by_curve_name(nid)) == NULL) {
+		goto err;
+	}
 
 	if ((priv = BN_bin2bn(p, plen, NULL)) == NULL) {
 		goto err;
@@ -76,32 +76,32 @@ static EC_KEY *make_eckey(int nid, const unsigned char *p, size_t plen)
 		goto err;
 	}
 
-    grp = EC_KEY_get0_group(k);
-    if ((pub = EC_POINT_new(grp)) == NULL) {
-        goto err;
-    }
+	grp = EC_KEY_get0_group(k);
+	if ((pub = EC_POINT_new(grp)) == NULL) {
+		goto err;
+	}
 
-    if (!EC_POINT_mul(grp, pub, priv, NULL, NULL, NULL)) {
-        goto err;
-    }
+	if (!EC_POINT_mul(grp, pub, priv, NULL, NULL, NULL)) {
+		goto err;
+	}
 
-    if (!EC_KEY_set_public_key(k, pub)) {
-        goto err;
-    }
-    ok = 1;
+	if (!EC_KEY_set_public_key(k, pub)) {
+		goto err;
+	}
+	ok = 1;
 
- err:
-    if (priv)
-        BN_clear_free(priv);
-    if (pub)
-        EC_POINT_free(pub);
+err:
+	if (priv)
+		BN_clear_free(priv);
+	if (pub)
+		EC_POINT_free(pub);
 
-    if (ok)
-        return k;
-    else if (k)
-        EC_KEY_free(k);
+	if (ok)
+		return k;
+	else if (k)
+		EC_KEY_free(k);
 
-    return NULL;
+	return NULL;
 }
 
 /**
@@ -109,41 +109,41 @@ static EC_KEY *make_eckey(int nid, const unsigned char *p, size_t plen)
  */
 static EC_KEY *make_public_eckey(int nid, BIGNUM *x, BIGNUM *y, size_t plen)
 {
-    int ok = 0;
-    EC_KEY *k = NULL;
-    EC_POINT *pub = NULL;
-    const EC_GROUP *grp;
+	int ok = 0;
+	EC_KEY *k = NULL;
+	EC_POINT *pub = NULL;
+	const EC_GROUP *grp;
 
-    (void)plen;	/* suppress unused param warning. XXX remove plen? */
+	(void)plen;	/* suppress unused param warning. XXX remove plen? */
 
-    k = EC_KEY_new_by_curve_name(nid);
-    if (!k)
-        goto err;
+	k = EC_KEY_new_by_curve_name(nid);
+	if (!k)
+		goto err;
 
-    grp = EC_KEY_get0_group(k);
-    pub = EC_POINT_new(grp);
-    if (!pub)
-        goto err;
+	grp = EC_KEY_get0_group(k);
+	pub = EC_POINT_new(grp);
+	if (!pub)
+		goto err;
 
-    if (x && y) {
+	if (x && y) {
 		BN_CTX* ctx = BN_CTX_new();
 		EC_POINT_set_affine_coordinates_GFp(grp, pub, x, y, ctx);
-    }
+	}
 
-    if (!EC_KEY_set_public_key(k, pub))
-        goto err;
-    ok = 1;
+	if (!EC_KEY_set_public_key(k, pub))
+		goto err;
+	ok = 1;
 
- err:
-    if (pub)
-        EC_POINT_free(pub);
+err:
+	if (pub)
+		EC_POINT_free(pub);
 
-    if (ok)
-        return k;
-    else if (k)
-        EC_KEY_free(k);
+	if (ok)
+		return k;
+	else if (k)
+		EC_KEY_free(k);
 
-    return NULL;
+	return NULL;
 }
 
 /**
@@ -218,15 +218,15 @@ static short get_default_domain(void)
 static unsigned int make_cprbx(struct CPRBX* cprbx, unsigned int parmlen,
 		struct CPRBX *preqcblk, struct CPRBX *prepcblk)
 {
-    cprbx->cprb_len = CPRBXSIZE;
-    cprbx->cprb_ver_id = 0x02;
-    memcpy(&(cprbx->func_id), "T2", 2);
-    cprbx->req_parml = parmlen;
-    cprbx->domain = get_default_domain();
+	cprbx->cprb_len = CPRBXSIZE;
+	cprbx->cprb_ver_id = 0x02;
+	memcpy(&(cprbx->func_id), "T2", 2);
+	cprbx->req_parml = parmlen;
+	cprbx->domain = get_default_domain();
 
-    cprbx->rpl_msgbl = CPRBXSIZE + PARMBSIZE;
-    cprbx->req_parmb = ((uint8_t *) preqcblk) + CPRBXSIZE;
-    cprbx->rpl_parmb = ((uint8_t *) prepcblk) + CPRBXSIZE;
+	cprbx->rpl_msgbl = CPRBXSIZE + PARMBSIZE;
+	cprbx->req_parmb = ((uint8_t *) preqcblk) + CPRBXSIZE;
+	cprbx->rpl_parmb = ((uint8_t *) prepcblk) + CPRBXSIZE;
 
 	return CPRBXSIZE;
 }
@@ -331,13 +331,13 @@ static unsigned int make_ecdh_key_token(unsigned char *kb, unsigned int keyblock
  */
 static void finalize_xcrb(struct ica_xcRB* xcrb, struct CPRBX *preqcblk, struct CPRBX *prepcblk)
 {
-    memset(xcrb, 0, sizeof(struct ica_xcRB));
-    xcrb->agent_ID = 0x4341;
+	memset(xcrb, 0, sizeof(struct ica_xcRB));
+	xcrb->agent_ID = 0x4341;
 	xcrb->user_defined = 0xffffffff; /* use any card number */
-    xcrb->request_control_blk_length = preqcblk->cprb_len + preqcblk->req_parml;
-    xcrb->request_control_blk_addr = (void *) preqcblk;
-    xcrb->reply_control_blk_length = preqcblk->rpl_msgbl;
-    xcrb->reply_control_blk_addr = (void *) prepcblk;
+	xcrb->request_control_blk_length = preqcblk->cprb_len + preqcblk->req_parml;
+	xcrb->request_control_blk_addr = (void *) preqcblk;
+	xcrb->reply_control_blk_length = preqcblk->rpl_msgbl;
+	xcrb->reply_control_blk_addr = (void *) prepcblk;
 }
 
 /**
@@ -349,9 +349,9 @@ static void finalize_xcrb(struct ica_xcRB* xcrb, struct CPRBX *preqcblk, struct 
 static ECDH_REPLY* make_ecdh_request(const ICA_EC_KEY *privkey_A, const ICA_EC_KEY *pubkey_B,
 		struct ica_xcRB* xcrb)
 {
-    uint8_t *cbrbmem = NULL;
-    struct CPRBX *preqcblk, *prepcblk;
-    unsigned int privlen = privlen_from_nid(privkey_A->nid);
+	uint8_t *cbrbmem = NULL;
+	struct CPRBX *preqcblk, *prepcblk;
+	unsigned int privlen = privlen_from_nid(privkey_A->nid);
 
 	unsigned int ecdh_key_token_len = 2 + 2 + sizeof(CCA_TOKEN_HDR)
 		+ sizeof(ECC_PRIVATE_KEY_SECTION)
@@ -365,16 +365,16 @@ static ECDH_REPLY* make_ecdh_request(const ICA_EC_KEY *privkey_A, const ICA_EC_K
 	if (curve_type < 0)
 		return NULL;
 
-    /* allocate buffer space for req cprb, req parm, rep cprb, rep parm */
-    cbrbmem = malloc(2 * (CPRBXSIZE + PARMBSIZE));
-    if (!cbrbmem)
+	/* allocate buffer space for req cprb, req parm, rep cprb, rep parm */
+	cbrbmem = malloc(2 * (CPRBXSIZE + PARMBSIZE));
+	if (!cbrbmem)
 		return NULL;
 
-    memset(cbrbmem, 0, 2 * (CPRBXSIZE + PARMBSIZE));
-    preqcblk = (struct CPRBX *) cbrbmem;
-    prepcblk = (struct CPRBX *) (cbrbmem + CPRBXSIZE + PARMBSIZE);
+	memset(cbrbmem, 0, 2 * (CPRBXSIZE + PARMBSIZE));
+	preqcblk = (struct CPRBX *) cbrbmem;
+	prepcblk = (struct CPRBX *) (cbrbmem + CPRBXSIZE + PARMBSIZE);
 
-    /* make ECDH request */
+	/* make ECDH request */
 	unsigned int offset = 0;
 	offset = make_cprbx((struct CPRBX *)cbrbmem, parmblock_len, preqcblk, prepcblk);
 	offset += make_ecdh_parmblock((ECDH_PARMBLOCK*)(cbrbmem+offset));
@@ -387,7 +387,7 @@ static ECDH_REPLY* make_ecdh_request(const ICA_EC_KEY *privkey_A, const ICA_EC_K
 	offset += make_nullkey((ECDH_NULLKEY*)(cbrbmem+offset));
 	finalize_xcrb(xcrb, preqcblk, prepcblk);
 
-    return (ECDH_REPLY*)prepcblk;
+	return (ECDH_REPLY*)prepcblk;
 }
 
 /**
@@ -438,9 +438,9 @@ unsigned int ecdh_sw(const ICA_EC_KEY *privkey_A, const ICA_EC_KEY *pubkey_B,
 	int rc, ret = EIO;
 	EC_KEY *a = NULL;
 	EC_KEY *b = NULL;
-    BIGNUM *xb, *yb;
-    unsigned int ztmplen;
-    unsigned int privlen = privlen_from_nid(privkey_A->nid);
+	BIGNUM *xb, *yb;
+	unsigned int ztmplen;
+	unsigned int privlen = privlen_from_nid(privkey_A->nid);
 
 #ifdef ICA_FIPS
 	if ((fips & ICA_FIPS_MODE) && (!FIPS_mode()))
@@ -454,12 +454,12 @@ unsigned int ecdh_sw(const ICA_EC_KEY *privkey_A, const ICA_EC_KEY *pubkey_B,
 	xb = BN_bin2bn(pubkey_B->X, privlen, NULL);
 	yb = BN_bin2bn(pubkey_B->Y, privlen, NULL);
 	b = make_public_eckey(privkey_A->nid, xb, yb, privlen);
-    if (!a || !b)
-        goto err;
+	if (!a || !b)
+		goto err;
 
-    ztmplen = (EC_GROUP_get_degree(EC_KEY_get0_group(a)) + 7) / 8;
-    if (ztmplen != privlen)
-        goto err;
+	ztmplen = (EC_GROUP_get_degree(EC_KEY_get0_group(a)) + 7) / 8;
+	if (ztmplen != privlen)
+		goto err;
 
 	/**
 	 * Make sure to use original openssl compute_key method to avoid endless loop
@@ -470,11 +470,11 @@ unsigned int ecdh_sw(const ICA_EC_KEY *privkey_A, const ICA_EC_KEY *pubkey_B,
 #else
 	EC_KEY_set_method(a, EC_KEY_OpenSSL());
 #endif
-    rc = ECDH_compute_key(z, privlen, EC_KEY_get0_public_key(b), a, NULL);
-    if (rc == 0)
-	goto err;
+	rc = ECDH_compute_key(z, privlen, EC_KEY_get0_public_key(b), a, NULL);
+	if (rc == 0)
+		goto err;
 
-    ret = 0;
+	ret = 0;
 
 err:
 	BN_clear_free(xb);
@@ -638,9 +638,9 @@ static ECDSA_SIGN_REPLY* make_ecdsa_sign_request(const ICA_EC_KEY *privkey,
 		const unsigned char *hash, unsigned int hash_length,
 		struct ica_xcRB* xcrb)
 {
-    uint8_t *cbrbmem = NULL;
-    struct CPRBX *preqcblk, *prepcblk;
-    int privlen = privlen_from_nid(privkey->nid);
+	uint8_t *cbrbmem = NULL;
+	struct CPRBX *preqcblk, *prepcblk;
+	int privlen = privlen_from_nid(privkey->nid);
 
 	unsigned int ecdsa_key_token_len = 2 + 2 + sizeof(CCA_TOKEN_HDR)
 		+ sizeof(ECC_PRIVATE_KEY_SECTION)
@@ -648,30 +648,32 @@ static ECDSA_SIGN_REPLY* make_ecdsa_sign_request(const ICA_EC_KEY *privkey,
 		+ sizeof(ECC_PUBLIC_KEY_TOKEN) + 2*privlen;
 
 	unsigned int keyblock_len = 2 + ecdsa_key_token_len;
-	unsigned int parmblock_len = sizeof(ECDSA_PARMBLOCK_PART1) + hash_length + keyblock_len;
+	unsigned int parmblock_len = sizeof(ECDSA_PARMBLOCK_PART1)
+				   + hash_length + keyblock_len;
 
 	int curve_type = curve_type_from_nid(privkey->nid);
 	if (curve_type < 0)
 		return NULL;
 
-    /* allocate buffer space for req cprb, req parm, rep cprb, rep parm */
-    cbrbmem = malloc(2 * (CPRBXSIZE + PARMBSIZE));
-    if (!cbrbmem)
+	/* allocate buffer space for req cprb, req parm, rep cprb, rep parm */
+	cbrbmem = malloc(2 * (CPRBXSIZE + PARMBSIZE));
+	if (!cbrbmem)
 		return NULL;
 
-    memset(cbrbmem, 0, 2 * (CPRBXSIZE + PARMBSIZE));
-    preqcblk = (struct CPRBX *) cbrbmem;
-    prepcblk = (struct CPRBX *) (cbrbmem + CPRBXSIZE + PARMBSIZE);
+	memset(cbrbmem, 0, 2 * (CPRBXSIZE + PARMBSIZE));
+	preqcblk = (struct CPRBX *) cbrbmem;
+	prepcblk = (struct CPRBX *) (cbrbmem + CPRBXSIZE + PARMBSIZE);
 
-    /* make ECDSA sign request */
+	/* make ECDSA sign request */
 	unsigned int offset = 0;
 	offset = make_cprbx((struct CPRBX *)cbrbmem, parmblock_len, preqcblk, prepcblk);
-	offset += make_ecdsa_sign_parmblock((ECDSA_PARMBLOCK_PART1*)(cbrbmem+offset), hash, hash_length);
+	offset += make_ecdsa_sign_parmblock((ECDSA_PARMBLOCK_PART1*)
+					    (cbrbmem+offset), hash, hash_length);
 	offset += make_keyblock_length((ECC_KEYBLOCK_LENGTH*)(cbrbmem+offset), keyblock_len);
 	offset += make_ecdsa_private_key_token(cbrbmem+offset, privkey, X, Y, curve_type);
 	finalize_xcrb(xcrb, preqcblk, prepcblk);
 
-    return (ECDSA_SIGN_REPLY*)prepcblk;
+	return (ECDSA_SIGN_REPLY*)prepcblk;
 }
 
 /**
@@ -803,11 +805,11 @@ unsigned int ecdsa_sign_sw(const ICA_EC_KEY *privkey,
 		unsigned char *signature)
 {
 	int rc = EIO;
-    EC_KEY *a = NULL;
-    BIGNUM* r=NULL; BIGNUM* s=NULL;
-    ECDSA_SIG* sig = NULL;
-    unsigned int privlen = privlen_from_nid(privkey->nid);
-    unsigned int i,n;
+	EC_KEY *a = NULL;
+	BIGNUM* r=NULL; BIGNUM* s=NULL;
+	ECDSA_SIG* sig = NULL;
+	unsigned int privlen = privlen_from_nid(privkey->nid);
+	unsigned int i,n;
 
 #ifdef ICA_FIPS
 	if ((fips & ICA_FIPS_MODE) && (!FIPS_mode()))
@@ -818,29 +820,29 @@ unsigned int ecdsa_sign_sw(const ICA_EC_KEY *privkey,
 		return EINVAL;
 
 	a = make_eckey(privkey->nid, privkey->D, privlen);
-    if (!a)
-        goto err;
+	if (!a)
+		goto err;
 
-    if (!EC_KEY_check_key(a))
-        goto err;
+	if (!EC_KEY_check_key(a))
+		goto err;
 
 	/**
 	 * Make sure to use original openssl sign method to avoid endless loop when being
 	 * called from IBMCA engine in software fallback.
 	 */
 #if OPENSSL_VERSION_NUMBER < 0x10100000L
-    ECDSA_set_method(a, ECDSA_OpenSSL());
+	ECDSA_set_method(a, ECDSA_OpenSSL());
 #else
-    EC_KEY_set_method(a, EC_KEY_OpenSSL());
+	EC_KEY_set_method(a, EC_KEY_OpenSSL());
 #endif
-    sig = ECDSA_do_sign(hash, hash_length, a);
-    if (!sig)
-	goto err;
+	sig = ECDSA_do_sign(hash, hash_length, a);
+	if (!sig)
+		goto err;
 
-    ECDSA_SIG_get0(sig, (const BIGNUM**)&r, (const BIGNUM **)&s);
+	ECDSA_SIG_get0(sig, (const BIGNUM**)&r, (const BIGNUM **)&s);
 
-    /* Insert leading 0x00's if r or s shorter than privlen */
-    n = privlen - BN_num_bytes(r);
+	/* Insert leading 0x00's if r or s shorter than privlen */
+	n = privlen - BN_num_bytes(r);
 	for (i=0;i<n;i++)
 		signature[i] = 0x00;
 	BN_bn2bin(r, &(signature[n]));
@@ -848,9 +850,9 @@ unsigned int ecdsa_sign_sw(const ICA_EC_KEY *privkey,
 	n = privlen - BN_num_bytes(s);
 	for (i=0;i<n;i++)
 	signature[privlen+i] = 0x00;
-    BN_bn2bin(s, &(signature[privlen+n]));
+	BN_bn2bin(s, &(signature[privlen+n]));
 
-    rc = 0;
+	rc = 0;
 
 err:
 	ECDSA_SIG_free(sig); /* also frees r and s */
@@ -869,9 +871,9 @@ static ECDSA_VERIFY_REPLY* make_ecdsa_verify_request(const ICA_EC_KEY *pubkey,
 		const unsigned char *hash, unsigned int hash_length,
 		const unsigned char *signature, struct ica_xcRB* xcrb)
 {
-    uint8_t *cbrbmem = NULL;
-    struct CPRBX *preqcblk, *prepcblk;
-    unsigned int privlen = privlen_from_nid(pubkey->nid);
+	uint8_t *cbrbmem = NULL;
+	struct CPRBX *preqcblk, *prepcblk;
+	unsigned int privlen = privlen_from_nid(pubkey->nid);
 
 	unsigned int ecdsa_key_token_len = 2 + 2 + sizeof(CCA_TOKEN_HDR)
 		+ sizeof(ECC_PUBLIC_KEY_TOKEN) + 2*privlen;
@@ -880,28 +882,30 @@ static ECDSA_VERIFY_REPLY* make_ecdsa_verify_request(const ICA_EC_KEY *pubkey,
 	unsigned int parmblock_len = sizeof(ECDSA_PARMBLOCK_PART1) + hash_length
 		+ sizeof(ECDSA_PARMBLOCK_PART2) + 2*privlen + keyblock_len;
 
-    /* allocate buffer space for req cprb, req parm, rep cprb, rep parm */
-    cbrbmem = malloc(2 * (CPRBXSIZE + PARMBSIZE));
-    if (!cbrbmem)
+	/* allocate buffer space for req cprb, req parm, rep cprb, rep parm */
+	cbrbmem = malloc(2 * (CPRBXSIZE + PARMBSIZE));
+	if (!cbrbmem)
 		return NULL;
 
 	int curve_type = curve_type_from_nid(pubkey->nid);
 	if (curve_type < 0)
 		return NULL;
 
-    memset(cbrbmem, 0, 2 * (CPRBXSIZE + PARMBSIZE));
-    preqcblk = (struct CPRBX *) cbrbmem;
-    prepcblk = (struct CPRBX *) (cbrbmem + CPRBXSIZE + PARMBSIZE);
+	memset(cbrbmem, 0, 2 * (CPRBXSIZE + PARMBSIZE));
+	preqcblk = (struct CPRBX *) cbrbmem;
+	prepcblk = (struct CPRBX *) (cbrbmem + CPRBXSIZE + PARMBSIZE);
 
-    /* make ECDSA verify request */
+	/* make ECDSA verify request */
 	unsigned int offset = 0;
 	offset = make_cprbx((struct CPRBX *)cbrbmem, parmblock_len, preqcblk, prepcblk);
-	offset += make_ecdsa_verify_parmblock((char*)(cbrbmem+offset), hash, hash_length, signature, 2*privlen);
+	offset += make_ecdsa_verify_parmblock((char*)(cbrbmem+offset), hash,
+					      hash_length, signature, 2*privlen);
 	offset += make_keyblock_length((ECC_KEYBLOCK_LENGTH*)(cbrbmem+offset), keyblock_len);
-	offset += make_ecdsa_public_key_token((ECDSA_PUBLIC_KEY_BLOCK*)(cbrbmem+offset), pubkey, curve_type);
+	offset += make_ecdsa_public_key_token((ECDSA_PUBLIC_KEY_BLOCK*)
+					      (cbrbmem+offset), pubkey, curve_type);
 	finalize_xcrb(xcrb, preqcblk, prepcblk);
 
-    return (ECDSA_VERIFY_REPLY*)prepcblk;
+	return (ECDSA_VERIFY_REPLY*)prepcblk;
 }
 
 /**
@@ -984,7 +988,7 @@ unsigned int ecdsa_verify_sw(const ICA_EC_KEY *pubkey,
 	 * when being called from IBMCA engine in software fallback.
 	 */
 #if OPENSSL_VERSION_NUMBER < 0x10100000L
-    ECDSA_set_method(a, ECDSA_OpenSSL());
+	ECDSA_set_method(a, ECDSA_OpenSSL());
 #else
 	EC_KEY_set_method(a, EC_KEY_OpenSSL());
 #endif
@@ -1001,7 +1005,8 @@ unsigned int ecdsa_verify_sw(const ICA_EC_KEY *pubkey,
 		break;
 	}
 
-	err: BN_clear_free(xa);
+err:
+	BN_clear_free(xa);
 	BN_clear_free(ya);
 	ECDSA_SIG_free(sig);
 	EC_KEY_free(a);
@@ -1074,8 +1079,8 @@ static unsigned int make_eckeygen_private_key_token(ECKEYGEN_KEY_TOKEN* kb,
  */
 static ECKEYGEN_REPLY* make_eckeygen_request(ICA_EC_KEY *key, struct ica_xcRB* xcrb)
 {
-    uint8_t *cbrbmem = NULL;
-    struct CPRBX *preqcblk, *prepcblk;
+	uint8_t *cbrbmem = NULL;
+	struct CPRBX *preqcblk, *prepcblk;
 
 	unsigned int keyblock_len = 2 + sizeof(ECKEYGEN_KEY_TOKEN)
 			+ sizeof(ECC_NULL_TOKEN);
@@ -1085,16 +1090,16 @@ static ECKEYGEN_REPLY* make_eckeygen_request(ICA_EC_KEY *key, struct ica_xcRB* x
 	if (curve_type < 0)
 		return NULL;
 
-    /* allocate buffer space for req cprb, req parm, rep cprb, rep parm */
-    cbrbmem = malloc(2 * (CPRBXSIZE + PARMBSIZE));
-    if (!cbrbmem)
+	/* allocate buffer space for req cprb, req parm, rep cprb, rep parm */
+	cbrbmem = malloc(2 * (CPRBXSIZE + PARMBSIZE));
+	if (!cbrbmem)
 		return NULL;
 
-    memset(cbrbmem, 0, 2 * (CPRBXSIZE + PARMBSIZE));
-    preqcblk = (struct CPRBX *) cbrbmem;
-    prepcblk = (struct CPRBX *) (cbrbmem + CPRBXSIZE + PARMBSIZE);
+	memset(cbrbmem, 0, 2 * (CPRBXSIZE + PARMBSIZE));
+	preqcblk = (struct CPRBX *) cbrbmem;
+	prepcblk = (struct CPRBX *) (cbrbmem + CPRBXSIZE + PARMBSIZE);
 
-    /* make ECKeyGen request */
+	/* make ECKeyGen request */
 	unsigned int offset = 0;
 	offset = make_cprbx((struct CPRBX *)cbrbmem, parmblock_len, preqcblk, prepcblk);
 	offset += make_eckeygen_parmblock((ECKEYGEN_PARMBLOCK*)(cbrbmem+offset));
@@ -1103,7 +1108,7 @@ static ECKEYGEN_REPLY* make_eckeygen_request(ICA_EC_KEY *key, struct ica_xcRB* x
 	offset += make_ecc_null_token((ECC_NULL_TOKEN*)(cbrbmem+offset));
 	finalize_xcrb(xcrb, preqcblk, prepcblk);
 
-    return (ECKEYGEN_REPLY*)prepcblk;
+	return (ECKEYGEN_REPLY*)prepcblk;
 }
 
 /**
@@ -1153,12 +1158,12 @@ unsigned int eckeygen_hw(ica_adapter_handle_t adapter_handle, ICA_EC_KEY *key)
 unsigned int eckeygen_sw(ICA_EC_KEY *key)
 {
 	int rc = EIO;
-    EC_KEY *a = NULL;
-    BIGNUM* d=NULL; BIGNUM *x=NULL; BIGNUM *y=NULL;
-    const EC_POINT* q=NULL;
-    const EC_GROUP *group=NULL;
-    unsigned int privlen = privlen_from_nid(key->nid);
-    unsigned int i, n;
+	EC_KEY *a = NULL;
+	BIGNUM* d=NULL; BIGNUM *x=NULL; BIGNUM *y=NULL;
+	const EC_POINT* q=NULL;
+	const EC_GROUP *group=NULL;
+	unsigned int privlen = privlen_from_nid(key->nid);
+	unsigned int i, n;
 
 #ifdef ICA_FIPS
 	if ((fips & ICA_FIPS_MODE) && (!FIPS_mode()))
@@ -1168,61 +1173,61 @@ unsigned int eckeygen_sw(ICA_EC_KEY *key)
 	if (!is_supported_openssl_curve(key->nid))
 		return EINVAL;
 
-    if ((a = EC_KEY_new_by_curve_name(key->nid)) == NULL)
-        goto err;
+	if ((a = EC_KEY_new_by_curve_name(key->nid)) == NULL)
+		goto err;
 
-    if ((group = EC_KEY_get0_group(a)) == NULL)
-        goto err;
+	if ((group = EC_KEY_get0_group(a)) == NULL)
+		goto err;
 
 #if OPENSSL_VERSION_NUMBER < 0x10100000L
-    /* Openssl 1.0.2 does not provide a default ec_key_gen method, so IBMCA does not
-     * override such a function. Therefore nothing to do here.
-     */
+	/* Openssl 1.0.2 does not provide a default ec_key_gen method, so IBMCA does not
+	 * override such a function. Therefore nothing to do here.
+	 */
 #else
 	/**
 	 * IBMCA overrides the default ec_key_gen method for openssl 1.1.0 and later.
 	 * Make sure to use original openssl method to avoid endless loop when being
 	 * called from IBMCA engine in software fallback.
 	 */
-    EC_KEY_set_method(a, EC_KEY_OpenSSL());
+	EC_KEY_set_method(a, EC_KEY_OpenSSL());
 #endif
 
-    if (!EC_KEY_generate_key(a))
-    goto err;
+	if (!EC_KEY_generate_key(a))
+		goto err;
 
-    /* provide private key */
-    d = (BIGNUM*)EC_KEY_get0_private_key(a);
-    n = privlen - BN_num_bytes(d);
-    for (i=0;i<n;i++)
-	key->D[i] = 0x00;
-    BN_bn2bin(d, &(key->D[n]));
+	/* provide private key */
+	d = (BIGNUM*)EC_KEY_get0_private_key(a);
+	n = privlen - BN_num_bytes(d);
+	for (i=0;i<n;i++)
+		key->D[i] = 0x00;
+	BN_bn2bin(d, &(key->D[n]));
 
-    /* provide public key */
-    q = EC_KEY_get0_public_key(a);
-    x = BN_new();
-    y = BN_new();
-    if (!EC_POINT_get_affine_coordinates_GFp(group, q, x, y, NULL))
-	goto err;
+	/* provide public key */
+	q = EC_KEY_get0_public_key(a);
+	x = BN_new();
+	y = BN_new();
+	if (!EC_POINT_get_affine_coordinates_GFp(group, q, x, y, NULL))
+		goto err;
 
-    /* pub(X) */
-    n = privlen - BN_num_bytes(x);
-    for (i=0; i<n; i++)
-	key->X[i] = 0x00;
-    BN_bn2bin(x, &(key->X[n]));
+	/* pub(X) */
+	n = privlen - BN_num_bytes(x);
+	for (i=0; i<n; i++)
+		key->X[i] = 0x00;
+	BN_bn2bin(x, &(key->X[n]));
 
-    /* pub(Y) */
-    n = privlen - BN_num_bytes(y);
-    for (i=0; i<n; i++)
-	key->Y[i] = 0x00;
-    BN_bn2bin(y, &(key->Y[n]));
+	/* pub(Y) */
+	n = privlen - BN_num_bytes(y);
+	for (i=0; i<n; i++)
+		key->Y[i] = 0x00;
+	BN_bn2bin(y, &(key->Y[n]));
 
-    rc = 0;
+	rc = 0;
 
 err:
-    /* cleanup */
+	/* cleanup */
 	EC_KEY_free(a); /* also frees d */
-    BN_clear_free(x);
-    BN_clear_free(y);
+	BN_clear_free(x);
+	BN_clear_free(y);
 
 	return rc;
 }
