@@ -1055,6 +1055,7 @@ unsigned int ica_rsa_crt(ica_adapter_handle_t adapter_handle,
 ICA_EC_KEY* ica_ec_key_new(unsigned int nid, unsigned int *privlen)
 {
 	ICA_EC_KEY *key;
+	int len;
 
 #ifdef ICA_FIPS
 	if (fips >> 1)
@@ -1068,11 +1069,17 @@ ICA_EC_KEY* ica_ec_key_new(unsigned int nid, unsigned int *privlen)
 	if ((key = malloc(sizeof(ICA_EC_KEY))) == NULL)
 		return NULL;
 
+	/* allocate clear memory for the 3 key parts */
+	len = privlen_from_nid(nid);
+	key->X = calloc(1, 3*len);
+	if (!key->X)
+		return NULL;
+
 	key->nid = nid;
-	key->X = NULL;
-	key->Y = NULL;
-	key->D = NULL;
-	*privlen = privlen_from_nid(nid);
+	key->Y = key->X + len;
+	key->D = key->Y + len;
+
+	*privlen = len;
 
 	return key;
 }
@@ -1094,14 +1101,6 @@ int ica_ec_key_init(const unsigned char *X, const unsigned char *Y,
 	if ((X == NULL && Y != NULL) || (X != NULL && Y == NULL))
 		return EINVAL;
 
-	/* allocate memory for the 3 key parts */
-	key->X = malloc(3*privlen);
-	if (!key->X)
-		return ENOMEM;
-
-	key->Y = key->X + privlen;
-	key->D = key->Y + privlen;
-
 	if (X != NULL && Y != NULL) {
 		memcpy(key->X, X, privlen);
 		memcpy(key->Y, Y, privlen);
@@ -1116,7 +1115,6 @@ int ica_ec_key_init(const unsigned char *X, const unsigned char *Y,
 int ica_ec_key_generate(ica_adapter_handle_t adapter_handle, ICA_EC_KEY *key)
 {
 	int hardware, rc;
-	unsigned int privlen = privlen_from_nid(key->nid);
 	unsigned int icapath = 0;
 
 #ifdef ICA_FIPS
@@ -1127,14 +1125,6 @@ int ica_ec_key_generate(ica_adapter_handle_t adapter_handle, ICA_EC_KEY *key)
 	/* check for obvious errors in parms */
 	if (key == NULL)
 		return EINVAL;
-
-	/* allocate memory for the 3 key parts */
-	key->X = malloc(3*privlen);
-	if (!key->X)
-		return ENOMEM;
-
-	key->Y = key->X + privlen;
-	key->D = key->Y + privlen;
 
 	icapath = getenv_icapath();
 	switch (icapath) {
