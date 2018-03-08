@@ -160,9 +160,6 @@ int read_facility_bits(void)
 	int env_msa;
 
 	if (s) {
-#ifdef ICA_DEBUG
-		printf("msa from getenv: [%s] \n", s);
-#endif
 		if (sscanf(s, "%d", &env_msa) == 1)
 			msa = env_msa > msa ? msa : env_msa;
 	}

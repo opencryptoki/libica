@@ -74,7 +74,7 @@ AC_ARG_ENABLE(debug,
 AM_CONDITIONAL(DEBUG, test x$enable_debug = xyes)
 
 if test "x$enable_debug" = xyes; then
-	CFLAGS="$CFLAGS -g -O0 -fstack-protector-all -DICA_DEBUG"
+	CFLAGS="$CFLAGS -g -O0 -fstack-protector-all"
 	AC_MSG_RESULT([*** Enabling debugging at user request ***])
 else
 	CFLAGS="$CFLAGS -O3"
