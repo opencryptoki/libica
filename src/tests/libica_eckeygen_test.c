@@ -21,8 +21,8 @@
 #define NUM_HASH_LENGTHS		(sizeof(hash_length)/sizeof(int))
 
 typedef struct {
-    unsigned int nid;
-    char nid_str[32];
+	unsigned int nid;
+	char nid_str[32];
 } eckeygen_test_t;
 
 static eckeygen_test_t eckeygen_tests[] = {
@@ -99,7 +99,7 @@ int main(int argc, char **argv)
 
 				/* calculate ECDSA signature with this key */
 				rc = ica_ecdsa_sign(adapter_handle, eckey, hash, hash_length[j],
-						    signature, MAX_ECDSA_SIG_SIZE);
+								signature, MAX_ECDSA_SIG_SIZE);
 
 				if (rc) {
 					V_(printf("Signature could not be created, key not usable, rc=%i.\n",rc));
@@ -109,7 +109,7 @@ int main(int argc, char **argv)
 
 					/* verify ECDSA signature with this key */
 					rc = ica_ecdsa_verify(adapter_handle, eckey, hash, hash_length[j],
-							      signature, MAX_ECDSA_SIG_SIZE);
+									signature, MAX_ECDSA_SIG_SIZE);
 
 					if (rc) {
 						V_(printf("Signature could not be verified, key not usable, rc=%i.\n",rc));

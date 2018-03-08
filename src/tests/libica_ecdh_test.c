@@ -22,15 +22,15 @@
 #define MAX_ECC_KEY_SIZE	66 /* 521 bits */
 
 typedef struct {
-    unsigned int nid;
-    unsigned int privlen;
-    unsigned char da[MAX_ECC_KEY_SIZE];
-    unsigned char xa[MAX_ECC_KEY_SIZE];
-    unsigned char ya[MAX_ECC_KEY_SIZE];
-    unsigned char db[MAX_ECC_KEY_SIZE];
-    unsigned char xb[MAX_ECC_KEY_SIZE];
-    unsigned char yb[MAX_ECC_KEY_SIZE];
-    unsigned char z[MAX_ECC_KEY_SIZE];
+	unsigned int nid;
+	unsigned int privlen;
+	unsigned char da[MAX_ECC_KEY_SIZE];
+	unsigned char xa[MAX_ECC_KEY_SIZE];
+	unsigned char ya[MAX_ECC_KEY_SIZE];
+	unsigned char db[MAX_ECC_KEY_SIZE];
+	unsigned char xb[MAX_ECC_KEY_SIZE];
+	unsigned char yb[MAX_ECC_KEY_SIZE];
+	unsigned char z[MAX_ECC_KEY_SIZE];
 } ecdh_kat_t;
 
 static ecdh_kat_t ecdh_kats[] = {
@@ -327,7 +327,7 @@ int main(int argc, char **argv)
 
 		/* calculate shared secret with priv_A, pub_B */
 		rc = ica_ecdh_derive_secret(adapter_handle, eckey_A, eckey_B,
-				shared_secret, privlen);
+								shared_secret, privlen);
 		if (rc) {
 			V_(printf("Shared secret could not be derived, rc=%i.\n",rc));
 			test_failed = 1;
@@ -345,7 +345,7 @@ int main(int argc, char **argv)
 
 			/* calculate shared secret with priv_B, pub_A */
 			rc = ica_ecdh_derive_secret(adapter_handle, eckey_B, eckey_A,
-						    shared_secret, privlen);
+									shared_secret, privlen);
 			if (rc) {
 				V_(printf("Shared secret could not be derived, rc=%i.\n",rc));
 				test_failed = 1;
