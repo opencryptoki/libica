@@ -1,2 +1,1 @@
-nobase_include_HEADERS = ica_api.h
-
+include_HEADERS = ica_api.h

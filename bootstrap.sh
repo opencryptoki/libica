@@ -1,6 +1,4 @@
-#!/bin/sh
+#!/usr/bin/sh
+
 set -x
-aclocal
-libtoolize --force -c
-automake --add-missing -c --foreign
-autoconf
+autoreconf --force --install --verbose --warnings=all

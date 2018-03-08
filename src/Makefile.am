@@ -1,18 +1,37 @@
-INCLUDES = -I ./include -I ../include
+VERSION = 3:3:0
+
+AM_CFLAGS = -D_GNU_SOURCE
+
+# lib
 
 lib_LTLIBRARIES = libica.la
 
-libica_la_LDFLAGS = -version-number 3:3:0 $(PACKAGE_VERSION) -lrt -lcrypto
-libica_la_SOURCES = ica_api.c init.c icastats_shared.c \
-		    s390_rsa.c s390_crypto.c s390_ecc.c \
-		    s390_prng.c s390_sha.c s390_drbg.c s390_drbg_sha512.c \
-		    test_vec.c fips.c
+libica_la_CFLAGS = ${AM_CFLAGS} -I${srcdir}/include -I${srcdir}/../include \
+		   -fvisibility=hidden
+libica_la_LIBADD = -lrt -lcrypto
+libica_la_LDFLAGS = -version-script=../libica.map \
+		    -version-number ${VERSION}
+libica_la_SOURCES = ica_api.c init.c icastats_shared.c s390_rsa.c \
+		    s390_crypto.c s390_ecc.c s390_prng.c s390_sha.c \
+		    s390_drbg.c s390_drbg_sha512.c test_vec.c fips.c \
+		    include/fips.h include/icastats.h include/init.h \
+		    include/s390_aes.h include/s390_cbccs.h \
+		    include/s390_ccm.h include/s390_cmac.h \
+		    include/s390_common.h include/s390_crypto.h \
+		    include/s390_ctr.h include/s390_des.h \
+		    include/s390_drbg.h include/s390_drbg_sha512.h \
+		    include/s390_ecc.h include/s390_gcm.h include/s390_prng.h \
+		    include/s390_rsa.h include/s390_sha.h include/test_vec.h
+
+# bin
 
 bin_PROGRAMS = icainfo icastats
 
+icainfo_CFLAGS = ${AM_CFLAGS} -I${srcdir}/include -I${srcdir}/../include
 icainfo_LDADD = libica.la
-icainfo_SOURCES = icainfo.c
+icainfo_SOURCES = icainfo.c include/fips.h include/s390_crypto.h \
+		  ../include/ica_api.h
 
-icastats_CFLAGS = $(AM_CFLAGS)
-icastats_LDFLAGS = -lrt
-icastats_SOURCES = icastats.c icastats_shared.c
+icastats_CFLAGS = ${AM_CFLAGS} -I${srcdir}/include
+icastats_LDADD = -lrt
+icastats_SOURCES = icastats.c icastats_shared.c include/icastats.h

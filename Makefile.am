@@ -1,5 +1,6 @@
-SUBDIRS = src include doc $(MAYBE_OPT)
-DIST_SUBDIRS = src include doc src/tests src/tests/sha_tests/
+ACLOCAL_AMFLAGS = -I m4
 
-distclean:
-	./cleanup.sh
+SUBDIRS = doc include src test
+
+dist_doc_DATA = AUTHORS ChangeLog INSTALL LICENSE README.md
+EXTRA_DIST = libica.spec

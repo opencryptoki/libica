@@ -1,71 +1,34 @@
-#                                               -*- Autoconf -*-
-# Process this file with autoconf to produce a configure script.
+AC_PREREQ([2.69])
+AC_INIT([libica], [3.3.0], [steuer@linux.vnet.ibm.com],, [https://github.com/opencryptoki/libica])
+AC_USE_SYSTEM_EXTENSIONS
+AC_CONFIG_SRCDIR([src/ica_api.c])
+AC_CONFIG_MACRO_DIRS([m4])
 
-AC_INIT(libica, 3.3.0, steuer@linux.vnet.ibm.com)
-
-cmdline_CFLAGS="$CFLAGS"
-
-# Compute $target
-AC_CANONICAL_TARGET
-
-AM_INIT_AUTOMAKE(1.9.5)
-
-# Use extensions
-AC_GNU_SOURCE
-
-# Checks for programs.
-AC_PROG_CXX
 AC_PROG_CC
 AC_PROG_INSTALL
-AC_PROG_LN_S
-AC_PROG_MAKE_SET
-AC_PROG_LIBTOOL
 
-# Checks for libraries.
+AC_CHECK_HEADERS([fcntl.h memory.h stddef.h stdint.h stdlib.h string.h strings.h sys/file.h sys/ioctl.h sys/time.h syslog.h unistd.h])
 
-# Checks for header files.
-AC_HEADER_STDC
-AC_CHECK_HEADERS([fcntl.h memory.h stdlib.h string.h strings.h sys/ioctl.h unistd.h \
-		  errno.h stdio.h semaphore.h linux/types.h sys/ioctl.h])
-case "$target" in
-     *s390*)
-          AC_CHECK_HEADERS([openssl/bn.h openssl/rsa.h openssl/rand.h \
-				openssl/sha.h openssl/aes.h openssl/des.h],,
-				AC_MSG_ERROR(openssl-devel package required))
-          ;;
-     *)
-          AC_CHECK_HEADER(linux/icaioctl.h, ,
-                          AC_MSG_ERROR([*** Unable to find linux/icaioctl.h]))
-          ;;
-esac
-
-
-
-# Checks for typedefs, structures, and compiler characteristics.
-AC_C_CONST
+AC_CHECK_HEADER_STDBOOL
 AC_C_INLINE
 AC_TYPE_SIZE_T
-AC_C_VOLATILE
+AC_TYPE_UID_T
+AC_TYPE_UINT16_T
+AC_TYPE_UINT32_T
+AC_TYPE_UINT64_T
+AC_TYPE_UINT8_T
 
-# Checks for library functions.
-AC_PROG_GCC_TRADITIONAL
 AC_FUNC_MALLOC
-AC_FUNC_MEMCMP
-AC_FUNC_STAT
-AC_CHECK_FUNCS([bzero memset])
+AC_FUNC_MMAP
+AC_FUNC_STRNLEN
+AC_CHECK_FUNCS([bzero ftruncate gettimeofday memchr memset munmap strcasecmp strerror strstr strtol])
 
-CFLAGS="$cmdline_CFLAGS"
-AX_PTHREAD
-CFLAGS="$CFLAGS $PTHREAD_CFLAGS"
+AM_PROG_AR
 
-case $target in
-     *s390x*)
-          CFLAGS="$CFLAGS -Wall -Wextra -fvisibility=hidden -Wl,--version-script=../libica.map -D_LINUX_S390_ -D_LINUX_S390X_"
-          ;;
-     *s390*)
-          CFLAGS="$CFLAGS -Wall -Wextra -fvisibility=hidden -Wl,--version-script=../libica.map -D_LINUX_S390_ -m31"
-          ;;
-esac
+AM_INIT_AUTOMAKE([-Wall -Werror foreign])
+LT_INIT
+
+CFLAGS="-Wall -Wextra"
 
 dnl --- enable_debug
 AC_ARG_ENABLE(debug,
@@ -74,24 +37,11 @@ AC_ARG_ENABLE(debug,
 AM_CONDITIONAL(DEBUG, test x$enable_debug = xyes)
 
 if test "x$enable_debug" = xyes; then
-	CFLAGS="$CFLAGS -g -O0 -fstack-protector-all"
+	CFLAGS="$CFLAGS -g -O0"
 	AC_MSG_RESULT([*** Enabling debugging at user request ***])
 else
 	CFLAGS="$CFLAGS -O3"
 fi
-
-dnl --- enable_testcases
-AC_ARG_ENABLE([testcases],
-	AS_HELP_STRING([--enable-testcases],[build the test cases @<:@default=no@:>@]),
-	[enable_testcases=yes],
-	[enable_testcases=no])
-
-if test "$enable_testcases" = yes; then
-	MAYBE_OPT="src/tests src/tests/sha_tests/"
-else
-	MAYBE_OPT=
-fi
-AC_SUBST(MAYBE_OPT)
 
 dnl --- enable_fips
 AC_ARG_ENABLE(fips,
@@ -104,12 +54,26 @@ if test "x$enable_fips" = xyes; then
 	AC_MSG_RESULT([*** Building libica-fips at user request ***])
 fi
 
-AC_CONFIG_FILES([src/tests/Makefile src/tests/sha_tests/Makefile])
-AC_OUTPUT([Makefile src/Makefile include/Makefile doc/Makefile])
+dnl --- enable_sanitizer
+AC_ARG_ENABLE(sanitizer,
+              [--enable-sanitizer    turn on sanitizer (may not work with all compiler versions)],
+              [enable_sanitizer="yes"],[enable_sanitizer="no"])
+AM_CONDITIONAL(SANITIZER, test x$enable_sanitizer = xyes)
+
+if test "x$enable_sanitizer" = xyes; then
+	CFLAGS="$CFLAGS -g -fstack-protector-all -fsanitize=address,signed-integer-overflow,undefined -Wformat-security -Werror=format-security -Warray-bounds -Werror=array-bounds -D_FORTIFY_SOURCE=2"
+	LDLIBS="-lubsan -lasan"
+	AC_MSG_RESULT([*** Enabling sanitizer at user request ***])
+else
+	CFLAGS="$CFLAGS -D_FORTIFY_SOURCE=1"
+fi
+
+AC_CONFIG_FILES([Makefile doc/Makefile include/Makefile src/Makefile test/Makefile])
+AC_OUTPUT
 
 echo "CFLAGS=$CFLAGS"
 
 echo "Enabled features:"
-echo "  FIPS build:     $enable_fips"
-echo "  Debug build:    $enable_debug"
-echo "  Testcases:      $enable_testcases"
+echo "  FIPS build:      $enable_fips"
+echo "  Debug build:     $enable_debug"
+echo "  Sanitizer build: $enable_sanitizer"
