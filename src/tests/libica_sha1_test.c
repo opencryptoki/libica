@@ -74,7 +74,7 @@ int new_api_sha_test(void)
 	V_(printf("Test of new sha api\n"));
 	sha_context_t sha_context;
 	int rc = 0;
-	unsigned int i = 0;
+	int i = 0;
 	unsigned char input_data[1000000];
 	unsigned int  output_hash_length = SHA_HASH_LENGTH;
 	unsigned char output_hash[SHA_HASH_LENGTH];
@@ -116,7 +116,7 @@ int new_api_sha_test(void)
 		unsigned int sha_message_part;
 		memset(input_data, 'a', 1024);
 
-		if (i == FIPS_TEST_DATA_SIZE[3])
+		if (i == (int)FIPS_TEST_DATA_SIZE[3])
 			sha_message_part = SHA_MSG_PART_FIRST;
 		else if (i <= 1024)
 			sha_message_part = SHA_MSG_PART_FINAL;
@@ -152,7 +152,7 @@ int new_api_sha_test(void)
 		unsigned int sha_message_part;
 		memset(input_data, 'a', 64);
 
-		if (i == FIPS_TEST_DATA_SIZE[3])
+		if (i == (int)FIPS_TEST_DATA_SIZE[3])
 			sha_message_part = SHA_MSG_PART_FIRST;
 		else if (i <= 64)
 			sha_message_part = SHA_MSG_PART_FINAL;
