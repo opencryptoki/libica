@@ -149,7 +149,7 @@ typedef struct {
 	uint16_t len;
 	uint16_t flags;
 	uint8_t nulltoken;
-} ECC_NULL_TOKEN;
+} __attribute__((packed)) ECC_NULL_TOKEN;
 
 /**
  * ECDH parmblock.

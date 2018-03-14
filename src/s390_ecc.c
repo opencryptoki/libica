@@ -333,7 +333,7 @@ static void finalize_xcrb(struct ica_xcRB* xcrb, struct CPRBX *preqcblk, struct 
 {
 	memset(xcrb, 0, sizeof(struct ica_xcRB));
 	xcrb->agent_ID = 0x4341;
-	xcrb->user_defined = 0xffffffff; /* use any card number */
+	xcrb->user_defined = AUTOSELECT; /* use any card number */
 	xcrb->request_control_blk_length = preqcblk->cprb_len + preqcblk->req_parml;
 	xcrb->request_control_blk_addr = (void *) preqcblk;
 	xcrb->reply_control_blk_length = preqcblk->rpl_msgbl;
