@@ -59,7 +59,7 @@ sha3_available(void)
 	rc = ica_sha3_224(SHA_MSG_PART_ONLY, sizeof(test_data), test_data,
 			&sha3_224_context, output_hash);
 
-	return (rc == EPERM ? 0 : 1);
+	return (rc == ENODEV ? 0 : 1);
 }
 
 #endif /* TESTCASE_H */
