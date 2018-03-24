@@ -28,16 +28,7 @@
 #include "icastats.h"
 #include "s390_drbg.h"
 
-/*
- * On 31 bit systems we have to use the instruction STCKE while on 64 bit
- * systems we can use STCKF. STCKE uses a 16 byte buffer while STCKF uses
- * an 8 byte buffer.
- */
-#ifdef _LINUX_S390X_
 #define STCK_BUFFER  8
-#else
-#define STCK_BUFFER 16
-#endif
 
 /*
  * State handle for the global ica_drbg instantiation.
@@ -144,10 +135,10 @@ static int s390_add_entropy(void)
 		return ENOTSUP;
 
 	for (K = 0; K < 16; K++) {
-		s390_stck(entropy + 0 * STCK_BUFFER);
-		s390_stck(entropy + 1 * STCK_BUFFER);
-		s390_stck(entropy + 2 * STCK_BUFFER);
-		s390_stck(entropy + 3 * STCK_BUFFER);
+		s390_stckf_hw(entropy + 0 * STCK_BUFFER);
+		s390_stckf_hw(entropy + 1 * STCK_BUFFER);
+		s390_stckf_hw(entropy + 2 * STCK_BUFFER);
+		s390_stckf_hw(entropy + 3 * STCK_BUFFER);
 		if(s390_kmc(0x43, zPRNG_PB.ch, entropy, entropy,
 			      sizeof(entropy)) < 0) {
 			return EIO;
@@ -275,7 +266,7 @@ static int s390_prng_hw(unsigned char *random_bytes, unsigned int num_bytes)
 		num_bytes -= remainder;
 
 		for (i = 0; i < (num_bytes / STCK_BUFFER); i++)
-			s390_stck(random_bytes + i * STCK_BUFFER);
+			s390_stckf_hw(random_bytes + i * STCK_BUFFER);
 
 		rc = s390_kmc(S390_CRYPTO_PRNG, zPRNG_PB.ch, random_bytes,
 			      random_bytes, num_bytes);
@@ -286,7 +277,7 @@ static int s390_prng_hw(unsigned char *random_bytes, unsigned int num_bytes)
 
 		// If there was a remainder, we'll use an internal buffer to handle it.
 		if (!rc && remainder) {
-			s390_stck(last_dw);
+			s390_stckf_hw(last_dw);
 			rc = s390_kmc(S390_CRYPTO_PRNG, zPRNG_PB.ch, last_dw,
 				      last_dw, STCK_BUFFER);
 			if (rc > 0) {

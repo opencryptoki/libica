@@ -597,15 +597,6 @@ static inline void s390_stcke_hw(void *buf)
 		     : "=Q" (*((unsigned long long *)buf)) : : "cc");
 }
 
-static inline void s390_stck(void *buf)
-{
-#ifdef _LINUX_S390X_
-	s390_stckf_hw(buf);
-#else
-	s390_stcke_hw(buf);
-#endif
-}
-
 static inline int __stfle(unsigned long long *list, int doublewords)
 {
 	register unsigned long __nr asm("0") = doublewords - 1;
