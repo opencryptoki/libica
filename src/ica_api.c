@@ -1270,11 +1270,13 @@ int ica_ecdsa_verify(ica_adapter_handle_t adapter_handle,
 	default: /* hw with sw fallback (default) */
 		hardware = ALGO_SW;
 		rc = ecdsa_verify_hw(adapter_handle, pubkey, hash, hash_length, signature);
-		if (rc == 0)
+		if (rc == 0) {
 			hardware = ALGO_HW;
-		else
+		} else if (rc != EFAULT) {
 			rc = ica_fallbacks_enabled ?
-				ecdsa_verify_sw(pubkey, hash, hash_length, signature) : ENODEV;
+			     ecdsa_verify_sw(pubkey, hash, hash_length,
+					     signature) : ENODEV;
+		}
 	}
 
 	if (rc == 0)
