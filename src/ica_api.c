@@ -1738,7 +1738,7 @@ unsigned int ica_des_cmac_last(const unsigned char *message, unsigned long messa
 			       DES_BLOCK_SIZE, key, mac_length, tmp_mac, iv);
 		if (rc)
 			return rc;
-		if (memcmp(tmp_mac, mac, mac_length))
+		if (CRYPTO_memcmp(tmp_mac, mac, mac_length))
 			return EFAULT;
 		else
 			stats_increment(ICA_STATS_DES_CMAC, ALGO_HW, direction);
@@ -1982,7 +1982,7 @@ unsigned int ica_3des_cmac_last(const unsigned char *message, unsigned long mess
 			       3*DES_BLOCK_SIZE, key, mac_length, tmp_mac, iv);
 		if (rc)
 			return rc;
-		if (memcmp(tmp_mac, mac, mac_length))
+		if (CRYPTO_memcmp(tmp_mac, mac, mac_length))
 			return EFAULT;
 		else
 			stats_increment(ICA_STATS_3DES_CMAC, ALGO_HW, direction);
@@ -2271,7 +2271,7 @@ unsigned int ica_aes_cmac_last(const unsigned char *message, unsigned long messa
 			       key_length, key, mac_length, tmp_mac, iv);
 		if (rc)
 			return rc;
-		if (memcmp(tmp_mac, mac, mac_length))
+		if (CRYPTO_memcmp(tmp_mac, mac, mac_length))
 			return EFAULT;
 		else
 			stats_increment(ICA_STATS_AES_CMAC, ALGO_HW, direction);
@@ -2322,7 +2322,7 @@ unsigned int ica_aes_ccm(unsigned char *payload, unsigned long payload_length,
 
 	if (direction == ICA_DECRYPT) {
 		/* verify */
-		if (memcmp((unsigned char *)(ciphertext_n_mac + payload_length),
+		if (CRYPTO_memcmp((unsigned char *)(ciphertext_n_mac + payload_length),
 			   tmp_mac, mac_length))
 			return EFAULT;
 	}
@@ -2386,7 +2386,7 @@ unsigned int ica_aes_gcm(unsigned char *plaintext, unsigned long plaintext_lengt
 		if (rc)
 			return rc;
 
-		if (memcmp(tmp_tag, tag, tag_length))
+		if (CRYPTO_memcmp(tmp_tag, tag, tag_length))
 			return EFAULT;
 	}
 	return 0;
@@ -2491,7 +2491,7 @@ unsigned int ica_aes_gcm_last( unsigned char *icb,
 		if (rc)
 			return rc;
 
-		if (memcmp(tag, final_tag, final_tag_length))
+		if (CRYPTO_memcmp(tag, final_tag, final_tag_length))
 			return EFAULT;
 	}
 	return 0;
