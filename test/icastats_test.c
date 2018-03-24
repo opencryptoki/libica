@@ -82,7 +82,9 @@ int main (int argc, char **argv)
 	  /*
 	 * Reset Counters
 	 **/
-	system("icastats -r");
+	rc = system("icastats -r");
+	if (rc == -1)
+		exit(handle_ica_error(rc, "system"));
 	rc = ica_random_number_generate(AES_CIPHER_BLOCK, ctr);
 	if (rc)
 		exit(handle_ica_error(rc, "ica_random_number_generate"));
@@ -241,7 +243,10 @@ void check_icastats(int algo_id, char *stat)
 		perror("error in peopen");
 		exit(TEST_FAIL);
 	}
-	fgets(line, sizeof(line), f);
+	if (fgets(line, sizeof(line), f) == NULL) {
+		perror("error in fgets");
+		exit(TEST_FAIL);
+	}
 	pclose(f);
 
 	/* remove trailing whitespace from the line */
@@ -377,7 +382,10 @@ void des_tests(unsigned char *iv, unsigned char *cmac, unsigned char *ctr)
 	}
 
 
-	system("icastats -r");
+	rc = system("icastats -r");
+	if (rc == -1)
+		exit(handle_ica_error(rc, "system"));
+
 	for(mode = 1; mode >= 0; mode--){
 		rc = ica_des_ecb(inp_buffer, out_buffer, DATA_LENGHT,
 				 des_key, mode);
@@ -391,7 +399,10 @@ void des_tests(unsigned char *iv, unsigned char *cmac, unsigned char *ctr)
 	}
 	check_icastats(DES_ECB, "DES ECB");
 
-	system("icastats -r");
+	rc = system("icastats -r");
+	if (rc == -1)
+		exit(handle_ica_error(rc, "system"));
+
 	for(mode = 1; mode >= 0; mode--){
 		rc = ica_des_cbc(inp_buffer, out_buffer, DATA_LENGHT,
 				 des_key, iv, mode);
@@ -405,7 +416,10 @@ void des_tests(unsigned char *iv, unsigned char *cmac, unsigned char *ctr)
 	}
 	check_icastats(DES_CBC, "DES CBC");
 
-	system("icastats -r");
+	rc = system("icastats -r");
+	if (rc == -1)
+		exit(handle_ica_error(rc, "system"));
+
 	for(mode = 1; mode >= 0; mode--){
 		rc = ica_des_cfb(inp_buffer, out_buffer, DATA_LENGHT,
 				 des_key, iv, DES_CIPHER_BLOCK, mode);
@@ -419,7 +433,10 @@ void des_tests(unsigned char *iv, unsigned char *cmac, unsigned char *ctr)
 	}
 	check_icastats(DES_CFB, "DES CFB");
 
-	system("icastats -r");
+	rc = system("icastats -r");
+	if (rc == -1)
+		exit(handle_ica_error(rc, "system"));
+
 	for(mode = 1; mode >= 0; mode--){
 		rc = ica_des_cmac(inp_buffer, DATA_LENGHT, cmac, DES_CIPHER_BLOCK,
 				  des_key, mode);
@@ -428,7 +445,10 @@ void des_tests(unsigned char *iv, unsigned char *cmac, unsigned char *ctr)
 	}
 	check_icastats(DES_CMAC, "DES CMAC");
 
-	system("icastats -r");
+	rc = system("icastats -r");
+	if (rc == -1)
+		exit(handle_ica_error(rc, "system"));
+
 	for(mode = 1; mode >= 0; mode--){
 		rc = ica_des_ctr(inp_buffer, out_buffer, DATA_LENGHT, des_key,
 				 ctr, DES_CIPHER_BLOCK, mode);
@@ -442,7 +462,10 @@ void des_tests(unsigned char *iv, unsigned char *cmac, unsigned char *ctr)
 	}
 	check_icastats(DES_CTR, "DES CTR");
 
-	system("icastats -r");
+	rc = system("icastats -r");
+	if (rc == -1)
+		exit(handle_ica_error(rc, "system"));
+
 	for(mode = 1; mode >= 0; mode--){
 		rc =  ica_des_ofb(inp_buffer, out_buffer, DATA_LENGHT,
 				  des_key, iv, mode);
@@ -476,7 +499,10 @@ void tdes_tests(unsigned char *iv, unsigned char *cmac, unsigned char *ctr)
 		exit(TEST_FAIL);
 	}
 
-	system("icastats -r");
+	rc = system("icastats -r");
+	if (rc == -1)
+		exit(handle_ica_error(rc, "system"));
+
 	for(mode = 1; mode >= 0; mode--){
 		rc = ica_3des_ecb(inp_buffer, out_buffer, DATA_LENGHT,
 				 des_key, mode);
@@ -490,7 +516,10 @@ void tdes_tests(unsigned char *iv, unsigned char *cmac, unsigned char *ctr)
 	}
 	check_icastats(DES3_ECB, "3DES ECB");
 
-	system("icastats -r");
+	rc = system("icastats -r");
+	if (rc == -1)
+		exit(handle_ica_error(rc, "system"));
+
 	for(mode = 1; mode >= 0; mode--){
 		rc = ica_3des_cbc(inp_buffer, out_buffer, DATA_LENGHT,
 				 des_key, iv, mode);
@@ -504,7 +533,10 @@ void tdes_tests(unsigned char *iv, unsigned char *cmac, unsigned char *ctr)
 	}
 	check_icastats(DES3_CBC, "3DES CBC");
 
-	system("icastats -r");
+	rc = system("icastats -r");
+	if (rc == -1)
+		exit(handle_ica_error(rc, "system"));
+
 	for(mode = 1; mode >= 0; mode--){
 		rc = ica_3des_cfb(inp_buffer, out_buffer, DATA_LENGHT,
 				 des_key, iv, DES_CIPHER_BLOCK, mode);
@@ -518,7 +550,10 @@ void tdes_tests(unsigned char *iv, unsigned char *cmac, unsigned char *ctr)
 	}
 	check_icastats(DES3_CFB, "3DES CFB");
 
-	system("icastats -r");
+	rc = system("icastats -r");
+	if (rc == -1)
+		exit(handle_ica_error(rc, "system"));
+
 	for(mode = 1; mode >= 0; mode--){
 		rc = ica_3des_cmac(inp_buffer, DATA_LENGHT, cmac, DES_CIPHER_BLOCK,
 				  des_key, mode);
@@ -527,7 +562,10 @@ void tdes_tests(unsigned char *iv, unsigned char *cmac, unsigned char *ctr)
 	}
 	check_icastats(DES3_CMAC, "3DES CMAC");
 
-	system("icastats -r");
+	rc = system("icastats -r");
+	if (rc == -1)
+		exit(handle_ica_error(rc, "system"));
+
 	for(mode = 1; mode >= 0; mode--){
 		rc = ica_3des_ctr(inp_buffer, out_buffer, DATA_LENGHT, des_key,
 				 ctr, DES_CIPHER_BLOCK, mode);
@@ -541,7 +579,10 @@ void tdes_tests(unsigned char *iv, unsigned char *cmac, unsigned char *ctr)
 	}
 	check_icastats(DES3_CTR, "3DES CTR");
 
-	system("icastats -r");
+	rc = system("icastats -r");
+	if (rc == -1)
+		exit(handle_ica_error(rc, "system"));
+
 	for(mode = 1; mode >= 0; mode--){
 		rc =  ica_3des_ofb(inp_buffer, out_buffer, DATA_LENGHT,
 				  des_key, iv, mode);
@@ -578,35 +619,50 @@ void sha_tests()
 	shake_128_context_t shake_128_context;
 	shake_256_context_t shake_256_context;
 
-	system("icastats -r");
+	rc = system("icastats -r");
+	if (rc == -1)
+		exit(handle_ica_error(rc, "system"));
+
 	rc = ica_sha1(SHA_MSG_PART_ONLY, DATA_LENGHT,
 		      plain_data, &sha_context0, hash);
 	if(rc)
 		exit(handle_ica_error(rc, "ica_sha1"));
 	check_icastats(SHA1, "SHA-1");
 
-	system("icastats -r");
+	rc = system("icastats -r");
+	if (rc == -1)
+		exit(handle_ica_error(rc, "system"));
+
 	rc = ica_sha224(SHA_MSG_PART_ONLY, DATA_LENGHT,
 			plain_data, &sha_context1, hash);
 	if(rc)
 		exit(handle_ica_error(rc, "ica_sha224"));
 	check_icastats(SHA224, "SHA-224");
 
-	system("icastats -r");
+	rc = system("icastats -r");
+	if (rc == -1)
+		exit(handle_ica_error(rc, "system"));
+
 	rc = ica_sha256(SHA_MSG_PART_ONLY, DATA_LENGHT,
 			plain_data, &sha_context1, hash);
 	if(rc)
 		exit(handle_ica_error(rc, "ica_sha256"));
 	check_icastats(SHA256, "SHA-256");
 
-	system("icastats -r");
+	rc = system("icastats -r");
+	if (rc == -1)
+		exit(handle_ica_error(rc, "system"));
+
 	rc = ica_sha384(SHA_MSG_PART_ONLY, DATA_LENGHT,
 			plain_data, &sha_context2, hash);
 	if(rc)
 		exit(handle_ica_error(rc, "ica_sha384"));
 	check_icastats(SHA384, "SHA-384");
 
-	system("icastats -r");
+	rc = system("icastats -r");
+	if (rc == -1)
+		exit(handle_ica_error(rc, "system"));
+
 	rc = ica_sha512(SHA_MSG_PART_ONLY, DATA_LENGHT,
 			plain_data, &sha_context2, hash);
 	if(rc)
@@ -614,35 +670,50 @@ void sha_tests()
 	check_icastats(SHA512, "SHA-512");
 
 	if (check_hw(SHA3_224)) {
-		system("icastats -r");
+		rc = system("icastats -r");
+		if (rc == -1)
+			exit(handle_ica_error(rc, "system"));
+
 		rc = ica_sha3_224(SHA_MSG_PART_ONLY, DATA_LENGHT,
 				plain_data, &sha3_224_context, hash);
 		if(rc)
 			exit(handle_ica_error(rc, "ica_sha3_224"));
 		check_icastats(SHA3_224, "SHA3-224");
 
-		system("icastats -r");
+		rc = system("icastats -r");
+		if (rc == -1)
+			exit(handle_ica_error(rc, "system"));
+
 		rc = ica_sha3_256(SHA_MSG_PART_ONLY, DATA_LENGHT,
 				plain_data, &sha3_256_context, hash);
 		if(rc)
 			exit(handle_ica_error(rc, "ica_sha3_256"));
 		check_icastats(SHA3_256, "SHA3-256");
 
-		system("icastats -r");
+		rc = system("icastats -r");
+		if (rc == -1)
+			exit(handle_ica_error(rc, "system"));
+
 		rc = ica_sha3_384(SHA_MSG_PART_ONLY, DATA_LENGHT,
 				plain_data, &sha3_384_context, hash);
 		if(rc)
 			exit(handle_ica_error(rc, "ica_sha3_384"));
 		check_icastats(SHA3_384, "SHA3-384");
 
-		system("icastats -r");
+		rc = system("icastats -r");
+		if (rc == -1)
+			exit(handle_ica_error(rc, "system"));
+
 		rc = ica_sha3_512(SHA_MSG_PART_ONLY, DATA_LENGHT,
 				plain_data, &sha3_512_context, hash);
 		if(rc)
 			exit(handle_ica_error(rc, "ica_sha3_512"));
 		check_icastats(SHA3_512, "SHA3-512");
 
-		system("icastats -r");
+		rc = system("icastats -r");
+		if (rc == -1)
+			exit(handle_ica_error(rc, "system"));
+
 		rc = ica_shake_128(SHA_MSG_PART_ONLY, DATA_LENGHT,
 				plain_data, &shake_128_context, shake,
 				SHAKE128_64_HASH_LENGTH);
@@ -650,7 +721,10 @@ void sha_tests()
 			exit(handle_ica_error(rc, "ica_shake_128"));
 		check_icastats(SHAKE128, "SHAKE-128");
 
-		system("icastats -r");
+		rc = system("icastats -r");
+		if (rc == -1)
+			exit(handle_ica_error(rc, "system"));
+
 		rc = ica_shake_256(SHA_MSG_PART_ONLY, DATA_LENGHT,
 					plain_data, &shake_256_context, shake,
 					SHAKE256_256_HASH_LENGTH);
@@ -783,14 +857,20 @@ unsigned char qinv[] =
 	ica_rsa_key_mod_expo_t mod_expo_key= {RSA_BYTE_LENGHT, n, e};
 	ica_rsa_key_crt_t crt_key = {RSA_BYTE_LENGHT, p, q, dp, dq, qinv};
 
-	system("icastats -r");
+	rc = system("icastats -r");
+	if (rc == -1)
+		exit(handle_ica_error(rc, "system"));
+
 	rc = ica_rsa_mod_expo(handle, data, &mod_expo_key,
 			      output_data);
 	if(rc)
 		exit(handle_ica_error(rc, "ica_rsa_key_mod_expo"));
 	check_icastats(RSA_ME, "RSA-ME");
 
-	system("icastats -r");
+	rc = system("icastats -r");
+	if (rc == -1)
+		exit(handle_ica_error(rc, "system"));
+
 	rc = ica_rsa_crt(handle, data, &crt_key,
 			 output_data);
 	if(rc)
@@ -843,7 +923,10 @@ void aes_tests(unsigned char *iv, unsigned char *cmac, unsigned char *ctr)
 		exit(TEST_FAIL);
 	}
 
-	system("icastats -r");
+	rc = system("icastats -r");
+	if (rc == -1)
+		exit(handle_ica_error(rc, "system"));
+
 	for(mode = 1;mode >= 0;mode--){
 		rc = ica_aes_cbc(input_buffer, output_buffer, DATA_LENGHT,
 				 aes_key, AES_KEY_LEN128, iv, mode);
@@ -856,7 +939,10 @@ void aes_tests(unsigned char *iv, unsigned char *cmac, unsigned char *ctr)
 	}
 	check_icastats(AES_CBC, "AES CBC");
 
-	system("icastats -r");
+	rc = system("icastats -r");
+	if (rc == -1)
+		exit(handle_ica_error(rc, "system"));
+
 	for(mode = 1;mode >= 0;mode--){
 		rc = ica_aes_cfb(input_buffer, output_buffer, DATA_LENGHT,
 				 aes_key, AES_KEY_LEN128, iv, AES_CIPHER_BLOCK,
@@ -871,7 +957,10 @@ void aes_tests(unsigned char *iv, unsigned char *cmac, unsigned char *ctr)
 	}
 	check_icastats(AES_CFB, "AES CFB");
 
-	system("icastats -r");
+	rc = system("icastats -r");
+	if (rc == -1)
+		exit(handle_ica_error(rc, "system"));
+
 	for(mode = 1;mode >= 0;mode--){
 		rc = ica_aes_cmac(input_buffer, DATA_LENGHT, cmac,
 				  AES_CIPHER_BLOCK, aes_key,
@@ -881,7 +970,10 @@ void aes_tests(unsigned char *iv, unsigned char *cmac, unsigned char *ctr)
 	}
 	check_icastats(AES_CMAC, "AES CMAC");
 
-	system("icastats -r");
+	rc = system("icastats -r");
+	if (rc == -1)
+		exit(handle_ica_error(rc, "system"));
+
 	for(mode = 1;mode >= 0;mode--){
 		rc = ica_aes_ctr(input_buffer, output_buffer, DATA_LENGHT,
 				 aes_key, AES_KEY_LEN128, ctr, AES_CIPHER_BLOCK,
@@ -896,7 +988,10 @@ void aes_tests(unsigned char *iv, unsigned char *cmac, unsigned char *ctr)
 	}
 	check_icastats(AES_CTR, "AES CTR");
 
-	system("icastats -r");
+	rc = system("icastats -r");
+	if (rc == -1)
+		exit(handle_ica_error(rc, "system"));
+
 	for(mode = 1;mode >= 0;mode--){
 		rc = ica_aes_ecb(input_buffer, output_buffer, DATA_LENGHT,
 				 aes_key, AES_KEY_LEN128, mode);
@@ -910,7 +1005,10 @@ void aes_tests(unsigned char *iv, unsigned char *cmac, unsigned char *ctr)
 	}
 	check_icastats(AES_ECB, "AES ECB");
 
-	system("icastats -r");
+	rc = system("icastats -r");
+	if (rc == -1)
+		exit(handle_ica_error(rc, "system"));
+
 	for(mode = 1;mode >= 0;mode--){
 		rc = ica_aes_ofb(input_buffer, output_buffer, DATA_LENGHT,
 				 aes_key, AES_KEY_LEN128, iv, mode);
@@ -925,7 +1023,10 @@ void aes_tests(unsigned char *iv, unsigned char *cmac, unsigned char *ctr)
 	}
 	check_icastats(AES_OFB, "AES OFB");
 
-	system("icastats -r");
+	rc = system("icastats -r");
+	if (rc == -1)
+		exit(handle_ica_error(rc, "system"));
+
 	for(mode = 1;mode >= 0;mode--){
 		rc = ica_aes_xts(input_buffer, output_buffer, DATA_LENGHT,
 				 aes_key, aes_key2, AES_KEY_LEN128, tweak,
