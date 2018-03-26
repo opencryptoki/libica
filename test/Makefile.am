@@ -55,12 +55,12 @@ ec_keygen2_test.sh \
 ecdh2_test.sh \
 ecdsa2_test.sh
 
-TEST_EXTENSIONS = .sh
+TEST_EXTENSIONS = .sh .pl
 AM_TESTS_ENVIRONMENT = export LD_LIBRARY_PATH=${top_builddir}/src/.libs/ \
 		       PATH=${top_builddir}/src/:$$PATH \
 		       LIBICA_TESTDATA=${srcdir}/testdata/;
-AM_CFLAGS = -D_GNU_SOURCE -I${srcdir}/../include/ -I${srcdir}/../src/include/
-LDADD = ${top_builddir}/src/.libs/libica.so -lcrypto -lpthread
+AM_CFLAGS = @FLAGS@ -I${srcdir}/../include/ -I${srcdir}/../src/include/
+LDADD = @LIBS@ ${top_builddir}/src/.libs/libica.so -lcrypto -lpthread
 
 check_PROGRAMS = fips_test icastats_test get_functionlist_test \
 get_version_test rng_test drbg_test drbg_birthdays_test des_test \
@@ -74,7 +74,7 @@ sha3_512_test shake_128_test shake_256_test rsa_keygen_test \
 rsa_key_check_test rsa_test ec_keygen_test ecdh_test ecdsa_test
 
 EXTRA_DIST = testdata testcase.h rsa_test.h aes_gcm_test.h ecdsa1_test.sh \
-sha2_test.sh ecdh1_test.sh ecdsa2_test.sh ecdh1_test.sh \
+sha2_test.sh ecdh1_test.sh ecdsa2_test.sh ecdh2_test.sh \
 drbg_birthdays_test.pl sha3_test.sh ec_keygen1_test.sh ec_keygen2_test.sh \
 rsa_keygen2048_test.sh rsa_keygen1024_test.sh rsa_keygen4096_test.sh \
 rsa_keygen3072_test.sh rsa_keygen_test.sh

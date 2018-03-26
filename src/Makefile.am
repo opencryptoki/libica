@@ -1,6 +1,6 @@
 VERSION = 3:3:0
 
-AM_CFLAGS = -D_GNU_SOURCE
+AM_CFLAGS = @FLAGS@
 
 # lib
 
@@ -8,7 +8,7 @@ lib_LTLIBRARIES = libica.la
 
 libica_la_CFLAGS = ${AM_CFLAGS} -I${srcdir}/include -I${srcdir}/../include \
 		   -fvisibility=hidden
-libica_la_LIBADD = -lrt -lcrypto
+libica_la_LIBADD = @LIBS@ -lrt -lcrypto
 libica_la_LDFLAGS = -version-script=../libica.map \
 		    -version-number ${VERSION}
 libica_la_SOURCES = ica_api.c init.c icastats_shared.c s390_rsa.c \
@@ -28,10 +28,10 @@ libica_la_SOURCES = ica_api.c init.c icastats_shared.c s390_rsa.c \
 bin_PROGRAMS = icainfo icastats
 
 icainfo_CFLAGS = ${AM_CFLAGS} -I${srcdir}/include -I${srcdir}/../include
-icainfo_LDADD = libica.la
+icainfo_LDADD = @LIBS@ libica.la
 icainfo_SOURCES = icainfo.c include/fips.h include/s390_crypto.h \
 		  ../include/ica_api.h
 
 icastats_CFLAGS = ${AM_CFLAGS} -I${srcdir}/include
-icastats_LDADD = -lrt
+icastats_LDADD = @LIBS@ -lrt
 icastats_SOURCES = icastats.c icastats_shared.c include/icastats.h

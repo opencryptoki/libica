@@ -9,6 +9,8 @@
 #include <string.h>
 #include <openssl/ec.h>
 
+#include "../include/ica_api.h"
+
 /* automake test exist status */
 #define TEST_SUCC	0
 #define TEST_FAIL	1

@@ -1,3 +1,6 @@
+# save cmdline flags
+cmdline_CFLAGS="$CFLAGS"
+
 AC_PREREQ([2.69])
 AC_INIT([libica], [3.3.0], [steuer@linux.vnet.ibm.com],, [https://github.com/opencryptoki/libica])
 AC_USE_SYSTEM_EXTENSIONS
@@ -28,52 +31,70 @@ AM_PROG_AR
 LT_INIT
 AM_INIT_AUTOMAKE([-Wall -Werror foreign])
 
-CFLAGS="-Wall -Wextra"
+FLAGS="-Wall -Wextra"
 
 dnl --- enable_debug
 AC_ARG_ENABLE(debug,
-              [--enable-debug          turn on debugging flags],
+              [  --enable-debug          turn on debugging flags],
               [enable_debug="yes"],[enable_debug="no"])
 AM_CONDITIONAL(DEBUG, test x$enable_debug = xyes)
 
 if test "x$enable_debug" = xyes; then
-	CFLAGS="$CFLAGS -g -O0"
+	FLAGS="$FLAGS -g -O0"
 	AC_MSG_RESULT([*** Enabling debugging at user request ***])
-else
-	CFLAGS="$CFLAGS -O3"
+fi
+
+dnl --- enable_coverage
+AC_ARG_ENABLE(coverage,
+              [  --enable-coverage       turn on coverage testing],
+              [enable_coverage="yes"],[enable_coverage="no"])
+AM_CONDITIONAL(COVERAGE, test x$enable_coverage = xyes)
+
+if test "x$enable_coverage" = xyes; then
+	FLAGS="$FLAGS -g -O0 -fprofile-arcs -ftest-coverage"
+	AC_MSG_RESULT([*** Enabling coverage testing at user request ***])
 fi
 
 dnl --- enable_fips
 AC_ARG_ENABLE(fips,
-              [--enable-fips          built with FIPS mode support],
+              [  --enable-fips           built with FIPS mode support],
               [enable_fips="yes"],[enable_fips="no"])
 AM_CONDITIONAL(ICA_FIPS, test x$enable_fips = xyes)
 
 if test "x$enable_fips" = xyes; then
-	CFLAGS="$CFLAGS -DICA_FIPS"
+	FLAGS="$FLAGS -DICA_FIPS"
 	AC_MSG_RESULT([*** Building libica-fips at user request ***])
 fi
 
 dnl --- enable_sanitizer
 AC_ARG_ENABLE(sanitizer,
-              [--enable-sanitizer    turn on sanitizer (may not work with all compiler versions)],
+              [  --enable-sanitizer      turn on sanitizer (may not work on all systems)],
               [enable_sanitizer="yes"],[enable_sanitizer="no"])
 AM_CONDITIONAL(SANITIZER, test x$enable_sanitizer = xyes)
 
 if test "x$enable_sanitizer" = xyes; then
-	CFLAGS="$CFLAGS -g -fstack-protector-all -fsanitize=address,signed-integer-overflow,undefined -Wformat-security -Werror=format-security -Warray-bounds -Werror=array-bounds -D_FORTIFY_SOURCE=2"
-	LDLIBS="-lubsan -lasan"
+	FLAGS="$FLAGS -O3 -g -fstack-protector-all -fsanitize=address,signed-integer-overflow,undefined -Wformat-security -Werror=format-security -Warray-bounds -Werror=array-bounds -D_FORTIFY_SOURCE=2"
+	LIBS="-lubsan -lasan"
 	AC_MSG_RESULT([*** Enabling sanitizer at user request ***])
-else
-	CFLAGS="$CFLAGS -D_FORTIFY_SOURCE=1"
 fi
 
+if test "x$enable_coverage" = xno && test "x$enable_debug" = xno && test "x$enable_sanitizer" = xno; then
+	FLAGS="$FLAGS -O3 -D_FORTIFY_SOURCE=1"
+fi
+
+# restore cmdline flags
+CFLAGS="$cmdline_CFLAGS"
+
+AC_SUBST([FLAGS], $FLAGS)
+AC_SUBST([LIBS], $LIBS)
 AC_CONFIG_FILES([Makefile doc/Makefile include/Makefile src/Makefile test/Makefile])
 AC_OUTPUT
 
-echo "CFLAGS=$CFLAGS"
+echo "FLAGS=$FLAGS"
+echo "LIBS=$LIBS"
 
 echo "Enabled features:"
 echo "  FIPS build:      $enable_fips"
 echo "  Debug build:     $enable_debug"
 echo "  Sanitizer build: $enable_sanitizer"
+echo "  Coverage build:  $enable_coverage"
