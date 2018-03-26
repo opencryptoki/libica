@@ -7,6 +7,7 @@
 #include <errno.h>
 #include <stddef.h>
 #include <string.h>
+#include <openssl/ec.h>
 
 /* automake test exist status */
 #define TEST_SUCC	0
@@ -60,6 +61,50 @@ sha3_available(void)
 			&sha3_224_context, output_hash);
 
 	return (rc == ENODEV ? 0 : 1);
+}
+
+static inline unsigned int
+getenv_icapath()
+{
+	char* s = getenv("ICAPATH");
+	int icapath=0; /* hw with sw fallback (default) */
+	int env_icapath;
+
+	if (s) {
+		if (sscanf(s, "%d", &env_icapath) == 1) {
+			switch (env_icapath) {
+				case 1:	return 1; /* hw only */
+				case 2: return 2; /* sw only */
+				default:   break; /* default */
+			}
+		}
+	}
+
+	return icapath;
+}
+
+static inline int
+is_supported_openssl_curve(int nid)
+{
+	EC_GROUP *ptr = EC_GROUP_new_by_curve_name(nid);
+	if (ptr)
+		EC_GROUP_free(ptr);
+	return ptr ? 1 : 0;
+}
+
+static inline void
+toggle_env_icapath()
+{
+	if (getenv_icapath() == 1)
+		setenv("ICAPATH", "2", 1);
+	else if (getenv_icapath() == 2)
+		setenv("ICAPATH", "1", 1);
+}
+
+static inline void
+unset_env_icapath()
+{
+	unsetenv("ICAPATH");
 }
 
 #endif /* TESTCASE_H */

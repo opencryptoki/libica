@@ -19,6 +19,7 @@
 
 
 #define NUM_ECDH_TESTS		(sizeof(ecdh_kats)/sizeof(ecdh_kat_t))
+#define NUM_HW_SW_TESTS		2
 #define MAX_ECC_KEY_SIZE	66 /* 521 bits */
 
 typedef struct {
@@ -296,23 +297,30 @@ static ecdh_kat_t ecdh_kats[] = {
 int main(int argc, char **argv)
 {
 	ica_adapter_handle_t adapter_handle;
-	unsigned int i, rc;
+	unsigned int i, j, rc;
 	unsigned int errors=0, test_failed=0;
 	unsigned char shared_secret[MAX_ECC_KEY_SIZE];
 	unsigned int privlen = 0;
 	ICA_EC_KEY *eckey_A, *eckey_B;
-
+	char *icapath;
 
 	set_verbosity(argc, argv);
 
 	rc = ica_open_adapter(&adapter_handle);
 	if (rc != 0) {
 		V_(printf("ica_open_adapter failed and returned %d (0x%x).\n", rc, rc));
-		return TEST_FAIL;
+	}
+
+	/* set ICAPATH default value */
+	icapath = getenv("ICAPATH");
+	if ((icapath == NULL) || (atoi(icapath) == 0)) {
+		icapath = "1";
+		setenv("ICAPATH", icapath, 1);
 	}
 
 	/* Iterate over curves */
 	for (i = 0; i < NUM_ECDH_TESTS; i++) {
+		setenv("ICAPATH", icapath, 1);
 
 		V_(printf("Testing curve %d \n", ecdh_kats[i].nid));
 
@@ -325,26 +333,15 @@ int main(int argc, char **argv)
 		eckey_B = ica_ec_key_new(ecdh_kats[i].nid, &privlen);
 		rc = ica_ec_key_init(ecdh_kats[i].xb, ecdh_kats[i].yb, ecdh_kats[i].db, eckey_B);
 
-		/* calculate shared secret with priv_A, pub_B */
-		rc = ica_ecdh_derive_secret(adapter_handle, eckey_A, eckey_B,
-								shared_secret, privlen);
-		if (rc) {
-			V_(printf("Shared secret could not be derived, rc=%i.\n",rc));
-			test_failed = 1;
-		} else {
+		for (j = 0; j < NUM_HW_SW_TESTS; j++) {
 
-			/* compare result with known result */
-			if (memcmp(shared_secret, ecdh_kats[i].z, ecdh_kats[i].privlen) != 0) {
-				V_(printf("Check 1: priv_A, pub_B: Results do not match.\n"));
-				VV_(printf("Expected result:\n"));
-				dump_array(ecdh_kats[i].z, privlen);
-				VV_(printf("Calculated result:\n"));
-				dump_array(shared_secret, privlen);
-				test_failed = 1;
-			}
+			if (is_supported_openssl_curve(ecdh_kats[i].nid) || (getenv_icapath() == 2))
+				toggle_env_icapath();
 
-			/* calculate shared secret with priv_B, pub_A */
-			rc = ica_ecdh_derive_secret(adapter_handle, eckey_B, eckey_A,
+			VV_(printf("  performing test with ICAPATH=%d \n", getenv_icapath()));
+
+			/* calculate shared secret with priv_A, pub_B */
+			rc = ica_ecdh_derive_secret(adapter_handle, eckey_A, eckey_B,
 									shared_secret, privlen);
 			if (rc) {
 				V_(printf("Shared secret could not be derived, rc=%i.\n",rc));
@@ -353,12 +350,31 @@ int main(int argc, char **argv)
 
 				/* compare result with known result */
 				if (memcmp(shared_secret, ecdh_kats[i].z, ecdh_kats[i].privlen) != 0) {
-					V_(printf("Check 2: pub(B), priv(A): Results do not match.\n"));
+					V_(printf("Check 1: priv_A, pub_B: Results do not match.\n"));
 					VV_(printf("Expected result:\n"));
 					dump_array(ecdh_kats[i].z, privlen);
 					VV_(printf("Calculated result:\n"));
 					dump_array(shared_secret, privlen);
 					test_failed = 1;
+				}
+
+				/* calculate shared secret with priv_B, pub_A */
+				rc = ica_ecdh_derive_secret(adapter_handle, eckey_B, eckey_A,
+										shared_secret, privlen);
+				if (rc) {
+					V_(printf("Shared secret could not be derived, rc=%i.\n",rc));
+					test_failed = 1;
+				} else {
+
+					/* compare result with known result */
+					if (memcmp(shared_secret, ecdh_kats[i].z, ecdh_kats[i].privlen) != 0) {
+						V_(printf("Check 2: pub(B), priv(A): Results do not match.\n"));
+						VV_(printf("Expected result:\n"));
+						dump_array(ecdh_kats[i].z, privlen);
+						VV_(printf("Calculated result:\n"));
+						dump_array(shared_secret, privlen);
+						test_failed = 1;
+					}
 				}
 			}
 		}
@@ -368,7 +384,7 @@ int main(int argc, char **argv)
 
 		ica_ec_key_free(eckey_A);
 		ica_ec_key_free(eckey_B);
-
+		unset_env_icapath();
 	}
 
 	ica_close_adapter(adapter_handle);

@@ -19,6 +19,7 @@
 #include <sys/time.h>
 
 
+#define NUM_HW_SW_TESTS		2
 #define NUM_ECDSA_TESTS		(sizeof(ecdsa_kats)/sizeof(ecdsa_kat_t))
 #define NUM_HASH_LENGTHS	(sizeof(hash_length)/sizeof(int))
 
@@ -182,22 +183,30 @@ static ecdsa_kat_t ecdsa_kats[] = {
 int main(int argc, char **argv)
 {
 	ica_adapter_handle_t adapter_handle;
-	unsigned int i, j, rc;
+	unsigned int i, j, k, rc;
 	unsigned int errors=0, test_failed=0;
 	unsigned char signature[MAX_ECDSA_SIG_SIZE];
 	unsigned int privlen = 0;
 	ICA_EC_KEY *eckey;
+	char *icapath;
 
 	set_verbosity(argc, argv);
 
 	rc = ica_open_adapter(&adapter_handle);
 	if (rc != 0) {
 		V_(printf("ica_open_adapter failed and returned %d (0x%x).\n", rc, rc));
-		return TEST_FAIL;
+	}
+
+	/* set ICAPATH default value */
+	icapath = getenv("ICAPATH");
+	if ((icapath == NULL) || (atoi(icapath) == 0)) {
+		icapath = "1";
+		setenv("ICAPATH", icapath, 1);
 	}
 
 	/* Iterate over curves */
 	for (i = 0; i < NUM_ECDSA_TESTS; i++) {
+		setenv("ICAPATH", icapath, 1);
 
 		V_(printf("Testing curve %d \n", ecdsa_kats[i].nid));
 
@@ -209,24 +218,35 @@ int main(int argc, char **argv)
 
 		for (j = 0; j<NUM_HASH_LENGTHS; j++) {
 
-			/* calculate ECDSA signature */
-			rc = ica_ecdsa_sign(adapter_handle, eckey, hash, hash_length[j],
-					signature, MAX_ECDSA_SIG_SIZE);
+			for (k = 0; k < NUM_HW_SW_TESTS; k++) {
 
-			if (rc) {
-				V_(printf("Signature could not be created, rc=%i.\n",rc));
-				test_failed = 1;
-				break;
-			} else {
+				if (is_supported_openssl_curve(ecdsa_kats[i].nid) || getenv_icapath() == 2)
+					toggle_env_icapath();
 
-				/* verify ECDSA signature */
-				rc = ica_ecdsa_verify(adapter_handle, eckey, hash, hash_length[j],
-						      signature, MAX_ECDSA_SIG_SIZE);
+				/* calculate ECDSA signature */
+				VV_(printf("  performing sign with ICAPATH=%d \n", getenv_icapath()));
+				rc = ica_ecdsa_sign(adapter_handle, eckey, hash, hash_length[j],
+						signature, MAX_ECDSA_SIG_SIZE);
 
 				if (rc) {
-					V_(printf("Signature could not be verified, rc=%i.\n",rc));
+					V_(printf("Signature could not be created, rc=%i.\n",rc));
 					test_failed = 1;
 					break;
+				} else {
+
+					if (is_supported_openssl_curve(ecdsa_kats[i].nid))
+						toggle_env_icapath();
+
+					/* verify ECDSA signature */
+					VV_(printf("  performing verify with ICAPATH=%d \n", getenv_icapath()));
+					rc = ica_ecdsa_verify(adapter_handle, eckey, hash, hash_length[j],
+								  signature, MAX_ECDSA_SIG_SIZE);
+
+					if (rc) {
+						V_(printf("Signature could not be verified, rc=%i.\n",rc));
+						test_failed = 1;
+						break;
+					}
 				}
 			}
 		}
@@ -235,6 +255,7 @@ int main(int argc, char **argv)
 			errors++;
 
 		ica_ec_key_free(eckey);
+		unset_env_icapath();
 	}
 
 	ica_close_adapter(adapter_handle);

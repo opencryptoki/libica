@@ -48,15 +48,12 @@ rsa_keygen3072_test.sh \
 rsa_keygen4096_test.sh \
 rsa_key_check_test \
 rsa_test \
-ec_keygen_test.sh \
-ecdh_test.sh \
-ecdsa_test.sh \
-ec_keygen_hw_test.sh \
-ecdh_hw_test.sh \
-ecdsa_hw_test.sh \
-ec_keygen_sw_test.sh \
-ecdh_sw_test.sh \
-ecdsa_sw_test.sh
+ec_keygen1_test.sh \
+ecdh1_test.sh \
+ecdsa1_test.sh \
+ec_keygen2_test.sh \
+ecdh2_test.sh \
+ecdsa2_test.sh
 
 TEST_EXTENSIONS = .sh
 AM_TESTS_ENVIRONMENT = export LD_LIBRARY_PATH=${top_builddir}/src/.libs/ \
@@ -76,9 +73,8 @@ sha1_test sha256_test sha3_224_test sha3_256_test sha3_384_test \
 sha3_512_test shake_128_test shake_256_test rsa_keygen_test \
 rsa_key_check_test rsa_test ec_keygen_test ecdh_test ecdsa_test
 
-EXTRA_DIST = testdata testcase.h rsa_test.h aes_gcm_test.h ecdsa_test.sh \
-sha2_test.sh ecdh_sw_test.sh ecdsa_hw_test.sh ecdh_hw_test.sh \
-ecdsa_sw_test.sh drbg_birthdays_test.pl sha3_test.sh \
-ec_keygen_hw_test.sh ec_keygen_sw_test.sh ec_keygen_test.sh \
+EXTRA_DIST = testdata testcase.h rsa_test.h aes_gcm_test.h ecdsa1_test.sh \
+sha2_test.sh ecdh1_test.sh ecdsa2_test.sh ecdh1_test.sh \
+drbg_birthdays_test.pl sha3_test.sh ec_keygen1_test.sh ec_keygen2_test.sh \
 rsa_keygen2048_test.sh rsa_keygen1024_test.sh rsa_keygen4096_test.sh \
-rsa_keygen3072_test.sh ecdh_test.sh rsa_keygen_test.sh
+rsa_keygen3072_test.sh rsa_keygen_test.sh

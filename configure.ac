@@ -5,6 +5,7 @@ AC_CONFIG_SRCDIR([src/ica_api.c])
 AC_CONFIG_MACRO_DIRS([m4])
 
 AC_PROG_CC
+AC_PROG_CXX
 AC_PROG_INSTALL
 
 AC_CHECK_HEADERS([fcntl.h memory.h stddef.h stdint.h stdlib.h string.h strings.h sys/file.h sys/ioctl.h sys/time.h syslog.h unistd.h])
@@ -21,12 +22,11 @@ AC_TYPE_UINT8_T
 AC_FUNC_MALLOC
 AC_FUNC_MMAP
 AC_FUNC_STRNLEN
-AC_CHECK_FUNCS([bzero ftruncate gettimeofday memchr memset munmap strcasecmp strerror strstr strtol])
+AC_CHECK_FUNCS([bzero ftruncate gettimeofday memchr memset munmap strcasecmp strerror strstr strtol setenv])
 
 AM_PROG_AR
-
-AM_INIT_AUTOMAKE([-Wall -Werror foreign])
 LT_INIT
+AM_INIT_AUTOMAKE([-Wall -Werror foreign])
 
 CFLAGS="-Wall -Wextra"
 
