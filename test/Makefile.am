@@ -5,7 +5,7 @@ get_functionlist_test \
 get_version_test \
 rng_test \
 drbg_test \
-drbg_birthdays_test.sh \
+drbg_birthdays_test.pl \
 des_test \
 des_ecb_test \
 des_cbc_test \
@@ -78,7 +78,7 @@ rsa_key_check_test rsa_test ec_keygen_test ecdh_test ecdsa_test
 
 EXTRA_DIST = testdata testcase.h rsa_test.h aes_gcm_test.h ecdsa_test.sh \
 sha2_test.sh ecdh_sw_test.sh ecdsa_hw_test.sh ecdh_hw_test.sh \
-ecdsa_sw_test.sh drbg_birthdays_test.sh sha3_test.sh \
+ecdsa_sw_test.sh drbg_birthdays_test.pl sha3_test.sh \
 ec_keygen_hw_test.sh ec_keygen_sw_test.sh ec_keygen_test.sh \
 rsa_keygen2048_test.sh rsa_keygen1024_test.sh rsa_keygen4096_test.sh \
 rsa_keygen3072_test.sh ecdh_test.sh rsa_keygen_test.sh
