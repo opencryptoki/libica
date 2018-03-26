@@ -690,7 +690,7 @@ int random_aes_cfb(int iteration, unsigned int data_length, unsigned int lcfb)
 
 	unsigned char iv[iv_length];
 	unsigned char tmp_iv[iv_length];
-	unsigned char key[key_length];
+	unsigned char key[AES_KEY_LEN256];
 	unsigned char input_data[data_length];
 	unsigned char encrypt[data_length];
 	unsigned char decrypt[data_length];

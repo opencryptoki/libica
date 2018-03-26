@@ -13,40 +13,40 @@
 #include "ica_api.h"
 #include "testcase.h"
 
-unsigned char NIST_KEY1[] =
+unsigned char KEY1[] =
 		  { 0x7c, 0xa1, 0x10, 0x45, 0x4a, 0x1a, 0x6e, 0x57 };
 
-unsigned char NIST_KEY2[] =
-		  { 0x7c, 0xa1, 0x10, 0x45, 0x4a, 0x1a, 0x6e, 0x57 };
+unsigned char KEY2[] =
+		  { 0x8c, 0xa1, 0x10, 0x45, 0x4a, 0x1a, 0x6e, 0x57 };
 
-unsigned char NIST_KEY3[] =
-		  { 0x7c, 0xa1, 0x10, 0x45, 0x4a, 0x1a, 0x6e, 0x57 };
+unsigned char KEY3[] =
+		  { 0x9c, 0xa1, 0x10, 0x45, 0x4a, 0x1a, 0x6e, 0x57 };
 
-unsigned char NIST_TEST_DATA[] =
+unsigned char TEST_DATA[] =
 		  { 0x01, 0xa1, 0xd6, 0xd0, 0x39, 0x77, 0x67, 0x42 };
 
-unsigned char NIST_TEST_RESULT[] =
-		  { 0x69, 0x0f, 0x5b, 0x0d, 0x9a, 0x26, 0x93, 0x9b };
+unsigned char TEST_RESULT[] =
+		  { 0x90, 0x9c, 0xbc, 0x01, 0xc5, 0x1f, 0x09, 0x60 };
 
 int test_3des_new_api(int mode)
 {
 	ica_des_vector_t iv;
 	ica_des_key_triple_t key;
 	int rc = 0;
-	unsigned char dec_text[sizeof(NIST_TEST_DATA)],
-		      enc_text[sizeof(NIST_TEST_DATA)];
+	unsigned char dec_text[sizeof(TEST_DATA)],
+		      enc_text[sizeof(TEST_DATA)];
 
 	bzero(dec_text, sizeof(dec_text));
 	bzero(enc_text, sizeof(enc_text));
 	bzero(iv, sizeof(iv));
-	bcopy(NIST_KEY1, key.key1, sizeof(NIST_KEY1));
-	bcopy(NIST_KEY2, key.key2, sizeof(NIST_KEY2));
-	bcopy(NIST_KEY3, key.key3, sizeof(NIST_KEY3));
+	bcopy(KEY1, key.key1, sizeof(KEY1));
+	bcopy(KEY2, key.key2, sizeof(KEY2));
+	bcopy(KEY3, key.key3, sizeof(KEY3));
 
 	VV_(printf("\nOriginal data:\n"));
-	dump_array(NIST_TEST_DATA, sizeof(NIST_TEST_DATA));
+	dump_array(TEST_DATA, sizeof(TEST_DATA));
 
-	rc = ica_3des_encrypt(mode, sizeof(NIST_TEST_DATA), NIST_TEST_DATA,
+	rc = ica_3des_encrypt(mode, sizeof(TEST_DATA), TEST_DATA,
 			      &iv, &key, enc_text);
 	if (rc != 0) {
 		VV_(printf("ica_3des_encrypt failed with errno %d (0x%x).\n", rc, rc));
@@ -55,7 +55,7 @@ int test_3des_new_api(int mode)
 
 	VV_(printf("\nEncrypted data:\n"));
 	dump_array(enc_text, sizeof(enc_text));
-	if (memcmp(enc_text, NIST_TEST_RESULT, sizeof NIST_TEST_RESULT) != 0) {
+	if (memcmp(enc_text, TEST_RESULT, sizeof TEST_RESULT) != 0) {
 		VV_(printf("This does NOT match the known result.\n"));
 		return TEST_FAIL;
 	} else {
@@ -72,7 +72,7 @@ int test_3des_new_api(int mode)
 
 	VV_(printf("\nDecrypted data:\n"));
 	dump_array(dec_text, sizeof(dec_text));
-	if (memcmp(dec_text, NIST_TEST_DATA, sizeof(NIST_TEST_DATA)) != 0) {
+	if (memcmp(dec_text, TEST_DATA, sizeof(TEST_DATA)) != 0) {
 		VV_(printf("This does NOT match the original data.\n"));
 		return TEST_FAIL;
 	} else {
