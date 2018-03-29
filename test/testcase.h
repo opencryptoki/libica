@@ -6,7 +6,9 @@
 
 #include <errno.h>
 #include <stddef.h>
+#include <stdint.h>
 #include <string.h>
+#include <sys/time.h>
 #include <openssl/ec.h>
 
 #include "../include/ica_api.h"
@@ -49,6 +51,31 @@ dump_array(unsigned char array[], size_t len)
 		if ((i % 8 == 0) || (i == len))
 			VV_(printf("\n"));
 	}
+}
+
+static inline void
+dump_array_u64(uint64_t array[], size_t size)
+{
+	size_t i;
+
+	for (i = 1; i <= size; i++) {
+		VV_(printf("0x%016lx ", array[i - 1]));
+		if ((i % 8 == 0) || (i == size))
+			VV_(printf("\n"));
+	}
+}
+
+static inline unsigned long long
+delta_usec(const struct timeval *t1, const struct timeval *t2)
+{
+	return (t2->tv_sec * 1000000ULL + t2->tv_usec)
+	       - (t1->tv_sec * 1000000ULL + t1->tv_usec);
+}
+
+static inline long double
+ops_per_sec(unsigned long long ops, unsigned long long usec)
+{
+	return ops / ((long double)usec / 1000000ULL);
 }
 
 static inline int
