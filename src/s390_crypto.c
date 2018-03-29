@@ -29,7 +29,7 @@
 #include "init.h"
 #include "s390_crypto.h"
 
-
+unsigned long long facility_bits[3];
 unsigned int sha1_switch, sha256_switch, sha512_switch, sha3_switch, des_switch,
 	     tdes_switch, aes128_switch, aes192_switch, aes256_switch,
 	     prng_switch, tdea128_switch, tdea192_switch, sha512_drng_switch,
@@ -126,10 +126,11 @@ int read_cpuinfo(void)
 int read_facility_bits(void)
 {
 	int msa = 0;
-	unsigned long long facility_bits[3] = {0};
 	struct sigaction oldact;
 	sigset_t oldset;
 	int rc = -1;
+
+	memset(facility_bits, 0, sizeof(facility_bits));
 
 	rc = begin_sigill_section(&oldact, &oldset);
 	if (!rc) {

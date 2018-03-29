@@ -99,6 +99,7 @@ enum s390_crypto_function {
 	S390_CRYPTO_TRNG	     = 0x72
 };
 
+extern unsigned long long facility_bits[3];
 extern unsigned int sha1_switch, sha256_switch, sha512_switch, sha3_switch, des_switch,
 	     tdes_switch, aes128_switch, aes192_switch, aes256_switch,
 	     prng_switch, tdea128_switch, tdea192_switch, sha512_drng_switch,
