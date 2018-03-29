@@ -34,3 +34,5 @@ src/.libs/*.gcov
 test/*.gcda
 test/*.gcno
 test/*.gcov
+
+src/mp.S

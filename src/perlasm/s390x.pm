@@ -16,7 +16,7 @@ use Carp qw(confess);
 use Exporter qw(import);
 
 our @EXPORT=qw(PERLASM_BEGIN PERLASM_END);
-our @EXPORT_OK=qw(AUTOLOAD LABEL stfle);
+our @EXPORT_OK=qw(AUTOLOAD LABEL VERBATIM stfle);
 our %EXPORT_TAGS=(
 	MSA => [qw(kmac km kmc kimd klmd)],
 	MSA4 => [qw(kmf kmo pcc kmctr)],
@@ -125,6 +125,12 @@ sub LABEL {						# label directive
 	confess(err("ARGNUM")) if ($#_!=0);
 	my ($label)=@_;
 	$out.="$label:\n";
+}
+
+sub VERBATIM {
+	confess(err("ARGNUM")) if ($#_!=0);
+	my ($verbatim)=@_;
+	$out.="$verbatim";
 }
 
 #

@@ -14,6 +14,7 @@ libica_la_LDFLAGS = -version-script=../libica.map \
 libica_la_SOURCES = ica_api.c init.c icastats_shared.c s390_rsa.c \
 		    s390_crypto.c s390_ecc.c s390_prng.c s390_sha.c \
 		    s390_drbg.c s390_drbg_sha512.c test_vec.c fips.c \
+		    mp.S	\
 		    include/fips.h include/icastats.h include/init.h \
 		    include/s390_aes.h include/s390_cbccs.h \
 		    include/s390_ccm.h include/s390_cmac.h \
@@ -22,6 +23,9 @@ libica_la_SOURCES = ica_api.c init.c icastats_shared.c s390_rsa.c \
 		    include/s390_drbg.h include/s390_drbg_sha512.h \
 		    include/s390_ecc.h include/s390_gcm.h include/s390_prng.h \
 		    include/s390_rsa.h include/s390_sha.h include/test_vec.h
+
+mp.S	: mp.pl
+	./mp.pl mp.S
 
 # bin
 

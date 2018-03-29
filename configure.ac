@@ -28,6 +28,7 @@ AC_FUNC_STRNLEN
 AC_CHECK_FUNCS([bzero ftruncate gettimeofday memchr memset munmap strcasecmp strerror strstr strtol setenv])
 
 AM_PROG_AR
+AM_PROG_AS
 LT_INIT
 AM_INIT_AUTOMAKE([-Wall -Werror foreign])
 

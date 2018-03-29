@@ -3526,6 +3526,46 @@ int ica_drbg_health_test(void *func,
 			 bool pr,
 			 ica_drbg_mech_t *mech);
 
+/*
+ * ica_mp: libica's multiple-precision arithmetic interface
+ *
+ * Numbers are represented in radix 2^64. The least-significant digit is stored
+ * at array element zero.
+ *
+ * Example:
+ *
+ * uint64_t a[] = {3, 4, 5};	// a = 5*(2^64)^2 + 4*(2^64) + 3
+ */
+
+/*
+ * Multiply the zero-padded 512-bit numbers @a and @b. The zero-padded 1024-bit
+ * result is stored at @r.
+ *
+ * @r: 1024-bit produkt (@r = @a * @b)
+ * @a:  512-bit factor 1
+ * @b:  512-bit factor 2
+ *
+ * @return:
+ * 0				Success.
+ * != 0				Vector facilities are not enabled.
+ */
+ICA_EXPORT
+int ica_mp_mul512(uint64_t r[16], const uint64_t a[8], const uint64_t b[8]);
+
+/*
+ * Square the zero-padded 512-bit number @a. The zero-padded 1024-bit result is
+ * stored at @r.
+ *
+ * @r: 1024-bit square (@r = @a ^ 2)
+ * @a:  512-bit base
+ *
+ * @return:
+ * 0				Success.
+ * != 0				Vector facilities are not enabled.
+ */
+ICA_EXPORT
+int ica_mp_sqr512(uint64_t r[8], const uint64_t a[8]);
+
 #ifdef ICA_FIPS
 /*
  * Additional FIPS interfaces are available for built-in FIPS mode.
