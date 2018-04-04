@@ -25,7 +25,7 @@ AC_TYPE_UINT8_T
 AC_FUNC_MALLOC
 AC_FUNC_MMAP
 AC_FUNC_STRNLEN
-AC_CHECK_FUNCS([bzero ftruncate gettimeofday memchr memset munmap strcasecmp strerror strstr strtol setenv])
+AC_CHECK_FUNCS([bzero ftruncate gettimeofday memchr memset munmap strcasecmp strerror strstr strtol setenv strtoull])
 
 AM_PROG_AR
 AM_PROG_AS
