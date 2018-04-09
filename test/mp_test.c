@@ -20,6 +20,12 @@
 #include "testcase.h"
 
 /*
+ * known-answer tests
+ */
+static void mul_kat(void);
+static void sqr_kat(void);
+
+/*
  * pairwise-consintency tests
  * libica multiple-precision vs openssl bignum
  */
@@ -49,6 +55,47 @@ struct timeval start, stop;
 BIGNUM *ossl_num, *ossl_num2, *ossl_res;
 BN_CTX *ossl_ctx;
 unsigned long long i, delta;
+
+struct {
+	uint64_t a[512 / 64];
+	uint64_t b[512 / 64];
+	uint64_t res[1024 / 64];
+} mul_kat_vec[] = {
+	{
+		{0ULL, 0ULL, 0ULL, 0ULL, 0ULL, 0ULL, 0ULL, 0ULL},
+		{0ULL, 0ULL, 0ULL, 0ULL, 0ULL, 0ULL, 0ULL, 0ULL},
+		{0ULL, 0ULL, 0ULL, 0ULL, 0ULL, 0ULL, 0ULL, 0ULL,
+		 0ULL, 0ULL, 0ULL, 0ULL, 0ULL, 0ULL, 0ULL, 0ULL}
+	},
+	{
+		{~0ULL, ~0ULL, ~0ULL, ~0ULL, ~0ULL, ~0ULL, ~0ULL, ~0ULL},
+		{~0ULL, ~0ULL, ~0ULL, ~0ULL, ~0ULL, ~0ULL, ~0ULL, ~0ULL},
+		{1ULL, 0ULL, 0ULL, 0ULL, 0ULL, 0ULL, 0ULL, 0ULL,
+		 0xfffffffffffffffe, ~0ULL, ~0ULL, ~0ULL, ~0ULL, ~0ULL, ~0ULL,
+		 ~0ULL}
+	}
+};
+const unsigned long long MUL_KATS = sizeof(mul_kat_vec)
+				  / sizeof(mul_kat_vec[0]);
+
+struct {
+	uint64_t a[512 / 64];
+	uint64_t res[1024 / 64];
+} sqr_kat_vec[] = {
+	{
+		{0ULL, 0ULL, 0ULL, 0ULL, 0ULL, 0ULL, 0ULL, 0ULL},
+		{0ULL, 0ULL, 0ULL, 0ULL, 0ULL, 0ULL, 0ULL, 0ULL,
+		 0ULL, 0ULL, 0ULL, 0ULL, 0ULL, 0ULL, 0ULL, 0ULL}
+	},
+	{
+		{~0ULL, ~0ULL, ~0ULL, ~0ULL, ~0ULL, ~0ULL, ~0ULL, ~0ULL},
+		{1ULL, 0ULL, 0ULL, 0ULL, 0ULL, 0ULL, 0ULL, 0ULL,
+		 0xfffffffffffffffe, ~0ULL, ~0ULL, ~0ULL, ~0ULL, ~0ULL, ~0ULL,
+		 ~0ULL}
+	}
+};
+const unsigned long long SQR_KATS = sizeof(sqr_kat_vec)
+				  / sizeof(sqr_kat_vec[0]);
 
 static inline void swap_u64(uint64_t *a, uint64_t *b)
 {
@@ -111,6 +158,14 @@ int main(int argc, char *argv[])
 	}
 
 	if (perf_opt == EMPTY) {
+		printf("Known-answer MUL (%llu tests):\n", MUL_KATS);
+		mul_kat();
+		printf("OK.\n\n");
+
+		printf("Known-answer SQR (%llu tests):\n", SQR_KATS);
+		sqr_kat();
+		printf("OK.\n\n");
+
 		printf("Pairwise-consistency MUL (%llu tests):\n", OPS_PC);
 		for (i = 0; i < OPS_PC; i++)
 			mul_pc();
@@ -141,6 +196,52 @@ int main(int argc, char *argv[])
 
 	printf("All ica_mp tests passed.\n");
 	return TEST_SUCC;
+}
+
+static void mul_kat(void)
+{
+	for (i = 0; i < MUL_KATS; i++) {
+		if (ica_mp_mul512(ica_res, mul_kat_vec[i].a, mul_kat_vec[i].b)) {
+			printf("ERROR: ica_mp_mul512\n");
+			exit(TEST_FAIL);
+		}
+
+		if (memcmp(mul_kat_vec[i].res, ica_res, 1024 / 8)) {
+			printf("ERROR: ica_mp_mul512 result doesnt match\n");
+			VV_(printf("a:\n"));
+			VV_(dump_array_u64(mul_kat_vec[i].a, 512 / 64));
+			VV_(printf("b:\n"));
+			VV_(dump_array_u64(mul_kat_vec[i].b, 512 / 64));
+			VV_(printf("known answer (a*b):\n"));
+			VV_(dump_array_u64(mul_kat_vec[i].res, 1024 / 64));
+			VV_(printf("ica_mp_mul512 (a*b):\n"));
+			VV_(dump_array_u64(ica_res, 1024 / 64));
+			VV_(printf("(little-endian digits)\n"));
+			exit(TEST_FAIL);
+		}
+	}
+}
+
+static void sqr_kat(void)
+{
+	for (i = 0; i < SQR_KATS; i++) {
+		if (ica_mp_sqr512(ica_res, sqr_kat_vec[i].a)) {
+			printf("ERROR: ica_mp_mul512\n");
+			exit(TEST_FAIL);
+		}
+
+		if (memcmp(sqr_kat_vec[i].res, ica_res, 1024 / 8)) {
+			printf("ERROR: ica_mp_sqr512 result doesnt match\n");
+			VV_(printf("a:\n"));
+			VV_(dump_array_u64(sqr_kat_vec[i].a, 512 / 64));
+			VV_(printf("known answer (a^2):\n"));
+			VV_(dump_array_u64(sqr_kat_vec[i].res, 1024 / 64));
+			VV_(printf("ica_mp_sqr512 (a^2):\n"));
+			VV_(dump_array_u64(ica_res, 1024 / 64));
+			VV_(printf("(little-endian digits)\n"));
+			exit(TEST_FAIL);
+		}
+	}
 }
 
 static void mul_pc(void)
