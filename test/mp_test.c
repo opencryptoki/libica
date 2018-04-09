@@ -210,15 +210,15 @@ static void mul_pc(void)
 		swap_u64(&ica_num2[6], &ica_num2[1]);
 		swap_u64(&ica_num2[5], &ica_num2[2]);
 		swap_u64(&ica_num2[4], &ica_num2[3]);
-		V_(printf("a:\n"));
-		V_(dump_array_u64(ica_num, 512 / 64));
-		V_(printf("b:\n"));
-		V_(dump_array_u64(ica_num2, 512 / 64));
-		V_(printf("BN_mul (a*b):\n"));
-		V_(dump_array_u64(ossl_res2, 1024 / 64));
-		V_(printf("ica_mp_mul512 (a*b):\n"));
-		V_(dump_array_u64(ica_res, 1024 / 64));
-		V_(printf("(big-endian digits)\n"));
+		VV_(printf("a:\n"));
+		VV_(dump_array_u64(ica_num, 512 / 64));
+		VV_(printf("b:\n"));
+		VV_(dump_array_u64(ica_num2, 512 / 64));
+		VV_(printf("BN_mul (a*b):\n"));
+		VV_(dump_array_u64(ossl_res2, 1024 / 64));
+		VV_(printf("ica_mp_mul512 (a*b):\n"));
+		VV_(dump_array_u64(ica_res, 1024 / 64));
+		VV_(printf("(big-endian digits)\n"));
 		exit(TEST_FAIL);
 	}
 }
@@ -271,13 +271,13 @@ static void sqr_pc(void)
 		swap_u64(&ica_num[6], &ica_num[1]);
 		swap_u64(&ica_num[5], &ica_num[2]);
 		swap_u64(&ica_num[4], &ica_num[3]);
-		V_(printf("a:\n"));
-		V_(dump_array_u64(ica_num, 512 / 64));
-		V_(printf("BN_sqr (a^2):\n"));
-		V_(dump_array_u64(ossl_res2, 1024 / 64));;
-		V_(printf("ica_mp_sqr512 (a^2):\n"));
-		V_(dump_array_u64(ica_res, 1024 / 64));
-		V_(printf("(big-endian digits)\n"));
+		VV_(printf("a:\n"));
+		VV_(dump_array_u64(ica_num, 512 / 64));
+		VV_(printf("BN_sqr (a^2):\n"));
+		VV_(dump_array_u64(ossl_res2, 1024 / 64));;
+		VV_(printf("ica_mp_sqr512 (a^2):\n"));
+		VV_(dump_array_u64(ica_res, 1024 / 64));
+		VV_(printf("(big-endian digits)\n"));
 		exit(TEST_FAIL);
 	}
 }
