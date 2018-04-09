@@ -199,7 +199,7 @@ static void mul_pc(void)
 	swap_u64(&ica_res[9], &ica_res[6]);
 	swap_u64(&ica_res[8], &ica_res[7]);
 
-	if (memcmp(ossl_res2, ica_res, 1024 / 64)) {
+	if (memcmp(ossl_res2, ica_res, 1024 / 8)) {
 		printf("ERROR: BN_mul/ica_mp_mul512 results dont match\n");
 		/* swap to big-endian digits */
 		swap_u64(&ica_num[7], &ica_num[0]);
@@ -264,7 +264,7 @@ static void sqr_pc(void)
 	swap_u64(&ica_res[9], &ica_res[6]);
 	swap_u64(&ica_res[8], &ica_res[7]);
 
-	if (memcmp(ossl_res2, ica_res, 1024 / 64)) {
+	if (memcmp(ossl_res2, ica_res, 1024 / 8)) {
 		printf("ERROR: BN_sqr/ica_mp_sqr512 results dont match\n");
 		/* swap to big-endian digits */
 		swap_u64(&ica_num[7], &ica_num[0]);
