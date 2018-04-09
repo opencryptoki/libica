@@ -11,8 +11,7 @@
 use strict;
 use FindBin qw($Bin);
 use lib "$Bin";
-use perlasm::s390x qw(:DEFAULT :VX :VXE :VXD AUTOLOAD LABEL VERBATIM);	# XXX DEBUG VX
-#use perlasm::s390x qw(:DEFAULT AUTOLOAD LABEL VERBATIM);	# XXX DEBUG VX
+use perlasm::s390x qw(:DEFAULT :VX :VXE :VXD AUTOLOAD LABEL VERBATIM);
 
 my $zero="%r0";
 my $sp="%r15";
@@ -76,7 +75,7 @@ VERBATIM("#endif\n");
 	vperm	(@A[3],@t[3],@t[2],@t[7]);	# A6A7
 	vperm	(@A[4],$vzero,@t[3],@t[8]);	# A8A9
 
-	vmrhg	(@t[0],$vzero,@A[0]);		# 00A0 XXX
+	vmrhg	(@t[0],$vzero,@A[0]);		# 00A0
 
 	vn	(@A[1],@A[1],@t[9]);
 	vn	(@A[2],@A[2],@t[9]);
@@ -92,7 +91,7 @@ VERBATIM("#endif\n");
 	vmslg	(@t[7],@B[3],@t[0],$vzero,0);	# B700+B6A0
 	vmslg	(@t[8],@B[0],@A[3],$vzero,0);	# B1A6+B0A7
 	vmslg	(@t[9],@B[4],@t[0],$vzero,0);	# B900+B8A0, free t[0]
-	 vsldb	(@t[0],@A[0],@A[1],8);		# A1A2 XXX
+	 vsldb	(@t[0],@A[0],@A[1],8);		# A1A2
 	vmslg	(@t[10],@B[0],@A[4],$vzero,0);	# B1A8+B0A9
 
 	 vstrl	(@t[1],"1($r)",6);
@@ -114,7 +113,7 @@ VERBATIM("#endif\n");
 	vmslg	(@t[10],@B[1],@A[3],@t[10],0);	# B3A6+B2A7
 	vmslg	(@t[1],@B[4],@t[0],$vzero,0);	# B9A1+B8A2, free t[0]
 	 vaq	(@t[3],@t[3],@t[2]);		# free t[2]
-	 vsldb	(@t[0],@A[1],@A[2],8);		# A3A4 XXX
+	 vsldb	(@t[0],@A[1],@A[2],8);		# A3A4
 	vmslg	(@t[2],@B[1],@A[4],$vzero,0);	# B3A8+B2A9
 
 	vmslg	(@t[5],@B[0],@t[0],@t[5],0);	# B1A3+B0A4
@@ -138,7 +137,7 @@ VERBATIM("#endif\n");
 	 vsldb	(@t[4],$vzero,@t[4],9);
 	vmslg	(@t[2],@B[2],@A[3],@t[2],0);	# B5A6+B4A7
 	vmslg	(@t[3],@B[4],@t[0],$vzero,0);	# B9A3+B8A4, free t[0]
-	 vsldb	(@t[0],@A[2],@A[3],8);		# A5A6 XXX
+	 vsldb	(@t[0],@A[2],@A[3],8);		# A5A6
 	 vaq	(@t[5],@t[5],@t[4]);		# fee t[4]
 	vmslg	(@t[4],@B[2],@A[4],$vzero,0);	# B5A8+B4A9
 
@@ -161,7 +160,7 @@ VERBATIM("#endif\n");
 	 vsteb	(@t[6],"40+6($r)",9);
 	 vsldb	(@t[6],$vzero,@t[6],9);
 	vmslg	(@t[5],@B[4],@t[0],$vzero,0);	# B9A5+B8A6, free t[0]
-	 vsldb	(@t[0],@A[3],@A[4],8);		# A7A8 XXX
+	 vsldb	(@t[0],@A[3],@A[4],8);		# A7A8
 	vmslg	(@t[11],@B[3],@A[4],$vzero,0);	# B7A8+B6A9
 
 	 vaq	(@t[7],@t[7],@t[6]);		# free t[6]
@@ -179,7 +178,7 @@ VERBATIM("#endif\n");
 	vmslg	(@t[5],@B[3],@t[0],@t[5],0);	# B7A7+B6A8
 	vmslg	(@t[11],@B[4],@A[3],@t[11],0);	# B9A6+B8A7
 	vmslg	(@t[6],@B[4],@t[0],$vzero,0);	# B9A7+B8A8, free t[0]
-	 vmrlg	(@t[0],@A[4],$vzero);		# A900 XXX
+	 vmrlg	(@t[0],@A[4],$vzero);		# A900
 	 vstef	(@t[8],"48+3($r)",3);
 	 vsteh	(@t[8],"48+1($r)",5);
 	 vsteb	(@t[8],"48($r)",9);
@@ -350,12 +349,12 @@ VERBATIM("#endif\n");
 	vmslg	(@t[8],@Al[0],@Ar[7],$vzero,12);# A0A8*2+A1A7*2
 	vmslg	(@t[9],@Al[0],@Ar[8],$vzero,12);# A0A9*2+A1A8*2
 
-	vmslg	(@t[4],@Al[1],@t[11],@t[4],0);	# A2A2*2+A300*2 = A2A2*1, free t[11]
-	vmslg	(@t[5],@Al[1],@Ar[2],@t[5],0);	# A2A3*1+A3A2*1 = A2A3*2
-	vmslg	(@t[6],@Al[1],@Ar[3],@t[6],8);	# A2A4*2+A3A3*1
-	vmslg	(@t[7],@Al[1],@Ar[4],@t[7],12);	# A2A5*2+A3A4*2
-	vmslg	(@t[8],@Al[1],@Ar[5],@t[8],12);	# A2A6*2+A3A5*2
-	vmslg	(@t[9],@Al[1],@Ar[6],@t[9],12);	# A2A7*2+A3A6*2
+	vmslg	(@t[19],@Al[1],@t[11],$vzero,0);# 4: A2A2*2+A300*2 = A2A2*1, free t[11]
+	vmslg	(@t[18],@Al[1],@Ar[2],$vzero,0);# 5: A2A3*1+A3A2*1 = A2A3*2
+	vmslg	(@t[17],@Al[1],@Ar[3],$vzero,8);# 6: A2A4*2+A3A3*1
+	vmslg	(@t[16],@Al[1],@Ar[4],$vzero,12);# 7: A2A5*2+A3A4*2
+	vmslg	(@t[15],@Al[1],@Ar[5],$vzero,12);# 8: A2A6*2+A3A5*2
+	vmslg	(@t[14],@Al[1],@Ar[6],$vzero,12);# 9: A2A7*2+A3A6*2
 
 	 vstrl  (@t[0],"1($r)",6);
 	 vsldb  (@t[0],$vzero,@t[0],9);
@@ -369,6 +368,26 @@ VERBATIM("#endif\n");
 	 vsldb	(@t[1],$vzero,@t[1],9);
 	 vaq	(@t[2],@t[2],@t[1]);		# free t[1]
 
+	vpdi	(@Al[0],@Ar[4],@Ar[4],4);	# A4A5
+	vsldb	(@t[0],@Ar[4],$vzero,8);	# A400
+	vsldb	(@t[1],$vzero,@Ar[4],8);	# 00A5
+
+	vaq	(@t[4],@t[4],@t[19]);	# free t[19]
+	vaq	(@t[5],@t[5],@t[18]);	# free t[18]
+	vaq	(@t[6],@t[6],@t[17]);	# free t[17]
+	vaq	(@t[7],@t[7],@t[16]);	# free t[16]
+	vaq	(@t[8],@t[8],@t[15]);	# free t[15]
+	vaq	(@t[9],@t[9],@t[14]);	# free t[14]
+
+	vmslg	(@t[19],@Al[0],@t[0],$vzero,0);	# 8: A4A4*1+A500*1 = A4A4*1, free t[0]
+	vmslg	(@t[18],@Al[0],@Ar[4],$vzero,0);# 9: A4A5*1+A5A4*1 = A4A5*2
+	vmslg	(@t[10],@Al[0],@t[1],$vzero,0);# A400*1+A5A5*1 = A5A5*1, free t[1]
+
+	vpdi	(@Al[0],@Ar[6],@Ar[6],4);	# A6A7
+	vsldb	(@t[0],$vzero,@Ar[6],8);	# 00A7
+	vpdi	(@Al[1],@Ar[8],@Ar[8],4);	# A8A9
+	vsldb	(@t[1],$vzero,@Ar[8],8);	# 00A9
+
 	 vsteh	(@t[2],"8($r)",7);
 	 vsteh	(@t[2],"16+6($r)",6);
 	 vsteh	(@t[2],"16+4($r)",5);
@@ -376,13 +395,34 @@ VERBATIM("#endif\n");
 	 vsldb	(@t[2],$vzero,@t[2],9);
 	 vaq	(@t[3],@t[3],@t[2]);		# free t[2]
 
+	vmslg	(@t[2],@Al[0],@Ar[3],$vzero,12);# 10: A6A4*2+A7A3*2
+	vmslg	(@t[11],@Al[0],@Ar[4],$vzero,12);# A6A5*2+A7A4*2
+	vmslg	(@t[12],@Al[0],@Ar[5],$vzero,4);# A6A6*1+A7A5*2
+	vmslg	(@t[13],@Al[0],@Ar[6],$vzero,0);# A6A7*1+A7A6*1 = A7A6*2
+	vmslg	(@t[14],@Al[0],@t[0],$vzero,0);	# A600*1+A7A7*1 = A7A7*1
+
+	vaq	(@t[8],@t[8],@t[19]);	# free t[19]
+	vaq	(@t[9],@t[9],@t[18]);	# free t[18]
+
 	 vsteh	(@t[3],"16+1($r)",7);
 	 vsteb	(@t[3],"16($r)",13);
 	 vsteb	(@t[3],"24+7($r)",12);
 	 vsteh	(@t[3],"24+5($r)",5);
 	 vsteb	(@t[3],"24+4($r)",9);
 	 vsldb	(@t[3],$vzero,@t[3],9);
-	 vaq	(@t[4],@t[4],@t[3]);		# fee t[3]
+	 vaq	(@t[4],@t[4],@t[3]);		# free t[3]
+
+	vaq	(@t[10],@t[10],@t[2]);	# free t[2]
+
+	vmslg	(@t[2],@Al[1],@Ar[1],$vzero,12);# 10: A8A2*2+A9A1*2
+	vmslg	(@t[3],@Al[1],@Ar[2],$vzero,12);# 11: A8A3*2+A9A2*2
+	vmslg	(@Ar[1],@Al[1],@Ar[3],$vzero,12);# 12: A8A4*2+A9A3*2
+	vmslg	(@Ar[2],@Al[1],@Ar[4],$vzero,12);# 13: A8A5*2+A9A4*2
+	vmslg	(@Ar[3],@Al[1],@Ar[5],$vzero,12);# 14: A8A6*2+A9A5*2
+	vmslg	(@t[15],@Al[1],@Ar[6],$vzero,12);# A8A7*2+A9A6*2
+	vmslg	(@t[16],@Al[1],@Ar[7],$vzero,4);# A8A8*1+A9A7*2
+	vmslg	(@t[17],@Al[1],@Ar[8],$vzero,0);# A8A9*1+A9A8*1 = A9A8*2
+	vmslg	(@t[18],@Al[1],@t[1],$vzero,0);	# A800*1+A9A9*1 = A9A9*1
 
 	 vstef	(@t[4],"24($r)",3);
 	 vsteh	(@t[4],"32+6($r)",5);
@@ -397,6 +437,12 @@ VERBATIM("#endif\n");
 	 vsldb	(@t[5],$vzero,@t[5],9);
 	 vaq	(@t[6],@t[6],@t[5]);		# free t[5]
 
+	vaq	(@t[10],@t[10],@t[2]);
+	vaq	(@t[11],@t[11],@t[3]);
+	vaq	(@t[12],@t[12],@Ar[1]);
+	vaq	(@t[13],@t[13],@Ar[2]);
+	vaq	(@t[14],@t[14],@Ar[3]);
+
 	 vstef	(@t[6],"40+2($r)",3);
 	 vsteh	(@t[6],"40($r)",5);
 	 vsteb	(@t[6],"48+7($r)",9);
@@ -408,14 +454,6 @@ VERBATIM("#endif\n");
 	 vsteb	(@t[7],"48($r)",9);
 	 vsldb	(@t[7],$vzero,@t[7],9);
 	 vaq	(@t[8],@t[8],@t[7]);		# free t[7]
-
-	vpdi	(@Al[0],@Ar[4],@Ar[4],4);	# A4A5
-	vsldb	(@t[0],@Ar[4],$vzero,8);	# A400
-	vsldb	(@t[1],$vzero,@Ar[4],8);	# 00A5
-
-	vmslg	(@t[8],@Al[0],@t[0],@t[8],0);	# A4A4*1+A500*1 = A4A4*1, free t[0]
-	vmslg	(@t[9],@Al[0],@Ar[4],@t[9],0);	# A4A5*1+A5A4*1 = A4A5*2
-	vmslg	(@t[10],@Al[0],@t[1],$vzero,0);# A400*1+A5A5*1 = A5A5*1, free t[1]
 
 	 vstef	(@t[8],"56+4($r)",3);
 	 vsteh	(@t[8],"56+2($r)",5);
@@ -430,27 +468,6 @@ VERBATIM("#endif\n");
 	 vsteb	(@t[9],"64+2($r)",9);
 	 vsldb	(@t[9],$vzero,@t[9],9);
 	 vaq	(@t[10],@t[10],@t[9]);		# free[9]
-
-	vpdi	(@Al[0],@Ar[6],@Ar[6],4);	# A6A7
-	vsldb	(@t[0],$vzero,@Ar[6],8);	# 00A7
-	vpdi	(@Al[1],@Ar[8],@Ar[8],4);	# A8A9
-	vsldb	(@t[1],$vzero,@Ar[8],8);	# 00A9
-
-	vmslg	(@t[10],@Al[0],@Ar[3],@t[10],12);# A6A4*2+A7A3*2
-	vmslg	(@t[11],@Al[0],@Ar[4],$vzero,12);# A6A5*2+A7A4*2
-	vmslg	(@t[12],@Al[0],@Ar[5],$vzero,4);# A6A6*1+A7A5*2
-	vmslg	(@t[13],@Al[0],@Ar[6],$vzero,0);# A6A7*1+A7A6*1 = A7A6*2
-	vmslg	(@t[14],@Al[0],@t[0],$vzero,0);	# A600*1+A7A7*1 = A7A7*1
-
-	vmslg	(@t[10],@Al[1],@Ar[1],@t[10],12);# A8A2*2+A9A1*2
-	vmslg	(@t[11],@Al[1],@Ar[2],@t[11],12);# A8A3*2+A9A2*2
-	vmslg	(@t[12],@Al[1],@Ar[3],@t[12],12);# A8A4*2+A9A3*2
-	vmslg	(@t[13],@Al[1],@Ar[4],@t[13],12);# A8A5*2+A9A4*2
-	vmslg	(@t[14],@Al[1],@Ar[5],@t[14],12);# A8A6*2+A9A5*2
-	vmslg	(@t[15],@Al[1],@Ar[6],$vzero,12);# A8A7*2+A9A6*2
-	vmslg	(@t[16],@Al[1],@Ar[7],$vzero,4);# A8A8*1+A9A7*2
-	vmslg	(@t[17],@Al[1],@Ar[8],$vzero,0);# A8A9*1+A9A8*1 = A9A8*2
-	vmslg	(@t[18],@Al[1],@t[1],$vzero,0);	# A800*1+A9A9*1 = A9A9*1
 
 	vsteh	(@t[10],"64($r)",7);
 	vsteh	(@t[10],"72+6($r)",6);
