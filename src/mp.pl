@@ -485,7 +485,7 @@ VERBATIM("#if !defined(__s390x__) && !defined(__s390x)\n");
 	ld	("%f4","16*4+2*8($sp)");
 	ld	("%f6","16*4+3*8($sp)");
 VERBATIM("#else\n");
-	std	("%f$_",($_-6)."*8($sp)") for (8..15);
+	ld	("%f$_",($_-6)."*8($sp)") for (8..15);
 VERBATIM("#endif\n");
 
 	lghi	("%r2",0);
