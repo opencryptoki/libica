@@ -356,15 +356,11 @@ VERBATIM("#endif\n");
 	vmslg	(@t[15],@Al[1],@Ar[5],$vzero,12);# 8: A2A6*2+A3A5*2
 	vmslg	(@t[14],@Al[1],@Ar[6],$vzero,12);# 9: A2A7*2+A3A6*2
 
-	 vstrl  (@t[0],"1($r)",6);
+	 vstrl  (@t[0],"121($r)",6);
 	 vsldb  (@t[0],$vzero,@t[0],9);
 	 vaq    (@t[1],@t[1],@t[0]);		# free t[0]
 
-	 vsteb	(@t[1],"0($r)",15);
-	 vsteb	(@t[1],"8+7($r)",14);
-	 vsteh	(@t[1],"8+5($r)",6);
-	 vsteh	(@t[1],"8+3($r)",5);
-	 vsteb	(@t[1],"8+2($r)",9);
+	 vstrl  (@t[1],"114($r)",6);
 	 vsldb	(@t[1],$vzero,@t[1],9);
 	 vaq	(@t[2],@t[2],@t[1]);		# free t[1]
 
@@ -388,10 +384,7 @@ VERBATIM("#endif\n");
 	vpdi	(@Al[1],@Ar[8],@Ar[8],4);	# A8A9
 	vsldb	(@t[1],$vzero,@Ar[8],8);	# 00A9
 
-	 vsteh	(@t[2],"8($r)",7);
-	 vsteh	(@t[2],"16+6($r)",6);
-	 vsteh	(@t[2],"16+4($r)",5);
-	 vsteb	(@t[2],"16+3($r)",9);
+	 vstrl  (@t[2],"107($r)",6);
 	 vsldb	(@t[2],$vzero,@t[2],9);
 	 vaq	(@t[3],@t[3],@t[2]);		# free t[2]
 
@@ -404,11 +397,7 @@ VERBATIM("#endif\n");
 	vaq	(@t[8],@t[8],@t[19]);	# free t[19]
 	vaq	(@t[9],@t[9],@t[18]);	# free t[18]
 
-	 vsteh	(@t[3],"16+1($r)",7);
-	 vsteb	(@t[3],"16($r)",13);
-	 vsteb	(@t[3],"24+7($r)",12);
-	 vsteh	(@t[3],"24+5($r)",5);
-	 vsteb	(@t[3],"24+4($r)",9);
+	 vstrl  (@t[3],"100($r)",6);
 	 vsldb	(@t[3],$vzero,@t[3],9);
 	 vaq	(@t[4],@t[4],@t[3]);		# free t[3]
 
@@ -424,16 +413,11 @@ VERBATIM("#endif\n");
 	vmslg	(@t[17],@Al[1],@Ar[8],$vzero,0);# A8A9*1+A9A8*1 = A9A8*2
 	vmslg	(@t[18],@Al[1],@t[1],$vzero,0);	# A800*1+A9A9*1 = A9A9*1
 
-	 vstef	(@t[4],"24($r)",3);
-	 vsteh	(@t[4],"32+6($r)",5);
-	 vsteb	(@t[4],"32+5($r)",9);
+	 vstrl  (@t[4],"93($r)",6);
 	 vsldb	(@t[4],$vzero,@t[4],9);
 	 vaq	(@t[5],@t[5],@t[4]);		# free t[4]
 
-	 vstef	(@t[5],"32+1($r)",3);
-	 vsteb	(@t[5],"32($r)",11);
-	 vsteb	(@t[5],"40+7($r)",10);
-	 vsteb	(@t[5],"40+6($r)",9);
+	 vstrl  (@t[5],"86($r)",6);
 	 vsldb	(@t[5],$vzero,@t[5],9);
 	 vaq	(@t[6],@t[6],@t[5]);		# free t[5]
 
@@ -443,87 +427,59 @@ VERBATIM("#endif\n");
 	vaq	(@t[13],@t[13],@Ar[2]);
 	vaq	(@t[14],@t[14],@Ar[3]);
 
-	 vstef	(@t[6],"40+2($r)",3);
-	 vsteh	(@t[6],"40($r)",5);
-	 vsteb	(@t[6],"48+7($r)",9);
+	 vstrl  (@t[6],"79($r)",6);
 	 vsldb	(@t[6],$vzero,@t[6],9);
 	 vaq	(@t[7],@t[7],@t[6]);		# free t[6]
 
-	 vstef	(@t[7],"48+3($r)",3);
-	 vsteh	(@t[7],"48+1($r)",5);
-	 vsteb	(@t[7],"48($r)",9);
+	 vstrl  (@t[7],"72($r)",6);
 	 vsldb	(@t[7],$vzero,@t[7],9);
 	 vaq	(@t[8],@t[8],@t[7]);		# free t[7]
 
-	 vstef	(@t[8],"56+4($r)",3);
-	 vsteh	(@t[8],"56+2($r)",5);
-	 vsteb	(@t[8],"56+1($r)",9);
+	 vstrl  (@t[8],"65($r)",6);
 	 vsldb	(@t[8],$vzero,@t[8],9);
 	 vaq	(@t[9],@t[9],@t[8]);		# free t[8]
 
-	 vsteb	(@t[9],"56($r)",15);
-	 vsteb	(@t[9],"64+7($r)",14);
-	 vsteh	(@t[9],"64+5($r)",6);
-	 vsteh	(@t[9],"64+3($r)",5);
-	 vsteb	(@t[9],"64+2($r)",9);
+	 vstrl  (@t[9],"58($r)",6);
 	 vsldb	(@t[9],$vzero,@t[9],9);
 	 vaq	(@t[10],@t[10],@t[9]);		# free[9]
 
-	vsteh	(@t[10],"64($r)",7);
-	vsteh	(@t[10],"72+6($r)",6);
-	vsteh	(@t[10],"72+4($r)",5);
-	vsteb	(@t[10],"72+3($r)",9);
+	vstrl	(@t[10],"51($r)",6);
 	vsldb	(@t[10],$vzero,@t[10],9);
 	vaq	(@t[11],@t[11],@t[10]);		# free t[10]
 
-	vsteh	(@t[11],"72+1($r)",7);
-	vsteb	(@t[11],"72($r)",13);
-	vsteb	(@t[11],"80+7($r)",12);
-	vsteh	(@t[11],"80+5($r)",5);
-	vsteb	(@t[11],"80+4($r)",9);
+	vstrl	(@t[11],"44($r)",6);
 	vsldb	(@t[11],$vzero,@t[11],9);
 	vaq	(@t[12],@t[12],@t[11]);		# free t[11]
 
-	vstef	(@t[12],"80($r)",3);
-	vsteh	(@t[12],"88+6($r)",5);
-	vsteb	(@t[12],"88+5($r)",9);
+	vstrl	(@t[12],"37($r)",6);
 	vsldb	(@t[12],$vzero,@t[12],9);
 	vaq	(@t[13],@t[13],@t[12]);		# free t[12]
 
-	vstef	(@t[13],"88+1($r)",3);
-	vsteb	(@t[13],"88($r)",11);
-	vsteb	(@t[13],"96+7($r)",10);
-	vsteb	(@t[13],"96+6($r)",9);
+	vstrl	(@t[13],"30($r)",6);
 	vsldb	(@t[13],$vzero,@t[13],9);
 	vaq	(@t[14],@t[14],@t[13]);		# free t[13]
 
-	vstef	(@t[14],"96+2($r)",3);
-	vsteh	(@t[14],"96($r)",5);
-	vsteb	(@t[14],"104+7($r)",9);
+	vstrl	(@t[14],"23($r)",6);
 	vsldb	(@t[14],$vzero,@t[14],9);
 	vaq	(@t[15],@t[15],@t[14]);		# free t[14]
 
-	vstef	(@t[15],"104+3($r)",3);
-	vsteh	(@t[15],"104+1($r)",5);
-	vsteb	(@t[15],"104($r)",9);
+	vstrl	(@t[15],"16($r)",6);
 	vsldb	(@t[15],$vzero,@t[15],9);
 	vaq	(@t[16],@t[16],@t[15]);		# free t[15]
 
-	vstef	(@t[16],"112+4($r)",3);
-	vsteh	(@t[16],"112+2($r)",5);
-	vsteb	(@t[16],"112+1($r)",9);
+	vstrl	(@t[16],"9($r)",6);
 	vsldb	(@t[16],$vzero,@t[16],9);
 	vaq	(@t[17],@t[17],@t[16]);		# free t[16]
 
-	vsteb	(@t[17],"112($r)",15);
-	vsteb	(@t[17],"120+7($r)",14);
-	vsteh	(@t[17],"120+5($r)",6);
-	vsteh	(@t[17],"120+3($r)",5);
-	vsteb	(@t[17],"120+2($r)",9);
+	vstrl	(@t[17],"2($r)",6);
 	vsldb	(@t[17],$vzero,@t[17],9);
-	vaq	(@t[18],@t[18],@t[17]);
+	vaq	(@t[18],@t[18],@t[17]);		# free t[17]
 
-	vsteh	(@t[18],"120($r)",7);		# free t[18]
+	vstrl   (@t[18],"0($r)",1);		# free t[18]
+
+	vl      (@t[$_],"112-16*$_($r)") for (0..7);
+	vpdi	(@t[$_],@t[$_],@t[$_],4) for (0..7);
+	vst	(@t[$_],"0+16*$_($r)") for (0..7);
 
 VERBATIM("#if !defined(__s390x__) && !defined(__s390x)\n");
 	ld	("%f4","16*4+2*8($sp)");
