@@ -76,7 +76,7 @@ if test "x$enable_sanitizer" = xyes; then
 fi
 
 if test "x$enable_coverage" = xno && test "x$enable_debug" = xno && test "x$enable_sanitizer" = xno; then
-	FLAGS="$FLAGS -O3 -D_FORTIFY_SOURCE=1"
+	FLAGS="$FLAGS -O3 -D_FORTIFY_SOURCE=2"
 fi
 
 # restore cmdline flags (ignore PROG_AS/PROG_CC defaults)
