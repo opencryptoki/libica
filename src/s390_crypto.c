@@ -104,7 +104,7 @@ s390_supported_function_t s390_kma_functions[] = {
 	{AES_256_GCM_DECRYPT, S390_CRYPTO_AES_256_GCM_DECRYPT, &msa8_switch}
 };
 
-int read_cpuinfo(void)
+static int read_cpuinfo(void)
 {
 	int msa = 0;
 	FILE *handle = fopen("/proc/cpuinfo", "r");
@@ -123,8 +123,32 @@ int read_cpuinfo(void)
 	return msa;
 }
 
-int read_facility_bits(void)
+/*
+ * Check if "vector enablement control"-bit and
+ * "AFP register control"-bit in control register 0 are set.
+ */
+static int vx_enabled(void)
 {
+	FILE *fd;
+	char buf[4096];
+
+	if ((fd = fopen("/proc/cpuinfo", "r")) == NULL)
+		return 0;
+
+	buf[0] = '\0';
+
+	while ((fgets(buf, sizeof(buf), fd) != NULL)
+	       && (strstr(buf, "features") != buf));
+
+	fclose(fd);
+
+	return (strstr(buf, " vx ") != NULL) ? 1 : 0;
+}
+
+static int read_facility_bits(void)
+{
+	char *s;
+	int env_msa;
 	int msa = 0;
 	struct sigaction oldact;
 	sigset_t oldset;
@@ -157,18 +181,21 @@ int read_facility_bits(void)
 	 * allow specifying the MSA level via environment variable
 	 * to simulate older hardware.
 	 */
-	char* s = getenv("MSA");
-	int env_msa;
-
+	s = getenv("MSA");
 	if (s) {
 		if (sscanf(s, "%d", &env_msa) == 1)
 			msa = env_msa > msa ? msa : env_msa;
 	}
 
+	/* protect against disabled vector facility */
+	if (!vx_enabled()) {
+		facility_bits[2] &= ~(1ULL << 56 | 1ULL << 57 | 1ULL << 62);
+	}
+
 	return msa;
 }
 
-void set_switches(int msa)
+static void set_switches(int msa)
 {
 	unsigned char mask[16];
 	unsigned int n;
