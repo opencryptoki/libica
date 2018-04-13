@@ -10,7 +10,7 @@ libica_la_CFLAGS = ${AM_CFLAGS} -I${srcdir}/include -I${srcdir}/../include \
 		   -fvisibility=hidden
 libica_la_CCASFLAGS = ${AM_CFLAGS}
 libica_la_LIBADD = @LIBS@ -lrt -lcrypto
-libica_la_LDFLAGS = -version-script=../libica.map \
+libica_la_LDFLAGS = -Wl,--version-script=${srcdir}/../libica.map \
 		    -version-number ${VERSION}
 libica_la_SOURCES = ica_api.c init.c icastats_shared.c s390_rsa.c \
 		    s390_crypto.c s390_ecc.c s390_prng.c s390_sha.c \

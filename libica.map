@@ -122,7 +122,7 @@ LIBICA_3.3.0 {
 	ica_ecdsa_sign;
 	ica_ecdsa_verify;
 
-	ica_mp_mul512
-	ica_mp_sqr512
+	ica_mp_mul512;
+	ica_mp_sqr512;
     local: *;
 } LIBICA_3.2.0;
