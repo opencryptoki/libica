@@ -1,2 +1,2 @@
-#!/usr/bin/sh
+#!/bin/sh
 ICAPATH=2 ./ecdsa_test
