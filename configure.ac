@@ -1,11 +1,9 @@
 # save cmdline flags
 cmdline_CFLAGS="$CFLAGS"
 
-AC_PREREQ([2.69])
 AC_INIT([libica], [3.3.0], [steuer@linux.vnet.ibm.com],, [https://github.com/opencryptoki/libica])
 AC_USE_SYSTEM_EXTENSIONS
 AC_CONFIG_SRCDIR([src/ica_api.c])
-AC_CONFIG_MACRO_DIRS([m4])
 
 AC_PROG_CC
 AC_PROG_CXX
@@ -13,7 +11,6 @@ AC_PROG_INSTALL
 
 AC_CHECK_HEADERS([fcntl.h memory.h stddef.h stdint.h stdlib.h string.h strings.h sys/file.h sys/ioctl.h sys/time.h syslog.h unistd.h])
 
-AC_CHECK_HEADER_STDBOOL
 AC_C_INLINE
 AC_TYPE_SIZE_T
 AC_TYPE_UID_T
@@ -27,7 +24,6 @@ AC_FUNC_MMAP
 AC_FUNC_STRNLEN
 AC_CHECK_FUNCS([bzero ftruncate gettimeofday memchr memset munmap strcasecmp strerror strstr strtol setenv strtoull])
 
-AM_PROG_AR
 AM_PROG_AS
 LT_INIT
 AM_INIT_AUTOMAKE([-Wall -Werror foreign])
