@@ -32,7 +32,7 @@ AM_PROG_AS
 LT_INIT
 AM_INIT_AUTOMAKE([-Wall -Werror foreign])
 
-FLAGS="-Wall -Wextra"
+FLAGS="-Wall -Wextra -mzarch"
 
 dnl --- enable_debug
 AC_ARG_ENABLE(debug,
@@ -83,8 +83,9 @@ if test "x$enable_coverage" = xno && test "x$enable_debug" = xno && test "x$enab
 	FLAGS="$FLAGS -O3 -D_FORTIFY_SOURCE=1"
 fi
 
-# restore cmdline flags
+# restore cmdline flags (ignore PROG_AS/PROG_CC defaults)
 CFLAGS="$cmdline_CFLAGS"
+CCASFLAGS="$cmdline_CFLAGS"
 
 AC_SUBST([FLAGS], $FLAGS)
 AC_SUBST([LIBS], $LIBS)

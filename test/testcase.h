@@ -59,7 +59,7 @@ dump_array_u64(uint64_t array[], size_t size)
 	size_t i;
 
 	for (i = 1; i <= size; i++) {
-		VV_(printf("0x%016lx ", array[i - 1]));
+		VV_(printf("0x%016llx ", (unsigned long long)array[i - 1]));
 		if ((i % 8 == 0) || (i == size))
 			VV_(printf("\n"));
 	}

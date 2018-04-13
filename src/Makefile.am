@@ -8,6 +8,7 @@ lib_LTLIBRARIES = libica.la
 
 libica_la_CFLAGS = ${AM_CFLAGS} -I${srcdir}/include -I${srcdir}/../include \
 		   -fvisibility=hidden
+libica_la_CCASFLAGS = ${AM_CFLAGS}
 libica_la_LIBADD = @LIBS@ -lrt -lcrypto
 libica_la_LDFLAGS = -version-script=../libica.map \
 		    -version-number ${VERSION}
