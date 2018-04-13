@@ -25,6 +25,7 @@ libica_la_SOURCES = ica_api.c init.c icastats_shared.c s390_rsa.c \
 		    include/s390_ecc.h include/s390_gcm.h include/s390_prng.h \
 		    include/s390_rsa.h include/s390_sha.h include/test_vec.h
 
+EXTRA_DIST = mp.pl
 mp.S	: mp.pl
 	./mp.pl mp.S
 
