@@ -29,7 +29,7 @@ static void sqr_kat(void);
  * pairwise-consintency tests
  * libica multiple-precision vs openssl bignum
  */
-unsigned long long OPS_PC = 500000ULL;
+unsigned long long OPS_PC = 10000ULL;
 static void mul_pc(void);
 static void sqr_pc(void);
 
