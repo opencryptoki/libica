@@ -5,7 +5,7 @@ Summary:       Interface library to the ICA device driver
 
 Group:         Libraries/Crypto
 License:       CPL
-URL:           http://sourceforge.net/projects/opencryptoki
+URL:           https://github.com/opencryptoki/libica
 Source0:       %{name}-%{version}.tar.gz
 BuildRoot:     %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
@@ -62,6 +62,8 @@ rm -rf $RPM_BUILD_ROOT
 %{_includedir}/ica_api.h
 
 %changelog
+* Fri Apr 13 2018 Patrick Steuer <steuer@linux.vnet.ibm.com>
+- Version v3.3.0
 * Wed Feb 28 2018 Patrick Steuer <steuer@linux.vnet.ibm.com>
 - Version v3.2.1
 * Tue Sep 19 2017 Patrick Steuer <steuer@linux.vnet.ibm.com>
