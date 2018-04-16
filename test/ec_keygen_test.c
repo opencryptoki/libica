@@ -74,6 +74,12 @@ int main(int argc, char **argv)
 
 	set_verbosity(argc, argv);
 
+	if (!ecc_available()) {
+		printf("Skipping EC keygen test, because the required HW"
+		       " is not available on this machine.\n");
+		return TEST_SKIP;
+	}
+
 	rc = ica_open_adapter(&adapter_handle);
 	if (rc != 0) {
 		V_(printf("ica_open_adapter failed and returned %d (0x%x).\n", rc, rc));
