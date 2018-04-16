@@ -7,9 +7,13 @@
 #include <errno.h>
 #include <stddef.h>
 #include <stdint.h>
+#include <stdlib.h>
 #include <string.h>
 #include <sys/time.h>
 #include <openssl/ec.h>
+#include <openssl/obj_mac.h>
+#include <openssl/crypto.h>
+#include <openssl/opensslconf.h>
 
 #include "../include/ica_api.h"
 
@@ -90,6 +94,44 @@ sha3_available(void)
 			&sha3_224_context, output_hash);
 
 	return (rc == ENODEV ? 0 : 1);
+}
+
+static inline int
+ecc_available(void)
+{
+	ica_adapter_handle_t adapter_handle;
+	ICA_EC_KEY *key;
+	unsigned int privlen;
+	int rc;
+	char *icapath;
+
+	/* save ICAPATH */
+	icapath = getenv("ICAPATH");
+
+	/* try to generate a key using hw */
+	setenv("ICAPATH", "1", 1);
+
+	rc = 0;
+	key = NULL;
+
+	if (ica_open_adapter(&adapter_handle))
+		goto _ret_;
+
+	key = ica_ec_key_new(NID_X9_62_prime256v1, &privlen);
+	if (key == NULL)
+		goto _ret_;
+
+	if (ica_ec_key_generate(adapter_handle, key))
+		goto _ret_;
+
+	rc = 1;
+_ret_:
+	ica_close_adapter(adapter_handle);
+	if (key != NULL)
+		ica_ec_key_free(key);
+	/* restore ICAPATH */
+	setenv("ICAPATH", icapath, 1);
+	return rc;
 }
 
 static inline unsigned int
