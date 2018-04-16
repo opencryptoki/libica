@@ -1,3 +1,5 @@
+v3.3.1
+ - [PATCH] Fix configure.ac to honour CFLAGS
 v3.3.0
  - [FEATURE] Add CEX supported elliptic-curve crypto interfaces
  - [FEATURE] Add SIMD supported multiple-precision arithmetic interfaces
