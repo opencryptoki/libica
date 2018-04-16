@@ -1,7 +1,8 @@
+AC_INIT([libica], [3.3.0], [steuer@linux.vnet.ibm.com],, [https://github.com/opencryptoki/libica])
+
 # save cmdline flags
 cmdline_CFLAGS="$CFLAGS"
 
-AC_INIT([libica], [3.3.0], [steuer@linux.vnet.ibm.com],, [https://github.com/opencryptoki/libica])
 AC_USE_SYSTEM_EXTENSIONS
 AC_CONFIG_SRCDIR([src/ica_api.c])
 
@@ -88,7 +89,7 @@ AC_SUBST([LIBS], $LIBS)
 AC_CONFIG_FILES([Makefile doc/Makefile include/Makefile src/Makefile test/Makefile])
 AC_OUTPUT
 
-echo "FLAGS=$FLAGS"
+echo "FLAGS=$FLAGS $CFLAGS"
 echo "LIBS=$LIBS"
 
 echo "Enabled features:"
