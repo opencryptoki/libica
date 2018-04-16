@@ -51,7 +51,7 @@ rm -rf $RPM_BUILD_ROOT
 
 %files
 %defattr(-,root,root,-)
-%doc LICENSE INSTALL AUTHORS
+%doc LICENSE INSTALL AUTHORS README.md ChangeLog
 %{_mandir}/man*/*
 %{_bindir}/*
 %attr(755,root,root) %{_libdir}/*
@@ -72,7 +72,7 @@ rm -rf $RPM_BUILD_ROOT
 - Version v3.2.0
 * Fri Sep 08 2017 Patrick Steuer <steuer@linux.vnet.ibm.com>
 - Version v3.1.1
-* Wed Jun 27 2017 Patrick Steuer <steuer@linux.vnet.ibm.com>
+* Wed Jun 28 2017 Patrick Steuer <steuer@linux.vnet.ibm.com>
 - Version v3.1.0
 * Tue Jan 17 2017 Patrick Steuer <steuer@linux.vnet.ibm.com>
 - Version v3.0.2
@@ -98,9 +98,9 @@ rm -rf $RPM_BUILD_ROOT
 - Bugfix version v2.1.1
 * Mon May 09 2011 Holger Dengler <hd@linux.vnet.ibm.com>
 - Version v2.1.0
-* Tue Mar 05 2011 Holger Dengler <hd@linux.vnet.ibm.com>
+* Sat Mar 05 2011 Holger Dengler <hd@linux.vnet.ibm.com>
 - Bugfix version 2.0.6
-* Tue Mar 05 2011 Holger Dengler <hd@linux.vnet.ibm.com>
+* Sat Mar 05 2011 Holger Dengler <hd@linux.vnet.ibm.com>
 - Bugfix version 2.0.5
 * Thu Sep 30 2010 Rainer Wolafka <rwolafka@de.ibm.com>
 - Bugfix version 2.0.4
