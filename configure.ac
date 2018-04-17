@@ -1,4 +1,4 @@
-AC_INIT([libica], [3.3.1], [steuer@linux.vnet.ibm.com],, [https://github.com/opencryptoki/libica])
+AC_INIT([libica], [3.3.2], [steuer@linux.vnet.ibm.com],, [https://github.com/opencryptoki/libica])
 
 # save cmdline flags
 cmdline_CFLAGS="$CFLAGS"

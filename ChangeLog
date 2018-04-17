@@ -1,3 +1,6 @@
+v3.3.2
+ - [PATCH] Skip ECC tests if required HW is not available
+ - [PATCH] Update spec file
 v3.3.1
  - [PATCH] Fix configure.ac to honour CFLAGS
 v3.3.0
