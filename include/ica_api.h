@@ -3564,7 +3564,7 @@ int ica_mp_mul512(uint64_t r[16], const uint64_t a[8], const uint64_t b[8]);
  * != 0				Vector facilities are not enabled.
  */
 ICA_EXPORT
-int ica_mp_sqr512(uint64_t r[8], const uint64_t a[8]);
+int ica_mp_sqr512(uint64_t r[16], const uint64_t a[8]);
 
 #ifdef ICA_FIPS
 /*
