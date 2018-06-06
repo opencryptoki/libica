@@ -127,7 +127,12 @@ static EC_KEY *make_public_eckey(int nid, BIGNUM *x, BIGNUM *y, size_t plen)
 
 	if (x && y) {
 		BN_CTX* ctx = BN_CTX_new();
+		if (ctx == NULL)
+			goto err;
+
 		EC_POINT_set_affine_coordinates_GFp(grp, pub, x, y, ctx);
+
+		BN_CTX_free(ctx);
 	}
 
 	if (!EC_KEY_set_public_key(k, pub))
@@ -345,11 +350,14 @@ static void finalize_xcrb(struct ica_xcRB* xcrb, struct CPRBX *preqcblk, struct 
  *
  * returns a pointer to the control block where the card
  * provides its reply.
+ *
+ * The function allocates len bytes at cbcbmem. The caller
+ * is responsible to erase sensible data and free the
+ * memory.
  */
 static ECDH_REPLY* make_ecdh_request(const ICA_EC_KEY *privkey_A, const ICA_EC_KEY *pubkey_B,
-		struct ica_xcRB* xcrb)
+		struct ica_xcRB* xcrb, uint8_t **cbrbmem, size_t *len)
 {
-	uint8_t *cbrbmem = NULL;
 	struct CPRBX *preqcblk, *prepcblk;
 	unsigned int privlen = privlen_from_nid(privkey_A->nid);
 
@@ -366,25 +374,26 @@ static ECDH_REPLY* make_ecdh_request(const ICA_EC_KEY *privkey_A, const ICA_EC_K
 		return NULL;
 
 	/* allocate buffer space for req cprb, req parm, rep cprb, rep parm */
-	cbrbmem = malloc(2 * (CPRBXSIZE + PARMBSIZE));
-	if (!cbrbmem)
+	*len = 2 * (CPRBXSIZE + PARMBSIZE);
+	*cbrbmem = malloc(*len);
+	if (!*cbrbmem)
 		return NULL;
 
-	memset(cbrbmem, 0, 2 * (CPRBXSIZE + PARMBSIZE));
-	preqcblk = (struct CPRBX *) cbrbmem;
-	prepcblk = (struct CPRBX *) (cbrbmem + CPRBXSIZE + PARMBSIZE);
+	memset(*cbrbmem, 0, *len);
+	preqcblk = (struct CPRBX *) *cbrbmem;
+	prepcblk = (struct CPRBX *) (*cbrbmem + CPRBXSIZE + PARMBSIZE);
 
 	/* make ECDH request */
 	unsigned int offset = 0;
-	offset = make_cprbx((struct CPRBX *)cbrbmem, parmblock_len, preqcblk, prepcblk);
-	offset += make_ecdh_parmblock((ECDH_PARMBLOCK*)(cbrbmem+offset));
-	offset += make_keyblock_length((ECC_KEYBLOCK_LENGTH*)(cbrbmem+offset), keyblock_len);
-	offset += make_ecdh_key_token(cbrbmem+offset, ecdh_key_token_len, privkey_A, pubkey_B, curve_type);
-	offset += make_nullkey((ECDH_NULLKEY*)(cbrbmem+offset));
-	offset += make_ecdh_key_token(cbrbmem+offset, ecdh_key_token_len, privkey_A, pubkey_B, curve_type);
-	offset += make_nullkey((ECDH_NULLKEY*)(cbrbmem+offset));
-	offset += make_nullkey((ECDH_NULLKEY*)(cbrbmem+offset));
-	offset += make_nullkey((ECDH_NULLKEY*)(cbrbmem+offset));
+	offset = make_cprbx((struct CPRBX *)*cbrbmem, parmblock_len, preqcblk, prepcblk);
+	offset += make_ecdh_parmblock((ECDH_PARMBLOCK*)(*cbrbmem+offset));
+	offset += make_keyblock_length((ECC_KEYBLOCK_LENGTH*)(*cbrbmem+offset), keyblock_len);
+	offset += make_ecdh_key_token(*cbrbmem+offset, ecdh_key_token_len, privkey_A, pubkey_B, curve_type);
+	offset += make_nullkey((ECDH_NULLKEY*)(*cbrbmem+offset));
+	offset += make_ecdh_key_token(*cbrbmem+offset, ecdh_key_token_len, privkey_A, pubkey_B, curve_type);
+	offset += make_nullkey((ECDH_NULLKEY*)(*cbrbmem+offset));
+	offset += make_nullkey((ECDH_NULLKEY*)(*cbrbmem+offset));
+	offset += make_nullkey((ECDH_NULLKEY*)(*cbrbmem+offset));
 	finalize_xcrb(xcrb, preqcblk, prepcblk);
 
 	return (ECDH_REPLY*)prepcblk;
@@ -401,6 +410,8 @@ unsigned int ecdh_hw(ica_adapter_handle_t adapter_handle,
 		const ICA_EC_KEY *privkey_A, const ICA_EC_KEY *pubkey_B,
 		unsigned char *z)
 {
+	uint8_t *buf;
+	size_t len;
 	int rc;
 	struct ica_xcRB xcrb;
 	ECDH_REPLY* reply_p;
@@ -409,20 +420,27 @@ unsigned int ecdh_hw(ica_adapter_handle_t adapter_handle,
 	if (adapter_handle == DRIVER_NOT_LOADED)
 		return EIO;
 
-	reply_p = make_ecdh_request(privkey_A, pubkey_B, &xcrb);
+	reply_p = make_ecdh_request(privkey_A, pubkey_B, &xcrb, &buf, &len);
 	if (!reply_p)
 		return EIO;
 
 	rc = ioctl(adapter_handle, ZSECSENDCPRB, xcrb);
-	if (rc != 0)
-		return EIO;
+	if (rc != 0) {
+		rc = EIO;
+		goto ret;
+	}
 
-	if (reply_p->key_len - 4 != privlen)
-		return EIO;
+	if (reply_p->key_len - 4 != privlen) {
+		rc = EIO;
+		goto ret;
+	}
 
 	memcpy(z, reply_p->raw_z_value, privlen);
-
-	return 0;
+	rc = 0;
+ret:
+	OPENSSL_cleanse(buf, len);
+	free(buf);
+	return rc;
 }
 
 /**
@@ -632,13 +650,16 @@ static unsigned int make_ecdsa_public_key_token(ECDSA_PUBLIC_KEY_BLOCK *kb,
  *
  * returns a pointer to the control block where the card
  * provides its reply.
+ *
+ * The function allocates len bytes at cbrbmem. The caller
+ * is responsible to erase sensible data and free the
+ * memory.
  */
 static ECDSA_SIGN_REPLY* make_ecdsa_sign_request(const ICA_EC_KEY *privkey,
 		const unsigned char *X, const unsigned char *Y,
 		const unsigned char *hash, unsigned int hash_length,
-		struct ica_xcRB* xcrb)
+		struct ica_xcRB* xcrb, uint8_t **cbrbmem, size_t *len)
 {
-	uint8_t *cbrbmem = NULL;
 	struct CPRBX *preqcblk, *prepcblk;
 	int privlen = privlen_from_nid(privkey->nid);
 
@@ -656,21 +677,22 @@ static ECDSA_SIGN_REPLY* make_ecdsa_sign_request(const ICA_EC_KEY *privkey,
 		return NULL;
 
 	/* allocate buffer space for req cprb, req parm, rep cprb, rep parm */
-	cbrbmem = malloc(2 * (CPRBXSIZE + PARMBSIZE));
-	if (!cbrbmem)
+	*len = 2 * (CPRBXSIZE + PARMBSIZE);
+	*cbrbmem = malloc(*len);
+	if (!*cbrbmem)
 		return NULL;
 
-	memset(cbrbmem, 0, 2 * (CPRBXSIZE + PARMBSIZE));
-	preqcblk = (struct CPRBX *) cbrbmem;
-	prepcblk = (struct CPRBX *) (cbrbmem + CPRBXSIZE + PARMBSIZE);
+	memset(*cbrbmem, 0, *len);
+	preqcblk = (struct CPRBX *) *cbrbmem;
+	prepcblk = (struct CPRBX *) (*cbrbmem + CPRBXSIZE + PARMBSIZE);
 
 	/* make ECDSA sign request */
 	unsigned int offset = 0;
-	offset = make_cprbx((struct CPRBX *)cbrbmem, parmblock_len, preqcblk, prepcblk);
+	offset = make_cprbx((struct CPRBX *)*cbrbmem, parmblock_len, preqcblk, prepcblk);
 	offset += make_ecdsa_sign_parmblock((ECDSA_PARMBLOCK_PART1*)
-					    (cbrbmem+offset), hash, hash_length);
-	offset += make_keyblock_length((ECC_KEYBLOCK_LENGTH*)(cbrbmem+offset), keyblock_len);
-	offset += make_ecdsa_private_key_token(cbrbmem+offset, privkey, X, Y, curve_type);
+					    (*cbrbmem+offset), hash, hash_length);
+	offset += make_keyblock_length((ECC_KEYBLOCK_LENGTH*)(*cbrbmem+offset), keyblock_len);
+	offset += make_ecdsa_private_key_token(*cbrbmem+offset, privkey, X, Y, curve_type);
 	finalize_xcrb(xcrb, preqcblk, prepcblk);
 
 	return (ECDSA_SIGN_REPLY*)prepcblk;
@@ -764,6 +786,8 @@ unsigned int ecdsa_sign_hw(ica_adapter_handle_t adapter_handle,
 		const ICA_EC_KEY *privkey, const unsigned char *hash, unsigned int hash_length,
 		unsigned char *signature)
 {
+	uint8_t *buf;
+	size_t len;
 	int rc;
 	struct ica_xcRB xcrb;
 	ECDSA_SIGN_REPLY* reply_p;
@@ -779,20 +803,27 @@ unsigned int ecdsa_sign_hw(ica_adapter_handle_t adapter_handle,
 		return EIO;
 
 	reply_p = make_ecdsa_sign_request((const ICA_EC_KEY*)privkey,
-			X, Y, hash, hash_length, &xcrb);
+			X, Y, hash, hash_length, &xcrb, &buf, &len);
 	if (!reply_p)
 		return EIO;
 
 	rc = ioctl(adapter_handle, ZSECSENDCPRB, xcrb);
-	if (rc != 0)
-		return EIO;
+	if (rc != 0) {
+		rc = EIO;
+		goto ret;
+	}
 
-	if (reply_p->vud_len - 8 != 2 * privlen)
-		return EIO;
+	if (reply_p->vud_len - 8 != 2 * privlen) {
+		rc = EIO;
+		goto ret;
+	}
 
 	memcpy(signature, reply_p->signature, reply_p->vud_len-8);
-
-	return 0;
+	rc = 0;
+ret:
+	OPENSSL_cleanse(buf, len);
+	free(buf);
+	return rc;
 }
 
 /**
@@ -866,12 +897,16 @@ err:
  *
  * returns a pointer to the control block where the card
  * provides its reply.
+ *
+ * The function allocates len bytes at cbrbmem. The caller
+ * is responsible to erase sensible data and free the
+ * memory.
  */
 static ECDSA_VERIFY_REPLY* make_ecdsa_verify_request(const ICA_EC_KEY *pubkey,
 		const unsigned char *hash, unsigned int hash_length,
-		const unsigned char *signature, struct ica_xcRB* xcrb)
+		const unsigned char *signature, struct ica_xcRB* xcrb,
+		uint8_t **cbrbmem, size_t *len)
 {
-	uint8_t *cbrbmem = NULL;
 	struct CPRBX *preqcblk, *prepcblk;
 	unsigned int privlen = privlen_from_nid(pubkey->nid);
 
@@ -883,26 +918,27 @@ static ECDSA_VERIFY_REPLY* make_ecdsa_verify_request(const ICA_EC_KEY *pubkey,
 		+ sizeof(ECDSA_PARMBLOCK_PART2) + 2*privlen + keyblock_len;
 
 	/* allocate buffer space for req cprb, req parm, rep cprb, rep parm */
-	cbrbmem = malloc(2 * (CPRBXSIZE + PARMBSIZE));
-	if (!cbrbmem)
+	*len = 2 * (CPRBXSIZE + PARMBSIZE);
+	*cbrbmem = malloc(*len);
+	if (!*cbrbmem)
 		return NULL;
 
 	int curve_type = curve_type_from_nid(pubkey->nid);
 	if (curve_type < 0)
 		return NULL;
 
-	memset(cbrbmem, 0, 2 * (CPRBXSIZE + PARMBSIZE));
-	preqcblk = (struct CPRBX *) cbrbmem;
-	prepcblk = (struct CPRBX *) (cbrbmem + CPRBXSIZE + PARMBSIZE);
+	memset(*cbrbmem, 0, *len);
+	preqcblk = (struct CPRBX *) *cbrbmem;
+	prepcblk = (struct CPRBX *) (*cbrbmem + CPRBXSIZE + PARMBSIZE);
 
 	/* make ECDSA verify request */
 	unsigned int offset = 0;
-	offset = make_cprbx((struct CPRBX *)cbrbmem, parmblock_len, preqcblk, prepcblk);
-	offset += make_ecdsa_verify_parmblock((char*)(cbrbmem+offset), hash,
+	offset = make_cprbx((struct CPRBX *)*cbrbmem, parmblock_len, preqcblk, prepcblk);
+	offset += make_ecdsa_verify_parmblock((char*)(*cbrbmem+offset), hash,
 					      hash_length, signature, 2*privlen);
-	offset += make_keyblock_length((ECC_KEYBLOCK_LENGTH*)(cbrbmem+offset), keyblock_len);
+	offset += make_keyblock_length((ECC_KEYBLOCK_LENGTH*)(*cbrbmem+offset), keyblock_len);
 	offset += make_ecdsa_public_key_token((ECDSA_PUBLIC_KEY_BLOCK*)
-					      (cbrbmem+offset), pubkey, curve_type);
+					      (*cbrbmem+offset), pubkey, curve_type);
 	finalize_xcrb(xcrb, preqcblk, prepcblk);
 
 	return (ECDSA_VERIFY_REPLY*)prepcblk;
@@ -919,6 +955,8 @@ unsigned int ecdsa_verify_hw(ica_adapter_handle_t adapter_handle,
 		const ICA_EC_KEY *pubkey, const unsigned char *hash, unsigned int hash_length,
 		const unsigned char *signature)
 {
+	uint8_t *buf;
+	size_t len;
 	int rc;
 	struct ica_xcRB xcrb;
 	ECDSA_VERIFY_REPLY* reply_p;
@@ -926,23 +964,34 @@ unsigned int ecdsa_verify_hw(ica_adapter_handle_t adapter_handle,
 	if (adapter_handle == DRIVER_NOT_LOADED)
 		return EIO;
 
-	reply_p = make_ecdsa_verify_request(pubkey,	hash, hash_length, signature, &xcrb);
+	reply_p = make_ecdsa_verify_request(pubkey, hash, hash_length,
+					    signature, &xcrb, &buf, &len);
 	if (!reply_p)
 		return EIO;
 
 	rc = ioctl(adapter_handle, ZSECSENDCPRB, xcrb);
-	if (rc != 0)
-		return EIO;
+	if (rc != 0) {
+		rc = EIO;
+		goto ret;
+	}
 
 	if (((struct CPRBX*)reply_p)->ccp_rtcode == 4 &&
-		((struct CPRBX*)reply_p)->ccp_rscode == RS_SIGNATURE_INVALID)
-		return EFAULT;
+		((struct CPRBX*)reply_p)->ccp_rscode == RS_SIGNATURE_INVALID) {
+		rc = EFAULT;
+		goto ret;
+	}
 
 	if (((struct CPRBX*)reply_p)->ccp_rtcode != 0 ||
-		((struct CPRBX*)reply_p)->ccp_rscode != 0)
-		return EIO;
+		((struct CPRBX*)reply_p)->ccp_rscode != 0) {
+		rc = EIO;
+		goto ret;
+	}
 
-	return 0;
+	rc = 0;
+ret:
+	OPENSSL_cleanse(buf, len);
+	free(buf);
+	return rc;
 }
 
 /**
@@ -1076,10 +1125,15 @@ static unsigned int make_eckeygen_private_key_token(ECKEYGEN_KEY_TOKEN* kb,
  *
  * returns a pointer to the control block where the card
  * provides its reply.
+ *
+ * The function allocates len bytes at cbrbmem. The caller
+ * is responsible to erase sensible data and free the
+ * memory.
  */
-static ECKEYGEN_REPLY* make_eckeygen_request(ICA_EC_KEY *key, struct ica_xcRB* xcrb)
+static ECKEYGEN_REPLY* make_eckeygen_request(ICA_EC_KEY *key,
+					     struct ica_xcRB* xcrb,
+					     uint8_t **cbrbmem, size_t *len)
 {
-	uint8_t *cbrbmem = NULL;
 	struct CPRBX *preqcblk, *prepcblk;
 
 	unsigned int keyblock_len = 2 + sizeof(ECKEYGEN_KEY_TOKEN)
@@ -1091,21 +1145,22 @@ static ECKEYGEN_REPLY* make_eckeygen_request(ICA_EC_KEY *key, struct ica_xcRB* x
 		return NULL;
 
 	/* allocate buffer space for req cprb, req parm, rep cprb, rep parm */
-	cbrbmem = malloc(2 * (CPRBXSIZE + PARMBSIZE));
-	if (!cbrbmem)
+	*len = 2 * (CPRBXSIZE + PARMBSIZE);
+	*cbrbmem = malloc(*len);
+	if (!*cbrbmem)
 		return NULL;
 
-	memset(cbrbmem, 0, 2 * (CPRBXSIZE + PARMBSIZE));
-	preqcblk = (struct CPRBX *) cbrbmem;
-	prepcblk = (struct CPRBX *) (cbrbmem + CPRBXSIZE + PARMBSIZE);
+	memset(*cbrbmem, 0, *len);
+	preqcblk = (struct CPRBX *) *cbrbmem;
+	prepcblk = (struct CPRBX *) (*cbrbmem + CPRBXSIZE + PARMBSIZE);
 
 	/* make ECKeyGen request */
 	unsigned int offset = 0;
-	offset = make_cprbx((struct CPRBX *)cbrbmem, parmblock_len, preqcblk, prepcblk);
-	offset += make_eckeygen_parmblock((ECKEYGEN_PARMBLOCK*)(cbrbmem+offset));
-	offset += make_keyblock_length((ECC_KEYBLOCK_LENGTH*)(cbrbmem+offset), keyblock_len);
-	offset += make_eckeygen_private_key_token((ECKEYGEN_KEY_TOKEN*)(cbrbmem+offset), key->nid, curve_type);
-	offset += make_ecc_null_token((ECC_NULL_TOKEN*)(cbrbmem+offset));
+	offset = make_cprbx((struct CPRBX *)*cbrbmem, parmblock_len, preqcblk, prepcblk);
+	offset += make_eckeygen_parmblock((ECKEYGEN_PARMBLOCK*)(*cbrbmem+offset));
+	offset += make_keyblock_length((ECC_KEYBLOCK_LENGTH*)(*cbrbmem+offset), keyblock_len);
+	offset += make_eckeygen_private_key_token((ECKEYGEN_KEY_TOKEN*)(*cbrbmem+offset), key->nid, curve_type);
+	offset += make_ecc_null_token((ECC_NULL_TOKEN*)(*cbrbmem+offset));
 	finalize_xcrb(xcrb, preqcblk, prepcblk);
 
 	return (ECKEYGEN_REPLY*)prepcblk;
@@ -1119,6 +1174,8 @@ static ECKEYGEN_REPLY* make_eckeygen_request(ICA_EC_KEY *key, struct ica_xcRB* x
  */
 unsigned int eckeygen_hw(ica_adapter_handle_t adapter_handle, ICA_EC_KEY *key)
 {
+	uint8_t *buf;
+	size_t len;
 	int rc;
 	struct ica_xcRB xcrb;
 	ECKEYGEN_REPLY *reply_p;
@@ -1126,27 +1183,36 @@ unsigned int eckeygen_hw(ica_adapter_handle_t adapter_handle, ICA_EC_KEY *key)
 	ECC_PUBLIC_KEY_TOKEN* pub_p;
 	unsigned char* p;
 
-	reply_p = make_eckeygen_request(key, &xcrb);
+	reply_p = make_eckeygen_request(key, &xcrb, &buf, &len);
 	if (!reply_p)
 		return EIO;
 
 	rc = ioctl(adapter_handle, ZSECSENDCPRB, xcrb);
-	if (rc != 0)
-		return EIO;
+	if (rc != 0) {
+		rc = EIO;
+		goto ret;
+	}
 
-	if (reply_p->eckey.privsec.formatted_data_len != privlen)
-		return EIO;
+	if (reply_p->eckey.privsec.formatted_data_len != privlen) {
+		rc = EIO;
+		goto ret;
+	}
 
 	memcpy(key->D, reply_p->eckey.privkey, privlen);
 
 	p = (unsigned char*)&(reply_p->eckey.privsec) + reply_p->eckey.privsec.section_len;
 	pub_p = (ECC_PUBLIC_KEY_TOKEN*)p;
-	if (pub_p->compress_flag != 0x04)
-		return EIO;
+	if (pub_p->compress_flag != 0x04) {
+		rc = EIO;
+		goto ret;
+	}
 
 	memcpy(key->X, (char*)pub_p->pubkey, 2*privlen);
-
-	return 0;
+	rc = 0;
+ret:
+	OPENSSL_cleanse(buf, len);
+	free(buf);
+	return rc;
 }
 
 /**
