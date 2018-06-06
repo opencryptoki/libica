@@ -130,7 +130,8 @@ _ret_:
 	if (key != NULL)
 		ica_ec_key_free(key);
 	/* restore ICAPATH */
-	setenv("ICAPATH", icapath, 1);
+	if (icapath != NULL)
+		setenv("ICAPATH", icapath, 1);
 	return rc;
 }
 
