@@ -154,13 +154,16 @@ static int read_facility_bits(void)
 	sigset_t oldset;
 	int rc = -1;
 
+	memset(&oldact, 0, sizeof(oldact));
+	memset(&oldset, 0, sizeof(oldset));
 	memset(facility_bits, 0, sizeof(facility_bits));
 
 	rc = begin_sigill_section(&oldact, &oldset);
-	if (!rc) {
+	if (!rc)
 		rc = __stfle(facility_bits, 3);
-		end_sigill_section(&oldact, &oldset);
-	}
+
+	end_sigill_section(&oldact, &oldset);
+
 	/* __stfle always returns the no. of double words needed to store the
 	 * facility bits. This quantity is machine dependent. With MSA8, we
 	 * need the first three double words. */
@@ -202,6 +205,9 @@ static void set_switches(int msa)
 	struct sigaction oldact;
 	sigset_t oldset;
 
+	memset(&oldact, 0, sizeof(oldact));
+	memset(&oldset, 0, sizeof(oldset));
+
 	/* The function arrays contain integers. Thus to compute the amount of
 	 * their elements the result of sizeof(*functions) has to be divided by
 	 * sizeof(int).
@@ -215,10 +221,9 @@ static void set_switches(int msa)
 	/* kmc query */
 	memset(mask, 0, sizeof(mask));
 	if (msa) {
-		if (begin_sigill_section(&oldact, &oldset) == 0) {
+		if (begin_sigill_section(&oldact, &oldset) == 0)
 			s390_kmc(S390_CRYPTO_QUERY, mask, (void *) 0, (void *) 0, 0);
-			end_sigill_section(&oldact, &oldset);
-		}
+		end_sigill_section(&oldact, &oldset);
 	}
 	for (n = 0; n < (sizeof(s390_kmc_functions) /
 			 sizeof(s390_supported_function_t)); n++)
@@ -228,10 +233,9 @@ static void set_switches(int msa)
 	/* kimd query */
 	memset(mask, 0, sizeof(mask));
 	if (msa) {
-		if (begin_sigill_section(&oldact, &oldset) == 0) {
+		if (begin_sigill_section(&oldact, &oldset) == 0)
 			s390_kimd(S390_CRYPTO_QUERY, mask, (void *) 0, 0);
-			end_sigill_section(&oldact, &oldset);
-		}
+		end_sigill_section(&oldact, &oldset);
 	}
 	for (n = 0; n < (sizeof(s390_kimd_functions) /
 			 sizeof(s390_supported_function_t)); n++)
@@ -242,10 +246,9 @@ static void set_switches(int msa)
 	memset(mask, 0, sizeof(mask));
 	if (5 <= msa) {
 		msa5_switch = 1;
-		if (begin_sigill_section(&oldact, &oldset) == 0) {
+		if (begin_sigill_section(&oldact, &oldset) == 0)
 			s390_ppno(S390_CRYPTO_QUERY, mask, NULL, 0, NULL, 0);
-			end_sigill_section(&oldact, &oldset);
-		}
+		end_sigill_section(&oldact, &oldset);
 	}
 	for (n = 0; n < (sizeof(s390_ppno_functions) /
 			 sizeof(s390_supported_function_t)); n++)
@@ -256,10 +259,9 @@ static void set_switches(int msa)
 	memset(mask, 0, sizeof(mask));
 	if (8 <= msa) {
 		msa8_switch = 1;
-		if (begin_sigill_section(&oldact, &oldset) == 0) {
+		if (begin_sigill_section(&oldact, &oldset) == 0)
 			s390_kma(S390_CRYPTO_QUERY, mask, NULL, NULL, 0, NULL, 0);
-			end_sigill_section(&oldact, &oldset);
-		}
+		end_sigill_section(&oldact, &oldset);
 	}
 	for (n = 0; n < (sizeof(s390_kma_functions) /
 			 sizeof(s390_supported_function_t)); n++)
