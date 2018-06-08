@@ -1,3 +1,5 @@
+v3.3.3
+ - [PATCH] Various bug fixes
 v3.3.2
  - [PATCH] Skip ECC tests if required HW is not available
  - [PATCH] Update spec file
