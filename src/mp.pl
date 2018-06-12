@@ -505,4 +505,8 @@ LONG	(0x100e0f00,0x01020304,0x10050607,0x18191a1b);
 LONG	(0x10000102,0x03040506,0x10071819,0x1a1b1c1d);
 LONG	(0x00000000,0x00000018,0x00191a1b,0x1c1d1e1f);
 
+VERBATIM("#if defined(__linux__) && defined(__ELF__)\n");
+SECTION	(".note.GNU-stack,\"\",%progbits");
+VERBATIM("#endif\n");
+
 PERLASM_END();
