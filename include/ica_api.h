@@ -506,6 +506,8 @@ unsigned int ica_random_number_generate(unsigned int output_length,
  * @param input_length
  * The byte length of the input data to be SHA-1 hashed and must be greater
  * than zero.
+ * Note: For SHA_MSG_PART_FIRST and SHA_MSG_PART_MIDDLE calls, the byte length
+ * must be a multiple of 64 i.e., SHA-1 block size.
  * @param input_data
  * Pointer to the input data data.
  * @param sha_context
@@ -548,6 +550,8 @@ unsigned int ica_sha1(unsigned int message_part,
  * @param input_length
  * The byte length of the input data to be SHA-224 hashed and must be greater
  * than zero.
+ * Note: For SHA_MSG_PART_FIRST and SHA_MSG_PART_MIDDLE calls, the byte length
+ * must be a multiple of 64 i.e., SHA-224 block size.
  * @param input_data
  * Pointer to the input data.
  * @param sha256_context
@@ -592,6 +596,8 @@ unsigned int ica_sha224(unsigned int message_part,
  * @param input_length
  * The byte length of the input data to be SHA-256 hashed and must be greater
  * than zero.
+ * Note: For SHA_MSG_PART_FIRST and SHA_MSG_PART_MIDDLE calls, the byte length
+ * must be a multiple of 64 i.e., SHA-256 block size.
  * @param input_data
  * Pointer to the input data.
  * @param sha256_context
@@ -634,6 +640,8 @@ unsigned int ica_sha256(unsigned int message_part,
  * @param input_length
  * The byte length of the input data to be SHA-384 hashed and must be greater
  * than zero.
+ * Note: For SHA_MSG_PART_FIRST and SHA_MSG_PART_MIDDLE calls, the byte length
+ * must be a multiple of 128 i.e., SHA-384 block size.
  * @param input_data
  * Pointer to the input data.
  * @param sha512_context
@@ -678,6 +686,8 @@ unsigned int ica_sha384(unsigned int message_part,
  * @param input_length
  * The byte length of the input data to be SHA-512 hashed and must be greater
  * than zero.
+ * Note: For SHA_MSG_PART_FIRST and SHA_MSG_PART_MIDDLE calls, the byte length
+ * must be a multiple of 128 i.e., SHA-512 block size.
  * @param input_data
  * Pointer to the input data.
  * @param sha512_context
