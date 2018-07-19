@@ -561,6 +561,84 @@ unsigned int ica_sha512(unsigned int message_part,
 			   (uint64_t *) &sha512_context->runningLengthHigh);
 }
 
+unsigned int ica_sha512_224(unsigned int message_part,
+			    uint64_t input_length,
+			    unsigned char *input_data,
+			    sha512_context_t *sha512_context,
+			    unsigned char *output_data)
+{
+	unsigned int rc;
+
+#ifdef ICA_FIPS
+	if (fips >> 1)
+		return EACCES;
+#endif /* ICA_FIPS */
+
+	/* check for obvious errors in parms */
+	if ((input_data == NULL) ||
+	    (sha512_context == NULL) ||
+	    (output_data == NULL))
+		return EINVAL;
+
+	/* make sure some message part is specified */
+	rc = check_message_part(message_part);
+	if (rc)
+		return rc;
+
+	/*
+	 * for FIRST or MIDDLE calls the input
+	 * data length must be a multiple of 128 bytes.
+	 */
+	if (input_length & 0x7f &&
+	    (message_part == SHA_MSG_PART_FIRST ||
+	     message_part == SHA_MSG_PART_MIDDLE))
+		return EINVAL;
+
+	return s390_sha512_224((unsigned char *)&sha512_context->sha512Hash,
+			       input_data, input_length, output_data, message_part,
+			       (uint64_t *) &sha512_context->runningLengthLow,
+			       (uint64_t *) &sha512_context->runningLengthHigh);
+}
+
+unsigned int ica_sha512_256(unsigned int message_part,
+			    uint64_t input_length,
+			    unsigned char *input_data,
+			    sha512_context_t *sha512_context,
+			    unsigned char *output_data)
+{
+	unsigned int rc;
+
+#ifdef ICA_FIPS
+	if (fips >> 1)
+		return EACCES;
+#endif /* ICA_FIPS */
+
+	/* check for obvious errors in parms */
+	if ((input_data == NULL) ||
+	    (sha512_context == NULL) ||
+	    (output_data == NULL))
+		return EINVAL;
+
+	/* make sure some message part is specified */
+	rc = check_message_part(message_part);
+	if (rc)
+		return rc;
+
+	/*
+	 * for FIRST or MIDDLE calls the input
+	 * data length must be a multiple of 128 bytes.
+	 */
+	if (input_length & 0x7f &&
+	    (message_part == SHA_MSG_PART_FIRST ||
+	     message_part == SHA_MSG_PART_MIDDLE))
+		return EINVAL;
+
+	return s390_sha512_256((unsigned char *)&sha512_context->sha512Hash,
+			       input_data, input_length, output_data, message_part,
+			       (uint64_t *) &sha512_context->runningLengthLow,
+			       (uint64_t *) &sha512_context->runningLengthHigh);
+}
+
 unsigned int ica_sha3_224(unsigned int message_part,
 			unsigned int input_length,
 			unsigned char *input_data,

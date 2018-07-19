@@ -125,6 +125,8 @@ typedef ica_adapter_handle_t ICA_ADAPTER_HANDLE;
 #define RSA_KEY_GEN_ME  92
 #define RSA_KEY_GEN_CRT 93
 #define SHA512_DRNG	94
+#define SHA512_224      95
+#define SHA512_256      96
 
 /*
  * Key length for DES/3DES encryption/decryption
@@ -156,6 +158,8 @@ typedef ica_adapter_handle_t ICA_ADAPTER_HANDLE;
 #define SHA256_HASH_LENGTH	32
 #define SHA384_HASH_LENGTH	48
 #define SHA512_HASH_LENGTH	64
+#define SHA512_224_HASH_LENGTH	SHA224_HASH_LENGTH
+#define SHA512_256_HASH_LENGTH	SHA256_HASH_LENGTH
 #define SHA3_224_HASH_LENGTH	SHA224_HASH_LENGTH
 #define SHA3_256_HASH_LENGTH	SHA256_HASH_LENGTH
 #define SHA3_384_HASH_LENGTH	SHA384_HASH_LENGTH
@@ -714,6 +718,93 @@ unsigned int ica_sha512(unsigned int message_part,
 			unsigned char *input_data,
 			sha512_context_t *sha512_context,
 			unsigned char *output_data);
+
+/**
+ * Perform secure hash on input data using the SHA-512/224 algorithm.
+ *
+ * Required HW Support
+ * KIMD-SHA-512, or KLMD-SHA-512
+ *
+ * @param message_part
+ * The message chaining state. Must be one of the following:
+ *	SHA_MSG_PART_ONLY   - A single hash operation
+ *	SHA_MSG_PART_FIRST  - The first part
+ *	SHA_MSG_PART_MIDDLE - The middle part
+ *	SHA_MSG_PART_FINAL  - The last part
+ * @param input_length
+ * The byte length of the input data to be SHA-512/224 hashed and must be greater
+ * than zero.
+ * Note: For SHA_MSG_PART_FIRST and SHA_MSG_PART_MIDDLE calls, the byte length
+ * must be a multiple of 128 i.e., SHA-512 block size.
+ * @param input_data
+ * Pointer to the input data.
+ * @param sha512_context
+ * Pointer to the SHA-512 context structure used to store intermediate values
+ * needed when chaining is used. The contents are ignored for message part
+ * SHA_MSG_PART_ONLY and SHA_MSG_PART_FIRST. This structure must
+ * contain the returned value of the preceding call to ica_sha512_224 for message
+ * part SHA_MSG_PART_MIDDLE and SHA_MSG_PART_FINAL. For message part
+ * SHA_MSG_PART_FIRST and SHA_MSG_PART_FINAL, the returned value can
+ * be used for a chained call of ica_sha512_224. Therefore, the application must
+ * not modify the contents of this structure in between chained calls.
+ * @param output_data
+ * Pointer to the buffer to contain the resulting hash data. The resulting
+ * output data will have a length of SHA512_224_HASH_LENGTH. Make sure buffer has
+ * at least this size.
+ *
+ * @return 0 if successful.
+ * EINVAL if at least one invalid parameter is given
+ * EIO if the operation fails. This should never happen.
+ */
+ICA_EXPORT
+unsigned int ica_sha512_224(unsigned int message_part,
+			    uint64_t input_length,
+			    unsigned char *input_data,
+			    sha512_context_t *sha512_context,
+			    unsigned char *output_data);
+
+/**
+ * Perform secure hash on input data using the SHA-512/256 algorithm.
+ *
+ * Required HW Support
+ * KIMD-SHA-512, or KLMD-SHA-512
+ *
+ * @param message_part
+ * The message chaining state. Must be one of the following:
+ *	SHA_MSG_PART_ONLY   - A single hash operation
+ *	SHA_MSG_PART_FIRST  - The first part
+ *	SHA_MSG_PART_MIDDLE - The middle part
+ *	SHA_MSG_PART_FINAL  - The last part
+ * @param input_length
+ * The byte length of the input data to be SHA-512/256 hashed and must be greater
+ * than zero.
+ * Note: For SHA_MSG_PART_FIRST and SHA_MSG_PART_MIDDLE calls, the byte length
+ * must be a multiple of 128 i.e., SHA-512 block size.
+ * @param input_data
+ * Pointer to the input data.
+ * @param sha512_context
+ * Pointer to the SHA-512 context structure used to store intermediate values
+ * needed when chaining is used. The contents are ignored for message part
+ * SHA_MSG_PART_ONLY and SHA_MSG_PART_FIRST. This structure must
+ * contain the returned value of the preceding call to ica_sha512_256 for message
+ * part SHA_MSG_PART_MIDDLE and SHA_MSG_PART_FINAL. For message part
+ * SHA_MSG_PART_FIRST and SHA_MSG_PART_FINAL, the returned value can
+ * be used for a chained call of ica_sha512_256. Therefore, the application must
+ * not modify the contents of this structure in between chained calls.
+ * @param output_data
+ * Pointer to the buffer to contain the resulting hash data. The resulting
+ * output data will have a length of SHA512_256_HASH_LENGTH. Make sure buffer has
+ * at least this size.
+ *
+ * @return 0 if successful.
+ * EINVAL if at least one invalid parameter is given
+ * EIO if the operation fails. This should never happen.
+ */ICA_EXPORT
+unsigned int ica_sha512_256(unsigned int message_part,
+			    uint64_t input_length,
+			    unsigned char *input_data,
+			    sha512_context_t *sha512_context,
+			    unsigned char *output_data);
 
 ICA_EXPORT
 unsigned int ica_sha3_224(unsigned int message_part,

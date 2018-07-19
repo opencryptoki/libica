@@ -225,6 +225,102 @@ int s390_sha512_sw(unsigned char *iv, unsigned char *input_data,
 	return 0;
 }
 
+int s390_sha512_224_sw(unsigned char *iv, unsigned char *input_data,
+		       uint64_t input_length, unsigned char *output_data,
+		       unsigned int message_part, uint64_t *running_length_lo,
+		       uint64_t *running_length_hi)
+{
+	SHA512_CTX ctx;
+	unsigned int vector_length = 64;
+
+#ifdef ICA_FIPS
+	if ((fips & ICA_FIPS_MODE) && (!FIPS_mode()))
+		return EACCES;
+#endif /* ICA_FIPS */
+
+	if (message_part == SHA_MSG_PART_ONLY || message_part == SHA_MSG_PART_FIRST) {
+		SHA512_Init(&ctx);
+		/* SHA-512/224 uses a distinct initial hash value */
+		ctx.h[0] = U64(0x8c3d37c819544da2);
+		ctx.h[1] = U64(0x73e1996689dcd4d6);
+		ctx.h[2] = U64(0x1dfab7ae32ff9c82);
+		ctx.h[3] = U64(0x679dd514582f9fcf);
+		ctx.h[4] = U64(0x0f6d2b697bd44da8);
+		ctx.h[5] = U64(0x77e36f7304c48942);
+		ctx.h[6] = U64(0x3f9d85a86a1d36c8);
+		ctx.h[7] = U64(0x1112e6ad91d692a1);
+	} else {
+		ctx.md_len = SHA224_DIGEST_LENGTH;
+		ctx.Nl = *running_length_lo;
+		ctx.Nh = *running_length_hi;
+		ctx.num = 0;
+		memcpy((unsigned char *) &ctx.h[0], iv, vector_length);
+	}
+
+	SHA512_Update(&ctx, input_data, input_length);
+
+	if (message_part == SHA_MSG_PART_ONLY ||
+	    message_part == SHA_MSG_PART_FINAL)
+		SHA512_Final(output_data, &ctx);
+	else {
+		*running_length_lo = ctx.Nl;
+		*running_length_hi = ctx.Nh;
+		memcpy(output_data, (unsigned char *) &ctx.h[0],
+		       SHA224_DIGEST_LENGTH);
+		memcpy(iv, (unsigned char *) &ctx.h[0], vector_length);
+	}
+
+	return 0;
+}
+
+int s390_sha512_256_sw(unsigned char *iv, unsigned char *input_data,
+		       uint64_t input_length, unsigned char *output_data,
+		       unsigned int message_part, uint64_t *running_length_lo,
+		       uint64_t *running_length_hi)
+{
+	SHA512_CTX ctx;
+	unsigned int vector_length = 64;
+
+#ifdef ICA_FIPS
+	if ((fips & ICA_FIPS_MODE) && (!FIPS_mode()))
+		return EACCES;
+#endif /* ICA_FIPS */
+
+	if (message_part == SHA_MSG_PART_ONLY || message_part == SHA_MSG_PART_FIRST) {
+		SHA512_Init(&ctx);
+		/* SHA-512/256 uses a distinct initial hash value */
+		ctx.h[0] = U64(0x22312194fc2bf72c);
+		ctx.h[1] = U64(0x9f555fa3c84c64c2);
+		ctx.h[2] = U64(0x2393b86b6f53b151);
+		ctx.h[3] = U64(0x963877195940eabd);
+		ctx.h[4] = U64(0x96283ee2a88effe3);
+		ctx.h[5] = U64(0xbe5e1e2553863992);
+		ctx.h[6] = U64(0x2b0199fc2c85b8aa);
+		ctx.h[7] = U64(0x0eb72ddc81c52ca2);
+	} else {
+		ctx.md_len = SHA256_DIGEST_LENGTH;
+		ctx.Nl = *running_length_lo;
+		ctx.Nh = *running_length_hi;
+		ctx.num = 0;
+		memcpy((unsigned char *) &ctx.h[0], iv, vector_length);
+	}
+
+	SHA512_Update(&ctx, input_data, input_length);
+
+	if (message_part == SHA_MSG_PART_ONLY ||
+	    message_part == SHA_MSG_PART_FINAL)
+		SHA512_Final(output_data, &ctx);
+	else {
+		*running_length_lo = ctx.Nl;
+		*running_length_hi = ctx.Nh;
+		memcpy(output_data, (unsigned char *) &ctx.h[0],
+		       SHA256_DIGEST_LENGTH);
+		memcpy(iv, (unsigned char *) &ctx.h[0], vector_length);
+	}
+
+	return 0;
+}
+
 int s390_sha1(unsigned char *iv, unsigned char *input_data,
 	      unsigned int input_length, unsigned char *output_data,
 	      unsigned int message_part, uint64_t *running_length)
@@ -331,6 +427,54 @@ int s390_sha512(unsigned char *iv, unsigned char *input_data,
 		stats_increment(ICA_STATS_SHA512, ALGO_SW, ENCRYPT);
 	} else
 		stats_increment(ICA_STATS_SHA512, ALGO_HW, ENCRYPT);
+
+	return rc;
+}
+
+int s390_sha512_224(unsigned char *iv, unsigned char *input_data,
+		    uint64_t input_length, unsigned char *output_data,
+		    unsigned int message_part, uint64_t *running_length_lo,
+		    uint64_t *running_length_hi)
+{
+	int rc = ENODEV;
+	if (sha512_switch)
+		rc = s390_sha_hw(iv, input_data, input_length, output_data,
+				sha_constants[SHA_512_224].hash_length,
+				 message_part, running_length_lo,
+				 running_length_hi, SHA_512_224);
+	if (rc) {
+		if (!ica_fallbacks_enabled)
+			return rc;
+		rc = s390_sha512_224_sw(iv, input_data, input_length, output_data,
+					message_part, running_length_lo,
+					running_length_hi);
+		stats_increment(ICA_STATS_SHA512_224, ALGO_SW, ENCRYPT);
+	} else
+		stats_increment(ICA_STATS_SHA512_224, ALGO_HW, ENCRYPT);
+
+	return rc;
+}
+
+int s390_sha512_256(unsigned char *iv, unsigned char *input_data,
+		    uint64_t input_length, unsigned char *output_data,
+		    unsigned int message_part, uint64_t *running_length_lo,
+		    uint64_t *running_length_hi)
+{
+	int rc = ENODEV;
+	if (sha512_switch)
+		rc = s390_sha_hw(iv, input_data, input_length, output_data,
+				sha_constants[SHA_512_256].hash_length,
+				 message_part, running_length_lo,
+				 running_length_hi, SHA_512_256);
+	if (rc) {
+		if (!ica_fallbacks_enabled)
+			return rc;
+		rc = s390_sha512_256_sw(iv, input_data, input_length, output_data,
+					message_part, running_length_lo,
+					running_length_hi);
+		stats_increment(ICA_STATS_SHA512_256, ALGO_SW, ENCRYPT);
+	} else
+		stats_increment(ICA_STATS_SHA512_256, ALGO_HW, ENCRYPT);
 
 	return rc;
 }

@@ -126,3 +126,10 @@ LIBICA_3.3.0 {
 	ica_mp_sqr512;
     local: *;
 } LIBICA_3.2.0;
+
+LIBICA_3.4.0 {
+    global:
+	ica_sha512_224;
+	ica_sha512_256;
+    local: *;
+} LIBICA_3.3.0;
