@@ -125,7 +125,9 @@ typedef enum {
 	SHA_3_512,
 	SHAKE_128,
 	SHAKE_256,
-	GHASH
+	GHASH,
+	SHA_512_224,
+	SHA_512_256
 } kimd_functions_t;
 
 typedef enum {

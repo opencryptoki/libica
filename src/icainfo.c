@@ -76,6 +76,8 @@ static struct crypt_pair crypt_map[] = {
 	{"SHA-256", SHA256},
 	{"SHA-384", SHA384},
 	{"SHA-512", SHA512},
+	{"SHA-512/224", SHA512_224},
+	{"SHA-512/256", SHA512_256},
 	{"SHA3-224", SHA3_224},
 	{"SHA3-256", SHA3_256},
 	{"SHA3-384", SHA3_384},
