@@ -70,6 +70,8 @@ static int sha224_new_api_test(test_t * test);
 static int sha256_new_api_test(test_t * test);
 static int sha384_new_api_test(test_t * test);
 static int sha512_new_api_test(test_t * test);
+static int sha512_224_new_api_test(test_t * test);
+static int sha512_256_new_api_test(test_t * test);
 
 static int sha3_224_api_test(test_t * test);
 static int sha3_256_api_test(test_t * test);
@@ -158,6 +160,14 @@ int main(int argc, char *argv[])
 		case SHA512:
 			V_(printf("SHA512 ...\n"));
 			rc = sha512_new_api_test(curr_test);
+			break;
+		case SHA512_224:
+			V_(printf("SHA512/224 ...\n"));
+			rc = sha512_224_new_api_test(curr_test);
+			break;
+		case SHA512_256:
+			V_(printf("SHA512/256 ...\n"));
+			rc = sha512_256_new_api_test(curr_test);
 			break;
 		case SHA3_224:
 			V_(printf("SHA3-224 ...\n"));
@@ -266,19 +276,25 @@ static int read_test_data(FILE * test_data, int sha3_flag)
 	test_t tmp_test = new_test_t();
 	unsigned int current_type = NO_TYPE_SET;
 	unsigned int current_msg_digest_length = NO_LENGTH_SET;
+	char parsed_type[20];
 
 	unsigned int line_number = 0;
 
 	char *tmp = NULL;
+	char *tmp2 = NULL;
 	search_term = MSG_LENGTH;
+	memset(parsed_type, 0, sizeof(parsed_type));
 
 	while (fgets(buffer, (int)sizeof buffer, test_data) != NULL) {
 
 		line_number++;
 
 		/* remove comments */
-		if ((tmp = memchr(buffer, (int)'#', strlen(buffer))) != NULL)
+		if ((tmp = memchr(buffer, (int)'#', strlen(buffer))) != NULL) {
+			if ((tmp2 = strstr(buffer, "SHA-512/")) != NULL)
+				strncpy(parsed_type, tmp2, strlen("SHA-512/XXX"));
 			memset(tmp, 0, strlen(tmp));
+		}
 
 		/* scan for: type/msg_digest_length */
 		if (((sscanf(buffer, "[L = %u]", &current_msg_digest_length))
@@ -302,10 +318,14 @@ static int read_test_data(FILE * test_data, int sha3_flag)
 				current_type = SHA1;
 				break;
 			case SHA224_HASH_LENGTH:
-				current_type = sha3_flag ? SHA3_224 : SHA224;
+				current_type = sha3_flag ? SHA3_224 :
+					strcmp(parsed_type, "SHA-512/224") == 0
+						? SHA512_224 : SHA224;
 				break;
 			case SHA256_HASH_LENGTH:
-				current_type = sha3_flag ? SHA3_256 : SHA256;
+				current_type = sha3_flag ? SHA3_256 :
+					strcmp(parsed_type, "SHA-512/256") == 0
+						? SHA512_256 : SHA256;
 				break;
 			case SHA384_HASH_LENGTH:
 				current_type = sha3_flag ? SHA3_384 : SHA384;
@@ -842,6 +862,164 @@ static int sha512_new_api_test(test_t * test)
 	dump_array(output, SHA512_HASH_LENGTH);
 
 	if (memcmp(output, test->msg_digest, SHA512_HASH_LENGTH) != 0) {
+		V_(printf("output is not what it should be.\n"));
+		return TEST_FAIL;
+	}
+
+	return TEST_SUCC;
+}
+
+static int sha512_224_new_api_test(test_t * test)
+{
+	sha512_context_t sha512_context;
+	int rc = 0;
+	size_t off;
+	unsigned char output[SHA512_224_HASH_LENGTH];
+	time_t seed;
+	int i;
+
+	srand(time(&seed));
+
+	if (test->msg_digest_length != SHA512_224_HASH_LENGTH)
+		CRITICAL_ERROR("this shouldn't happen.");
+
+	rc = (int)ica_sha512_224(SHA_MSG_PART_ONLY, test->msg_length, test->msg,
+				 &sha512_context, output);
+
+	if (rc != 0) {
+		V_(printf("ica_sha512_224 failed with errno %d (0x%x).\n", rc,
+		       (unsigned int)rc));
+		return TEST_FAIL;
+	}
+
+	VV_(printf("message digest (new api)\n"));
+	dump_array(output, SHA512_224_HASH_LENGTH);
+
+	if (memcmp(output, test->msg_digest, SHA512_224_HASH_LENGTH) != 0) {
+		V_(printf("output is not what it should be.\n"));
+		return TEST_FAIL;
+	}
+
+	if (test->msg_length <= SHA512_BLOCK_SIZE)
+		return TEST_SUCC;
+
+	rc = (int)ica_sha512_224(SHA_MSG_PART_FIRST, SHA512_BLOCK_SIZE,
+				 test->msg, &sha512_context, output);
+	if (rc != 0) {
+		V_(printf("ica_sha512_224 %s failed with errno %d (0x%x).\n",
+			  "SHA_MSG_PART_FIRST", rc, (unsigned int)rc));
+		return TEST_FAIL;
+	}
+
+	for (off = SHA512_BLOCK_SIZE;
+	     off < test->msg_length - SHA512_BLOCK_SIZE;) {
+		i = rand()
+		  % ((test->msg_length - off) / SHA512_BLOCK_SIZE + 1);
+		rc = (int)ica_sha512_224(SHA_MSG_PART_MIDDLE,
+					 i * SHA512_BLOCK_SIZE,
+					 test->msg + off,
+					 &sha512_context, output);
+		if (rc != 0) {
+			V_(printf("ica_sha512_224 %s failed"
+				  " with errno %d (0x%x).\n",
+				  "SHA_MSG_PART_MIDDLE", rc,
+				  (unsigned int)rc));
+			return TEST_FAIL;
+		}
+		off += i * SHA512_BLOCK_SIZE;
+	}
+
+	rc = (int)ica_sha512_224(SHA_MSG_PART_FINAL, test->msg_length - off,
+				 test->msg + off, &sha512_context, output);
+	if (rc != 0) {
+		V_(printf("ica_sha512_224 %s failed with errno %d (0x%x).\n",
+			  "SHA_MSG_PART_FINAL", rc, (unsigned int)rc));
+		return TEST_FAIL;
+	}
+
+	VV_(printf("message digest\n"));
+	dump_array(output, SHA512_224_HASH_LENGTH);
+
+	if (memcmp(output, test->msg_digest, SHA512_224_HASH_LENGTH) != 0) {
+		V_(printf("output is not what it should be.\n"));
+		return TEST_FAIL;
+	}
+
+	return TEST_SUCC;
+}
+
+static int sha512_256_new_api_test(test_t * test)
+{
+	sha512_context_t sha512_context;
+	int rc = 0;
+	size_t off;
+	unsigned char output[SHA512_256_HASH_LENGTH];
+	time_t seed;
+	int i;
+
+	srand(time(&seed));
+
+	if (test->msg_digest_length != SHA512_256_HASH_LENGTH)
+		CRITICAL_ERROR("this shouldn't happen.");
+
+	rc = (int)ica_sha512_256(SHA_MSG_PART_ONLY, test->msg_length, test->msg,
+				 &sha512_context, output);
+
+	if (rc != 0) {
+		V_(printf("ica_sha512_256 failed with errno %d (0x%x).\n", rc,
+		       (unsigned int)rc));
+		return TEST_FAIL;
+	}
+
+	VV_(printf("message digest (new api)\n"));
+	dump_array(output, SHA512_256_HASH_LENGTH);
+
+	if (memcmp(output, test->msg_digest, SHA512_256_HASH_LENGTH) != 0) {
+		V_(printf("output is not what it should be.\n"));
+		return TEST_FAIL;
+	}
+
+	if (test->msg_length <= SHA512_BLOCK_SIZE)
+		return TEST_SUCC;
+
+	rc = (int)ica_sha512_256(SHA_MSG_PART_FIRST, SHA512_BLOCK_SIZE,
+				 test->msg, &sha512_context, output);
+	if (rc != 0) {
+		V_(printf("ica_sha512_256 %s failed with errno %d (0x%x).\n",
+			  "SHA_MSG_PART_FIRST", rc, (unsigned int)rc));
+		return TEST_FAIL;
+	}
+
+	for (off = SHA512_BLOCK_SIZE;
+	     off < test->msg_length - SHA512_BLOCK_SIZE;) {
+		i = rand()
+		  % ((test->msg_length - off) / SHA512_BLOCK_SIZE + 1);
+		rc = (int)ica_sha512_256(SHA_MSG_PART_MIDDLE,
+					 i * SHA512_BLOCK_SIZE,
+					 test->msg + off,
+					 &sha512_context, output);
+		if (rc != 0) {
+			V_(printf("ica_sha512_256 %s failed"
+				  " with errno %d (0x%x).\n",
+				  "SHA_MSG_PART_MIDDLE", rc,
+				  (unsigned int)rc));
+			return TEST_FAIL;
+		}
+		off += i * SHA512_BLOCK_SIZE;
+	}
+
+	rc = (int)ica_sha512_256(SHA_MSG_PART_FINAL, test->msg_length - off,
+				 test->msg + off, &sha512_context, output);
+	if (rc != 0) {
+		V_(printf("ica_sha512_256 %s failed with errno %d (0x%x).\n",
+			  "SHA_MSG_PART_FINAL", rc, (unsigned int)rc));
+		return TEST_FAIL;
+	}
+
+	VV_(printf("message digest\n"));
+	dump_array(output, SHA512_256_HASH_LENGTH);
+
+	if (memcmp(output, test->msg_digest, SHA512_256_HASH_LENGTH) != 0) {
 		V_(printf("output is not what it should be.\n"));
 		return TEST_FAIL;
 	}
