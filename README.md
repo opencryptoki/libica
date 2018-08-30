@@ -32,3 +32,8 @@ See the INSTALL file.
 ## requirements
 
 ECC via shared CEX4C adapter under z/VM 6.4 requires APAR VM65942
+
+
+## documentation
+
+[libica Programmer's Reference](https://www.ibm.com/support/knowledgecenter/en/linuxonibm/com.ibm.linux.z.lxci/lxci_linuxonz.html)
