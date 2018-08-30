@@ -27,3 +27,8 @@ See `configure -help`.
 `make coverage` : build and run the test-suite plus coverage tests (`--enable-coverage` required)
 
 See the INSTALL file.
+
+
+## requirements
+
+ECC via shared CEX4C adapter under z/VM 6.4 requires APAR VM65942
