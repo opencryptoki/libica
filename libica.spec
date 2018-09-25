@@ -9,7 +9,7 @@ URL:           https://github.com/opencryptoki/libica
 Source0:       %{name}-%{version}.tar.gz
 BuildRoot:     %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
-BuildRequires: autoconf automake libtool openssl-devel
+BuildRequires: autoconf automake libtool openssl-devel autoconf-archive
 
 %description
 Interface library on Linux for IBM System z to utilize CPACF

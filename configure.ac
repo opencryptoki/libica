@@ -99,12 +99,16 @@ if test "x$enable_coverage" = xno && test "x$enable_debug" = xno && test "x$enab
 	FLAGS="$FLAGS -O3 -D_FORTIFY_SOURCE=2"
 fi
 
+# check if assembler can generate missing build notes, binutils >= 2.31 or older with backport is needed
+AX_CHECK_COMPILE_FLAG([-Wa,--generate-missing-build-notes=yes], [ICA_ASFLAGS="-Wa,--generate-missing-build-notes=yes"])
+
 # restore cmdline flags (ignore PROG_AS/PROG_CC defaults)
 CFLAGS="$cmdline_CFLAGS"
 CCASFLAGS="$cmdline_CFLAGS"
 
 AC_SUBST([FLAGS], $FLAGS)
 AC_SUBST([LIBS], $LIBS)
+AC_SUBST([ICA_ASFLAGS], $ICA_ASFLAGS)
 AC_CONFIG_FILES([Makefile doc/Makefile include/Makefile src/Makefile test/Makefile])
 AC_OUTPUT
 
