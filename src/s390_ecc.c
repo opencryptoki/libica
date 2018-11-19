@@ -874,13 +874,13 @@ unsigned int ecdsa_sign_sw(const ICA_EC_KEY *privkey,
 
 	/* Insert leading 0x00's if r or s shorter than privlen */
 	n = privlen - BN_num_bytes(r);
-	for (i=0;i<n;i++)
+	for (i = 0; i < n; i++)
 		signature[i] = 0x00;
 	BN_bn2bin(r, &(signature[n]));
 
 	n = privlen - BN_num_bytes(s);
-	for (i=0;i<n;i++)
-	signature[privlen+i] = 0x00;
+	for (i = 0; i < n; i++)
+		signature[privlen+i] = 0x00;
 	BN_bn2bin(s, &(signature[privlen+n]));
 
 	rc = 0;
