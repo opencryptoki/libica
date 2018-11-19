@@ -14,6 +14,7 @@
 #include <errno.h>
 #include <stdint.h>
 #include <sys/ioctl.h>
+#include <openssl/bn.h>
 #include <openssl/crypto.h>
 #include <openssl/ec.h>
 #include <openssl/ecdh.h>
@@ -25,6 +26,8 @@
 
 #include "fips.h"
 #include "s390_ecc.h"
+#include "s390_crypto.h"
+#include "init.h"
 
 #define CPRBXSIZE (sizeof(struct CPRBX))
 #define PARMBSIZE (2048)
@@ -41,6 +44,17 @@ do { \
 (sig)->s=ps; \
 } while (0)
 #endif
+
+static int eckeygen_cpacf(ICA_EC_KEY *key);
+static int ecdsa_sign_cpacf(const ICA_EC_KEY *priv, const unsigned char *hash,
+			    size_t hashlen, unsigned char *sig,
+			    void (*rng_cb)(unsigned char *, size_t));
+static int ecdsa_verify_cpacf(const ICA_EC_KEY *pub, const unsigned char *hash,
+			      size_t hashlen, const unsigned char *sig);
+static int scalar_mul_cpacf(unsigned char *res_x, unsigned char *res_y,
+			    const unsigned char *scalar,
+			    const unsigned char *x,
+			    const unsigned char *y, int curve_nid);
 
 /**
  * Check if openssl does support this ec curve
@@ -399,9 +413,110 @@ static ECDH_REPLY* make_ecdh_request(const ICA_EC_KEY *privkey_A, const ICA_EC_K
 	return (ECDH_REPLY*)prepcblk;
 }
 
+static int scalar_mul_cpacf(unsigned char *res_x, unsigned char *res_y,
+			    const unsigned char *scalar,
+			    const unsigned char *x,
+			    const unsigned char *y, int curve_nid)
+{
+#define DEF_PARAM(curve, size)		\
+struct {				\
+	unsigned char res_x[size];	\
+	unsigned char res_y[size];	\
+	unsigned char x[size];		\
+	unsigned char y[size];		\
+	unsigned char scalar[size];	\
+} curve
+
+	union {
+		long long buff[512];	/* 4k buffer: params + reserved area */
+		DEF_PARAM(P256, 32);
+		DEF_PARAM(P384, 48);
+		DEF_PARAM(P521, 80);
+		DEF_PARAM(ED25519, 32);
+		DEF_PARAM(ED448, 64);
+		DEF_PARAM(X25519, 32);
+		DEF_PARAM(X448, 64);
+	} param;
+
+#undef DEF_PARAM
+
+	unsigned long fc;
+	size_t off;
+	int rc;
+
+	const size_t len = privlen_from_nid(curve_nid);
+
+	memset(&param, 0, sizeof(param));
+
+	switch (curve_nid) {
+	case NID_X9_62_prime256v1:
+		off = sizeof(param.P256.scalar) - len;
+
+		memcpy(param.P256.x + off, x,
+		       sizeof(param.P256.x) - off);
+		memcpy(param.P256.y + off, y,
+		       sizeof(param.P256.y) - off);
+		memcpy(param.P256.scalar + off, scalar,
+		       sizeof(param.P256.scalar) - off);
+
+		fc = s390_pcc_functions[SCALAR_MULTIPLY_P256].hw_fc;
+		rc = s390_pcc(fc, &param) ? EIO : 0;
+
+		if (res_x != NULL)
+			memcpy(res_x, param.P256.res_x + off, len);
+		if (res_y != NULL)
+			memcpy(res_y, param.P256.res_y + off, len);
+		break;
+
+	case NID_secp384r1:
+		off = sizeof(param.P384.scalar) - len;
+
+		memcpy(param.P384.x + off, x,
+		       sizeof(param.P384.x) - off);
+		memcpy(param.P384.y + off, y,
+		       sizeof(param.P384.y) - off);
+		memcpy(param.P384.scalar + off, scalar,
+		       sizeof(param.P384.scalar) - off);
+
+		fc = s390_pcc_functions[SCALAR_MULTIPLY_P384].hw_fc;
+		rc = s390_pcc(fc, &param) ? EIO : 0;
+
+		if (res_x != NULL)
+			memcpy(res_x, param.P384.res_x + off, len);
+		if (res_y != NULL)
+			memcpy(res_y, param.P384.res_y + off, len);
+		break;
+
+	case NID_secp521r1:
+		off = sizeof(param.P521.scalar) - len;
+
+		memcpy(param.P521.x + off, x,
+		       sizeof(param.P521.x) - off);
+		memcpy(param.P521.y + off, y,
+		       sizeof(param.P521.y) - off);
+		memcpy(param.P521.scalar + off, scalar,
+		       sizeof(param.P521.scalar) - off);
+
+		fc = s390_pcc_functions[SCALAR_MULTIPLY_P521].hw_fc;
+		rc = s390_pcc(fc, &param) ? EIO : 0;
+
+		if (res_x != NULL)
+			memcpy(res_x, param.P521.res_x + off, len);
+		if (res_y != NULL)
+			memcpy(res_y, param.P521.res_y + off, len);
+		break;
+
+	default:
+		rc = EINVAL;
+	}
+
+	OPENSSL_cleanse(param.buff, sizeof(param.buff));
+	return rc;
+}
+
 /**
  * Perform an ECDH shared secret calculation with given EC private key A (D)
- * and EC public key B (X,Y) via Crypto Express CCA coprocessor.
+ * and EC public key B (X,Y) via CPACF Crypto Express CCA coprocessor.
  *
  * Returns 0 if successful
  *         EIO if an internal error occurred
@@ -416,6 +531,13 @@ unsigned int ecdh_hw(ica_adapter_handle_t adapter_handle,
 	struct ica_xcRB xcrb;
 	ECDH_REPLY* reply_p;
 	int privlen = privlen_from_nid(privkey_A->nid);
+
+	if (msa9_switch && !ica_offload_enabled) {
+		rc = scalar_mul_cpacf(z, NULL, privkey_A->D, pubkey_B->X,
+				      pubkey_B->Y, privkey_A->nid);
+		if (rc != EINVAL) /* EINVAL: curve not supported by cpacf */
+			return rc;
+	}
 
 	if (adapter_handle == DRIVER_NOT_LOADED)
 		return EIO;
@@ -777,7 +899,7 @@ end:
 }
 
 /**
- * creates an ECDSA signature via Crypto Express CCA coprocessor.
+ * creates an ECDSA signature via CPACF or Crypto Express CCA coprocessor.
  *
  * Returns 0 if successful
  *         EIO if an internal error occurred
@@ -794,6 +916,13 @@ unsigned int ecdsa_sign_hw(ica_adapter_handle_t adapter_handle,
 	int privlen = privlen_from_nid(privkey->nid);
 	unsigned char X[MAX_ECC_PRIV_SIZE];
 	unsigned char Y[MAX_ECC_PRIV_SIZE];
+
+	if (msa9_switch && !ica_offload_enabled) {
+		rc = ecdsa_sign_cpacf(privkey, hash, hash_length, signature,
+				      NULL);
+		if (rc != EINVAL) /* EINVAL: curve not supported by cpacf */
+			return rc;
+	}
 
 	if (adapter_handle == DRIVER_NOT_LOADED)
 		return EIO;
@@ -944,8 +1073,283 @@ static ECDSA_VERIFY_REPLY* make_ecdsa_verify_request(const ICA_EC_KEY *pubkey,
 	return (ECDSA_VERIFY_REPLY*)prepcblk;
 }
 
+/*
+ * Verify an ecdsa signature of a hashed message under a public key.
+ * Returns 0 if successful. If cpacf doesnt support the curve,
+ * EINVAL is returned.
+ */
+static int ecdsa_verify_cpacf(const ICA_EC_KEY *pub, const unsigned char *hash,
+			      size_t hashlen, const unsigned char *sig)
+{
+#define DEF_PARAM(curve, size)		\
+struct {				\
+	unsigned char sig_r[size];	\
+	unsigned char sig_s[size];	\
+	unsigned char hash[size];	\
+	unsigned char pub_x[size];	\
+	unsigned char pub_y[size];	\
+} curve
+
+	union {
+		long long buff[512];	/* 4k buffer: params + reserved area */
+		DEF_PARAM(P256, 32);
+		DEF_PARAM(P384, 48);
+		DEF_PARAM(P521, 80);
+	} param;
+
+#undef DEF_PARAM
+
+	unsigned long fc;
+	size_t off;
+	int rc;
+
+	memset(&param, 0, sizeof(param));
+	rc = 0;
+
+	switch (pub->nid) {
+	case NID_X9_62_prime256v1:
+		off = sizeof(param.P256.hash)
+		      - (hashlen > sizeof(param.P256.hash) ?
+		      sizeof(param.P256.hash) : hashlen);
+
+		memcpy(param.P256.hash + off, hash,
+		       sizeof(param.P256.hash) - off);
+
+		off = sizeof(param.P256.pub_x)
+				 - privlen_from_nid(pub->nid);
+
+		memcpy(param.P256.sig_r + off, sig,
+		       sizeof(param.P256.sig_r) - off);
+		memcpy(param.P256.sig_s + off, sig +
+		       sizeof(param.P256.sig_r) - off,
+		       sizeof(param.P256.sig_s) - off);
+		memcpy(param.P256.pub_x + off, pub->X,
+		       sizeof(param.P256.pub_x) - off);
+		memcpy(param.P256.pub_y + off, pub->Y,
+		       sizeof(param.P256.pub_y) - off);
+
+		fc = s390_kdsa_functions[ECDSA_VERIFY_P256].hw_fc;
+		break;
+
+	case NID_secp384r1:
+		off = sizeof(param.P384.hash)
+		      - (hashlen > sizeof(param.P384.hash) ?
+		      sizeof(param.P384.hash) : hashlen);
+
+		memcpy(param.P384.hash + off, hash,
+		       sizeof(param.P384.hash) - off);
+
+		off = sizeof(param.P384.pub_x)
+				 - privlen_from_nid(pub->nid);
+
+		memcpy(param.P384.sig_r + off, sig,
+		       sizeof(param.P384.sig_r) - off);
+		memcpy(param.P384.sig_s + off, sig +
+		       sizeof(param.P384.sig_r) - off,
+		       sizeof(param.P384.sig_s) - off);
+		memcpy(param.P384.pub_x + off, pub->X,
+		       sizeof(param.P384.pub_x) - off);
+		memcpy(param.P384.pub_y + off, pub->Y,
+		       sizeof(param.P384.pub_y) - off);
+
+		fc = s390_kdsa_functions[ECDSA_VERIFY_P384].hw_fc;
+		break;
+
+	case NID_secp521r1:
+		off = sizeof(param.P521.hash)
+		      - (hashlen > sizeof(param.P521.hash) ?
+		      sizeof(param.P521.hash) : hashlen);
+
+		memcpy(param.P521.hash + off, hash,
+		       sizeof(param.P521.hash) - off);
+
+		off = sizeof(param.P521.pub_x)
+				 - privlen_from_nid(pub->nid);
+
+		memcpy(param.P521.sig_r + off, sig,
+		       sizeof(param.P521.sig_r) - off);
+		memcpy(param.P521.sig_s + off, sig +
+		       sizeof(param.P521.sig_r) - off,
+		       sizeof(param.P521.sig_s) - off);
+		memcpy(param.P521.pub_x + off, pub->X,
+		       sizeof(param.P521.pub_x) - off);
+		memcpy(param.P521.pub_y + off, pub->Y,
+		       sizeof(param.P521.pub_y) - off);
+
+		fc = s390_kdsa_functions[ECDSA_VERIFY_P521].hw_fc;
+		break;
+
+	default:
+		rc = EINVAL;
+		break;
+	}
+
+	if (!rc)
+		rc = s390_kdsa(fc, param.buff, NULL, 0) ? EFAULT : 0;
+
+	return rc;
+}
+
+/*
+ * Sign a hashed message using under a private key.
+ * Returns 0 if successful. If cpacf doesnt support the curve,
+ * EINVAL is returned.
+ */
+static int ecdsa_sign_cpacf(const ICA_EC_KEY *priv, const unsigned char *hash,
+			    size_t hashlen, unsigned char *sig,
+			    void (*rng_cb)(unsigned char *, size_t))
+{
+#define DEF_PARAM(curve, size)		\
+struct {				\
+	unsigned char sig_r[size];	\
+	unsigned char sig_s[size];	\
+	unsigned char hash[size];	\
+	unsigned char priv[size];	\
+	unsigned char rand[size];	\
+} curve
+
+	union {
+		long long buff[512];	/* 4k buffer: params + reserved area */
+		DEF_PARAM(P256, 32);
+		DEF_PARAM(P384, 48);
+		DEF_PARAM(P521, 80);
+	} param;
+
+#undef DEF_PARAM
+
+	unsigned long fc;
+	size_t off;
+	int rc;
+
+	memset(&param, 0, sizeof(param));
+	rc = 0;
+
+	switch (priv->nid) {
+	case NID_X9_62_prime256v1:
+		off = sizeof(param.P256.hash)
+		      - (hashlen > sizeof(param.P256.hash) ?
+		      sizeof(param.P256.hash) : hashlen);
+
+		memcpy(param.P256.hash + off, hash,
+		       sizeof(param.P256.hash) - off);
+
+		off = sizeof(param.P256.priv)
+				 - privlen_from_nid(priv->nid);
+
+		memcpy(param.P256.priv + off, priv->D,
+		       sizeof(param.P256.priv) - off);
+
+
+		fc = s390_kdsa_functions[ECDSA_SIGN_P256].hw_fc;
+
+		if (rng_cb == NULL) {
+			rc = s390_kdsa(fc, param.buff, NULL, 0);
+		} else {
+			fc |= 0x80; /* deterministic signature */
+			do {
+				rng_cb(param.P256.rand + off,
+				       sizeof(param.P256.rand));
+			} while (s390_kdsa(fc, param.buff, NULL, 0));
+		}
+
+		memcpy(sig, param.P256.sig_r + off,
+		       sizeof(param.P256.sig_r) - off);
+		memcpy(sig + sizeof(param.P256.sig_r) - off,
+		       param.P256.sig_s + off,
+		       sizeof(param.P256.sig_s) - off);
+
+		OPENSSL_cleanse(param.P256.priv,
+				sizeof(param.P256.priv));
+		OPENSSL_cleanse(param.P256.rand,
+				sizeof(param.P256.rand));
+		break;
+
+	case NID_secp384r1:
+		off = sizeof(param.P384.hash)
+		      - (hashlen > sizeof(param.P384.hash) ?
+		      sizeof(param.P384.hash) : hashlen);
+
+		memcpy(param.P384.hash + off, hash,
+		       sizeof(param.P384.hash) - off);
+
+		off = sizeof(param.P384.priv)
+				 - privlen_from_nid(priv->nid);
+
+		memcpy(param.P384.priv + off, priv->D,
+		       sizeof(param.P384.priv) - off);
+
+		fc = s390_kdsa_functions[ECDSA_SIGN_P384].hw_fc;
+
+		if (rng_cb == NULL) {
+			rc = s390_kdsa(fc, param.buff, NULL, 0);
+		} else {
+			fc |= 0x80; /* deterministic signature */
+			do {
+				rng_cb(param.P384.rand + off,
+				       sizeof(param.P384.rand));
+			} while (s390_kdsa(fc, param.buff, NULL, 0));
+		}
+
+		memcpy(sig, param.P384.sig_r + off,
+		       sizeof(param.P384.sig_r) - off);
+		memcpy(sig + sizeof(param.P384.sig_r) - off,
+		       param.P384.sig_s + off,
+		       sizeof(param.P384.sig_s) - off);
+
+		OPENSSL_cleanse(param.P384.priv,
+				sizeof(param.P384.priv));
+		OPENSSL_cleanse(param.P384.rand,
+				sizeof(param.P384.rand));
+		break;
+
+	case NID_secp521r1:
+		off = sizeof(param.P521.hash)
+		      - (hashlen > sizeof(param.P521.hash) ?
+		      sizeof(param.P521.hash) : hashlen);
+
+		memcpy(param.P521.hash + off, hash,
+		       sizeof(param.P521.hash) - off);
+
+		off = sizeof(param.P521.priv)
+				 - privlen_from_nid(priv->nid);
+
+		memcpy(param.P521.priv + off, priv->D,
+		       sizeof(param.P521.priv) - off);
+
+		fc = s390_kdsa_functions[ECDSA_SIGN_P521].hw_fc;
+
+		if (rng_cb == NULL) {
+			rc = s390_kdsa(fc, param.buff, NULL, 0);
+		} else {
+			fc |= 0x80; /* deterministic signature */
+			do {
+				rng_cb(param.P521.rand + off,
+				       sizeof(param.P521.rand));
+			} while (s390_kdsa(fc, param.buff, NULL, 0));
+		}
+
+		memcpy(sig, param.P521.sig_r + off,
+		       sizeof(param.P521.sig_r) - off);
+		memcpy(sig + sizeof(param.P521.sig_r) - off,
+		       param.P521.sig_s + off,
+		       sizeof(param.P521.sig_s) - off);
+
+		OPENSSL_cleanse(param.P521.priv,
+				sizeof(param.P521.priv));
+		OPENSSL_cleanse(param.P521.rand,
+				sizeof(param.P521.rand));
+		break;
+
+	default:
+		rc = EINVAL;
+		break;
+	}
+
+	return rc;
+}
+
 /**
- * verifies an ECDSA signature via Crypto Express CCA coprocessor.
+ * verifies an ECDSA signature via CPACF or Crypto Express CCA coprocessor.
  *
  * Returns 0 if successful
  *         EIO if an internal error occurred
@@ -960,6 +1364,12 @@ unsigned int ecdsa_verify_hw(ica_adapter_handle_t adapter_handle,
 	int rc;
 	struct ica_xcRB xcrb;
 	ECDSA_VERIFY_REPLY* reply_p;
+
+	if (msa9_switch && !ica_offload_enabled) {
+		rc = ecdsa_verify_cpacf(pubkey, hash, hash_length, signature);
+		if (rc != EINVAL) /* EINVAL: curve not supported by cpacf */
+			return rc;
+	}
 
 	if (adapter_handle == DRIVER_NOT_LOADED)
 		return EIO;
@@ -1166,6 +1576,134 @@ static ECKEYGEN_REPLY* make_eckeygen_request(ICA_EC_KEY *key,
 	return (ECKEYGEN_REPLY*)prepcblk;
 }
 
+static int eckeygen_cpacf(ICA_EC_KEY *key)
+{
+	static const unsigned char p256_base_x[] = {
+	0x6B, 0x17, 0xD1, 0xF2, 0xE1, 0x2C, 0x42, 0x47, 0xF8, 0xBC, 0xE6, 0xE5,
+	0x63, 0xA4, 0x40, 0xF2, 0x77, 0x03, 0x7D, 0x81, 0x2D, 0xEB, 0x33, 0xA0,
+	0xF4, 0xA1, 0x39, 0x45, 0xD8, 0x98, 0xC2, 0x96
+	};
+	static const unsigned char p256_base_y[] = {
+	0x4F, 0xE3, 0x42, 0xE2, 0xFE, 0x1A, 0x7F, 0x9B, 0x8E, 0xE7, 0xEB, 0x4A,
+	0x7C, 0x0F, 0x9E, 0x16, 0x2B, 0xCE, 0x33, 0x57, 0x6B, 0x31, 0x5E, 0xCE,
+	0xCB, 0xB6, 0x40, 0x68, 0x37, 0xBF, 0x51, 0xF5
+	};
+	static const unsigned char p256_ord[] = {
+	0xFF, 0xFF, 0xFF, 0xFF, 0x00, 0x00, 0x00, 0x00, 0xFF, 0xFF, 0xFF, 0xFF,
+	0xFF, 0xFF, 0xFF, 0xFF, 0xBC, 0xE6, 0xFA, 0xAD, 0xA7, 0x17, 0x9E, 0x84,
+	0xF3, 0xB9, 0xCA, 0xC2, 0xFC, 0x63, 0x25, 0x51
+	};
+
+	static const unsigned char p384_base_x[] = {
+	0xAA, 0x87, 0xCA, 0x22, 0xBE, 0x8B, 0x05, 0x37, 0x8E, 0xB1, 0xC7, 0x1E,
+	0xF3, 0x20, 0xAD, 0x74, 0x6E, 0x1D, 0x3B, 0x62, 0x8B, 0xA7, 0x9B, 0x98,
+	0x59, 0xF7, 0x41, 0xE0, 0x82, 0x54, 0x2A, 0x38, 0x55, 0x02, 0xF2, 0x5D,
+	0xBF, 0x55, 0x29, 0x6C, 0x3A, 0x54, 0x5E, 0x38, 0x72, 0x76, 0x0A, 0xB7
+	};
+	static const unsigned char p384_base_y[] = {
+	0x36, 0x17, 0xDE, 0x4A, 0x96, 0x26, 0x2C, 0x6F, 0x5D, 0x9E, 0x98, 0xBF,
+	0x92, 0x92, 0xDC, 0x29, 0xF8, 0xF4, 0x1D, 0xBD, 0x28, 0x9A, 0x14, 0x7C,
+	0xE9, 0xDA, 0x31, 0x13, 0xB5, 0xF0, 0xB8, 0xC0, 0x0A, 0x60, 0xB1, 0xCE,
+	0x1D, 0x7E, 0x81, 0x9D, 0x7A, 0x43, 0x1D, 0x7C, 0x90, 0xEA, 0x0E, 0x5F
+	};
+	static const unsigned char p384_ord[] = {
+	0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+	0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+	0xC7, 0x63, 0x4D, 0x81, 0xF4, 0x37, 0x2D, 0xDF, 0x58, 0x1A, 0x0D, 0xB2,
+	0x48, 0xB0, 0xA7, 0x7A, 0xEC, 0xEC, 0x19, 0x6A, 0xCC, 0xC5, 0x29, 0x73
+	};
+
+	static const unsigned char p521_base_x[] = {
+	0x00, 0xC6, 0x85, 0x8E, 0x06, 0xB7, 0x04, 0x04, 0xE9, 0xCD, 0x9E, 0x3E,
+	0xCB, 0x66, 0x23, 0x95, 0xB4, 0x42, 0x9C, 0x64, 0x81, 0x39, 0x05, 0x3F,
+	0xB5, 0x21, 0xF8, 0x28, 0xAF, 0x60, 0x6B, 0x4D, 0x3D, 0xBA, 0xA1, 0x4B,
+	0x5E, 0x77, 0xEF, 0xE7, 0x59, 0x28, 0xFE, 0x1D, 0xC1, 0x27, 0xA2, 0xFF,
+	0xA8, 0xDE, 0x33, 0x48, 0xB3, 0xC1, 0x85, 0x6A, 0x42, 0x9B, 0xF9, 0x7E,
+	0x7E, 0x31, 0xC2, 0xE5, 0xBD, 0x66
+	};
+	static const unsigned char p521_base_y[] = {
+	0x01, 0x18, 0x39, 0x29, 0x6A, 0x78, 0x9A, 0x3B, 0xC0, 0x04, 0x5C, 0x8A,
+	0x5F, 0xB4, 0x2C, 0x7D, 0x1B, 0xD9, 0x98, 0xF5, 0x44, 0x49, 0x57, 0x9B,
+	0x44, 0x68, 0x17, 0xAF, 0xBD, 0x17, 0x27, 0x3E, 0x66, 0x2C, 0x97, 0xEE,
+	0x72, 0x99, 0x5E, 0xF4, 0x26, 0x40, 0xC5, 0x50, 0xB9, 0x01, 0x3F, 0xAD,
+	0x07, 0x61, 0x35, 0x3C, 0x70, 0x86, 0xA2, 0x72, 0xC2, 0x40, 0x88, 0xBE,
+	0x94, 0x76, 0x9F, 0xD1, 0x66, 0x50
+	};
+	static const unsigned char p521_ord[] = {
+	0x01, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+	0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+	0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFA, 0x51, 0x86,
+	0x87, 0x83, 0xBF, 0x2F, 0x96, 0x6B, 0x7F, 0xCC, 0x01, 0x48, 0xF7, 0x09,
+	0xA5, 0xD0, 0x3B, 0xB5, 0xC9, 0xB8, 0x89, 0x9C, 0x47, 0xAE, 0xBB, 0x6F,
+	0xB7, 0x1E, 0x91, 0x38, 0x64, 0x09
+	};
+
+	const unsigned int privlen = privlen_from_nid(key->nid);
+	const unsigned char *base_x, *base_y;
+
+	BIGNUM *priv, *ord;
+	BN_CTX *ctx;
+	int rv, numbytes;
+
+	ctx = BN_CTX_new();
+	priv = BN_new();
+	ord = BN_new();
+
+	if (ctx == NULL || priv == NULL || ord == NULL) {
+		rv = ENOMEM;
+		goto out;
+	}
+
+	switch (key->nid) {
+	case NID_X9_62_prime256v1:
+		base_x = p256_base_x;
+		base_y = p256_base_y;
+		BN_bin2bn(p256_ord, sizeof(p256_ord), ord);
+		break;
+	case NID_secp384r1:
+		base_x = p384_base_x;
+		base_y = p384_base_y;
+		BN_bin2bn(p384_ord, sizeof(p384_ord), ord);
+		break;
+	case NID_secp521r1:
+		base_x = p521_base_x;
+		base_y = p521_base_y;
+		BN_bin2bn(p521_ord, sizeof(p521_ord), ord);
+		break;
+	default:
+		rv = EINVAL;
+		goto out;
+	}
+
+	do {
+		if (!BN_rand_range(priv, ord))
+		                goto out;
+	} while (BN_is_zero(priv));
+
+	memset(key->D, 0, privlen);
+	numbytes = BN_num_bytes(priv);
+
+	rv = BN_bn2bin(priv, key->D + privlen - numbytes);
+	BN_clear(priv);
+	if (rv != numbytes) {
+		rv = EIO;
+		goto out;
+	}
+
+	rv = scalar_mul_cpacf(key->X, key->Y, key->D, base_x, base_y,
+			      key->nid);
+
+	out:
+		if (ctx != NULL)
+			BN_CTX_free(ctx);
+		if (priv != NULL)
+			BN_free(priv);
+		if (ord != NULL)
+			BN_free(ord);
+
+	return rv;
+}
+
 /**
  * generates an EC key via Crypto Express CCA coprocessor.
  *
@@ -1182,6 +1720,12 @@ unsigned int eckeygen_hw(ica_adapter_handle_t adapter_handle, ICA_EC_KEY *key)
 	unsigned int privlen = privlen_from_nid(key->nid);
 	ECC_PUBLIC_KEY_TOKEN* pub_p;
 	unsigned char* p;
+
+	if (msa9_switch) {
+		rc = eckeygen_cpacf(key);
+		if (rc != EINVAL)	/* curve not supported by cpacf */
+			return rc;
+	}
 
 	reply_p = make_eckeygen_request(key, &xcrb, &buf, &len);
 	if (!reply_p)
@@ -1297,3 +1841,229 @@ err:
 
 	return rc;
 }
+
+#ifdef ICA_INTERNAL_TEST_EC
+
+#include "../test/testcase.h"
+#include "test_vec.h"
+
+#define TEST_ERROR(msg, alg, tv)					    \
+do {									    \
+	fprintf(stderr, "ERROR: %s. (%s test vector %lu)\n", msg, alg, tv); \
+	exit(TEST_FAIL);						    \
+} while(0)
+
+static const unsigned char *deterministic_rng_output;
+
+static void deterministic_rng(unsigned char *buf, size_t buflen)
+{
+	memcpy(buf, deterministic_rng_output, buflen);
+}
+
+static void ecdsa_test(void)
+{
+	sha_context_t sha_ctx;
+	sha256_context_t sha256_ctx;
+	sha512_context_t sha512_ctx;
+	unsigned char hash[1024];
+	unsigned char sig[4096];
+	size_t hashlen;
+	const struct ecdsa_tv *t;
+	size_t i;
+	int rc;
+
+	verbosity_ = 2;
+	t = &ECDSA_TV[0];
+
+	for (i = 0; i < ECDSA_TV_LEN; i++) {
+		switch (t->hash) {
+		case SHA1:
+			rc = ica_sha1(SHA_MSG_PART_ONLY, t->msglen, t->msg,
+				      &sha_ctx, hash);
+			hashlen = SHA1_HASH_LENGTH;
+			break;
+		case SHA224:
+			rc = ica_sha224(SHA_MSG_PART_ONLY, t->msglen, t->msg,
+				        &sha256_ctx, hash);
+			hashlen = SHA224_HASH_LENGTH;
+			break;
+		case SHA256:
+			rc = ica_sha256(SHA_MSG_PART_ONLY, t->msglen, t->msg,
+				        &sha256_ctx, hash);
+			hashlen = SHA256_HASH_LENGTH;
+			break;
+		case SHA384:
+			rc = ica_sha384(SHA_MSG_PART_ONLY, t->msglen, t->msg,
+				        &sha512_ctx, hash);
+			hashlen = SHA384_HASH_LENGTH;
+			break;
+		case SHA512:
+			rc = ica_sha512(SHA_MSG_PART_ONLY, t->msglen, t->msg,
+				        &sha512_ctx, hash);
+			hashlen = SHA512_HASH_LENGTH;
+			break;
+		default:
+			TEST_ERROR("Unknown hash", "ECDSA", i);
+		}
+
+		if (rc)
+			TEST_ERROR("Hashing failed", "ECDSA", i);
+
+		deterministic_rng_output = t->k;
+
+		/* Sign hashed message */
+
+		rc = ecdsa_sign_cpacf(t->key, hash, hashlen, sig,
+				      deterministic_rng);
+		if (rc)
+			TEST_ERROR("Signing failed", "ECDSA", i);
+
+		/* Compare signature to expected result */
+
+		if (memcmp(sig, t->r, t->siglen)
+		    || memcmp(sig + t->siglen, t->s, t->siglen)) {
+			printf("Result R:\n");
+			dump_array(sig, t->siglen);
+			printf("Correct R:\n");
+			dump_array((unsigned char *)t->r, t->siglen);
+			printf("Result S:\n");
+			dump_array(sig + t->siglen, t->siglen);
+			printf("Correct S:\n");
+			dump_array((unsigned char *)t->s, t->siglen);
+			TEST_ERROR("Wrong signature", "ECDSA", i);
+		}
+
+		/* Verify signature */
+
+		rc = ecdsa_verify_cpacf(t->key, hash, hashlen, sig);
+		if (rc)
+			TEST_ERROR("Verification failed", "ECDSA", i);
+
+		/* Try to verify forged signature */
+
+		sig[0] ^= 0x01;
+
+		rc = ecdsa_verify_cpacf(t->key, hash, hashlen, sig);
+		if (!rc)
+			TEST_ERROR("Verification expected to fail but"
+				   " succeeded", "ECDSA", i);
+
+		t++;
+	}
+}
+
+static void scalar_mul_test(void)
+{
+	const unsigned char *base_x, *base_y;
+	unsigned char res_x[4096], res_y[4096];
+	const struct scalar_mul_tv *t;
+	size_t i;
+	int rc;
+
+	static const unsigned char p256_base_x[] = {
+	0x6B, 0x17, 0xD1, 0xF2, 0xE1, 0x2C, 0x42, 0x47, 0xF8, 0xBC, 0xE6, 0xE5,
+	0x63, 0xA4, 0x40, 0xF2, 0x77, 0x03, 0x7D, 0x81, 0x2D, 0xEB, 0x33, 0xA0,
+	0xF4, 0xA1, 0x39, 0x45, 0xD8, 0x98, 0xC2, 0x96
+	};
+	static const unsigned char p256_base_y[] = {
+	0x4F, 0xE3, 0x42, 0xE2, 0xFE, 0x1A, 0x7F, 0x9B, 0x8E, 0xE7, 0xEB, 0x4A,
+	0x7C, 0x0F, 0x9E, 0x16, 0x2B, 0xCE, 0x33, 0x57, 0x6B, 0x31, 0x5E, 0xCE,
+	0xCB, 0xB6, 0x40, 0x68, 0x37, 0xBF, 0x51, 0xF5
+	};
+
+	static const unsigned char p384_base_x[] = {
+	0xAA, 0x87, 0xCA, 0x22, 0xBE, 0x8B, 0x05, 0x37, 0x8E, 0xB1, 0xC7, 0x1E,
+	0xF3, 0x20, 0xAD, 0x74, 0x6E, 0x1D, 0x3B, 0x62, 0x8B, 0xA7, 0x9B, 0x98,
+	0x59, 0xF7, 0x41, 0xE0, 0x82, 0x54, 0x2A, 0x38, 0x55, 0x02, 0xF2, 0x5D,
+	0xBF, 0x55, 0x29, 0x6C, 0x3A, 0x54, 0x5E, 0x38, 0x72, 0x76, 0x0A, 0xB7
+	};
+	static const unsigned char p384_base_y[] = {
+	0x36, 0x17, 0xDE, 0x4A, 0x96, 0x26, 0x2C, 0x6F, 0x5D, 0x9E, 0x98, 0xBF,
+	0x92, 0x92, 0xDC, 0x29, 0xF8, 0xF4, 0x1D, 0xBD, 0x28, 0x9A, 0x14, 0x7C,
+	0xE9, 0xDA, 0x31, 0x13, 0xB5, 0xF0, 0xB8, 0xC0, 0x0A, 0x60, 0xB1, 0xCE,
+	0x1D, 0x7E, 0x81, 0x9D, 0x7A, 0x43, 0x1D, 0x7C, 0x90, 0xEA, 0x0E, 0x5F
+	};
+
+	static const unsigned char p521_base_x[] = {
+	0x00, 0xC6, 0x85, 0x8E, 0x06, 0xB7, 0x04, 0x04, 0xE9, 0xCD, 0x9E, 0x3E,
+	0xCB, 0x66, 0x23, 0x95, 0xB4, 0x42, 0x9C, 0x64, 0x81, 0x39, 0x05, 0x3F,
+	0xB5, 0x21, 0xF8, 0x28, 0xAF, 0x60, 0x6B, 0x4D, 0x3D, 0xBA, 0xA1, 0x4B,
+	0x5E, 0x77, 0xEF, 0xE7, 0x59, 0x28, 0xFE, 0x1D, 0xC1, 0x27, 0xA2, 0xFF,
+	0xA8, 0xDE, 0x33, 0x48, 0xB3, 0xC1, 0x85, 0x6A, 0x42, 0x9B, 0xF9, 0x7E,
+	0x7E, 0x31, 0xC2, 0xE5, 0xBD, 0x66
+	};
+	static const unsigned char p521_base_y[] = {
+	0x01, 0x18, 0x39, 0x29, 0x6A, 0x78, 0x9A, 0x3B, 0xC0, 0x04, 0x5C, 0x8A,
+	0x5F, 0xB4, 0x2C, 0x7D, 0x1B, 0xD9, 0x98, 0xF5, 0x44, 0x49, 0x57, 0x9B,
+	0x44, 0x68, 0x17, 0xAF, 0xBD, 0x17, 0x27, 0x3E, 0x66, 0x2C, 0x97, 0xEE,
+	0x72, 0x99, 0x5E, 0xF4, 0x26, 0x40, 0xC5, 0x50, 0xB9, 0x01, 0x3F, 0xAD,
+	0x07, 0x61, 0x35, 0x3C, 0x70, 0x86, 0xA2, 0x72, 0xC2, 0x40, 0x88, 0xBE,
+	0x94, 0x76, 0x9F, 0xD1, 0x66, 0x50
+	};
+
+	verbosity_ = 2;
+	t = &SCALAR_MUL_TV[0];
+
+	for (i = 0; i < SCALAR_MUL_TV_LEN; i++) {
+		memset(res_x, 0, sizeof(res_x));
+		memset(res_y, 0, sizeof(res_y));
+
+		switch (t->curve_nid) {
+		case NID_X9_62_prime256v1:
+			base_x = p256_base_x;
+			base_y = p256_base_y;
+			break;
+		case NID_secp384r1:
+			base_x = p384_base_x;
+			base_y = p384_base_y;
+			break;
+		case NID_secp521r1:
+			base_x = p521_base_x;
+			base_y = p521_base_y;
+			break;
+		default:
+			TEST_ERROR("Unknown curve", "SCALAR-MUL", i);
+		}
+
+		rc = scalar_mul_cpacf(res_x, res_y, t->scalar, base_x, base_y,
+				      t->curve_nid);
+		if (rc) {
+			TEST_ERROR("Scalar multipication failed",
+				   "SCALAR-MUL", i);
+		}
+
+		if (memcmp(res_x, t->x, t->len)) {
+			printf("Result X:\n");
+			dump_array(res_x, t->len);
+			printf("Correct X:\n");
+			dump_array((unsigned char *)t->x, t->len);
+			TEST_ERROR("Scalar multipication calculated wrong X",
+				   "SCALAR-MUL", i);
+		}
+
+		if (memcmp(res_y, t->y, t->len)) {
+			printf("Result Y:\n");
+			dump_array(res_y, t->len);
+			printf("Correct Y:\n");
+			dump_array((unsigned char *)t->y, t->len);
+			TEST_ERROR("Scalar multipication calculated wrong X",
+				   "SCALAR-MUL", i);
+		}
+
+		t++;
+	}
+}
+
+int main(void)
+{
+	if (!msa9_switch)
+		exit(TEST_SKIP);
+
+	/* test exit on first failure */
+	scalar_mul_test();
+	ecdsa_test();
+
+	return TEST_SUCC;
+}
+
+#endif

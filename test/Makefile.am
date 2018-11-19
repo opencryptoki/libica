@@ -56,6 +56,11 @@ ecdh2_test.sh \
 ecdsa2_test.sh \
 mp_test
 
+if ICA_INTERNAL_TESTS
+TESTS += \
+${top_builddir}/src/internal_tests/ec_internal_test
+endif
+
 TEST_EXTENSIONS = .sh .pl
 TESTS_ENVIRONMENT = export LD_LIBRARY_PATH=${builddir}/../src/.libs/ \
 			   PATH=${builddir}/../src/:$$PATH \

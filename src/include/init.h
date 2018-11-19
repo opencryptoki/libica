@@ -23,6 +23,8 @@ int begin_sigill_section(struct sigaction *oldact, sigset_t * oldset);
 void end_sigill_section(struct sigaction *oldact, sigset_t * oldset);
 
 extern int ica_fallbacks_enabled;
+extern int ica_offload_enabled;
+extern int ica_stats_enabled;
 
 #endif
 

@@ -127,6 +127,12 @@ typedef ica_adapter_handle_t ICA_ADAPTER_HANDLE;
 #define SHA512_DRNG	94
 #define SHA512_224      95
 #define SHA512_256      96
+#define ED25519_KEYGEN	100
+#define ED25519_SIGN	101
+#define ED25519_VERIFY	102
+#define ED448_KEYGEN	103
+#define ED448_SIGN	104
+#define ED448_VERIFY	105
 
 /*
  * Key length for DES/3DES encryption/decryption
@@ -320,6 +326,19 @@ typedef enum {
 	AES_256_GCM_DECRYPT,
 } kma_functions_t;
 
+typedef enum {
+	ECDSA_VERIFY_P256,
+	ECDSA_VERIFY_P384,
+	ECDSA_VERIFY_P521,
+	ECDSA_SIGN_P256,
+	ECDSA_SIGN_P384,
+	ECDSA_SIGN_P521,
+	EDDSA_VERIFY_ED25519,
+	EDDSA_VERIFY_ED448,
+	EDDSA_SIGN_ED25519,
+	EDDSA_SIGN_ED448,
+} kdsa_functions_t;
+
 typedef struct {
 	unsigned int key_length;
 	unsigned char* modulus;
@@ -438,6 +457,40 @@ typedef struct ica_drbg ica_drbg_t;
  */
 ICA_EXPORT
 void ica_set_fallback_mode(int fallback_mode);
+
+/**
+ * Environment variable for setting libica offload mode.
+ * By default libica may prefer to do crypto in cpacf instead of adapters.
+ * If this environment variable is defined to be an integer not equal to zero,
+ * adapters will always be preferred.
+ */
+#define ICA_OFFLOAD_ENV "LIBICA_OFFLOAD_MODE"
+
+/**
+ * Set libica offload mode.
+ * By default libica may prefer to do crypto in cpacf instead of adapters.
+ * If this function is called with offload_mode != 0, adapters will always
+ * be preferred.
+ */
+ICA_EXPORT
+void ica_set_offload_mode(int offload_mode);
+
+/**
+ * Environment variable for setting libica stats mode.
+ * By default libica counts its crypto operations in shared memory.
+ * If this environment variable is defined to be zero, libica will not
+ * count crypto operations.
+ */
+#define ICA_STATS_ENV "LIBICA_STATS_MODE"
+
+/**
+ * Set libica stats mode.
+ * By default libica counts its crypto operations in shared memory.
+ * If this function is called with stats_mode = 0, libica will not
+ * count crypto operations.
+ */
+ICA_EXPORT
+void ica_set_stats_mode(int stats_mode);
 
 /**
  * Opens the specified adapter
@@ -840,6 +893,12 @@ unsigned int ica_shake_256(unsigned int message_part,
  *
  *                          Begin of ECC API
  */
+#ifndef NID_ED25519
+# define NID_ED25519	1087
+#endif
+#ifndef NID_ED448
+# define NID_ED448	1088
+#endif
 
 typedef struct ec_key_t ICA_EC_KEY;
 
@@ -850,9 +909,6 @@ typedef struct ec_key_t ICA_EC_KEY;
  * The identifier of the elliptic curve, on which the new ICA_EC_KEY
  * shall be based.
  *
- * The following elliptic curves are supported.
- *
- * <pre>
  * NID Value  NID Name (OpenSSL)     Elliptic Curve    D Length (bytes)
  * ---------  ---------------------- ----------------  ----------------
  *       409  NID_X9_62_prime192v    secp192r1            24
@@ -867,7 +923,10 @@ typedef struct ec_key_t ICA_EC_KEY;
  *       929  NID_brainpoolP320r1    brainpoolP320r1      40
  *       931  NID_brainpoolP384r1    brainpoolP384r1      48
  *       933  NID_brainpoolP512r1    brainpoolP512r1      64
- * </pre>
+ *      1034  NID_X25519             X25519
+ *      1035  NID_X448               X448
+ *      1087  NID_ED25519            Ed25519              32
+ *      1088  NID_ED448              Ed448                57
  *
  * @param privlen
  * A pointer to an unsigned integer buffer where the length of the

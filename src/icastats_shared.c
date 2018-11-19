@@ -25,6 +25,7 @@
 #include <fcntl.h>
 #include <dirent.h>
 #include "icastats.h"
+#include "init.h"
 
 #define NOT_INITIALIZED (-1)
 #define NAME_LENGHT 20
@@ -257,6 +258,7 @@ char *get_next_usr()
 	return NULL;
 }
 
+#ifndef ICASTATS
 /* increments a field of the shared memory segment
  * arguments:
  * @field - the enum of the field see icastats.h
@@ -265,9 +267,11 @@ char *get_next_usr()
  * @direction - valid values are ENCRYPT and DECRYPT
  */
 
-
 void stats_increment(stats_fields_t field, int hardware, int direction)
 {
+	if (!ica_stats_enabled)
+		return;
+
 	if (stats == NULL)
 		return;
 
@@ -282,6 +286,7 @@ void stats_increment(stats_fields_t field, int hardware, int direction)
 		else
 			atomic_add((int *)&stats[field].dec.sw, 1);
 }
+#endif
 
 
 /* Reset the shared memory segment to zero

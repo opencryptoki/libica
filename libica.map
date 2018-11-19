@@ -133,3 +133,10 @@ LIBICA_3.4.0 {
 	ica_sha512_256;
     local: *;
 } LIBICA_3.3.0;
+
+LIBICA_3.5.0 {
+    global:
+	ica_set_offload_mode;
+	ica_set_stats_mode;
+    local: *;
+} LIBICA_3.4.0;

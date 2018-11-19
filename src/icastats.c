@@ -72,21 +72,21 @@ const char *const STATS_DESC[ICA_NUM_STATS] = {
 #define CELL_SIZE 10
 void print_stats(stats_entry_t *stats)
 {
-	printf(" function     |           hardware       |            software\n");
-	printf("--------------+--------------------------+-------------------------\n");
-	printf("              |      ENC    CRYPT   DEC  |      ENC    CRYPT   DEC \n");
-	printf("--------------+--------------------------+-------------------------\n");
+	printf(" function       |           hardware       |            software\n");
+	printf("----------------+--------------------------+-------------------------\n");
+	printf("                |      ENC    CRYPT   DEC  |      ENC    CRYPT   DEC \n");
+	printf("----------------+--------------------------+-------------------------\n");
 	unsigned int i;
 	for (i = 0; i < ICA_NUM_STATS; ++i){
 		if(i<=ICA_STATS_RSA_CRT){
-			printf(" %12s |      %*d          |       %*d\n",
+			printf(" %14s |      %*d          |       %*d\n",
 			       STATS_DESC[i],
 			       CELL_SIZE,
 			       stats[i].enc.hw,
 			       CELL_SIZE,
 			       stats[i].enc.sw);
 		} else{
-			printf(" %12s |%*d     %*d |%*d    %*d\n",
+			printf(" %14s |%*d     %*d |%*d    %*d\n",
 			       STATS_DESC[i],
 			       CELL_SIZE,
 			       stats[i].enc.hw,

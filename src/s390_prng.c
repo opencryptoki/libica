@@ -31,7 +31,9 @@
 #define STCK_BUFFER  8
 
 /*
- * State handle for the global ica_drbg instantiation.
+ * State handle for the global ica_drbg instantiation that replaces
+ * the old prng implementation (if available) which feeds
+ * the ica_random_number_generate api,
  */
 ica_drbg_t *ica_drbg_global = ICA_DRBG_NEW_STATE_HANDLE;
 
