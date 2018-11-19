@@ -336,20 +336,6 @@ typedef struct {
 } ica_rsa_key_crt_t;
 
 /**
- *  ECC defines and typedefs
- */
-typedef struct {
-	unsigned int version;
-	unsigned int encflag;
-	unsigned int curve_nid;
-	unsigned int pubkey_length;
-	unsigned int privkey_length;
-	unsigned char* pub_x;
-	unsigned char* pub_y;
-	unsigned char* priv_d;
-} ica_ecc_key_t;
-
-/**
  *  DES and AES defines and typedefs
  */
 typedef unsigned char ica_des_vector_t[8];
