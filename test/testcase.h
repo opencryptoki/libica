@@ -135,6 +135,7 @@ _ret_:
 	return rc;
 }
 
+#ifndef ICA_INTERNAL_TEST
 static inline unsigned int
 getenv_icapath()
 {
@@ -155,15 +156,6 @@ getenv_icapath()
 	return icapath;
 }
 
-static inline int
-is_supported_openssl_curve(int nid)
-{
-	EC_GROUP *ptr = EC_GROUP_new_by_curve_name(nid);
-	if (ptr)
-		EC_GROUP_free(ptr);
-	return ptr ? 1 : 0;
-}
-
 static inline void
 toggle_env_icapath()
 {
@@ -178,5 +170,15 @@ unset_env_icapath()
 {
 	unsetenv("ICAPATH");
 }
+
+static inline int
+is_supported_openssl_curve(int nid)
+{
+	EC_GROUP *ptr = EC_GROUP_new_by_curve_name(nid);
+	if (ptr)
+		EC_GROUP_free(ptr);
+	return ptr ? 1 : 0;
+}
+#endif
 
 #endif /* TESTCASE_H */

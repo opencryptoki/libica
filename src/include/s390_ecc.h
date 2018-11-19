@@ -28,6 +28,7 @@ struct ec_key_t {
 	unsigned char* D;
 }; /* ICA_EC_KEY */
 
+
 /**
  * Refer to z/OS ICSF Application Programmer's Guide,
  * Appendix A. ICSF and cryptographic coprocessor return and reason codes
@@ -400,6 +401,7 @@ static inline int privlen_from_nid(unsigned int nid)
 	case NID_brainpoolP224r1:
 		return 28;
 #endif
+	case NID_ED25519:
 	case NID_X9_62_prime256v1:
 #if OPENSSL_VERSION_NUMBER >= 0x010002000
 	case NID_brainpoolP256r1:
@@ -412,6 +414,8 @@ static inline int privlen_from_nid(unsigned int nid)
 	case NID_brainpoolP384r1:
 #endif
 		return 48;
+	case NID_ED448:
+		return 57;
 #if OPENSSL_VERSION_NUMBER >= 0x010002000
 	case NID_brainpoolP512r1:
 		return 64;

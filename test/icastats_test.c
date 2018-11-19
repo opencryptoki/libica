@@ -46,6 +46,8 @@ void aes_tests(unsigned char *iv, unsigned char *cmac, unsigned char *ctr);
 int main (int argc, char **argv)
 {
 	int rc = 0;
+	int value;
+	const char *ptr;
 	ica_adapter_handle_t adapter_handle;
 
 	unsigned char *cmac;
@@ -53,6 +55,11 @@ int main (int argc, char **argv)
 	unsigned char *iv;
 
 	set_verbosity(argc, argv);
+
+	/* Skip test if stats are not counted. */
+	ptr = getenv(ICA_STATS_ENV);
+	if (ptr && sscanf(ptr, "%i", &value) == 1 && !value)
+		exit(TEST_SKIP);
 
 	if((cmac = malloc(AES_CIPHER_BLOCK*sizeof(char))) == NULL){
 		perror("Error in malloc: ");

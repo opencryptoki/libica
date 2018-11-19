@@ -76,6 +76,18 @@ if test "x$enable_sanitizer" = xyes; then
 	AC_MSG_RESULT([*** Enabling sanitizer at user request ***])
 fi
 
+dnl --- enable_internal tests
+AC_ARG_ENABLE(internal_tests,
+              [  --enable-internal-tests built internal tests],
+              [enable_internal_tests="yes"],[enable_internal_tests="no"])
+AM_CONDITIONAL(ICA_INTERNAL_TESTS, test x$enable_internal_tests = xyes)
+
+if test "x$enable_internal_tests" = xyes; then
+	AC_MSG_RESULT([*** Building internal tests at user request ***])
+fi
+
+
+
 if test "x$enable_coverage" = xno && test "x$enable_debug" = xno && test "x$enable_sanitizer" = xno; then
 	FLAGS="$FLAGS -O3 -D_FORTIFY_SOURCE=2"
 fi
@@ -97,3 +109,4 @@ echo "  FIPS build:      $enable_fips"
 echo "  Debug build:     $enable_debug"
 echo "  Sanitizer build: $enable_sanitizer"
 echo "  Coverage build:  $enable_coverage"
+echo "  Internal tests:  $enable_internal_tests"

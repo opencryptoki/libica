@@ -33,7 +33,7 @@ unsigned long long facility_bits[3];
 unsigned int sha1_switch, sha256_switch, sha512_switch, sha3_switch, des_switch,
 	     tdes_switch, aes128_switch, aes192_switch, aes256_switch,
 	     prng_switch, tdea128_switch, tdea192_switch, sha512_drng_switch,
-	     msa4_switch, msa5_switch, msa8_switch, trng_switch;
+	     msa4_switch, msa5_switch, msa8_switch, trng_switch, msa9_switch;
 
 s390_supported_function_t s390_kimd_functions[] = {
 	{SHA_1, S390_CRYPTO_SHA_1, &sha1_switch},
@@ -87,6 +87,22 @@ s390_supported_function_t s390_msa4_functions[] = {
 	{AES_256_XTS_DECRYPT, S390_CRYPTO_AES_256_XTS_DECRYPT, &msa4_switch}
 };
 
+s390_supported_function_t s390_pcc_functions[] = {
+	{0, 0, &msa4_switch},	/* CMAC_AES not supported */
+	{0, 0, &msa4_switch},
+	{0, 0, &msa4_switch},
+	{0, 0, &msa4_switch},
+	{0, 0, &msa4_switch},
+	{0, 0, &msa4_switch},
+	{SCALAR_MULTIPLY_P256, S390_CRYPTO_SCALAR_MULTIPLY_P256, &msa9_switch},
+	{SCALAR_MULTIPLY_P384, S390_CRYPTO_SCALAR_MULTIPLY_P384, &msa9_switch},
+	{SCALAR_MULTIPLY_P521, S390_CRYPTO_SCALAR_MULTIPLY_P521, &msa9_switch},
+	{SCALAR_MULTIPLY_ED25519, S390_CRYPTO_SCALAR_MULTIPLY_ED25519, &msa9_switch},
+	{SCALAR_MULTIPLY_ED448, S390_CRYPTO_SCALAR_MULTIPLY_ED448, &msa9_switch},
+	{SCALAR_MULTIPLY_X25519, S390_CRYPTO_SCALAR_MULTIPLY_X25519, &msa9_switch},
+	{SCALAR_MULTIPLY_X448, S390_CRYPTO_SCALAR_MULTIPLY_X448, &msa9_switch},
+};
+
 s390_supported_function_t s390_ppno_functions[] = {
 	{SHA512_DRNG_GEN, S390_CRYPTO_SHA512_DRNG_GEN, &sha512_drng_switch},
 	{SHA512_DRNG_SEED, S390_CRYPTO_SHA512_DRNG_SEED, &sha512_drng_switch},
@@ -104,6 +120,19 @@ s390_supported_function_t s390_kma_functions[] = {
 	{AES_192_GCM_DECRYPT, S390_CRYPTO_AES_192_GCM_DECRYPT, &msa8_switch},
 	{AES_256_GCM_ENCRYPT, S390_CRYPTO_AES_256_GCM_ENCRYPT, &msa8_switch},
 	{AES_256_GCM_DECRYPT, S390_CRYPTO_AES_256_GCM_DECRYPT, &msa8_switch}
+};
+
+s390_supported_function_t s390_kdsa_functions[] = {
+	{ECDSA_VERIFY_P256, S390_CRYPTO_ECDSA_VERIFY_P256, &msa9_switch},
+	{ECDSA_VERIFY_P384, S390_CRYPTO_ECDSA_VERIFY_P384, &msa9_switch},
+	{ECDSA_VERIFY_P521, S390_CRYPTO_ECDSA_VERIFY_P521, &msa9_switch},
+	{ECDSA_SIGN_P256, S390_CRYPTO_ECDSA_SIGN_P256, &msa9_switch},
+	{ECDSA_SIGN_P384, S390_CRYPTO_ECDSA_SIGN_P384, &msa9_switch},
+	{ECDSA_SIGN_P521, S390_CRYPTO_ECDSA_SIGN_P521, &msa9_switch},
+	{EDDSA_VERIFY_ED25519, S390_CRYPTO_EDDSA_VERIFY_ED25519, &msa9_switch},
+	{EDDSA_VERIFY_ED448, S390_CRYPTO_EDDSA_VERIFY_ED448, &msa9_switch},
+	{EDDSA_SIGN_ED25519, S390_CRYPTO_EDDSA_SIGN_ED25519, &msa9_switch},
+	{EDDSA_SIGN_ED448, S390_CRYPTO_EDDSA_SIGN_ED448, &msa9_switch},
 };
 
 static int read_cpuinfo(void)
@@ -180,6 +209,8 @@ static int read_facility_bits(void)
 			msa = 5;
 		if (facility_bits[2] & (1ULL << (191 - 146)))
 			msa = 8;
+		if (facility_bits[2] & (1ULL << (191 - 155)))
+			msa = 9;
 	}
 
 	/**
@@ -210,16 +241,6 @@ static void set_switches(int msa)
 	memset(&oldact, 0, sizeof(oldact));
 	memset(&oldset, 0, sizeof(oldset));
 
-	/* The function arrays contain integers. Thus to compute the amount of
-	 * their elements the result of sizeof(*functions) has to be divided by
-	 * sizeof(int).
-	 * The msa4_switch will be set in the kimd function. Because this is
-	 * the only switch for all MSA4 functions we just set it through the
-	 * kimd query and do not need to over the whole array. Therfore there
-	 * is also no distict setting of the switch needed in form
-	 * msa4_switch = 1. */
-
-
 	/* kmc query */
 	memset(mask, 0, sizeof(mask));
 	if (msa) {
@@ -243,6 +264,19 @@ static void set_switches(int msa)
 			 sizeof(s390_supported_function_t)); n++)
 		if (S390_CRYPTO_TEST_MASK(mask, s390_kimd_functions[n].hw_fc))
 			*s390_kimd_functions[n].enabled = 1;
+
+	/* pcc query */
+	memset(mask, 0, sizeof(mask));
+	if (4 <= msa) {
+		msa4_switch = 1;
+		if (begin_sigill_section(&oldact, &oldset) == 0)
+			s390_pcc(S390_CRYPTO_QUERY, mask);
+		end_sigill_section(&oldact, &oldset);
+	}
+	for (n = 0; n < (sizeof(s390_ppno_functions) /
+			 sizeof(s390_supported_function_t)); n++)
+		if (S390_CRYPTO_TEST_MASK(mask, s390_pcc_functions[n].hw_fc))
+			*s390_pcc_functions[n].enabled = 1;
 
 	/* ppno query */
 	memset(mask, 0, sizeof(mask));
@@ -269,6 +303,19 @@ static void set_switches(int msa)
 			 sizeof(s390_supported_function_t)); n++)
 		if (S390_CRYPTO_TEST_MASK(mask, s390_kma_functions[n].hw_fc))
 			*s390_kma_functions[n].enabled = 1;
+
+	/* kdsa query */
+	memset(mask, 0, sizeof(mask));
+	if (9 <= msa) {
+		msa9_switch = 1;
+		if (begin_sigill_section(&oldact, &oldset) == 0)
+			s390_kdsa(S390_CRYPTO_QUERY, mask, NULL, 0);
+		end_sigill_section(&oldact, &oldset);
+	}
+	for (n = 0; n < (sizeof(s390_kdsa_functions) /
+			 sizeof(s390_supported_function_t)); n++)
+		if (S390_CRYPTO_TEST_MASK(mask, s390_kdsa_functions[n].hw_fc))
+			*s390_kdsa_functions[n].enabled = 1;
 }
 
 void s390_crypto_switches_init(void)
@@ -339,15 +386,18 @@ libica_func_list_element_int icaList[] = {
  {EC_DSA_SIGN,	ADAPTER, 0, ICA_FLAG_DHW | ICA_FLAG_SW, 0x0F},
  {EC_DSA_VERIFY, ADAPTER, 0, ICA_FLAG_DHW | ICA_FLAG_SW, 0x0F},
  {EC_KGEN,      ADAPTER, 0, ICA_FLAG_DHW | ICA_FLAG_SW, 0x0F},
+ {ED25519_KEYGEN, MSA9, SCALAR_MULTIPLY_ED25519, 0, 0},
+ {ED25519_SIGN,   MSA9, EDDSA_SIGN_ED25519, 0, 0},
+ {ED25519_VERIFY, MSA9, EDDSA_VERIFY_ED25519, 0, 0},
+ {ED448_KEYGEN,   MSA9, SCALAR_MULTIPLY_ED448, 0, 0},
+ {ED448_SIGN,     MSA9, EDDSA_SIGN_ED448, 0, 0},
+ {ED448_VERIFY,   MSA9, EDDSA_VERIFY_ED448, 0, 0},
  {RSA_ME,       ADAPTER, 0, ICA_FLAG_DHW | ICA_FLAG_SW, 0x0F}, // DHW (CEX) + SW / 512,1024,2048, 4096 bit key length
  {RSA_CRT,      ADAPTER, 0, ICA_FLAG_DHW | ICA_FLAG_SW, 0x0F}, // DHW (CEX) + SW / 512,1024,2048, 4096 bit key length
  {RSA_KEY_GEN_ME, ADAPTER, 0, ICA_FLAG_SW, 0},  // SW (openssl)
  {RSA_KEY_GEN_CRT, ADAPTER, 0, ICA_FLAG_SW, 0}, // SW (openssl)
 
  {SHA512_DRNG, PPNO, SHA512_DRNG_GEN, ICA_FLAG_SW, 0},
-
-/* available for the MSA4 instruction */
-/* available for the RSA instruction */
 
 };
 
@@ -399,6 +449,26 @@ int s390_initialize_functionlist() {
 		break;
 	case MSA8:
 		e->flags |= *s390_kma_functions[e->id].enabled ? 4 : 0;
+		break;
+	case MSA9:
+		if (e->mech_mode_id == ED25519_KEYGEN
+		    || e->mech_mode_id == ED448_KEYGEN)
+			e->flags |= *s390_pcc_functions[e->id].enabled ? 4 : 0;
+		else
+			e->flags |= *s390_kdsa_functions[e->id].enabled ? 4 : 0;
+		break;
+	default:
+		/* Do nothing. */
+		break;
+	}
+
+	switch ((int) e->mech_mode_id)
+	{
+	case EC_DH: /* fall-trough */
+	case EC_DSA_SIGN: /* fall-trough */
+	case EC_DSA_VERIFY: /* fall-trough */
+	case EC_KGEN:
+		e->flags |= *s390_kdsa_functions[e->id].enabled ? ICA_FLAG_SHW : 0;
 		break;
 	default:
 		/* Do nothing. */

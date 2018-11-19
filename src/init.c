@@ -76,6 +76,21 @@ void __attribute__ ((constructor)) icainit(void)
 	 */
 	s390_crypto_switches_init();
 
+	/* check for fallback mode environment variable */
+	ptr = getenv(ICA_FALLBACK_ENV);
+	if (ptr && sscanf(ptr, "%i", &value) == 1)
+		ica_set_fallback_mode(value);
+
+	/* check for offload mode environment variable */
+	ptr = getenv(ICA_OFFLOAD_ENV);
+	if (ptr && sscanf(ptr, "%i", &value) == 1)
+		ica_set_offload_mode(value);
+
+	/* check for stats mode environment variable */
+	ptr = getenv(ICA_STATS_ENV);
+	if (ptr && sscanf(ptr, "%i", &value) == 1)
+		ica_set_stats_mode(value);
+
 #ifdef ICA_FIPS
 	fips_init();
 	fips_powerup_tests();
@@ -88,11 +103,6 @@ void __attribute__ ((constructor)) icainit(void)
 	s390_prng_init();
 
 	s390_initialize_functionlist();
-
-	/* check for fallback mode environment variable */
-	ptr = getenv(ICA_FALLBACK_ENV);
-	if (ptr && sscanf(ptr, "%i", &value) == 1)
-		ica_set_fallback_mode(value);
 }
 
 void __attribute__ ((destructor)) icaexit(void)

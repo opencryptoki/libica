@@ -13,6 +13,8 @@ Linux on z Systems crypto library
 
 `--enable-coverage` : enable coverage testing build (gcov required)
 
+`--enable-internal-tests` : build internal tests
+
 See `configure -help`.
 
 

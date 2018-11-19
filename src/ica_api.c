@@ -59,6 +59,20 @@ void ica_set_fallback_mode(int fallback_mode)
 		ica_fallbacks_enabled = 0;
 }
 
+int ica_offload_enabled = 0;
+
+void ica_set_offload_mode(int offload_mode)
+{
+	ica_offload_enabled = offload_mode ? 1 : 0;
+}
+
+int ica_stats_enabled = 1;
+
+void ica_set_stats_mode(int stats_mode)
+{
+	ica_stats_enabled = stats_mode ? 1 : 0;
+}
+
 static unsigned int check_des_parms(unsigned int mode,
 				    unsigned long data_length,
 				    const unsigned char *in_data,

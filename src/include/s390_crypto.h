@@ -33,6 +33,7 @@
 #define ADAPTER 5
 #define PPNO	6
 #define MSA8	7
+#define MSA9	8
 
 enum s390_crypto_instruction {
 	S390_CRYPTO_DIRECTION_MASK = 0x80,
@@ -96,14 +97,39 @@ enum s390_crypto_function {
 	 */
 	S390_CRYPTO_SHA512_DRNG_GEN  = 0x03,
 	S390_CRYPTO_SHA512_DRNG_SEED = 0x03 | 0x80,
-	S390_CRYPTO_TRNG	     = 0x72
+	S390_CRYPTO_TRNG	     = 0x72,
+
+	/*
+	 * The following functions are available for the KDSA instruction.
+	 */
+	S390_CRYPTO_ECDSA_VERIFY_P256 = 0x01,
+	S390_CRYPTO_ECDSA_VERIFY_P384 = 0x02,
+	S390_CRYPTO_ECDSA_VERIFY_P521 = 0x03,
+	S390_CRYPTO_ECDSA_SIGN_P256 = 0x09,
+	S390_CRYPTO_ECDSA_SIGN_P384 = 0x0a,
+	S390_CRYPTO_ECDSA_SIGN_P521 = 0x0b,
+	S390_CRYPTO_EDDSA_VERIFY_ED25519 = 0x20,
+	S390_CRYPTO_EDDSA_VERIFY_ED448 = 0x24,
+	S390_CRYPTO_EDDSA_SIGN_ED25519 = 0x28,
+	S390_CRYPTO_EDDSA_SIGN_ED448 = 0x2c,
+
+	/*
+	 * The following functions are available for the PCC instruction.
+	 */
+	S390_CRYPTO_SCALAR_MULTIPLY_P256 = 0x40,
+	S390_CRYPTO_SCALAR_MULTIPLY_P384 = 0x41,
+	S390_CRYPTO_SCALAR_MULTIPLY_P521 = 0x42,
+	S390_CRYPTO_SCALAR_MULTIPLY_ED25519 = 0x48,
+	S390_CRYPTO_SCALAR_MULTIPLY_ED448 = 0x49,
+	S390_CRYPTO_SCALAR_MULTIPLY_X25519 = 0x50,
+	S390_CRYPTO_SCALAR_MULTIPLY_X448 = 0x51
 };
 
 extern unsigned long long facility_bits[3];
 extern unsigned int sha1_switch, sha256_switch, sha512_switch, sha3_switch, des_switch,
 	     tdes_switch, aes128_switch, aes192_switch, aes256_switch,
 	     prng_switch, tdea128_switch, tdea192_switch, sha512_drng_switch,
-	     msa4_switch, msa5_switch, msa8_switch, trng_switch;
+	     msa4_switch, msa5_switch, msa8_switch, trng_switch, msa9_switch;
 
 typedef struct {
 	unsigned int dummy_fc;
@@ -136,7 +162,14 @@ typedef enum {
 	CMAC_AES_192_GENERATE,
 	CMAC_AES_192_VERIFY,
 	CMAC_AES_256_GENERATE,
-	CMAC_AES_256_VERIFY
+	CMAC_AES_256_VERIFY,
+	SCALAR_MULTIPLY_P256,
+	SCALAR_MULTIPLY_P384,
+	SCALAR_MULTIPLY_P521,
+	SCALAR_MULTIPLY_ED25519,
+	SCALAR_MULTIPLY_ED448,
+	SCALAR_MULTIPLY_X25519,
+	SCALAR_MULTIPLY_X448
 } pcc_functions_t;
 
 typedef enum {
@@ -147,15 +180,17 @@ typedef enum {
 
 extern s390_supported_function_t s390_kmc_functions[];
 extern s390_supported_function_t s390_msa4_functions[];
+extern s390_supported_function_t s390_pcc_functions[];
 extern s390_supported_function_t s390_kma_functions[];
 extern s390_supported_function_t s390_kimd_functions[];
 extern s390_supported_function_t s390_ppno_functions[];
+extern s390_supported_function_t s390_kdsa_functions[];
 
 void s390_crypto_switches_init(void);
 
 /**
  * s390_pcc:
- * @func: the function code passed to KM; see s390_kmc_func *
+ * @func: the function code passed to KM; see s390_pcc_functions
  * @param: address of parameter block; see POP for details on each func
  *
  * Executes the PCC operation of the CPU.
@@ -165,15 +200,16 @@ void s390_crypto_switches_init(void);
  */
 static inline int s390_pcc(unsigned long func, void *param)
 {
-	register long __func asm("0") = func;
-	register void *__param asm("1") = param;
+	register unsigned long r0 asm("0") = (unsigned long)func;
+	register unsigned long r1 asm("1") = (unsigned long)param;
 
 	asm volatile (
-		"0: .long 0xb92c0000 \n"
-		"	brc	1, 0b \n"
+		"0:	.long	%[opc] << 16\n"
+		"	brc	1,0b\n"
 		:
-		: "d"(__func), "a"(__param)
+		: [fc] "d" (r0), [param] "a" (r1), [opc] "i" (0xb92c)
 		: "cc", "memory");
+
 	return 0;
 }
 
@@ -512,6 +548,42 @@ static inline int s390_klmd(unsigned long func, void *param,
 		: "cc", "memory");
 
 	return func ? src_len - __src_len : __src_len;
+}
+/**
+ * s390_kdsa:
+ * @func: the function code passed to KDSA; see s390_kdsa_functions
+ * @param: address of parameter block; see POP for details on each func
+ * @src: address of source memory area
+ * @srclen: length of src operand in bytes
+ *
+ * Executes the KDSA (COMPUTE DIGITAL SIGNATURE AUTHENTICATION) operation of
+ * the CPU.
+ *
+ * Returns 0 on success. Fails in case of sign if the random number was not
+ * invertible. Fails in case of verify if the signature is invalid or the
+ * public key is not on the curve.
+ */
+static inline int s390_kdsa(unsigned long func, void *param,
+		            const unsigned char *src, unsigned long srclen)
+{
+	register unsigned long r0 asm("0") = (unsigned long)func;
+	register unsigned long r1 asm("1") = (unsigned long)param;
+	register unsigned long r2 asm("2") = (unsigned long)src;
+	register unsigned long r3 asm("3") = (unsigned long)srclen;
+
+	unsigned long rc = 1;
+
+	asm volatile(
+		"0:	.insn	rre,%[opc] << 16,0,%[src]\n"
+		"	brc	1,0b\n" /* handle partial completion */
+		"	brc	7,1f\n"
+		"	lghi	%[rc],0\n"
+		"1:\n"
+		: [src] "+a" (r2), [srclen] "+d" (r3), [rc] "+d" (rc)
+		: [fc] "d" (r0), [param] "a" (r1), [opc] "i" (0xb93a)
+		: "cc", "memory");
+
+	return (int)rc;
 }
 
 /*

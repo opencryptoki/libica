@@ -12,6 +12,8 @@
 #include <stdbool.h>
 #include <stddef.h>
 
+#include "s390_ecc.h"
+
 #define AES128_KEYLEN	(128 / 8)
 #define AES192_KEYLEN	(192 / 8)
 #define AES256_KEYLEN	(256 / 8)
@@ -234,6 +236,31 @@ struct drbg_sha512_tv {
 	unsigned char *prnd;
 };
 
+struct ecdsa_tv {
+	/* sign inputs */
+	const ICA_EC_KEY *key;
+	int hash;
+	unsigned char *msg; /* should be qualified const,
+			        but sha api lacks const ... */
+	size_t msglen;
+	const unsigned char *k;
+	/* sign expected outputs */
+	const unsigned char *r;
+	const unsigned char *s;
+	size_t siglen;
+};
+
+struct scalar_mul_tv {
+	/* scalar mul inputs */
+	int curve_nid;
+	size_t len;
+	const unsigned char *scalar;
+
+	/* scalar mul outputs */
+	const unsigned char *x;
+	const unsigned char *y;
+};
+
 #ifdef ICA_FIPS
 extern const struct aes_ecb_tv AES_ECB_TV[];
 extern const size_t AES_ECB_TV_LEN;
@@ -304,6 +331,14 @@ extern const size_t SHA384_TV_LEN;
 extern const struct sha_tv SHA512_TV[];
 extern const size_t SHA512_TV_LEN;
 #endif /* ICA_FIPS */
+
+#ifdef ICA_INTERNAL_TEST_EC
+extern const struct ecdsa_tv ECDSA_TV[];
+extern const size_t ECDSA_TV_LEN;
+
+extern const struct scalar_mul_tv SCALAR_MUL_TV[];
+extern const size_t SCALAR_MUL_TV_LEN;
+#endif /* ICA_INTERNAL_TEST_EC */
 
 extern const struct drbg_sha512_tv DRBG_SHA512_TV[];
 extern const size_t DRBG_SHA512_TV_LEN;
