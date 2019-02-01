@@ -33,8 +33,7 @@ static stats_entry_t *stats = NULL;
 volatile int stats_shm_handle = NOT_INITIALIZED;
 
 
-
-static void atomic_add(int *x, int i)
+static inline void atomic_add(int *x, int i)
 {
 	int old;
 	int new;
