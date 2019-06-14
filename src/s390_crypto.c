@@ -5,8 +5,8 @@
  */
 
 /*
- * Entry point for crypto graphic instructions on s390. If a instruction
- * is not available, instruction will be simulated in software.
+ * Entry point for crypto graphic instructions on s390. If an instruction
+ * is not available, the related function is simulated in software.
  *
  * Authors(s): Ralph Wuerthner <rwuerthn@de.ibm.com>
  *	       Jan Glauber <jan.glauber@de.ibm.com>
@@ -332,14 +332,14 @@ void s390_crypto_switches_init(void)
 /*
  * The first field represents the mechanism ID.
  * The second field represents the function family type (category),
- * The third filed represents the function code.
+ * The third field represents the function code.
  * This function code will be used later to check if HW support
  * is available and modifies the SW/HW-support-flag.
  * SHW - static hardware support (CPACF)
  * DHW - dynamic hardware support (crypto adapter)
  * SW  - software support
  * Bit field flags: [0|0|0|0|0|SHW|DHW|SW]
- * The last filed represent the property flags
+ * The last field represents the property flags indicating key lengths
  */
 libica_func_list_element_int icaList[] = {
  {SHA1,   KIMD, SHA_1  , ICA_FLAG_SW, 0},
