@@ -406,76 +406,76 @@ libica_func_list_element_int icaList[] = {
  * Query s390_xxx_functions for each algorithm to check
  * CPACF support and update the corresponding SHW-flags.
  */
-int s390_initialize_functionlist() {
-
-  unsigned int list_len = sizeof(icaList)/sizeof(libica_func_list_element_int);
-
-  unsigned int x;
-  for (x = 0; x < list_len; x++) {
-	libica_func_list_element_int *e = &icaList[x];
-	switch ((int) e->type) {
-	case KIMD:
-		e->flags |= *s390_kimd_functions[e->id].enabled ? 4 : 0;
-		break;
-	case KMC:
-		e->flags |= *s390_kmc_functions[e->id].enabled ? 4 : 0;
-		if (e->id == AES_128_ENCRYPT) { // check for the maximum size
-			if (*s390_kmc_functions[icaList[AES_256_ENCRYPT].id].enabled)
-				e->property |= 4; // 256 bit
-			if (*s390_kmc_functions[icaList[AES_192_ENCRYPT].id].enabled)
-				e->property |= 2; // 192 bit
-			if (*s390_kmc_functions[icaList[AES_128_ENCRYPT].id].enabled)
-				e->property |= 1; // 128 bit
+int s390_initialize_functionlist()
+{
+	unsigned int list_len = sizeof(icaList)/sizeof(libica_func_list_element_int);
+	unsigned int x;
+	
+	for (x = 0; x < list_len; x++) {
+		libica_func_list_element_int *e = &icaList[x];
+		switch ((int) e->type) {
+		case KIMD:
+			e->flags |= *s390_kimd_functions[e->id].enabled ? 4 : 0;
+			break;
+		case KMC:
+			e->flags |= *s390_kmc_functions[e->id].enabled ? 4 : 0;
+			if (e->id == AES_128_ENCRYPT) { // check for the maximum size
+				if (*s390_kmc_functions[icaList[AES_256_ENCRYPT].id].enabled)
+					e->property |= 4; // 256 bit
+				if (*s390_kmc_functions[icaList[AES_192_ENCRYPT].id].enabled)
+					e->property |= 2; // 192 bit
+				if (*s390_kmc_functions[icaList[AES_128_ENCRYPT].id].enabled)
+					e->property |= 1; // 128 bit
+			}
+			break;
+		case MSA4:
+			e->flags |= *s390_msa4_functions[e->id].enabled ? 4 : 0;
+			if (e->id == AES_128_ENCRYPT) { // check for the maximum size
+				if (*s390_msa4_functions[icaList[AES_256_ENCRYPT].id].enabled)
+					e->property |= 4; // 256 bit
+				if (*s390_msa4_functions[icaList[AES_192_ENCRYPT].id].enabled)
+					e->property |= 2; // 192 bit
+				if (*s390_msa4_functions[icaList[AES_128_ENCRYPT].id].enabled)
+					e->property |= 1; // 128 bit
+			} else if (e->id == AES_128_XTS_ENCRYPT) { // check for the maximum size
+				if (*s390_msa4_functions[icaList[AES_256_XTS_ENCRYPT].id].enabled)
+					e->property |= 2; // 256 bit
+				if (*s390_msa4_functions[icaList[AES_128_XTS_ENCRYPT].id].enabled)
+					e->property |= 1; // 128 bit
+			}
+			break;
+		case PPNO:
+			e->flags |= *s390_ppno_functions[e->id].enabled ? 4 : 0;
+			break;
+		case MSA8:
+			e->flags |= *s390_kma_functions[e->id].enabled ? 4 : 0;
+			break;
+		case MSA9:
+			if (e->mech_mode_id == ED25519_KEYGEN
+			    || e->mech_mode_id == ED448_KEYGEN)
+				e->flags |= *s390_pcc_functions[e->id].enabled ? 4 : 0;
+			else
+				e->flags |= *s390_kdsa_functions[e->id].enabled ? 4 : 0;
+			break;
+		default:
+			/* Do nothing. */
+			break;
 		}
-		break;
-	case MSA4:
-		e->flags |= *s390_msa4_functions[e->id].enabled ? 4 : 0;
-		if (e->id == AES_128_ENCRYPT) { // check for the maximum size
-			if (*s390_msa4_functions[icaList[AES_256_ENCRYPT].id].enabled)
-				e->property |= 4; // 256 bit
-			if (*s390_msa4_functions[icaList[AES_192_ENCRYPT].id].enabled)
-				e->property |= 2; // 192 bit
-			if (*s390_msa4_functions[icaList[AES_128_ENCRYPT].id].enabled)
-				e->property |= 1; // 128 bit
-		} else if (e->id == AES_128_XTS_ENCRYPT) { // check for the maximum size
-			if (*s390_msa4_functions[icaList[AES_256_XTS_ENCRYPT].id].enabled)
-				e->property |= 2; // 256 bit
-			if (*s390_msa4_functions[icaList[AES_128_XTS_ENCRYPT].id].enabled)
-				e->property |= 1; // 128 bit
+
+		switch ((int) e->mech_mode_id) {
+		case EC_DH: /* fall-through */
+		case EC_DSA_SIGN: /* fall-through */
+		case EC_DSA_VERIFY: /* fall-through */
+		case EC_KGEN:
+			e->flags |= *s390_kdsa_functions[e->id].enabled ? ICA_FLAG_SHW : 0;
+			break;
+		default:
+			/* Do nothing. */
+			break;
 		}
-		break;
-	case PPNO:
-		e->flags |= *s390_ppno_functions[e->id].enabled ? 4 : 0;
-		break;
-	case MSA8:
-		e->flags |= *s390_kma_functions[e->id].enabled ? 4 : 0;
-		break;
-	case MSA9:
-		if (e->mech_mode_id == ED25519_KEYGEN
-		    || e->mech_mode_id == ED448_KEYGEN)
-			e->flags |= *s390_pcc_functions[e->id].enabled ? 4 : 0;
-		else
-			e->flags |= *s390_kdsa_functions[e->id].enabled ? 4 : 0;
-		break;
-	default:
-		/* Do nothing. */
-		break;
 	}
 
-	switch ((int) e->mech_mode_id)
-	{
-	case EC_DH: /* fall-trough */
-	case EC_DSA_SIGN: /* fall-trough */
-	case EC_DSA_VERIFY: /* fall-trough */
-	case EC_KGEN:
-		e->flags |= *s390_kdsa_functions[e->id].enabled ? ICA_FLAG_SHW : 0;
-		break;
-	default:
-		/* Do nothing. */
-		break;
-	}
-  }
-  return 0;
+	return 0;
 }
 
 /**
