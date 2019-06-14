@@ -129,7 +129,8 @@ extern unsigned long long facility_bits[3];
 extern unsigned int sha1_switch, sha256_switch, sha512_switch, sha3_switch, des_switch,
 	     tdes_switch, aes128_switch, aes192_switch, aes256_switch,
 	     prng_switch, tdea128_switch, tdea192_switch, sha512_drng_switch,
-	     msa4_switch, msa5_switch, msa8_switch, trng_switch, msa9_switch;
+	     msa4_switch, msa5_switch, msa8_switch, trng_switch, msa9_switch,
+		 ecc_via_online_card, any_card_online;
 
 typedef struct {
 	unsigned int dummy_fc;

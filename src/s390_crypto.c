@@ -24,6 +24,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <errno.h>
+#include <dirent.h>
 
 #include "fips.h"
 #include "init.h"
@@ -33,7 +34,13 @@ unsigned long long facility_bits[3];
 unsigned int sha1_switch, sha256_switch, sha512_switch, sha3_switch, des_switch,
 	     tdes_switch, aes128_switch, aes192_switch, aes256_switch,
 	     prng_switch, tdea128_switch, tdea192_switch, sha512_drng_switch,
-	     msa4_switch, msa5_switch, msa8_switch, trng_switch, msa9_switch;
+	     msa4_switch, msa5_switch, msa8_switch, trng_switch, msa9_switch,
+		 ecc_via_online_card, any_card_online;
+
+#define CARD_AVAILABLE		0x01
+#define CEXnA_AVAILABLE		0x02
+#define CEXnC_AVAILABLE		0x04
+#define CEX4C_AVAILABLE		0x08
 
 s390_supported_function_t s390_kimd_functions[] = {
 	{SHA_1, S390_CRYPTO_SHA_1, &sha1_switch},
@@ -318,13 +325,113 @@ static void set_switches(int msa)
 			*s390_kdsa_functions[n].enabled = 1;
 }
 
+unsigned int is_device_online(const char *dev)
+{
+	unsigned int ret = 0;
+	FILE *file;
+	char c;
+
+	if ((file = fopen(dev, "r")) == NULL)
+		return 0;
+
+	/* Check if device online: 0 = offline, 1 = online */
+	if ((c = fgetc(file)) == '1')
+		ret = 1;
+
+	fclose(file);
+
+	return ret;
+}
+
+unsigned int get_device_type(const char *dev, char *devtype)
+{
+	unsigned int ret = 0;
+	char *type = NULL;
+	size_t size = 0;
+	FILE *file;
+
+	file = fopen(dev, "r");
+	if (file == NULL)
+		return 0;
+
+	/* Read device type: e.g. 'CEX5C' */
+	if (getline(&type, &size, file) == -1)
+		goto end;
+
+	/* Did we get something like 'CEX5C\n'? */
+	if (strlen(type) != 6 || strncmp(type, "CEX", 3) != 0)
+		goto end;
+
+	memcpy(devtype, type, 5);
+	ret = 1;
+
+end:
+	free(type);
+	fclose(file);
+
+	return ret;
+}
+
+#define AP_PATH  "/sys/devices/ap"
+#define MAX_DEV_LEN 280
+
+unsigned int search_for_cards()
+{
+	DIR *sysDir;
+	unsigned int ret = 0;
+	char dev[MAX_DEV_LEN] = AP_PATH;
+	struct dirent *direntp;
+	char type[6];
+
+	if ((sysDir = opendir(dev)) == NULL)
+		return 0;
+
+	while ((direntp = readdir(sysDir)) != NULL) {
+
+		/* Skip entries that are not like "card01", "card02", etc. */
+		if (strncmp(direntp->d_name, "card", 4) != 0)
+			continue;
+
+		/* Check if device online */
+		snprintf(dev, MAX_DEV_LEN, "%s/%s/online", AP_PATH, direntp->d_name);
+		if (!is_device_online(dev))
+			continue;
+
+		/* Get device type (string like "CEXnT") */
+		snprintf(dev, MAX_DEV_LEN, "%s/%s/type", AP_PATH, direntp->d_name);
+		memset(type, 0, sizeof(type));
+		if (!get_device_type(dev, type))
+			continue;
+
+		/* Now setup return value according to found card */
+		if (type[4] == 'A')
+			ret |= CARD_AVAILABLE | CEXnA_AVAILABLE;
+
+		if (type[4] == 'C')
+			ret |= CARD_AVAILABLE | CEXnC_AVAILABLE;
+
+		if (type[3] >= '4' && type[4] == 'C')
+			ret |= CARD_AVAILABLE | CEX4C_AVAILABLE;
+	}
+
+	closedir(sysDir);
+
+	return ret;
+}
+
 void s390_crypto_switches_init(void)
 {
-	int msa;
+	int msa, flags;
 
 	msa = read_facility_bits();
 	if (!msa)
 		msa = read_cpuinfo();
+
+	flags = search_for_cards();
+	if (flags & CARD_AVAILABLE)
+		any_card_online = 1;
+	if (flags & CEX4C_AVAILABLE)
+		ecc_via_online_card = 1;
 
 	set_switches(msa);
 }
@@ -382,18 +489,18 @@ libica_func_list_element_int icaList[] = {
  {AES_GCM_KMA,  MSA8, AES_128_GCM_ENCRYPT,       0, 0},
  {AES_XTS,      MSA4, AES_128_XTS_ENCRYPT,       0, 0},
  {P_RNG,        ADAPTER, 0, ICA_FLAG_SHW | ICA_FLAG_SW, 0}, // SHW (CPACF) + SW
- {EC_DH,        ADAPTER, 0, ICA_FLAG_DHW | ICA_FLAG_SW, 0x0F},
- {EC_DSA_SIGN,	ADAPTER, 0, ICA_FLAG_DHW | ICA_FLAG_SW, 0x0F},
- {EC_DSA_VERIFY, ADAPTER, 0, ICA_FLAG_DHW | ICA_FLAG_SW, 0x0F},
- {EC_KGEN,      ADAPTER, 0, ICA_FLAG_DHW | ICA_FLAG_SW, 0x0F},
+ {EC_DH,        ADAPTER, 0, 0, 0},
+ {EC_DSA_SIGN,	ADAPTER, 0, 0, 0},
+ {EC_DSA_VERIFY, ADAPTER, 0, 0, 0},
+ {EC_KGEN,      ADAPTER, 0, 0, 0},
  {ED25519_KEYGEN, MSA9, SCALAR_MULTIPLY_ED25519, 0, 0},
  {ED25519_SIGN,   MSA9, EDDSA_SIGN_ED25519, 0, 0},
  {ED25519_VERIFY, MSA9, EDDSA_VERIFY_ED25519, 0, 0},
  {ED448_KEYGEN,   MSA9, SCALAR_MULTIPLY_ED448, 0, 0},
  {ED448_SIGN,     MSA9, EDDSA_SIGN_ED448, 0, 0},
  {ED448_VERIFY,   MSA9, EDDSA_VERIFY_ED448, 0, 0},
- {RSA_ME,       ADAPTER, 0, ICA_FLAG_DHW | ICA_FLAG_SW, 0x0F}, // DHW (CEX) + SW / 512,1024,2048, 4096 bit key length
- {RSA_CRT,      ADAPTER, 0, ICA_FLAG_DHW | ICA_FLAG_SW, 0x0F}, // DHW (CEX) + SW / 512,1024,2048, 4096 bit key length
+ {RSA_ME,       ADAPTER, 0, 0, 0},
+ {RSA_CRT,      ADAPTER, 0, 0, 0},
  {RSA_KEY_GEN_ME, ADAPTER, 0, ICA_FLAG_SW, 0},  // SW (openssl)
  {RSA_KEY_GEN_CRT, ADAPTER, 0, ICA_FLAG_SW, 0}, // SW (openssl)
 
@@ -467,7 +574,18 @@ int s390_initialize_functionlist()
 		case EC_DSA_SIGN: /* fall-through */
 		case EC_DSA_VERIFY: /* fall-through */
 		case EC_KGEN:
+			if (ecc_via_online_card) {
+				e->flags |= ICA_FLAG_DHW;
+				e->property = 0x0F;
+			}
 			e->flags |= *s390_kdsa_functions[e->id].enabled ? ICA_FLAG_SHW : 0;
+			break;
+		case RSA_ME: /* fall-through */
+		case RSA_CRT:
+			if (any_card_online) {
+				e->flags |= ICA_FLAG_DHW;
+				e->property = 0x0F;
+			}
 			break;
 		default:
 			/* Do nothing. */
