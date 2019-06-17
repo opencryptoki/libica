@@ -68,10 +68,28 @@ typedef ica_adapter_handle_t ICA_ADAPTER_HANDLE;
 #define ICA_CBCCS_VARIANT2	2
 #define ICA_CBCCS_VARIANT3	3
 
+/**
+ * ICA flags
+ */
 #define ICA_FLAG_SHW 4 /* static hardware support (symmetric ops - CPACF) */
 #define ICA_FLAG_DHW 2 /* dynamic hardware support (asymmetric ops - CEX) */
 #define ICA_FLAG_SW  1 /* software implementation (fallback / backup) */
 
+/**
+ * ICA properties: key lengths
+ */
+#define ICA_PROPERTY_AES_128		0x00000001
+#define ICA_PROPERTY_AES_192		0x00000002
+#define ICA_PROPERTY_AES_256		0x00000004
+
+#define ICA_PROPERTY_RSA_ALL		0x0000000F /* All RSA key lengths */
+#define ICA_PROPERTY_EC_BP			0x00000001 /* Brainpool curves */
+#define ICA_PROPERTY_EC_NIST		0x00000002 /* NIST curves */
+#define ICA_PROPERTY_EC_ED			0x00000004 /* Edwards curves */
+
+/**
+ * Algorithms
+ */
 #define SHA1            1
 #define SHA224          2
 #define SHA256          3
