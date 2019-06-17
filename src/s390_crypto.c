@@ -530,27 +530,27 @@ int s390_initialize_functionlist()
 			e->flags |= *s390_kmc_functions[e->id].enabled ? ICA_FLAG_SHW : 0;
 			if (e->id == AES_128_ENCRYPT) { // check for the maximum size
 				if (*s390_kmc_functions[icaList[AES_256_ENCRYPT].id].enabled)
-					e->property |= 4; // 256 bit
+					e->property |= ICA_PROPERTY_AES_256;
 				if (*s390_kmc_functions[icaList[AES_192_ENCRYPT].id].enabled)
-					e->property |= 2; // 192 bit
+					e->property |= ICA_PROPERTY_AES_192;
 				if (*s390_kmc_functions[icaList[AES_128_ENCRYPT].id].enabled)
-					e->property |= 1; // 128 bit
+					e->property |= ICA_PROPERTY_AES_128;
 			}
 			break;
 		case MSA4:
 			e->flags |= *s390_msa4_functions[e->id].enabled ? ICA_FLAG_SHW : 0;
 			if (e->id == AES_128_ENCRYPT) { // check for the maximum size
 				if (*s390_msa4_functions[icaList[AES_256_ENCRYPT].id].enabled)
-					e->property |= 4; // 256 bit
+					e->property |= ICA_PROPERTY_AES_256;
 				if (*s390_msa4_functions[icaList[AES_192_ENCRYPT].id].enabled)
-					e->property |= 2; // 192 bit
+					e->property |= ICA_PROPERTY_AES_192;
 				if (*s390_msa4_functions[icaList[AES_128_ENCRYPT].id].enabled)
-					e->property |= 1; // 128 bit
+					e->property |= ICA_PROPERTY_AES_128;
 			} else if (e->id == AES_128_XTS_ENCRYPT) { // check for the maximum size
 				if (*s390_msa4_functions[icaList[AES_256_XTS_ENCRYPT].id].enabled)
-					e->property |= 2; // 256 bit
+					e->property |= ICA_PROPERTY_AES_256;
 				if (*s390_msa4_functions[icaList[AES_128_XTS_ENCRYPT].id].enabled)
-					e->property |= 1; // 128 bit
+					e->property |= ICA_PROPERTY_AES_128;
 			}
 			break;
 		case PPNO:
@@ -565,6 +565,7 @@ int s390_initialize_functionlist()
 				e->flags |= *s390_pcc_functions[e->id].enabled ? ICA_FLAG_SHW : 0;
 			else
 				e->flags |= *s390_kdsa_functions[e->id].enabled ? ICA_FLAG_SHW : 0;
+			e->property |= ICA_PROPERTY_EC_ED;
 			break;
 		default:
 			/* Do nothing. */
@@ -578,7 +579,7 @@ int s390_initialize_functionlist()
 		case EC_KGEN:
 			if (ecc_via_online_card) {
 				e->flags |= ICA_FLAG_DHW;
-				e->property = 0x0F;
+				e->property |= ICA_PROPERTY_EC_BP | ICA_PROPERTY_EC_NIST;
 			}
 			e->flags |= *s390_kdsa_functions[e->id].enabled ? ICA_FLAG_SHW : 0;
 			break;
@@ -586,7 +587,7 @@ int s390_initialize_functionlist()
 		case RSA_CRT:
 			if (any_card_online) {
 				e->flags |= ICA_FLAG_DHW;
-				e->property = 0x0F;
+				e->property |= ICA_PROPERTY_RSA_ALL;
 			}
 			break;
 		default:
