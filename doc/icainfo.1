@@ -22,25 +22,30 @@ Algorithms that are not FIPS approved are marked as blocked in both table
 columns when running in FIPS mode. All algorithms are marked as blocked when
 libica is in an error state.
 
+Available hardware support is divided into two columns: dynamic hardware
+means crypto cards, static hardware support means CPACF. Software support
+is provided via openssl.
+
 A shortened sample output is given below:
 .P
 .nf
       Cryptographic algorithm support
--------------------------------------------
- function      | # hardware | # software
----------------+------------+--------------
-         SHA-1 |    yes     |     yes
-       SHA-224 |    yes     |     yes
-       SHA-256 |    yes     |     yes
-       SHA-384 |    yes     |     yes
-       SHA-512 |    yes     |     yes
-         GHASH |    yes     |      no
-         P_RNG |  blocked   |   blocked
-  DRBG-SHA-512 |    yes     |     yes
-        RSA ME |     no     |     yes
-       RSA CRT |     no     |     yes
+------------------------------------------------------
+               |         hardware        |
+ function      |   dynamic  |   static   |  software
+---------------+------------+------------+------------
+         SHA-1 |     no     |    yes     |    yes
+       SHA-224 |     no     |    yes     |    yes
+       SHA-256 |     no     |    yes     |    yes
+       SHA-384 |     no     |    yes     |    yes
+       SHA-512 |     no     |    yes     |    yes
+         GHASH |     no     |    yes     |     no
+         P_RNG |  blocked   |  blocked   |  blocked
+  DRBG-SHA-512 |     no     |    yes     |    yes
+        RSA ME |    yes     |     no     |    yes
+       RSA CRT |    yes     |     no     |    yes
            ...
--------------------------------------------
+------------------------------------------------------
 Built-in FIPS support: FIPS mode active.
 .fi
 .SH OPTIONS
