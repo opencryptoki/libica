@@ -1017,7 +1017,11 @@ unsigned int ica_rsa_mod_expo(ica_adapter_handle_t adapter_handle,
 		rc = ica_fallbacks_enabled ?
 			rsa_mod_expo_sw(&rb) : ENODEV;
 	else {
-		rc = ioctl(adapter_handle, ICARSAMODEXPO, &rb);
+		if (any_card_online)
+			rc = ioctl(adapter_handle, ICARSAMODEXPO, &rb);
+		else
+			rc = ENODEV;
+
 		if (!rc)
 			hardware = ALGO_HW;
 		else
@@ -1126,7 +1130,11 @@ unsigned int ica_rsa_crt(ica_adapter_handle_t adapter_handle,
 		rc = ica_fallbacks_enabled ?
 			rsa_crt_sw(&rb) : ENODEV;
 	else {
-		rc = ioctl(adapter_handle, ICARSACRT, &rb);
+		if (any_card_online)
+			rc = ioctl(adapter_handle, ICARSACRT, &rb);
+		else
+			rc = ENODEV;
+
 		if(!rc)
 			hardware = ALGO_HW;
 		else
