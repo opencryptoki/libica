@@ -54,6 +54,8 @@ ecdsa1_test.sh \
 ec_keygen2_test.sh \
 ecdh2_test.sh \
 ecdsa2_test.sh \
+eddsa_test \
+x_test \
 mp_test
 
 if ICA_INTERNAL_TESTS
@@ -77,7 +79,8 @@ aes_cbc_test aes_ctr_test aes_cfb_test aes_ofb_test aes_xts_test \
 aes_gcm_test aes_gcm_kma_test cbccs_test ccm_test cmac_test sha_test \
 sha1_test sha256_test sha3_224_test sha3_256_test sha3_384_test \
 sha3_512_test shake_128_test shake_256_test rsa_keygen_test \
-rsa_key_check_test rsa_test ec_keygen_test ecdh_test ecdsa_test mp_test
+rsa_key_check_test rsa_test ec_keygen_test ecdh_test ecdsa_test mp_test \
+eddsa_test x_test
 
 EXTRA_DIST = testdata testcase.h rsa_test.h aes_gcm_test.h ecdsa1_test.sh \
 sha2_test.sh ecdh1_test.sh ecdsa2_test.sh ecdh2_test.sh \

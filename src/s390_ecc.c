@@ -27,7 +27,10 @@
 #include "fips.h"
 #include "s390_ecc.h"
 #include "s390_crypto.h"
+#include "rng.h"
 #include "init.h"
+#include "icastats.h"
+#include "s390_sha.h"
 
 #define CPRBXSIZE (sizeof(struct CPRBX))
 #define PARMBSIZE (2048)
@@ -55,6 +58,10 @@ static int scalar_mul_cpacf(unsigned char *res_x, unsigned char *res_y,
 			    const unsigned char *scalar,
 			    const unsigned char *x,
 			    const unsigned char *y, int curve_nid);
+int scalar_mulx_cpacf(unsigned char *res_u,
+		      const unsigned char *scalar,
+		      const unsigned char *u,
+		      int curve_nid);
 
 /**
  * Check if openssl does support this ec curve
@@ -434,8 +441,6 @@ struct {				\
 		DEF_PARAM(P521, 80);
 		DEF_PARAM(ED25519, 32);
 		DEF_PARAM(ED448, 64);
-		DEF_PARAM(X25519, 32);
-		DEF_PARAM(X448, 64);
 	} param;
 
 #undef DEF_PARAM
@@ -504,6 +509,124 @@ struct {				\
 			memcpy(res_x, param.P521.res_x + off, len);
 		if (res_y != NULL)
 			memcpy(res_y, param.P521.res_y + off, len);
+		break;
+
+	case NID_ED25519:
+		off = sizeof(param.ED25519.scalar) - len;
+
+		memcpy(param.ED25519.x + off, x,
+		       sizeof(param.ED25519.x) - off);
+		memcpy(param.ED25519.y + off, y,
+		       sizeof(param.ED25519.y) - off);
+		memcpy(param.ED25519.scalar + off, scalar,
+		       sizeof(param.ED25519.scalar) - off);
+
+		fc = s390_pcc_functions[SCALAR_MULTIPLY_ED25519].hw_fc;
+		rc = s390_pcc(fc, &param) ? EIO : 0;
+
+		if (res_x != NULL)
+			memcpy(res_x, param.ED25519.res_x + off, len);
+		if (res_y != NULL)
+			memcpy(res_y, param.ED25519.res_y + off, len);
+		break;
+
+	case NID_ED448:
+		off = sizeof(param.ED448.scalar) - len;
+
+		memcpy(param.ED448.x + off, x,
+		       sizeof(param.ED448.x) - off);
+		memcpy(param.ED448.y + off, y,
+		       sizeof(param.ED448.y) - off);
+		memcpy(param.ED448.scalar + off, scalar,
+		       sizeof(param.ED448.scalar) - off);
+
+		fc = s390_pcc_functions[SCALAR_MULTIPLY_ED448].hw_fc;
+		rc = s390_pcc(fc, &param) ? EIO : 0;
+
+		if (res_x != NULL)
+			memcpy(res_x, param.ED448.res_x + off, len);
+		if (res_y != NULL)
+			memcpy(res_y, param.ED448.res_y + off, len);
+		break;
+
+	default:
+		rc = EINVAL;
+	}
+
+	OPENSSL_cleanse(param.buff, sizeof(param.buff));
+	return rc;
+}
+
+int scalar_mulx_cpacf(unsigned char *res_u,
+		      const unsigned char *scalar,
+		      const unsigned char *u,
+		      int curve_nid)
+{
+#define DEF_PARAM(curve, size)		\
+struct {				\
+	unsigned char res_u[size];	\
+	unsigned char u[size];		\
+	unsigned char scalar[size];	\
+} curve
+
+	union {
+		long long buff[512];	/* 4k buffer: params + reserved area */
+		DEF_PARAM(X25519, 32);
+		DEF_PARAM(X448, 64);
+	} param;
+
+#undef DEF_PARAM
+
+	unsigned long fc;
+	int rc;
+
+	const size_t len = privlen_from_nid(curve_nid);
+
+	memset(&param, 0, sizeof(param));
+
+	switch (curve_nid) {
+	case NID_X25519:
+		memcpy(param.X25519.u, u, len);
+		memcpy(param.X25519.scalar, scalar, len);
+
+		param.X25519.u[31] &= 0x7f;
+		param.X25519.scalar[0] &= 248;
+	        param.X25519.scalar[31] &= 127;
+		param.X25519.scalar[31] |= 64;
+
+		/* to big-endian */
+		s390_flip_endian_32(param.X25519.u, param.X25519.u);
+		s390_flip_endian_32(param.X25519.scalar, param.X25519.scalar);
+
+		fc = s390_pcc_functions[SCALAR_MULTIPLY_X25519].hw_fc;
+		rc = s390_pcc(fc, &param) ? EIO : 0;
+
+		/* to little-endian */
+		s390_flip_endian_32(param.X25519.res_u, param.X25519.res_u);
+
+		if (res_u != NULL)
+			memcpy(res_u, param.X25519.res_u, len);
+		break;
+
+	case NID_X448:
+		memcpy(param.X448.u, u, len);
+		memcpy(param.X448.scalar, scalar, len);
+
+		param.X448.scalar[0] &= 252;
+		param.X448.scalar[55] |= 128;
+
+		/* to big-endian */
+		s390_flip_endian_64(param.X448.u, param.X448.u);
+		s390_flip_endian_64(param.X448.scalar, param.X448.scalar);
+
+		fc = s390_pcc_functions[SCALAR_MULTIPLY_X448].hw_fc;
+		rc = s390_pcc(fc, &param) ? EIO : 0;
+
+		/* to little-endian */
+		s390_flip_endian_64(param.X448.res_u, param.X448.res_u);
+
+		if (res_u != NULL)
+			memcpy(res_u, param.X448.res_u, len);
 		break;
 
 	default:
@@ -1254,8 +1377,9 @@ struct {				\
 			fc |= 0x80; /* deterministic signature */
 			do {
 				rng_cb(param.P256.rand + off,
-				       sizeof(param.P256.rand));
-			} while (s390_kdsa(fc, param.buff, NULL, 0));
+				       sizeof(param.P256.rand) - off);
+				rc = s390_kdsa(fc, param.buff, NULL, 0);
+			} while (rc);
 		}
 
 		memcpy(sig, param.P256.sig_r + off,
@@ -1292,8 +1416,9 @@ struct {				\
 			fc |= 0x80; /* deterministic signature */
 			do {
 				rng_cb(param.P384.rand + off,
-				       sizeof(param.P384.rand));
-			} while (s390_kdsa(fc, param.buff, NULL, 0));
+				       sizeof(param.P384.rand) - off);
+				rc = s390_kdsa(fc, param.buff, NULL, 0);
+			} while (rc);
 		}
 
 		memcpy(sig, param.P384.sig_r + off,
@@ -1330,8 +1455,9 @@ struct {				\
 			fc |= 0x80; /* deterministic signature */
 			do {
 				rng_cb(param.P521.rand + off,
-				       sizeof(param.P521.rand));
-			} while (s390_kdsa(fc, param.buff, NULL, 0));
+				       sizeof(param.P521.rand) - off);
+				rc = s390_kdsa(fc, param.buff, NULL, 0);
+			} while (rc);
 		}
 
 		memcpy(sig, param.P521.sig_r + off,
@@ -1685,8 +1811,10 @@ static int eckeygen_cpacf(ICA_EC_KEY *key)
 	}
 
 	do {
-		if (!BN_rand_range(priv, ord))
-		                goto out;
+		if (!BN_rand_range(priv, ord)) {
+			rv = EIO;
+			goto out;
+		}
 	} while (BN_is_zero(priv));
 
 	memset(key->D, 0, privlen);
@@ -1854,6 +1982,173 @@ err:
 	return rc;
 }
 
+
+/*
+ * Derive public key.
+ * Returns 0 if successful. Caller has to check for MSA 9.
+ */
+int x25519_derive_pub(unsigned char pub[32],
+		      const unsigned char priv[32])
+{
+	static const unsigned char x25519_base_u[] = {
+	0x09, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+	};
+	int rc;
+
+	rc = scalar_mulx_cpacf(pub, priv, x25519_base_u, NID_X25519);
+
+	stats_increment(ICA_STATS_X25519_KEYGEN, ALGO_HW, ENCRYPT);
+	return rc;
+}
+
+int x448_derive_pub(unsigned char pub[56],
+		    const unsigned char priv[56])
+{
+	static const unsigned char x448_base_u[] = {
+	0x05, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+	};
+	int rc;
+
+	rc = scalar_mulx_cpacf(pub, priv, x448_base_u, NID_X448);
+
+	stats_increment(ICA_STATS_X448_KEYGEN, ALGO_HW, ENCRYPT);
+	return rc;
+}
+
+int ed25519_derive_pub(unsigned char pub[32],
+		       const unsigned char priv[32])
+{
+	/* base point coordinates (big-endian) */
+	static const unsigned char base_x[] = {
+            0x21, 0x69, 0x36, 0xd3, 0xcd, 0x6e, 0x53, 0xfe,
+            0xc0, 0xa4, 0xe2, 0x31, 0xfd, 0xd6, 0xdc, 0x5c,
+            0x69, 0x2c, 0xc7, 0x60, 0x95, 0x25, 0xa7, 0xb2,
+            0xc9, 0x56, 0x2d, 0x60, 0x8f, 0x25, 0xd5, 0x1a,
+	};
+	static const unsigned char base_y[] = {
+	    0x66, 0x66, 0x66, 0x66, 0x66, 0x66, 0x66, 0x66,
+	    0x66, 0x66, 0x66, 0x66, 0x66, 0x66, 0x66, 0x66,
+	    0x66, 0x66, 0x66, 0x66, 0x66, 0x66, 0x66, 0x66,
+	    0x66, 0x66, 0x66, 0x66, 0x66, 0x66, 0x66, 0x58,
+	};
+
+	uint64_t lo, hi;
+	unsigned char buf[64];
+	unsigned char res_x[32];
+	int rc;
+
+	lo = 0;
+	hi = 0;
+	rc = s390_sha512(NULL, (unsigned char *)priv, 32, buf,
+			 SHA_MSG_PART_ONLY, &lo, &hi);
+	if (rc)
+		goto out;
+
+	buf[0] &= -8;	/* ensure multiple of cofactor */
+	buf[31] &= 0x3f;
+	buf[31] |= 0x40;
+
+	/* to big endian */
+	s390_flip_endian_32(buf, buf);
+
+	rc = scalar_mul_cpacf(res_x, pub, buf, base_x, base_y, NID_ED25519);
+	if (rc)
+		goto out;
+
+	/* to little endian */
+	s390_flip_endian_32(res_x, res_x);
+	s390_flip_endian_32(pub, pub);
+
+	pub[31] |= ((res_x[0] & 0x01) << 7);
+
+	/* to big endian */
+	s390_flip_endian_32(pub, pub);
+
+	stats_increment(ICA_STATS_ED25519_KEYGEN, ALGO_HW, ENCRYPT);
+	rc = 0;
+out:
+	return rc;
+}
+
+/*
+ * Derive public key.
+ * Returns 0 if successful. Caller has to check for MSA 9.
+ */
+int ed448_derive_pub(unsigned char pub[57],
+		     const unsigned char priv[57])
+{
+	/* base point coordinates (big-endian) */
+	static const unsigned char base_x[] = {
+	    0x00,
+	    0x4f, 0x19, 0x70, 0xc6, 0x6b, 0xed, 0x0d, 0xed,
+	    0x22, 0x1d, 0x15, 0xa6, 0x22, 0xbf, 0x36, 0xda,
+	    0x9e, 0x14, 0x65, 0x70, 0x47, 0x0f, 0x17, 0x67,
+	    0xea, 0x6d, 0xe3, 0x24, 0xa3, 0xd3, 0xa4, 0x64,
+	    0x12, 0xae, 0x1a, 0xf7, 0x2a, 0xb6, 0x65, 0x11,
+	    0x43, 0x3b, 0x80, 0xe1, 0x8b, 0x00, 0x93, 0x8e,
+	    0x26, 0x26, 0xa8, 0x2b, 0xc7, 0x0c, 0xc0, 0x5e,
+	};
+	static const unsigned char base_y[] = {
+	    0x00,
+	    0x69, 0x3f, 0x46, 0x71, 0x6e, 0xb6, 0xbc, 0x24,
+	    0x88, 0x76, 0x20, 0x37, 0x56, 0xc9, 0xc7, 0x62,
+	    0x4b, 0xea, 0x73, 0x73, 0x6c, 0xa3, 0x98, 0x40,
+	    0x87, 0x78, 0x9c, 0x1e, 0x05, 0xa0, 0xc2, 0xd7,
+	    0x3a, 0xd3, 0xff, 0x1c, 0xe6, 0x7c, 0x39, 0xc4,
+	    0xfd, 0xbd, 0x13, 0x2c, 0x4e, 0xd7, 0xc8, 0xad,
+	    0x98, 0x08, 0x79, 0x5b, 0xf2, 0x30, 0xfa, 0x14,
+	};
+
+	uint64_t lo, hi;
+	unsigned char buf[114], pub64[64];
+	unsigned char res_x[64];
+	int rc;
+
+	memset(res_x, 0, sizeof(res_x));
+	memset(pub64, 0, sizeof(pub64));
+
+	lo = 0;
+	hi = 0;
+	rc = s390_shake_256(NULL, (unsigned char *)priv, 57, buf, sizeof(buf),
+			    SHA_MSG_PART_ONLY, &lo, &hi);
+	if (rc)
+		goto out;
+
+	memset(buf + 57, 0, 57);
+	buf[0] &= -4;	/* ensure multiple of cofactor */
+	buf[55] |= 0x80;
+	buf[56] = 0;
+
+	/* to big endian */
+	s390_flip_endian_64(buf, buf);
+
+	rc = scalar_mul_cpacf(res_x + 64 - 57, pub64 + 64 - 57, buf + 64 - 57,
+			      base_x, base_y, NID_ED448);
+	if (rc)
+		goto out;
+
+	/* to little endian */
+	s390_flip_endian_64(res_x, res_x);
+	s390_flip_endian_64(pub64, pub64);
+
+	pub64[56] |= ((res_x[0] & 0x01) << 7);
+
+	/* to big endian */
+	s390_flip_endian_64(pub64, pub64);
+
+	memcpy(pub, pub64 + 64 - 57, 57);
+	stats_increment(ICA_STATS_ED448_KEYGEN, ALGO_HW, ENCRYPT);
+	rc = 0;
+out:
+	return rc;
+}
+
 #ifdef ICA_INTERNAL_TEST_EC
 
 #include "../test/testcase.h"
@@ -1865,15 +2160,9 @@ do {									    \
 	exit(TEST_FAIL);						    \
 } while(0)
 
-static const unsigned char *deterministic_rng_output;
-
-static void deterministic_rng(unsigned char *buf, size_t buflen)
-{
-	memcpy(buf, deterministic_rng_output, buflen);
-}
-
 static void ecdsa_test(void)
 {
+	unsigned long long rnd[2];
 	sha_context_t sha_ctx;
 	sha256_context_t sha256_ctx;
 	sha512_context_t sha512_ctx;
@@ -1951,9 +2240,13 @@ static void ecdsa_test(void)
 		if (rc)
 			TEST_ERROR("Verification failed", "ECDSA", i);
 
-		/* Try to verify forged signature */
+		/*
+		 * Try to verify forged signature
+		 * (flip random bit in signature)
+		 */
 
-		sig[0] ^= 0x01;
+		rng_gen((unsigned char *)rnd, sizeof(rnd));
+		sig[rnd[0] % (t->siglen * 2)] ^= (1 << (rnd[1] % 8));
 
 		rc = ecdsa_verify_cpacf(t->key, hash, hashlen, sig);
 		if (!rc)
@@ -1966,10 +2259,14 @@ static void ecdsa_test(void)
 
 static void scalar_mul_test(void)
 {
-	const unsigned char *base_x, *base_y;
-	unsigned char res_x[4096], res_y[4096];
+	const unsigned char *base_x, *base_y, *base_u;
+	unsigned char res_x[4096], res_y[4096], res_u[4096], res_u2[4096],
+		      res_u3[4096];
 	const struct scalar_mul_tv *t;
-	size_t i;
+	const struct scalar_mulx_tv *t2;
+	const struct scalar_mulx_it_tv *t3;
+	const struct scalar_mulx_kex_tv *t4;
+	size_t i, j;
 	int rc;
 
 	static const unsigned char p256_base_x[] = {
@@ -2012,8 +2309,21 @@ static void scalar_mul_test(void)
 	0x07, 0x61, 0x35, 0x3C, 0x70, 0x86, 0xA2, 0x72, 0xC2, 0x40, 0x88, 0xBE,
 	0x94, 0x76, 0x9F, 0xD1, 0x66, 0x50
 	};
+	static const unsigned char x25519_base_u[] = {
+	0x09, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+	};
+	static const unsigned char x448_base_u[] = {
+	0x05, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+	};
 
 	verbosity_ = 2;
+
 	t = &SCALAR_MUL_TV[0];
 
 	for (i = 0; i < SCALAR_MUL_TV_LEN; i++) {
@@ -2063,6 +2373,179 @@ static void scalar_mul_test(void)
 		}
 
 		t++;
+	}
+
+	t2 = &SCALAR_MULX_TV[0];
+
+	for (i = 0; i < SCALAR_MULX_TV_LEN; i++) {
+		memset(res_u, 0, sizeof(res_u));
+
+		rc = scalar_mulx_cpacf(res_u, t2->scalar, t2->u,
+				       t2->curve_nid);
+		if (rc) {
+			TEST_ERROR("Scalar multipication failed",
+				   "SCALAR-MULX", i);
+		}
+
+		if (memcmp(res_u, t2->res_u, t2->len)) {
+			printf("Result U:\n");
+			dump_array(res_u, t2->len);
+			printf("Correct U:\n");
+			dump_array((unsigned char *)t2->res_u, t2->len);
+			TEST_ERROR("Scalar multipication calculated wrong U",
+				   "SCALAR-MULX", i);
+		}
+
+		t2++;
+	}
+
+	t3 = &SCALAR_MULX_IT_TV[0];
+
+	for (i = 0; i < SCALAR_MULX_IT_TV_LEN; i++) {
+		memset(res_u, 0, sizeof(res_u));
+		memset(res_u2, 0, sizeof(res_u2));
+		memset(res_u3, 0, sizeof(res_u3));
+		memcpy(res_u, t3->scalar_u, t3->len);
+		memcpy(res_u2, t3->scalar_u, t3->len);
+
+		for (j = 1; j <= 1000000; j++) {
+			rc = scalar_mulx_cpacf(res_u3, res_u2, res_u,
+					       t3->curve_nid);
+			if (rc) {
+				TEST_ERROR("Scalar multipication failed",
+					   "SCALAR-MULX-IT-MUL", i);
+			}
+
+			if (j == 1 && memcmp(res_u3, t3->res_u_it1, t3->len)) {
+				printf("Result U:\n");
+				dump_array(res_u3, t3->len);
+				printf("Correct U:\n");
+				dump_array((unsigned char *)t3->res_u_it1,
+					   t3->len);
+				TEST_ERROR("Scalar multipication calculated"
+					   " wrong U", "SCALAR-MULX-IT-MUL",
+					   i);
+			}
+			if (j == 1000 && memcmp(res_u3, t3->res_u_it1000,
+			    t3->len)) {
+				printf("Result U:\n");
+				dump_array(res_u3, t3->len);
+				printf("Correct U:\n");
+				dump_array((unsigned char *)t3->res_u_it1000,
+					   t3->len);
+				TEST_ERROR("Scalar multipication calculated"
+					   " wrong U", "SCALAR-MULX-IT-MUL",
+					   i);
+			}
+			if (j == 1000000 && memcmp(res_u3, t3->res_u_it1000000,
+			    t3->len)) {
+				printf("Result U:\n");
+				dump_array(res_u3, t3->len);
+				printf("Correct U:\n");
+				dump_array((unsigned char *)
+					   t3->res_u_it1000000, t3->len);
+				TEST_ERROR("Scalar multipication calculated"
+					   " wrong U", "SCALAR-MULX-IT-MUL",
+					   i);
+			}
+
+			memcpy(res_u, res_u2, sizeof(res_u));
+			memcpy(res_u2, res_u3, sizeof(res_u2));
+			memset(res_u3, 0, sizeof(res_u3));
+		}
+
+		t3++;
+	}
+
+	t4 = &SCALAR_MULX_KEX_TV[0];
+
+	for (i = 0; i < SCALAR_MULX_KEX_TV_LEN; i++) {
+		switch (t4->curve_nid) {
+		case NID_X25519:
+			base_u = x25519_base_u;
+			break;
+		case NID_X448:
+			base_u = x448_base_u;
+			break;
+		default:
+			TEST_ERROR("Unknown curve", "SCALAR-MULX-KEX", i);
+		}
+
+		memset(res_u, 0, sizeof(res_u));
+
+		rc = scalar_mulx_cpacf(res_u, t4->a_priv, base_u,
+				       t4->curve_nid);
+		if (rc) {
+			TEST_ERROR("Scalar multipication failed",
+				   "SCALAR-MULX-KEX", i);
+		}
+
+		if (memcmp(res_u, t4->a_pub, t4->len)) {
+			printf("Result A's pub:\n");
+			dump_array(res_u, t4->len);
+			printf("Correct A's pub:\n");
+			dump_array((unsigned char *)t4->a_pub, t4->len);
+			TEST_ERROR("Wrong public key (A)",
+				   "SCALAR-MULX-KEX", i);
+		}
+
+		memset(res_u, 0, sizeof(res_u));
+
+		rc = scalar_mulx_cpacf(res_u, t4->b_priv, base_u,
+				       t4->curve_nid);
+		if (rc) {
+			TEST_ERROR("Scalar multipication failed",
+				   "SCALARX-KEX", i);
+		}
+
+		if (memcmp(res_u, t4->b_pub, t4->len)) {
+			printf("Result B's pub:\n");
+			dump_array(res_u, t4->len);
+			printf("Correct B's pub:\n");
+			dump_array((unsigned char *)t4->b_pub, t4->len);
+			TEST_ERROR("Wrong public key (B)",
+				   "SCALAR-MULX-KEX", i);
+		}
+
+		memset(res_u, 0, sizeof(res_u));
+
+		rc = scalar_mulx_cpacf(res_u, t4->b_priv, t4->a_pub,
+				       t4->curve_nid);
+		if (rc) {
+			TEST_ERROR("Scalar multipication failed",
+				   "SCALARX-KEX", i);
+		}
+
+		if (memcmp(res_u, t4->shared_secret, t4->len)) {
+			printf("Result shared secret:\n");
+			dump_array(res_u, t4->len);
+			printf("Correct shared secret:\n");
+			dump_array((unsigned char *)t4->shared_secret,
+				   t4->len);
+			TEST_ERROR("Wrong shared secret (B's priv * A's pub)",
+				   "SCALAR-MULX-KEX", i);
+		}
+
+		memset(res_u, 0, sizeof(res_u));
+
+		rc = scalar_mulx_cpacf(res_u, t4->a_priv, t4->b_pub,
+				       t4->curve_nid);
+		if (rc) {
+			TEST_ERROR("Scalar multipication failed",
+				   "SCALARX-KEX", i);
+		}
+
+		if (memcmp(res_u, t4->shared_secret, t4->len)) {
+			printf("Result shared secret:\n");
+			dump_array(res_u, t4->len);
+			printf("Correct shared secret:\n");
+			dump_array((unsigned char *)t4->shared_secret,
+				   t4->len);
+			TEST_ERROR("Wrong shared secret (A's priv * B's pub)",
+				   "SCALAR-MULX-KEX", i);
+		}
+
+		t4++;
 	}
 }
 

@@ -550,6 +550,7 @@ static inline int s390_klmd(unsigned long func, void *param,
 
 	return func ? src_len - __src_len : __src_len;
 }
+
 /**
  * s390_kdsa:
  * @func: the function code passed to KDSA; see s390_kdsa_functions
@@ -571,17 +572,16 @@ static inline int s390_kdsa(unsigned long func, void *param,
 	register unsigned long r1 asm("1") = (unsigned long)param;
 	register unsigned long r2 asm("2") = (unsigned long)src;
 	register unsigned long r3 asm("3") = (unsigned long)srclen;
-
 	unsigned long rc = 1;
 
 	asm volatile(
-		"0:	.insn	rre,%[opc] << 16,0,%[src]\n"
+		"0:	.insn	rre,%[__opc] << 16,0,%[__src]\n"
 		"	brc	1,0b\n" /* handle partial completion */
 		"	brc	7,1f\n"
-		"	lghi	%[rc],0\n"
+		"	lghi	%[__rc],0\n"
 		"1:\n"
-		: [src] "+a" (r2), [srclen] "+d" (r3), [rc] "+d" (rc)
-		: [fc] "d" (r0), [param] "a" (r1), [opc] "i" (0xb93a)
+		: [__src] "+a" (r2), [__srclen] "+d" (r3), [__rc] "+d" (rc)
+		: [__fc] "d" (r0), [__param] "a" (r1), [__opc] "i" (0xb93a)
 		: "cc", "memory");
 
 	return (int)rc;
@@ -681,6 +681,47 @@ static inline int __stfle(unsigned long long *list, int doublewords)
 		     : "+d" (__nr) : "a" (list) : "memory", "cc");
 
 	return __nr + 1;
+}
+
+static inline void s390_flip_endian_32(void *dest, const void *src)
+{
+	asm volatile(
+		"	lrvg	%%r0,0(0,%[__src])\n"
+		"	lrvg	%%r1,8(0,%[__src])\n"
+		"	lrvg	%%r4,16(0,%[__src])\n"
+		"	lrvg	%%r5,24(0,%[__src])\n"
+		"	stg	%%r0,24(0,%[__dest])\n"
+		"	stg	%%r1,16(0,%[__dest])\n"
+		"	stg	%%r4,8(0,%[__dest])\n"
+		"	stg	%%r5,0(0,%[__dest])\n"
+		:
+		: [__dest] "a" (dest), [__src] "a" (src)
+		: "memory", "%r0", "%r1", "%r4", "%r5");
+}
+
+static inline void s390_flip_endian_64(void *dest, const void *src)
+{
+	asm volatile(
+		"	lrvg	%%r0,0(0,%[__src])\n"
+		"	lrvg	%%r1,8(0,%[__src])\n"
+		"	lrvg	%%r4,16(0,%[__src])\n"
+		"	lrvg	%%r5,24(0,%[__src])\n"
+		"	lrvg	%%r6,32(0,%[__src])\n"
+		"	lrvg	%%r7,40(0,%[__src])\n"
+		"	lrvg	%%r8,48(0,%[__src])\n"
+		"	lrvg	%%r9,56(0,%[__src])\n"
+		"	stg	%%r0,56(0,%[__dest])\n"
+		"	stg	%%r1,48(0,%[__dest])\n"
+		"	stg	%%r4,40(0,%[__dest])\n"
+		"	stg	%%r5,32(0,%[__dest])\n"
+		"	stg	%%r6,24(0,%[__dest])\n"
+		"	stg	%%r7,16(0,%[__dest])\n"
+		"	stg	%%r8,8(0,%[__dest])\n"
+		"	stg	%%r9,0(0,%[__dest])\n"
+		:
+		: [__dest] "a" (dest), [__src] "a" (src)
+		: "memory", "%r0", "%r1", "%r4", "%r5",
+			    "%r6", "%r7", "%r8", "%r9");
 }
 
 #endif

@@ -26,6 +26,13 @@
 #define V_(print)	if (verbosity_ >= 1) print
 #define VV_(print)	if (verbosity_ >= 2) print
 
+# define EXIT_ERR(msg)							\
+do {									\
+	printf("%s failed (%s:%d): %s\n",				\
+	       __func__, __FILE__, __LINE__, msg);			\
+	exit(TEST_FAIL);						\
+} while (0)
+
 static int verbosity_;	/* default verbosity level: 0 */
 
 static inline void

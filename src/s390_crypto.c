@@ -499,6 +499,10 @@ libica_func_list_element_int icaList[] = {
  {ED448_KEYGEN,   MSA9, SCALAR_MULTIPLY_ED448, 0, 0},
  {ED448_SIGN,     MSA9, EDDSA_SIGN_ED448, 0, 0},
  {ED448_VERIFY,   MSA9, EDDSA_VERIFY_ED448, 0, 0},
+ {X25519_KEYGEN,   MSA9, SCALAR_MULTIPLY_X25519, 0, 0},
+ {X25519_DERIVE,   MSA9, SCALAR_MULTIPLY_X25519, 0, 0},
+ {X448_KEYGEN,   MSA9, SCALAR_MULTIPLY_X448, 0, 0},
+ {X448_DERIVE,   MSA9, SCALAR_MULTIPLY_X448, 0, 0},
  {RSA_ME,       ADAPTER, 0, 0, 0},
  {RSA_CRT,      ADAPTER, 0, 0, 0},
  {RSA_KEY_GEN_ME, ADAPTER, 0, ICA_FLAG_SW, 0},  // SW (openssl)
@@ -561,7 +565,11 @@ int s390_initialize_functionlist()
 			break;
 		case MSA9:
 			if (e->mech_mode_id == ED25519_KEYGEN
-				|| e->mech_mode_id == ED448_KEYGEN)
+				|| e->mech_mode_id == ED448_KEYGEN
+				|| e->mech_mode_id == X25519_KEYGEN
+				|| e->mech_mode_id == X25519_DERIVE
+				|| e->mech_mode_id == X448_KEYGEN
+				|| e->mech_mode_id == X448_DERIVE)
 				e->flags |= *s390_pcc_functions[e->id].enabled ? ICA_FLAG_SHW : 0;
 			else
 				e->flags |= *s390_kdsa_functions[e->id].enabled ? ICA_FLAG_SHW : 0;

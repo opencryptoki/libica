@@ -261,6 +261,42 @@ struct scalar_mul_tv {
 	const unsigned char *y;
 };
 
+struct scalar_mulx_tv {
+	/* scalar mul inputs */
+	int curve_nid;
+	size_t len;
+	const unsigned char *scalar;
+	const unsigned char *u;
+
+	/* scalar mul outputs */
+	const unsigned char *res_u;
+};
+
+struct scalar_mulx_it_tv {
+	/* scalar mul inputs */
+	int curve_nid;
+	size_t len;
+	const unsigned char *scalar_u;
+
+	/* scalar mul outputs */
+	const unsigned char *res_u_it1;
+	const unsigned char *res_u_it1000;
+	const unsigned char *res_u_it1000000;
+};
+
+struct scalar_mulx_kex_tv {
+	/* scalar mul inputs */
+	int curve_nid;
+	size_t len;
+	const unsigned char *a_priv;
+	const unsigned char *b_priv;
+
+	/* scalar mul outputs */
+	const unsigned char *a_pub;
+	const unsigned char *b_pub;
+	const unsigned char *shared_secret;
+};
+
 #ifdef ICA_FIPS
 extern const struct aes_ecb_tv AES_ECB_TV[];
 extern const size_t AES_ECB_TV_LEN;
@@ -338,6 +374,18 @@ extern const size_t ECDSA_TV_LEN;
 
 extern const struct scalar_mul_tv SCALAR_MUL_TV[];
 extern const size_t SCALAR_MUL_TV_LEN;
+
+extern const struct scalar_mulx_tv SCALAR_MULX_TV[];
+extern const size_t SCALAR_MULX_TV_LEN;
+
+extern const struct scalar_mulx_it_tv SCALAR_MULX_IT_TV[];
+extern const size_t SCALAR_MULX_IT_TV_LEN;
+
+extern const struct scalar_mulx_kex_tv SCALAR_MULX_KEX_TV[];
+extern const size_t SCALAR_MULX_KEX_TV_LEN;
+
+extern const unsigned char *deterministic_rng_output;
+void deterministic_rng(unsigned char *buf, size_t buflen);
 #endif /* ICA_INTERNAL_TEST_EC */
 
 extern const struct drbg_sha512_tv DRBG_SHA512_TV[];
