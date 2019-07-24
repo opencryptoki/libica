@@ -140,3 +140,37 @@ LIBICA_3.5.0 {
 	ica_set_stats_mode;
     local: *;
 } LIBICA_3.4.0;
+
+LIBICA_3.6.0 {
+    global:
+	ica_x25519_ctx_new;
+	ica_x25519_key_set;
+	ica_x25519_key_get;
+	ica_x25519_key_gen;
+	ica_x25519_derive;
+	ica_x25519_ctx_del;
+
+	ica_x448_ctx_new;
+	ica_x448_key_set;
+	ica_x448_key_get;
+	ica_x448_key_gen;
+	ica_x448_derive;
+	ica_x448_ctx_del;
+
+	ica_ed25519_ctx_new;
+	ica_ed25519_key_set;
+	ica_ed25519_key_get;
+	ica_ed25519_key_gen;
+	ica_ed25519_sign;
+	ica_ed25519_verify;
+	ica_ed25519_ctx_del;
+
+	ica_ed448_ctx_new;
+	ica_ed448_key_set;
+	ica_ed448_key_get;
+	ica_ed448_key_gen;
+	ica_ed448_sign;
+	ica_ed448_verify;
+	ica_ed448_ctx_del;
+    local: *;
+} LIBICA_3.5.0;

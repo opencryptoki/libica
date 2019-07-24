@@ -151,6 +151,10 @@ typedef ica_adapter_handle_t ICA_ADAPTER_HANDLE;
 #define ED448_KEYGEN	103
 #define ED448_SIGN	104
 #define ED448_VERIFY	105
+#define X25519_KEYGEN	106
+#define X25519_DERIVE	107
+#define X448_KEYGEN	108
+#define X448_DERIVE	109
 
 /*
  * Key length for DES/3DES encryption/decryption
@@ -1136,6 +1140,121 @@ int ica_ec_key_get_private_key(const ICA_EC_KEY *key, unsigned char *d, unsigned
  */
 ICA_EXPORT
 void ica_ec_key_free(ICA_EC_KEY *key);
+
+
+typedef struct ica_x25519_ctx ICA_X25519_CTX;
+typedef struct ica_x448_ctx ICA_X448_CTX;
+typedef struct ica_ed25519_ctx ICA_ED25519_CTX;
+typedef struct ica_ed448_ctx ICA_ED448_CTX;
+
+/*
+ * Allocate a new context. MSA9 required.
+ * Returns 0 if successful. Otherwise, -1 is returned.
+ */
+ICA_EXPORT
+int ica_x25519_ctx_new(ICA_X25519_CTX **ctx);
+ICA_EXPORT
+int ica_x448_ctx_new(ICA_X448_CTX **ctx);
+ICA_EXPORT
+int ica_ed25519_ctx_new(ICA_ED25519_CTX **ctx);
+ICA_EXPORT
+int ica_ed448_ctx_new(ICA_ED448_CTX **ctx);
+
+/*
+ * Copy the private and public key to the context. MSA9 required.
+ * Returns 0 if successful. Otherwise, -1 is returned.
+ */
+ICA_EXPORT
+int ica_x25519_key_set(ICA_X25519_CTX *ctx, const unsigned char priv[32],
+		       const unsigned char pub[32]);
+ICA_EXPORT
+int ica_x448_key_set(ICA_X448_CTX *ctx, const unsigned char priv[56],
+		     const unsigned char pub[56]);
+ICA_EXPORT
+int ica_ed25519_key_set(ICA_ED25519_CTX *ctx, const unsigned char priv[32],
+			const unsigned char pub[32]);
+ICA_EXPORT
+int ica_ed448_key_set(ICA_ED448_CTX *ctx, const unsigned char priv[56],
+		      const unsigned char pub[56]);
+
+/*
+ * Copy the private and public key from the context. MSA9 required.
+ * Returns 0 if successful. Otherwise, -1 is returned.
+ */
+ICA_EXPORT
+int ica_x25519_key_get(ICA_X25519_CTX *ctx, unsigned char priv[32],
+		       unsigned char pub[32]);
+ICA_EXPORT
+int ica_x448_key_get(ICA_X448_CTX *ctx, unsigned char priv[56],
+		     unsigned char pub[56]);
+ICA_EXPORT
+int ica_ed25519_key_get(ICA_ED25519_CTX *ctx, unsigned char priv[32],
+			unsigned char pub[32]);
+ICA_EXPORT
+int ica_ed448_key_get(ICA_ED448_CTX *ctx, unsigned char priv[57],
+		      unsigned char pub[57]);
+
+/*
+ * Generate a key. MSA9 required.
+ * Returns 0 if successful. Otherwise, -1 is returned.
+ */
+ICA_EXPORT
+int ica_x25519_key_gen(ICA_X25519_CTX *ctx);
+ICA_EXPORT
+int ica_x448_key_gen(ICA_X448_CTX *ctx);
+ICA_EXPORT
+int ica_ed25519_key_gen(ICA_ED25519_CTX *ctx);
+ICA_EXPORT
+int ica_ed448_key_gen(ICA_ED448_CTX *ctx);
+/*
+ * Derive a shared secret. Requires the context to hold the private key.
+ * MSA9 required. Returns 0 if successful. Otherwise, -1 is returned.
+ */
+ICA_EXPORT
+int ica_x25519_derive(ICA_X25519_CTX *ctx,
+		      unsigned char shared_secret[32],
+		      const unsigned char peer_pub[32]);
+ICA_EXPORT
+int ica_x448_derive(ICA_X448_CTX *ctx,
+		    unsigned char shared_secret[56],
+		    const unsigned char peer_pub[56]);
+
+/*
+ * Sign. Requires the context to hold the private key. MSA9 required.
+ * Returns 0 if successful. Otherwise, -1 is returned.
+ */
+ICA_EXPORT
+int ica_ed25519_sign(ICA_ED25519_CTX *ctx, unsigned char sig[64],
+		     const unsigned char *msg, size_t msglen);
+ICA_EXPORT
+int ica_ed448_sign(ICA_ED448_CTX *ctx, unsigned char sig[114],
+		   const unsigned char *msg, size_t msglen);
+
+/*
+ * Verify. Requires the public key. If the context only holds the private key,
+ * the public key is derived. MSA9 required.
+ * Returns 0 if signature is valid. Otherwise, -1 is returned.
+ */
+ICA_EXPORT
+int ica_ed25519_verify(ICA_ED25519_CTX *ctx, const unsigned char sig[64],
+		       const unsigned char *msg, size_t msglen);
+ICA_EXPORT
+int ica_ed448_verify(ICA_ED448_CTX *ctx, const unsigned char sig[114],
+		     const unsigned char *msg, size_t msglen);
+
+/*
+ * Delete a context. Its sensitive data is erased. MSA9 required.
+ * Returns 0 if successful. Otherwise, -1 is returned.
+ */
+ICA_EXPORT
+int ica_x25519_ctx_del(ICA_X25519_CTX **ctx);
+ICA_EXPORT
+int ica_x448_ctx_del(ICA_X448_CTX **ctx);
+ICA_EXPORT
+int ica_ed25519_ctx_del(ICA_ED25519_CTX **ctx);
+ICA_EXPORT
+int ica_ed448_ctx_del(ICA_ED448_CTX **ctx);
+
 
 /*
  *                             End of ECC API

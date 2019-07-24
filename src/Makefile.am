@@ -15,7 +15,7 @@ libica_la_LDFLAGS = -Wl,--version-script=${srcdir}/../libica.map \
 libica_la_SOURCES = ica_api.c init.c icastats_shared.c s390_rsa.c \
 		    s390_crypto.c s390_ecc.c s390_prng.c s390_sha.c \
 		    s390_drbg.c s390_drbg_sha512.c test_vec.c fips.c \
-		    mp.S \
+		    mp.S rng.c \
 		    include/fips.h include/icastats.h include/init.h \
 		    include/s390_aes.h include/s390_cbccs.h \
 		    include/s390_ccm.h include/s390_cmac.h \
@@ -23,7 +23,8 @@ libica_la_SOURCES = ica_api.c init.c icastats_shared.c s390_rsa.c \
 		    include/s390_ctr.h include/s390_des.h \
 		    include/s390_drbg.h include/s390_drbg_sha512.h \
 		    include/s390_ecc.h include/s390_gcm.h include/s390_prng.h \
-		    include/s390_rsa.h include/s390_sha.h include/test_vec.h
+		    include/s390_rsa.h include/s390_sha.h include/test_vec.h \
+		    include/rng.h
 
 EXTRA_DIST = mp.pl
 mp.S	: mp.pl
@@ -57,7 +58,7 @@ internal_tests_ec_internal_test_SOURCES = \
 		    ica_api.c init.c icastats_shared.c s390_rsa.c \
 		    s390_crypto.c s390_ecc.c s390_prng.c s390_sha.c \
 		    s390_drbg.c s390_drbg_sha512.c test_vec.c fips.c \
-		    mp.S \
+		    mp.S rng.c \
 		    include/fips.h include/icastats.h include/init.h \
 		    include/s390_aes.h include/s390_cbccs.h \
 		    include/s390_ccm.h include/s390_cmac.h \
@@ -66,5 +67,5 @@ internal_tests_ec_internal_test_SOURCES = \
 		    include/s390_drbg.h include/s390_drbg_sha512.h \
 		    include/s390_ecc.h include/s390_gcm.h include/s390_prng.h \
 		    include/s390_rsa.h include/s390_sha.h include/test_vec.h \
-		    ../test/testcase.h
+		    include/rng.h ../test/testcase.h
 endif

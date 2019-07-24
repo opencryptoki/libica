@@ -27,6 +27,7 @@
 #include "s390_prng.h"
 #include "s390_crypto.h"
 #include "ica_api.h"
+#include "rng.h"
 
 static sigjmp_buf sigill_jmp;
 
@@ -100,6 +101,8 @@ void __attribute__ ((constructor)) icainit(void)
 				     ICA_DRBG_SHA512);
 #endif /* ICA_FIPS */
 
+	rng_init();
+
 	s390_prng_init();
 
 	s390_initialize_functionlist();
@@ -107,5 +110,7 @@ void __attribute__ ((constructor)) icainit(void)
 
 void __attribute__ ((destructor)) icaexit(void)
 {
+	rng_fini();
+
 	stats_munmap(SHM_CLOSE);
 }

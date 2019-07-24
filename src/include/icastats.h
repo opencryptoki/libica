@@ -50,6 +50,16 @@ typedef enum stats_fields {
 	ICA_STATS_ECDSA_SIGN,
 	ICA_STATS_ECDSA_VERIFY,
 	ICA_STATS_ECKGEN,
+	ICA_STATS_ED25519_KEYGEN,
+	ICA_STATS_ED25519_SIGN,
+	ICA_STATS_ED25519_VERIFY,
+	ICA_STATS_ED448_KEYGEN,
+	ICA_STATS_ED448_SIGN,
+	ICA_STATS_ED448_VERIFY,
+	ICA_STATS_X25519_KEYGEN,
+	ICA_STATS_X25519_DERIVE,
+	ICA_STATS_X448_KEYGEN,
+	ICA_STATS_X448_DERIVE,
 	ICA_STATS_RSA_ME,
 	ICA_STATS_RSA_CRT, /* add new crypt counters above RSA_CRT
 			      (see print_stats function) */
@@ -101,6 +111,16 @@ typedef enum stats_fields {
 	"ECDSA Sign",   \
 	"ECDSA Verify", \
 	"ECKGEN",       \
+	"Ed25519 Keygen",\
+	"Ed25519 Sign", \
+	"Ed25519 Verify",\
+	"Ed448 Keygen",\
+	"Ed448 Sign", \
+	"Ed448 Verify",\
+	"X25519 Keygen",\
+	"X25519 Derive",\
+	"X448 Keygen",  \
+	"X448 Derive",  \
 	"RSA-ME",     	\
 	"RSA-CRT",    	\
 	"DES ECB",    	\

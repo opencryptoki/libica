@@ -29,6 +29,74 @@ struct ec_key_t {
 }; /* ICA_EC_KEY */
 
 
+/* ICA_X25519_CTX */
+struct ica_x25519_ctx {
+	unsigned char priv[32];
+	unsigned char pub[32];
+
+	int priv_init;
+	int pub_init;
+};
+
+/* ICA_X448_CTX */
+struct ica_x448_ctx {
+	unsigned char priv[56];
+	unsigned char pub[56];
+
+	int priv_init;
+	int pub_init;
+};
+
+/* ICA_ED25519_CTX */
+struct ica_ed25519_ctx {
+	struct {
+		unsigned char sig[64];
+		unsigned char priv[32];
+		unsigned char buf[4096 - 64 - 32];
+	} sign_param;
+
+	struct {
+		unsigned char sig[64];
+		unsigned char pub[32];
+		unsigned char buf[4096 - 64 - 32];
+	} verify_param;
+
+	int priv_init;
+	int pub_init;
+};
+
+/* ICA_ED448_CTX */
+struct ica_ed448_ctx {
+	struct {
+		unsigned char sig[128];
+		unsigned char priv[64];
+		unsigned char buf[4096 - 128 - 64];
+	} sign_param;
+
+	struct {
+		unsigned char sig[128];
+		unsigned char pub[64];
+		unsigned char buf[4096 - 128 - 64];
+	} verify_param;
+
+	int priv_init;
+	int pub_init;
+};
+
+int x25519_derive_pub(unsigned char pub[32],
+		      const unsigned char priv[32]);
+int x448_derive_pub(unsigned char pub[56],
+		    const unsigned char priv[56]);
+int ed25519_derive_pub(unsigned char pub[32],
+		       const unsigned char sha512_priv[32]);
+int ed448_derive_pub(unsigned char pub[57],
+		     const unsigned char buf[57]);
+
+int scalar_mulx_cpacf(unsigned char *res_u,
+		      const unsigned char *scalar,
+		      const unsigned char *u,
+		      int curve_nid);
+
 /**
  * Refer to z/OS ICSF Application Programmer's Guide,
  * Appendix A. ICSF and cryptographic coprocessor return and reason codes
@@ -402,6 +470,7 @@ static inline int privlen_from_nid(unsigned int nid)
 		return 28;
 #endif
 	case NID_ED25519:
+	case NID_X25519:
 	case NID_X9_62_prime256v1:
 #if OPENSSL_VERSION_NUMBER >= 0x010002000
 	case NID_brainpoolP256r1:
@@ -414,6 +483,8 @@ static inline int privlen_from_nid(unsigned int nid)
 	case NID_brainpoolP384r1:
 #endif
 		return 48;
+	case NID_X448:
+		return 56;
 	case NID_ED448:
 		return 57;
 #if OPENSSL_VERSION_NUMBER >= 0x010002000
