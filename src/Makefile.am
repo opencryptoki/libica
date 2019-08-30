@@ -11,7 +11,7 @@ libica_la_CFLAGS = ${AM_CFLAGS} -I${srcdir}/include -I${srcdir}/../include \
 libica_la_CCASFLAGS = ${AM_CFLAGS}
 libica_la_LIBADD = @LIBS@ -lrt -lcrypto
 libica_la_LDFLAGS = -Wl,--version-script=${srcdir}/../libica.map \
-		    -version-number ${VERSION}
+		    -version-number ${VERSION} -pthread
 libica_la_SOURCES = ica_api.c init.c icastats_shared.c s390_rsa.c \
 		    s390_crypto.c s390_ecc.c s390_prng.c s390_sha.c \
 		    s390_drbg.c s390_drbg_sha512.c test_vec.c fips.c \
