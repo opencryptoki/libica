@@ -1479,6 +1479,7 @@ int ica_x25519_key_set(ICA_X25519_CTX *ctx,
 	if (priv != NULL) {
 		memcpy(ctx->priv, priv, 32);
 		ctx->priv_init = 1;
+		memset(ctx->pub, 0, 32);
 		ctx->pub_init = 0;
 	}
 
@@ -1500,6 +1501,7 @@ int ica_x448_key_set(ICA_X448_CTX *ctx,
 	if (priv != NULL) {
 		memcpy(ctx->priv, priv, 56);
 		ctx->priv_init = 1;
+		memset(ctx->pub, 0, 56);
 		ctx->pub_init = 0;
 	}
 
@@ -1521,6 +1523,7 @@ int ica_ed25519_key_set(ICA_ED25519_CTX *ctx,
 	if (priv != NULL) {
 		memcpy(ctx->sign_param.priv, priv, 32);
 		ctx->priv_init = 1;
+		memset(ctx->verify_param.pub, 0, 32);
 		ctx->pub_init = 0;
 	}
 
@@ -1543,6 +1546,7 @@ int ica_ed448_key_set(ICA_ED448_CTX *ctx,
 		memset(ctx->sign_param.priv, 0, sizeof(ctx->sign_param.priv));
 		memcpy(ctx->sign_param.priv + 64 - 57, priv, 57);
 		ctx->priv_init = 1;
+		memset(ctx->verify_param.pub, 0, 57);
 		ctx->pub_init = 0;
 	}
 
@@ -1579,8 +1583,10 @@ int ica_x25519_key_get(ICA_X25519_CTX *ctx, unsigned char priv[32],
 				return -1;
 
 			rc = x25519_derive_pub(ctx->pub, ctx->priv);
-			if (rc)
+			if (rc) {
+				memset(ctx->pub, 0, 32);
 				return -1;
+			}
 
 			ctx->pub_init = 1;
 		}
@@ -1612,8 +1618,10 @@ int ica_x448_key_get(ICA_X448_CTX *ctx, unsigned char priv[56],
 				return -1;
 
 			rc = x448_derive_pub(ctx->pub, ctx->priv);
-			if (rc)
+			if (rc) {
+				memset(ctx->pub, 0, 56);
 				return -1;
+			}
 
 			ctx->pub_init = 1;
 		}
@@ -1647,8 +1655,10 @@ int ica_ed25519_key_get(ICA_ED25519_CTX *ctx, unsigned char priv[32],
 
 			rc = ed25519_derive_pub(ctx->verify_param.pub,
 						ctx->sign_param.priv);
-			if (rc)
+			if (rc) {
+				memset(ctx->verify_param.pub, 0, 32);
 				return -1;
+			}
 
 			ctx->pub_init = 1;
 		}
@@ -1683,8 +1693,10 @@ int ica_ed448_key_get(ICA_ED448_CTX *ctx, unsigned char priv[57],
 
 			rc = ed448_derive_pub(ctx->verify_param.pub + 64 - 57,
 					      ctx->sign_param.priv + 64 - 57);
-			if (rc)
+			if (rc) {
+				memset(ctx->verify_param.pub, 0, 57);
 				return -1;
+			}
 
 			ctx->pub_init = 1;
 		}
@@ -1740,8 +1752,10 @@ int ica_ed25519_sign(ICA_ED25519_CTX *ctx, unsigned char sig[64],
 
 	rc = s390_kdsa(S390_CRYPTO_EDDSA_SIGN_ED25519,
 		       &ctx->sign_param, msg, msglen);
-	if (rc)
+	if (rc) {
+		memset(ctx->sign_param.sig, 0, sizeof(ctx->sign_param.sig));
 		return -1;
+	}
 
 	s390_flip_endian_32(sig, ctx->sign_param.sig);
 	s390_flip_endian_32(sig + 32, ctx->sign_param.sig + 32);
@@ -1762,8 +1776,10 @@ int ica_ed448_sign(ICA_ED448_CTX *ctx, unsigned char sig[114],
 
 	rc = s390_kdsa(S390_CRYPTO_EDDSA_SIGN_ED448,
 		       &ctx->sign_param, msg, msglen);
-	if (rc)
+	if (rc) {
+		memset(ctx->sign_param.sig, 0, sizeof(ctx->sign_param.sig));
 		return -1;
+	}
 
 	s390_flip_endian_64(ctx->sign_param.sig, ctx->sign_param.sig);
 	s390_flip_endian_64(ctx->sign_param.sig + 64,
@@ -1791,8 +1807,10 @@ int ica_ed25519_verify(ICA_ED25519_CTX *ctx, const unsigned char sig[64],
 
 		rc = ed25519_derive_pub(ctx->verify_param.pub,
 				        ctx->sign_param.priv);
-		if (rc)
+		if (rc) {
+			memset(ctx->verify_param.pub, 0, 32);
 			return -1;
+		}
 
 		ctx->pub_init = 1;
 	}
@@ -1802,13 +1820,11 @@ int ica_ed25519_verify(ICA_ED25519_CTX *ctx, const unsigned char sig[64],
 
 	rc = s390_kdsa(S390_CRYPTO_EDDSA_VERIFY_ED25519,
 		       &ctx->verify_param, msg, msglen);
-	if (rc)
-		return -1;
 
 	memset(ctx->verify_param.sig, 0, sizeof(ctx->verify_param.sig));
 
 	stats_increment(ICA_STATS_ED25519_VERIFY, ALGO_HW, ENCRYPT);
-	return 0;
+	return rc == 0 ? 0 : -1;
 }
 
 int ica_ed448_verify(ICA_ED448_CTX *ctx, const unsigned char sig[114],
@@ -1826,8 +1842,10 @@ int ica_ed448_verify(ICA_ED448_CTX *ctx, const unsigned char sig[114],
 
 		rc = ed448_derive_pub(ctx->verify_param.pub + 64 - 57,
 				      ctx->sign_param.priv + 64 - 57);
-		if (rc)
+		if (rc) {
+			memset(ctx->verify_param.pub, 0, 57);
 			return -1;
+		}
 
 		ctx->pub_init = 1;
 	}
@@ -1841,12 +1859,12 @@ int ica_ed448_verify(ICA_ED448_CTX *ctx, const unsigned char sig[114],
 	rc = s390_kdsa(S390_CRYPTO_EDDSA_VERIFY_ED448,
 		       &ctx->verify_param, msg, msglen);
 	if (rc || sig[113] != 0)	/* XXX kdsa doesnt check last byte */
-		return -1;
+		rc = -1;
 
 	memset(ctx->verify_param.sig, 0, sizeof(ctx->verify_param.sig));
 
 	stats_increment(ICA_STATS_ED448_VERIFY, ALGO_HW, ENCRYPT);
-	return 0;
+	return rc == 0 ? 0 : -1;
 }
 
 int ica_x25519_ctx_del(ICA_X25519_CTX **ctx)
@@ -1899,11 +1917,10 @@ int ica_x25519_key_gen(ICA_X25519_CTX *ctx)
 		return -1;
 
 	memset(ctx, 0, sizeof(*ctx));
+	ctx->pub_init = 0;
 
 	rng_gen(ctx->priv, 32);
-
 	ctx->priv_init = 1;
-	ctx->pub_init = 0;
 	return 0;
 }
 
@@ -1913,11 +1930,10 @@ int ica_x448_key_gen(ICA_X448_CTX *ctx)
 		return -1;
 
 	memset(ctx, 0, sizeof(*ctx));
+	ctx->pub_init = 0;
 
 	rng_gen(ctx->priv, 56);
-
 	ctx->priv_init = 1;
-	ctx->pub_init = 0;
 	return 0;
 }
 
@@ -1927,11 +1943,10 @@ int ica_ed25519_key_gen(ICA_ED25519_CTX *ctx)
 		return -1;
 
 	memset(ctx, 0, sizeof(*ctx));
+	ctx->pub_init = 0;
 
 	rng_gen(ctx->sign_param.priv, sizeof(ctx->sign_param.priv));
-
 	ctx->priv_init = 1;
-	ctx->pub_init = 0;
 	return 0;
 }
 
@@ -1941,12 +1956,11 @@ int ica_ed448_key_gen(ICA_ED448_CTX *ctx)
 		return -1;
 
 	memset(ctx, 0, sizeof(*ctx));
+	ctx->pub_init = 0;
 
 	rng_gen(ctx->sign_param.priv + 64 - 57,
 		sizeof(ctx->sign_param.priv) - (64 - 57));
-
 	ctx->priv_init = 1;
-	ctx->pub_init = 0;
 	return 0;
 }
 
