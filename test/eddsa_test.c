@@ -14,9 +14,9 @@
 #include "testcase.h"
 #include "eddsa_test.h"
 
-#define THREADS		1024
-#define ITERATIONS	100  /*XXX*/
-#define MSGLEN		(3600-1) /*XXX (16384*100UL)*/
+#define THREADS		256
+#define ITERATIONS	1000
+#define MSGLEN		(16384*2ULL)
 
 static void check_functionlist(void);
 
@@ -265,14 +265,15 @@ static void ed25519_pc(void)
 	if (msg == NULL)
 		EXIT_ERR("malloc failed.");
 
-	fd = fopen("/dev/urandom", "r");
-	if (fd == NULL)
-		EXIT_ERR("fopen failed.");
+	if (msglen > 0) {
+		fd = fopen("/dev/urandom", "r");
+		if (fd == NULL)
+			EXIT_ERR("fopen failed.");
 
-	if (fread(msg, msglen, 1, fd) != 1)
-		EXIT_ERR("fread failed.");
-
-	fclose(fd);
+		if (fread(msg, msglen, 1, fd) != 1)
+			EXIT_ERR("fread failed.");
+		fclose(fd);
+	}
 
 	if (ica_ed25519_ctx_new(&ctx))
 		EXIT_ERR("ica_ed448_ctx_new failed.");
@@ -347,14 +348,16 @@ static void ed448_pc(void)
 	if (msg == NULL)
 		EXIT_ERR("malloc failed.");
 
-	fd = fopen("/dev/urandom", "r");
-	if (fd == NULL)
-		EXIT_ERR("fopen failed.");
+	if (msglen > 0) {
+		fd = fopen("/dev/urandom", "r");
+		if (fd == NULL)
+			EXIT_ERR("fopen failed.");
 
-	if (fread(msg, msglen, 1, fd) != 1)
-		EXIT_ERR("fread failed.");
+		if (fread(msg, msglen, 1, fd) != 1)
+			EXIT_ERR("fread failed.");
 
-	fclose(fd);
+		fclose(fd);
+	}
 
 	if (ica_ed448_ctx_new(&ctx))
 		EXIT_ERR("ica_ed448_ctx_new failed.");
@@ -535,7 +538,7 @@ static void ed25519_speed(void)
 	gettimeofday(&stop, NULL);
 	delta = delta_usec(&start, &stop);
 	ops = ops_per_sec(ITERATIONS, delta);
-	printf("ica_ed25519_sign(%d bytes)\t%.2Lf ops/sec\n", MSGLEN, ops);
+	printf("ica_ed25519_sign(%llu bytes)\t%.2Lf ops/sec\n", MSGLEN, ops);
 
 	gettimeofday(&start, NULL);
 	for (i = 0; i < ITERATIONS; i++) {
@@ -545,7 +548,7 @@ static void ed25519_speed(void)
 	gettimeofday(&stop, NULL);
 	delta = delta_usec(&start, &stop);
 	ops = ops_per_sec(ITERATIONS, delta);
-	printf("ica_ed25519_verify(%d bytes)\t%.2Lf ops/sec\n", MSGLEN, ops);
+	printf("ica_ed25519_verify(%llu bytes)\t%.2Lf ops/sec\n", MSGLEN, ops);
 
 	if (ica_ed25519_ctx_del(&ctx))
 		EXIT_ERR("ica_ed25519_ctx_del failed.");
@@ -581,7 +584,7 @@ static void ed448_speed(void)
 	gettimeofday(&stop, NULL);
 	delta = delta_usec(&start, &stop);
 	ops = ops_per_sec(ITERATIONS, delta);
-	printf("ica_ed448_sign(%d bytes)\t%.2Lf ops/sec\n", MSGLEN, ops);
+	printf("ica_ed448_sign(%llu bytes)\t%.2Lf ops/sec\n", MSGLEN, ops);
 
 	gettimeofday(&start, NULL);
 	for (i = 0; i < ITERATIONS; i++) {
@@ -591,7 +594,7 @@ static void ed448_speed(void)
 	gettimeofday(&stop, NULL);
 	delta = delta_usec(&start, &stop);
 	ops = ops_per_sec(ITERATIONS, delta);
-	printf("ica_ed448_verify(%d bytes)\t%.2Lf ops/sec\n", MSGLEN, ops);
+	printf("ica_ed448_verify(%llu bytes)\t%.2Lf ops/sec\n", MSGLEN, ops);
 
 	if (ica_ed448_ctx_del(&ctx))
 		EXIT_ERR("ica_ed448_ctx_del failed.");
