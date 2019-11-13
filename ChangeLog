@@ -1,3 +1,5 @@
+v3.6.1
+ - [PATCH] Fix x25519 and x448 handling of non-canonical values
 v3.6.0
  - [FEATURE] Add MSA9 CPACF support for Ed25519, Ed448, X25519 and X448
 v3.5.0
