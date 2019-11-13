@@ -557,6 +557,91 @@ struct {				\
 	return rc;
 }
 
+/*
+ * mask must be 0xFF or 0x00.
+ * "constant time" is per len.
+ *
+ * if (mask) {
+ *     unsigned char tmp[len];
+ *
+ *     memcpy(tmp, a, len);
+ *     memcpy(a, b);
+ *     memcpy(b, tmp);
+ * }
+ */
+static inline void constant_time_cond_swap_buff(unsigned char mask,
+						unsigned char *a,
+						unsigned char *b,
+						size_t len)
+{
+	size_t i;
+	unsigned char tmp;
+
+	for (i = 0; i < len; i++) {
+		tmp = a[i] ^ b[i];
+		tmp &= mask;
+		a[i] ^= tmp;
+		b[i] ^= tmp;
+	}
+}
+
+
+static void s390_x25519_mod_p(unsigned char u[32])
+{
+	unsigned char u_red[32];
+	unsigned int c = 0;
+	int i;
+
+	memcpy(u_red, u, sizeof(u_red));
+
+	c += (unsigned int)u_red[31] + 19;
+	u_red[31] = (unsigned char)c;
+	c >>= 8;
+
+	for (i = 30; i >= 0; i--) {
+		c += (unsigned int)u_red[i];
+		u_red[i] = (unsigned char)c;
+		c >>= 8;
+	}
+
+	c = (u_red[0] & 0x80) >> 7;
+	u_red[0] &= 0x7f;
+	constant_time_cond_swap_buff(0 - (unsigned char)c,
+				     u, u_red, sizeof(u_red));
+}
+
+static void s390_x448_mod_p(unsigned char u[56])
+{
+	unsigned char u_red[56];
+	unsigned int c = 0;
+	int i;
+
+	memcpy(u_red, u, sizeof(u_red));
+
+	c += (unsigned int)u_red[55] + 1;
+	u_red[55] = (unsigned char)c;
+	c >>= 8;
+
+	for (i = 54; i >= 28; i--) {
+		c += (unsigned int)u_red[i];
+		u_red[i] = (unsigned char)c;
+		c >>= 8;
+	}
+
+	c += (unsigned int)u_red[27] + 1;
+	u_red[27] = (unsigned char)c;
+	c >>= 8;
+
+	for (i = 26; i >= 0; i--) {
+		c += (unsigned int)u_red[i];
+		u_red[i] = (unsigned char)c;
+		c >>= 8;
+	}
+
+	constant_time_cond_swap_buff(0 - (unsigned char)c,
+				     u, u_red, sizeof(u_red));
+}
+
 int scalar_mulx_cpacf(unsigned char *res_u,
 		      const unsigned char *scalar,
 		      const unsigned char *u,
@@ -598,6 +683,9 @@ struct {				\
 		s390_flip_endian_32(param.X25519.u, param.X25519.u);
 		s390_flip_endian_32(param.X25519.scalar, param.X25519.scalar);
 
+		/* reduce non-canonical values */
+		s390_x25519_mod_p(param.X25519.u);
+
 		fc = s390_pcc_functions[SCALAR_MULTIPLY_X25519].hw_fc;
 		rc = s390_pcc(fc, &param) ? EIO : 0;
 
@@ -618,6 +706,9 @@ struct {				\
 		/* to big-endian */
 		s390_flip_endian_64(param.X448.u, param.X448.u);
 		s390_flip_endian_64(param.X448.scalar, param.X448.scalar);
+
+		/* reduce non-canonical values */
+		s390_x448_mod_p(param.X448.u + 8);
 
 		fc = s390_pcc_functions[SCALAR_MULTIPLY_X448].hw_fc;
 		rc = s390_pcc(fc, &param) ? EIO : 0;
