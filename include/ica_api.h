@@ -915,6 +915,12 @@ unsigned int ica_shake_256(unsigned int message_part,
  *
  *                          Begin of ECC API
  */
+#ifndef NID_X25519
+# define NID_X25519	1034
+#endif
+#ifndef NID_X448
+# define NID_X448	1035
+#endif
 #ifndef NID_ED25519
 # define NID_ED25519	1087
 #endif
