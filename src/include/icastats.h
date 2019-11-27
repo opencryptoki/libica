@@ -18,8 +18,8 @@
 
 
 typedef struct crypt_opts{
-	uint32_t hw;
-	uint32_t sw;
+	uint64_t hw;
+	uint64_t sw;
 } crypt_opts_t;
 
 typedef struct statis_entry {
@@ -159,7 +159,7 @@ typedef enum stats_fields {
 
 int stats_mmap(int user);
 void stats_munmap(int unlink);
-uint32_t stats_query(stats_fields_t field, int hardware, int direction);
+uint64_t stats_query(stats_fields_t field, int hardware, int direction);
 void get_stats_data(stats_entry_t *entries);
 void stats_increment(stats_fields_t field, int hardware, int direction);
 int get_stats_sum(stats_entry_t *sum);

@@ -10,7 +10,7 @@
  *             Benedikt Klotz <benedikt.klotz@de.ibm.com>
  *             Ingo Tuchscherer <ingo.tuchscherer@de.ibm.com>
  *
- * Copyright IBM Corp. 2009, 2010, 2011, 2014
+ * Copyright IBM Corp. 2009-2019
  */
 
 #include <stdio.h>
@@ -24,7 +24,7 @@
 #include "icastats.h"
 
 #define CMD_NAME "icastats"
-#define COPYRIGHT "Copyright IBM Corp. 2009, 2010, 2011, 2014."
+#define COPYRIGHT "Copyright IBM Corp. 2009-2019"
 
 void print_version(void)
 {
@@ -69,24 +69,24 @@ const char *const STATS_DESC[ICA_NUM_STATS] = {
 
 
 
-#define CELL_SIZE 10
+#define CELL_SIZE 12
 void print_stats(stats_entry_t *stats)
 {
-	printf(" function       |           hardware       |            software\n");
-	printf("----------------+--------------------------+-------------------------\n");
-	printf("                |      ENC    CRYPT   DEC  |      ENC    CRYPT   DEC \n");
-	printf("----------------+--------------------------+-------------------------\n");
+	printf(" function       |             hardware         |              software\n");
+	printf("----------------+------------------------------+-----------------------------\n");
+	printf("                |        ENC    CRYPT     DEC  |        ENC     CRYPT    DEC \n");
+	printf("----------------+------------------------------+-----------------------------\n");
 	unsigned int i;
 	for (i = 0; i < ICA_NUM_STATS; ++i){
 		if(i<=ICA_STATS_RSA_CRT){
-			printf(" %14s |      %*d          |       %*d\n",
+			printf(" %14s |        %*lu          |         %*lu\n",
 			       STATS_DESC[i],
 			       CELL_SIZE,
 			       stats[i].enc.hw,
 			       CELL_SIZE,
 			       stats[i].enc.sw);
 		} else{
-			printf(" %14s |%*d     %*d |%*d    %*d\n",
+			printf(" %14s |%*lu     %*lu |%*lu    %*lu\n",
 			       STATS_DESC[i],
 			       CELL_SIZE,
 			       stats[i].enc.hw,
