@@ -239,7 +239,7 @@ void check_icastats(int algo_id, char *stat)
 	char cmd[256], line[256], *p;
 	FILE *f;
 	int i, hw, rc=-1, counters=0;
-	int hwcounter1=0, hwcounter2=0, swcounter1=0, swcounter2=0;
+	uint64_t hwcounter1=0, hwcounter2=0, swcounter1=0, swcounter2=0;
 
 	hw = check_hw(algo_id);
 	if (hw < 0) return; /* unknown algo_id */
@@ -267,13 +267,13 @@ void check_icastats(int algo_id, char *stat)
 	if (!p) goto out; /* no | in the output. Wrong algo string ? */
 	p++;
 	while (isspace(*p)) p++;
-	hwcounter1 = atoi(p); /* parse 1st hw counter value */
+	hwcounter1 = atol(p); /* parse 1st hw counter value */
 	counters++;
 	while (*p && !isspace(*p)) p++; /* parse over counter value */
 	while (isspace(*p)) p++;
 	/* now either a | or another counter value follows */
 	if (isdigit(*p)) {
-		hwcounter2 = atoi(p); /* parse 2nd hw counter value */
+		hwcounter2 = atol(p); /* parse 2nd hw counter value */
 		counters++;
 		while (*p && !isspace(*p)) p++; /* parse over counter value */
 		while (isspace(*p)) p++;
@@ -285,13 +285,13 @@ void check_icastats(int algo_id, char *stat)
 	}
 	p++;
 	while (isspace(*p)) p++;
-	swcounter1 = atoi(p); /* parse 1st sw counter value */
+	swcounter1 = atol(p); /* parse 1st sw counter value */
 	counters++;
 	while (*p && !isspace(*p)) p++; /* parse over counter value */
 	while (isspace(*p)) p++;
 	/* maybe another counter value follows */
 	if (isdigit(*p)) {
-		swcounter2 = atoi(p); /* parse 2nd sw counter value */
+		swcounter2 = atol(p); /* parse 2nd sw counter value */
 		counters++;
 	}
 
