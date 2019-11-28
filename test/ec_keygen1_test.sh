@@ -1,6 +1,6 @@
-#!/bin/sh
+#!/bin/bash
 
-if lszcrypt | grep "CEX.C.*online" &> /dev/null; then
+if lszcrypt | grep -q -e "CEX.C.*online"; then
 	ICAPATH=1 ./ec_keygen_test
 else
 	exit 77
