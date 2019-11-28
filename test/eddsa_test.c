@@ -16,7 +16,7 @@
 
 #define THREADS		256
 #define ITERATIONS	1000
-#define MSGLEN		(16384*2ULL)
+#define MSGLEN		(16384 * 2ULL)
 
 static void check_functionlist(void);
 
@@ -416,7 +416,7 @@ static void ed448_pc(void)
 
 static void ed25519_stress(void)
 {
-	int rc, i, status[THREADS];
+	int rc, i;
 	ICA_ED25519_CTX *ctx[THREADS];
 
 	for (i = 0; i < THREADS; i++) {
@@ -432,7 +432,7 @@ static void ed25519_stress(void)
 	}
 
 	for (i = 0; i < THREADS; i++) {
-		rc = pthread_join(threads[i], (void **)&status[i]);
+		rc = pthread_join(threads[i], NULL);
 		if (rc)
 			EXIT_ERR("pthread_join failed.");
 	}
@@ -463,7 +463,7 @@ static void *thread_ed25519(void *arg)
 
 static void ed448_stress(void)
 {
-	int rc, i, status[THREADS];
+	int rc, i;
 	ICA_ED448_CTX *ctx[THREADS];
 
 	for (i = 0; i < THREADS; i++) {
@@ -479,7 +479,7 @@ static void ed448_stress(void)
 	}
 
 	for (i = 0; i < THREADS; i++) {
-		rc = pthread_join(threads[i], (void **)&status[i]);
+		rc = pthread_join(threads[i], NULL);
 		if (rc)
 			EXIT_ERR("pthread_join failed.");
 	}
