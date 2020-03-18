@@ -48,6 +48,8 @@
 #define DEFAULT2_CRYPT_DEVICE "/dev/z90crypt"
 #define DEFAULT3_CRYPT_DEVICE "/dev/zcrypt"
 
+#define DES_KEY_LEN64		(64/8)
+
 #define MAX_VERSION_LENGTH 16
 
 int ica_fallbacks_enabled = 1;
@@ -125,9 +127,9 @@ static unsigned int check_des_parms(unsigned int mode,
 
 #ifdef ICA_FIPS
 static unsigned int fips_check_3des_key(const ica_des_key_triple_t *key) {
-	if (!CRYPTO_memcmp(key->key1, key->key2, DES_KEY_LENGTH)
-	    | !CRYPTO_memcmp(key->key1, key->key3, DES_KEY_LENGTH)
-	    | !CRYPTO_memcmp(key->key2, key->key3, DES_KEY_LENGTH))
+	if (!CRYPTO_memcmp(key->key1, key->key2, DES_KEY_LEN64)
+	    | !CRYPTO_memcmp(key->key1, key->key3, DES_KEY_LEN64)
+	    | !CRYPTO_memcmp(key->key2, key->key3, DES_KEY_LEN64))
 		return EINVAL;
 
 	return 0;
