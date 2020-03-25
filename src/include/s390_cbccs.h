@@ -287,6 +287,17 @@ s390_aes_cbccs_dec(unsigned int fc, const unsigned char *in_data,
 	block_xor(out_data + tmp_data_length + AES_BLOCK_SIZE,
 		  tmp_in_data, tmp_out_data, rest_data_length);
 
+	/*
+	 * This fix was introduced to satisfy FIPS tests. They require the
+	 * output iv to be the iv resulting from decrypting the last block
+	 * with a zero iv as input, which is tmp_iv here. But note that this
+	 * is not described in the NIST standard for CBC-CS. According to the
+	 * standard, the output iv is simply undefined.
+	 */
+#ifdef ICA_FIPS
+	memcpy(iv, tmp_iv, AES_BLOCK_SIZE);
+#endif /* ICA_FIPS */
+
 	return 0;
 }
 
