@@ -9,7 +9,7 @@ lib_LTLIBRARIES = libica.la
 libica_la_CFLAGS = ${AM_CFLAGS} -I${srcdir}/include -I${srcdir}/../include \
 		   -fvisibility=hidden -pthread
 libica_la_CCASFLAGS = ${AM_CFLAGS}
-libica_la_LIBADD = @LIBS@ -lrt -lcrypto
+libica_la_LIBADD = @LIBS@ -lrt -lcrypto -ldl
 libica_la_LDFLAGS = -Wl,--version-script=${srcdir}/../libica.map \
 		    -version-number ${VERSION}
 libica_la_SOURCES = ica_api.c init.c icastats_shared.c s390_rsa.c \
@@ -53,7 +53,7 @@ internal_tests_ec_internal_test_CFLAGS = ${AM_CFLAGS} -I${srcdir}/include \
 					 -DICA_INTERNAL_TEST \
 					 -DICA_INTERNAL_TEST_EC
 internal_tests_ec_internal_test_CCASFLAGS = ${AM_CFLAGS}
-internal_tests_ec_internal_test_LDADD = @LIBS@ -lrt -lcrypto -lpthread
+internal_tests_ec_internal_test_LDADD = @LIBS@ -lrt -lcrypto -lpthread -ldl
 internal_tests_ec_internal_test_SOURCES = \
 		    ica_api.c init.c icastats_shared.c s390_rsa.c \
 		    s390_crypto.c s390_ecc.c s390_prng.c s390_sha.c \

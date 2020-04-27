@@ -57,6 +57,10 @@ main(void)
 		printf("Libica FIPS powerup test failed.\n");
 		rv = EXIT_FAILURE;
 	}
+	if (fips & ICA_FIPS_INTEGRITY) {
+		printf("Libica FIPS integrity check failed.\n");
+		rv = EXIT_FAILURE;
+	}
 #endif /* ICA_FIPS */
 
 	printf("OpenSSL version is '%s'.\n", OPENSSL_VERSION_TEXT);

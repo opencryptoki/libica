@@ -27,8 +27,8 @@ extern int fips;			/* module status */
 void fips_init(void);
 
 /*
- * Powerup tests: crypto algorithm test, SW/FW integrity test (not implemented
- * yet), critical function test (no critical functions). The tests set the
+ * Powerup tests: crypto algorithm test, SW/FW integrity test, critical
+ * function test (no critical functions). The tests set the
  * corresponding status flags.
  */
 void fips_powerup_tests(void);
