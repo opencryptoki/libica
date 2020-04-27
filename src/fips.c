@@ -13,11 +13,13 @@
 
 #include <errno.h>
 #include <openssl/crypto.h>
+#include <openssl/evp.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <syslog.h>
+#include <dlfcn.h>
 
 #include <openssl/opensslconf.h>
 #ifdef OPENSSL_FIPS
@@ -27,6 +29,24 @@
 #include "fips.h"
 #include "ica_api.h"
 #include "test_vec.h"
+
+#ifndef PATH_MAX
+#define PATH_MAX 4096
+#endif
+
+#define HMAC_PREFIX "."
+#define HMAC_SUFFIX ".hmac"
+#define READ_BUFFER_LENGTH 16384
+
+/*
+ * The hard-coded HMAC key to be optionally provided for the library
+ * integrity test. The recommended key size for HMAC-SHA256 is 64 bytes.
+ * The known HMAC is supposed to be provided as hex string in a file
+ * libica.so.MAJOR.hmac in the same directory as the .so module.
+ */
+static const char hmackey[] =
+	"0000000000000000000000000000000000000000000000000000000000000000"
+	"0000000000000000000000000000000000000000000000000000000000000000";
 
 int fips;
 
@@ -101,6 +121,206 @@ fips_init(void)
 		FIPS_mode_set(1);
 	}
 }
+static int get_library_path(const char *libname, const char *symbolname,
+							char *path, size_t pathlen)
+{
+	Dl_info info;
+	void *dl, *sym;
+	int rc = -1;
+
+	dl = dlopen(libname, RTLD_LAZY);
+	if (dl == NULL)
+		goto done;
+
+	sym = dlsym(dl, symbolname);
+	if (sym != NULL && dladdr(sym, &info)) {
+		if (strlen(info.dli_fname) < pathlen)
+			strcpy(path, info.dli_fname);
+		else
+			goto done;
+	}
+
+	rc = 0;
+
+done:
+	if (dl != NULL)
+		dlclose(dl);
+
+	return rc;
+}
+
+static char *make_hmac_path(const char *origpath)
+{
+	char *path;
+	const char *fn;
+
+	path = malloc(sizeof(HMAC_PREFIX) + sizeof(HMAC_SUFFIX) + strlen(origpath) + 1);
+	if (path == NULL)
+		return NULL;
+
+	fn = strrchr(origpath, '/');
+	if (fn == NULL) {
+		fn = origpath;
+	} else {
+		++fn;
+	}
+
+	strncpy(path, origpath, fn - origpath);
+	strcat(path, HMAC_PREFIX);
+	strcat(path, fn);
+	strcat(path, HMAC_SUFFIX);
+
+	return path;
+}
+
+static int compute_file_hmac(const char *path, void **buf, size_t *hmaclen)
+{
+	FILE *fp = NULL;
+	int rc = -1;
+	unsigned char rbuf[READ_BUFFER_LENGTH];
+	unsigned char *keybuf;
+	EVP_MD_CTX *mdctx = NULL;
+	EVP_PKEY *pkey = NULL;
+	size_t hlen, len;
+	long keylen;
+
+	keybuf = OPENSSL_hexstr2buf(hmackey, &keylen);
+	pkey = EVP_PKEY_new_mac_key(EVP_PKEY_HMAC, NULL, keybuf, (int)keylen);
+	if (!pkey)
+		goto end;
+
+	mdctx = EVP_MD_CTX_create();
+	if (!mdctx)
+		goto end;
+
+	fp = fopen(path, "r");
+	if (fp == NULL)
+		goto end;
+
+	if (EVP_DigestSignInit(mdctx, NULL, EVP_sha256(), NULL, pkey) <= 0)
+		goto end;
+
+	while ((len = fread(rbuf, 1, sizeof(rbuf), fp)) != 0) {
+		if (EVP_DigestSignUpdate(mdctx, rbuf, len) <= 0) {
+			goto end;
+		}
+	}
+
+	if (EVP_DigestSignFinal(mdctx, rbuf, &hlen) <= 0)
+		goto end;
+
+	*buf = malloc(hlen);
+	if (*buf == NULL)
+		goto end;
+
+	*hmaclen = hlen;
+
+	memcpy(*buf, rbuf, hlen);
+
+	rc = 0;
+
+end:
+
+	if (pkey != NULL)
+		EVP_PKEY_free(pkey);
+
+	free(keybuf);
+	EVP_MD_CTX_destroy(mdctx);
+	if (fp)
+		fclose(fp);
+
+	return rc;
+}
+
+/**
+ * Performs the FIPS check.
+ *
+ * @return  1 if check succeeded
+ *          0 otherwise
+ */
+static int FIPSCHECK_verify(const char *path)
+{
+	int rc = 0;
+	FILE *fp;
+	unsigned char *hmac_buf = NULL;
+	long hmaclen;
+	char *hmacpath, *p;
+	char *hmac_str = NULL;
+	size_t n, buflen;
+	void *buf = NULL;
+
+	hmacpath = make_hmac_path(path);
+	if (hmacpath == NULL)
+		return 0;
+
+	fp = fopen(hmacpath, "r");
+	if (fp == NULL) {
+		rc = 1;
+		goto end;
+	}
+
+	if (getline(&hmac_str, &n, fp) <= 0)
+		goto end;
+
+	if ((p = strchr(hmac_str, '\n')) != NULL)
+		*p = '\0';
+
+	hmac_buf = OPENSSL_hexstr2buf(hmac_str, &hmaclen);
+
+	if (compute_file_hmac(path, &buf, &buflen) != 0)
+		goto end;
+
+	if (memcmp(buf, hmac_buf, hmaclen) != 0)
+		goto end;
+
+	rc = 1;
+
+end:
+
+	free(buf);
+	free(hmac_str);
+	free(hmacpath);
+
+	OPENSSL_free(hmac_buf);
+
+	if (fp)
+		fclose(fp);
+
+	return rc;
+}
+
+static const char msg1[] = "Libica FIPS library integrity check failed. Cannot determine library path.\n";
+static const char msg2[] = "Libica FIPS library integrity check failed. Module %s probably corrupted.\n";
+static const char msg3[] = "Libica FIPS library integrity check passed.\n";
+
+/*
+ * Perform an integrity check on libica.so by calculating an HMAC from
+ * the file contents using a static HMAC key, and comparing it to a
+ * pre-calculated HMAC in a separate file. The HMAC key and HMAC file
+ * may be provided by a Distributor when building the packet.
+ */
+static void fips_lib_integrity_check(void)
+{
+	int rc;
+	char path[PATH_MAX];
+	const char *libname = "libica.so";
+	const char *symbolname = "ica_sha256";
+
+	rc = get_library_path(libname, symbolname, path, sizeof(path));
+	if (rc != 0) {
+		syslog(LOG_ERR, msg1);
+		fips |= ICA_FIPS_INTEGRITY;
+		return;
+	}
+
+	if (!FIPSCHECK_verify(path)) {
+		syslog(LOG_ERR, msg2, path);
+		fips |= ICA_FIPS_INTEGRITY;
+		return;
+	}
+
+	syslog(LOG_INFO, msg3);
+}
 
 void
 fips_powerup_tests(void)
@@ -117,6 +337,9 @@ fips_powerup_tests(void)
 		fips |= ICA_FIPS_CRYPTOALG;
 		return;
 	}
+
+	/* Library integrity test */
+	fips_lib_integrity_check();
 }
 
 static int
@@ -933,5 +1156,4 @@ _err_:
 	syslog(LOG_ERR, "Libica RSA test failed.");
 	return 1;
 }
-
 #endif /* FIPS_H */

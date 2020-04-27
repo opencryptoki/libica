@@ -216,7 +216,7 @@ typedef ica_adapter_handle_t ICA_ADAPTER_HANDLE;
  */
 /* Cryptographic algorithm test (KAT or pair-wise consistency test) */
 #define ICA_FIPS_CRYPTOALG	2
-/* Software/Firmware integrity test (not implemented yet) */
+/* Software/Firmware integrity test */
 #define ICA_FIPS_INTEGRITY	4
 /* Critical functions test (N/A) */
 #define ICA_FIPS_CRITICALFUNC	8
