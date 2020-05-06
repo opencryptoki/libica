@@ -1,3 +1,9 @@
+v3.7.0
+ - [FEATURE] FIPS: Add HMAC based library integrity check
+ - [PATCH] icainfo: bugfix for RSA and EC related info for software column.
+ - [PATCH] FIPS: provide output iv in cbc-cs decrypt as required by FIPS tests
+ - [PATCH] FIPS: Fix DES and TDES key length
+ - [PATCH] icastats: Fix stats counter format
 v3.6.1
  - [PATCH] Fix x25519 and x448 handling of non-canonical values
 v3.6.0
