@@ -154,7 +154,7 @@ static char *make_hmac_path(const char *origpath)
 	char *path;
 	const char *fn;
 
-	path = malloc(sizeof(HMAC_PREFIX) + sizeof(HMAC_SUFFIX) + strlen(origpath) + 1);
+	path = calloc(1, sizeof(HMAC_PREFIX) + sizeof(HMAC_SUFFIX) + strlen(origpath) + 1);
 	if (path == NULL)
 		return NULL;
 
@@ -183,6 +183,9 @@ static int compute_file_hmac(const char *path, void **buf, size_t *hmaclen)
 	EVP_PKEY *pkey = NULL;
 	size_t hlen, len;
 	long keylen;
+
+	*buf = NULL;
+	*hmaclen = 0;
 
 	keybuf = OPENSSL_hexstr2buf(hmackey, &keylen);
 	pkey = EVP_PKEY_new_mac_key(EVP_PKEY_HMAC, NULL, keybuf, (int)keylen);
@@ -270,7 +273,7 @@ static int FIPSCHECK_verify(const char *path)
 	if (compute_file_hmac(path, &buf, &buflen) != 0)
 		goto end;
 
-	if (memcmp(buf, hmac_buf, hmaclen) != 0)
+	if (memcmp(buf, hmac_buf, buflen) != 0)
 		goto end;
 
 	rc = 1;
