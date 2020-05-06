@@ -245,12 +245,12 @@ static int FIPSCHECK_verify(const char *path)
 {
 	int rc = 0;
 	FILE *fp;
-	unsigned char *hmac_buf = NULL;
+	unsigned char *known_hmac = NULL;
 	long hmaclen;
 	char *hmacpath, *p;
-	char *hmac_str = NULL;
-	size_t n, buflen;
-	void *buf = NULL;
+	char *known_hmac_str = NULL;
+	size_t n, computed_hmac_len;
+	void *computed_hmac = NULL;
 
 	hmacpath = make_hmac_path(path);
 	if (hmacpath == NULL)
@@ -262,29 +262,29 @@ static int FIPSCHECK_verify(const char *path)
 		goto end;
 	}
 
-	if (getline(&hmac_str, &n, fp) <= 0)
+	if (getline(&known_hmac_str, &n, fp) <= 0)
 		goto end;
 
-	if ((p = strchr(hmac_str, '\n')) != NULL)
+	if ((p = strchr(known_hmac_str, '\n')) != NULL)
 		*p = '\0';
 
-	hmac_buf = OPENSSL_hexstr2buf(hmac_str, &hmaclen);
+	known_hmac = OPENSSL_hexstr2buf(known_hmac_str, &hmaclen);
 
-	if (compute_file_hmac(path, &buf, &buflen) != 0)
+	if (compute_file_hmac(path, &computed_hmac, &computed_hmac_len) != 0)
 		goto end;
 
-	if (memcmp(buf, hmac_buf, buflen) != 0)
+	if (memcmp(computed_hmac, known_hmac, computed_hmac_len) != 0)
 		goto end;
 
 	rc = 1;
 
 end:
 
-	free(buf);
-	free(hmac_str);
+	free(computed_hmac);
+	free(known_hmac_str);
 	free(hmacpath);
 
-	OPENSSL_free(hmac_buf);
+	OPENSSL_free(known_hmac);
 
 	if (fp)
 		fclose(fp);
