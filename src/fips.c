@@ -306,7 +306,7 @@ static void fips_lib_integrity_check(void)
 {
 	int rc;
 	char path[PATH_MAX];
-	const char *libname = "libica.so";
+	const char *libname = "libica.so.3";
 	const char *symbolname = "ica_sha256";
 
 	rc = get_library_path(libname, symbolname, path, sizeof(path));
