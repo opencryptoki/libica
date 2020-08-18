@@ -1,6 +1,6 @@
 TESTS = \
 fips_test \
-icastats_test \
+icastats_test.sh \
 get_functionlist_test \
 get_version_test \
 rng_test \
