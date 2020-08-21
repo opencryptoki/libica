@@ -95,6 +95,29 @@ SHA_KAT(384, 512);
 SHA_KAT(512, 512);
 #undef SHA_KAT
 
+#define SHA3_KAT(_sha_, _ctx_)						\
+static int sha3_##_sha_##_kat(void) {					\
+	sha3_##_ctx_##_context_t ctx;					\
+	size_t i;							\
+	unsigned char out[SHA3_##_sha_##_HASH_LENGTH];			\
+	for (i = 0; i < SHA3_##_sha_##_TV_LEN; i++) {			\
+		if (ica_sha3_##_sha_(SHA_MSG_PART_ONLY,			\
+		    SHA3_##_sha_##_TV[i].msg_len, SHA3_##_sha_##_TV[i].msg,	\
+		    &ctx, out) || memcmp(SHA3_##_sha_##_TV[i].md, out,	\
+		    SHA3_##_sha_##_HASH_LENGTH)) {			\
+			syslog(LOG_ERR, "Libica SHA-3%d test failed.",	\
+			    _sha_);					\
+			return 1;					\
+		}							\
+	}								\
+	return 0;							\
+}
+SHA3_KAT(224, 224);
+SHA3_KAT(256, 256);
+SHA3_KAT(384, 384);
+SHA3_KAT(512, 512);
+#undef SHA3_KAT
+
 void
 fips_init(void)
 {
@@ -331,7 +354,8 @@ fips_powerup_tests(void)
 	/* Cryptographic algorithm test. */
 	if (ica_drbg_health_test(ica_drbg_generate, 256, true, ICA_DRBG_SHA512)
 	    || sha1_kat() || sha224_kat() || sha256_kat() || sha384_kat()
-	    || sha512_kat() || des3_ecb_kat() || des3_cbc_kat()
+	    || sha512_kat() || sha3_224_kat() || sha3_256_kat() || sha3_384_kat()
+	    || sha3_512_kat() || des3_ecb_kat() || des3_cbc_kat()
 	    || des3_cbc_cs_kat() || des3_cfb_kat() || des3_ofb_kat()
 	    || des3_ctr_kat() || des3_cmac_kat() || aes_ecb_kat()
 	    || aes_cbc_kat() || aes_cbc_cs_kat() || aes_cfb_kat()

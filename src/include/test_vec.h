@@ -366,6 +366,19 @@ extern const size_t SHA384_TV_LEN;
 
 extern const struct sha_tv SHA512_TV[];
 extern const size_t SHA512_TV_LEN;
+
+extern const struct sha_tv SHA3_224_TV[];
+extern const size_t SHA3_224_TV_LEN;
+
+extern const struct sha_tv SHA3_256_TV[];
+extern const size_t SHA3_256_TV_LEN;
+
+extern const struct sha_tv SHA3_384_TV[];
+extern const size_t SHA3_384_TV_LEN;
+
+extern const struct sha_tv SHA3_512_TV[];
+extern const size_t SHA3_512_TV_LEN;
+
 #endif /* ICA_FIPS */
 
 #ifdef ICA_INTERNAL_TEST_EC
