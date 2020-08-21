@@ -327,6 +327,8 @@ static inline int s390_aes_ecb_sw(unsigned int function_code,
 				&aes_key, direction);
 	}
 
+	OPENSSL_cleanse(&aes_key, sizeof(aes_key));
+
 	return 0;
 }
 
@@ -387,6 +389,8 @@ static inline int s390_aes_cbc_sw(unsigned int function_code,
 	}
 	AES_cbc_encrypt(input_data, output_data, input_length,
 			&aes_key, (unsigned char *) iv, direction);
+
+	OPENSSL_cleanse(&aes_key, sizeof(aes_key));
 
 	return 0;
 }

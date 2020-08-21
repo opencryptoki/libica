@@ -112,6 +112,10 @@ static inline int s390_des_ecb_sw(unsigned int function_code, unsigned long inpu
 		break;
 	}
 
+	OPENSSL_cleanse(&key_schedule1, sizeof(key_schedule1));
+	OPENSSL_cleanse(&key_schedule2, sizeof(key_schedule2));
+	OPENSSL_cleanse(&key_schedule2, sizeof(key_schedule3));
+
 	return 0;
 }
 
@@ -192,6 +196,10 @@ static inline int s390_des_cbc_sw(unsigned int function_code,
 				      S390_CRYPTO_DIRECTION_MASK) ? 0 : 1);
 		break;
 	};
+
+	OPENSSL_cleanse(&key_schedule1, sizeof(key_schedule1));
+	OPENSSL_cleanse(&key_schedule2, sizeof(key_schedule2));
+	OPENSSL_cleanse(&key_schedule2, sizeof(key_schedule3));
 
 	return 0;
 }
