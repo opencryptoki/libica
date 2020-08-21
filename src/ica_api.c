@@ -1034,6 +1034,8 @@ unsigned int ica_rsa_mod_expo(ica_adapter_handle_t adapter_handle,
 	if (rc == 0)
 		stats_increment(ICA_STATS_RSA_ME, hardware, ENCRYPT);
 
+	OPENSSL_cleanse(&rb, sizeof(rb));
+
 	return rc;
 }
 
@@ -1088,6 +1090,10 @@ unsigned int ica_rsa_crt_key_check(ica_rsa_key_crt_t *rsa_key)
 		memcpy(rsa_key->qInverse + 8, tmp_buf, rsa_key->key_length/2);
 
 		free(tmp_buf);
+
+		BN_clear_free(bn_p);
+		BN_clear_free(bn_q);
+		BN_clear_free(bn_invq);
 
 		return 1;
 	}
@@ -1146,6 +1152,8 @@ unsigned int ica_rsa_crt(ica_adapter_handle_t adapter_handle,
 	}
 	if (rc == 0)
 		stats_increment(ICA_STATS_RSA_CRT, hardware, ENCRYPT);
+
+	OPENSSL_cleanse(&rb, sizeof(rb));
 
 	return rc;
 }
