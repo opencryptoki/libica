@@ -95,11 +95,26 @@ SHA_KAT(384, 512);
 SHA_KAT(512, 512);
 #undef SHA_KAT
 
+static inline int sha3_available(void)
+{
+	sha3_224_context_t sha3_224_context;
+	unsigned char output_hash[SHA3_224_HASH_LENGTH];
+	unsigned char test_data[] = { 0x61,0x62,0x63 };
+	int rc = 0;
+
+	rc = ica_sha3_224(SHA_MSG_PART_ONLY, sizeof(test_data), test_data,
+			&sha3_224_context, output_hash);
+
+	return (rc == ENODEV ? 0 : 1);
+}
+
 #define SHA3_KAT(_sha_, _ctx_)						\
 static int sha3_##_sha_##_kat(void) {					\
 	sha3_##_ctx_##_context_t ctx;					\
 	size_t i;							\
 	unsigned char out[SHA3_##_sha_##_HASH_LENGTH];			\
+	if (!sha3_available()) 						\
+		return 0; 						\
 	for (i = 0; i < SHA3_##_sha_##_TV_LEN; i++) {			\
 		if (ica_sha3_##_sha_(SHA_MSG_PART_ONLY,			\
 		    SHA3_##_sha_##_TV[i].msg_len, SHA3_##_sha_##_TV[i].msg,	\
