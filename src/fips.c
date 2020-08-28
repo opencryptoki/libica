@@ -42,7 +42,7 @@
  * The hard-coded HMAC key to be optionally provided for the library
  * integrity test. The recommended key size for HMAC-SHA256 is 64 bytes.
  * The known HMAC is supposed to be provided as hex string in a file
- * libica.so.MAJOR.hmac in the same directory as the .so module.
+ * .libica.so.VERSION.hmac in the same directory as the .so module.
  */
 static const char hmackey[] =
 	"0000000000000000000000000000000000000000000000000000000000000000"
@@ -344,7 +344,7 @@ static void fips_lib_integrity_check(void)
 {
 	int rc;
 	char path[PATH_MAX];
-	const char *libname = "libica.so.3";
+	const char *libname = "libica.so." VERSION;
 	const char *symbolname = "ica_sha256";
 
 	rc = get_library_path(libname, symbolname, path, sizeof(path));
