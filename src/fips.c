@@ -295,10 +295,8 @@ static int FIPSCHECK_verify(const char *path)
 		return 0;
 
 	fp = fopen(hmacpath, "r");
-	if (fp == NULL) {
-		rc = 1;
+	if (fp == NULL)
 		goto end;
-	}
 
 	if (getline(&known_hmac_str, &n, fp) <= 0)
 		goto end;
