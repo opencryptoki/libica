@@ -296,7 +296,6 @@ static int FIPSCHECK_verify(const char *path)
 
 	fp = fopen(hmacpath, "r");
 	if (fp == NULL) {
-		rc = 1;
 		goto end;
 	}
 
