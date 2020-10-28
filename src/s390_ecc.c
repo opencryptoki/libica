@@ -739,7 +739,7 @@ unsigned int ecdh_hw(ica_adapter_handle_t adapter_handle,
 		const ICA_EC_KEY *privkey_A, const ICA_EC_KEY *pubkey_B,
 		unsigned char *z)
 {
-	uint8_t *buf;
+	uint8_t *buf = NULL;
 	size_t len;
 	int rc;
 	struct ica_xcRB xcrb;
@@ -760,8 +760,10 @@ unsigned int ecdh_hw(ica_adapter_handle_t adapter_handle,
 		return EIO;
 
 	reply_p = make_ecdh_request(privkey_A, pubkey_B, &xcrb, &buf, &len);
-	if (!reply_p)
-		return EIO;
+	if (!reply_p) {
+		rc = EIO;
+		goto ret;
+	}
 
 	rc = ioctl(adapter_handle, ZSECSENDCPRB, xcrb);
 	if (rc != 0) {
@@ -777,8 +779,10 @@ unsigned int ecdh_hw(ica_adapter_handle_t adapter_handle,
 	memcpy(z, reply_p->raw_z_value, privlen);
 	rc = 0;
 ret:
-	OPENSSL_cleanse(buf, len);
-	free(buf);
+	if (buf) {
+		OPENSSL_cleanse(buf, len);
+		free(buf);
+	}
 	return rc;
 }
 
@@ -1125,7 +1129,7 @@ unsigned int ecdsa_sign_hw(ica_adapter_handle_t adapter_handle,
 		const ICA_EC_KEY *privkey, const unsigned char *hash, unsigned int hash_length,
 		unsigned char *signature)
 {
-	uint8_t *buf;
+	uint8_t *buf = NULL;
 	size_t len;
 	int rc;
 	struct ica_xcRB xcrb;
@@ -1153,8 +1157,10 @@ unsigned int ecdsa_sign_hw(ica_adapter_handle_t adapter_handle,
 
 	reply_p = make_ecdsa_sign_request((const ICA_EC_KEY*)privkey,
 			X, Y, hash, hash_length, &xcrb, &buf, &len);
-	if (!reply_p)
-		return EIO;
+	if (!reply_p) {
+		rc = EIO;
+		goto ret;
+	}
 
 	rc = ioctl(adapter_handle, ZSECSENDCPRB, xcrb);
 	if (rc != 0) {
@@ -1170,8 +1176,10 @@ unsigned int ecdsa_sign_hw(ica_adapter_handle_t adapter_handle,
 	memcpy(signature, reply_p->signature, reply_p->vud_len-8);
 	rc = 0;
 ret:
-	OPENSSL_cleanse(buf, len);
-	free(buf);
+	if (buf) {
+		OPENSSL_cleanse(buf, len);
+		free(buf);
+	}
 	return rc;
 }
 
@@ -1582,7 +1590,7 @@ unsigned int ecdsa_verify_hw(ica_adapter_handle_t adapter_handle,
 		const ICA_EC_KEY *pubkey, const unsigned char *hash, unsigned int hash_length,
 		const unsigned char *signature)
 {
-	uint8_t *buf;
+	uint8_t *buf = NULL;
 	size_t len;
 	int rc;
 	struct ica_xcRB xcrb;
@@ -1602,8 +1610,10 @@ unsigned int ecdsa_verify_hw(ica_adapter_handle_t adapter_handle,
 
 	reply_p = make_ecdsa_verify_request(pubkey, hash, hash_length,
 					    signature, &xcrb, &buf, &len);
-	if (!reply_p)
-		return EIO;
+	if (!reply_p) {
+		rc = EIO;
+		goto ret;
+	}
 
 	rc = ioctl(adapter_handle, ZSECSENDCPRB, xcrb);
 	if (rc != 0) {
@@ -1625,8 +1635,10 @@ unsigned int ecdsa_verify_hw(ica_adapter_handle_t adapter_handle,
 
 	rc = 0;
 ret:
-	OPENSSL_cleanse(buf, len);
-	free(buf);
+	if (buf) {
+		OPENSSL_cleanse(buf, len);
+		free(buf);
+	}
 	return rc;
 }
 
@@ -1940,7 +1952,7 @@ static int eckeygen_cpacf(ICA_EC_KEY *key)
  */
 unsigned int eckeygen_hw(ica_adapter_handle_t adapter_handle, ICA_EC_KEY *key)
 {
-	uint8_t *buf;
+	uint8_t *buf = NULL;
 	size_t len;
 	int rc;
 	struct ica_xcRB xcrb;
@@ -1959,8 +1971,10 @@ unsigned int eckeygen_hw(ica_adapter_handle_t adapter_handle, ICA_EC_KEY *key)
 		return ENODEV;
 
 	reply_p = make_eckeygen_request(key, &xcrb, &buf, &len);
-	if (!reply_p)
-		return EIO;
+	if (!reply_p) {
+		rc = EIO;
+		goto ret;
+	}
 
 	rc = ioctl(adapter_handle, ZSECSENDCPRB, xcrb);
 	if (rc != 0) {
@@ -1985,8 +1999,10 @@ unsigned int eckeygen_hw(ica_adapter_handle_t adapter_handle, ICA_EC_KEY *key)
 	memcpy(key->X, (char*)pub_p->pubkey, 2*privlen);
 	rc = 0;
 ret:
-	OPENSSL_cleanse(buf, len);
-	free(buf);
+	if (buf) {
+		OPENSSL_cleanse(buf, len);
+		free(buf);
+	}
 	return rc;
 }
 
