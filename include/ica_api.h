@@ -1809,7 +1809,7 @@ unsigned int ica_des_cfb(const unsigned char *in_data, unsigned char *out_data,
  * first message block subsequent counter values to be combined with subsequent
  * message blocks will be derived from preceding counter values by an increment
  * function. The increment function used in ica_des_ctr is s an arithmetic
- * increment without carry on the U least significant bytes in the counter
+ * increment without carry on the U least significant bits in the counter
  * where M is a parameter to ica_des_ctr.
  *
  * Required HW Support
@@ -1836,9 +1836,12 @@ unsigned int ica_des_cfb(const unsigned char *in_data, unsigned char *out_data,
  * if data_length used in the preceding call is a multiple of the cipher block
  * size.
  * @param ctr_width
- * A number U between 1 and cipher block size. The value is used by the counter
- * increment function which increments a counter value by incrementing without
- * carry the least significant U bytes of the counter value.
+ * A number U between 8 and cipher block size in bits. The value is used by the
+ * counter increment function which increments a counter value by incrementing
+ * without carry the least significant U bits of the counter value. The value
+ * must be a multiple of 8. When in FIPS mode, an additional counter overflow
+ * check is performed, so that the given data length, divided by the cipher
+ * block size, is not greater than 2 to the power of U.
  * @param direction
  * 0 or 1:
  * 0 Use the decrypt function.
@@ -2292,7 +2295,7 @@ unsigned int ica_3des_cfb(const unsigned char *in_data, unsigned char *out_data,
  * first message block subsequent counter values to be combined with subsequent
  * message blocks will be derived from preceding counter values by an increment
  * function. The increment function used in ica_3des_ctr is s an arithmetic
- * increment without carry on the U least significant bytes in the counter
+ * increment without carry on the U least significant bits in the counter
  * where M is a parameter to ica_3des_ctr.
  *
  * Required HW Support
@@ -2319,9 +2322,12 @@ unsigned int ica_3des_cfb(const unsigned char *in_data, unsigned char *out_data,
  * key if data_length used in the preceding call is a multiple of the cipher
  * block size.
  * @param ctr_width
- * A number U between 1 and cipher block size. The value is used by the counter
- * increment function which increments a counter value by incrementing without
- * carry the least significant U bytes of the counter value.
+ * A number U between 8 and cipher block size in bits. The value is used by the
+ * counter increment function which increments a counter value by incrementing
+ * without carry the least significant U bits of the counter value. The value
+ * must be a multiple of 8. When in FIPS mode, an additional counter overflow
+ * check is performed, so that the given data length, divided by the cipher
+ * block size, is not greater than 2 to the power of U.
  * @param direction
  * 0 or 1:
  * 0 Use the decrypt function.
@@ -2793,7 +2799,7 @@ unsigned int ica_aes_cfb(const unsigned char *in_data, unsigned char *out_data,
  * first message block subsequent counter values to be combined with subsequent
  * message blocks will be derived from preceding counter values by an increment
  * function. The increment function used in ica_aes_ctr is s an arithmetic
- * increment without carry on the U least significant bytes in the counter
+ * increment without carry on the U least significant bits in the counter
  * where M is a parameter to ica_aes_ctr.
  *
  * Required HW Support
@@ -2824,9 +2830,12 @@ unsigned int ica_aes_cfb(const unsigned char *in_data, unsigned char *out_data,
  * if data_length used in the preceding call is a multiple of the cipher block
  * size.
  * @param ctr_width
- * A number U between 1 and cipher block size. The value is used by the counter
- * increment function which increments a counter value by incrementing without
- * carry the least significant U bytes of the counter value.
+ * A number U between 8 and cipher block size in bits. The value is used by the
+ * counter increment function which increments a counter value by incrementing
+ * without carry the least significant U bits of the counter value. The value
+ * must be a multiple of 8. When in FIPS mode, an additional counter overflow
+ * check is performed, so that the given data length, divided by the cipher
+ * block size, is not greater than 2 to the power of U.
  * @param direction
  * 0 or 1:
  * 0 Use the decrypt function.
