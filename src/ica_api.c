@@ -2504,9 +2504,17 @@ unsigned int ica_3des_ctr(const unsigned char *in_data, unsigned char *out_data,
 			 unsigned int direction)
 {
 #ifdef ICA_FIPS
+	/* Note that the FIPS ctr check cannot detect ctr wraps
+	 * over chained calls to this function. */
+	unsigned long num_blocks = data_length / DES_BLOCK_SIZE;
+	unsigned int num_additional_bytes = data_length % DES_BLOCK_SIZE;
 	if (fips >> 1)
 		return EACCES;
 	if (fips_check_3des_key((ica_des_key_triple_t *)key))
+		return EINVAL;
+	if (num_additional_bytes > 0)
+		num_blocks++;
+	if (ctr_width < 64U && num_blocks > (1ULL << ctr_width))
 		return EINVAL;
 #endif /* ICA_FIPS */
 
@@ -2759,8 +2767,16 @@ unsigned int ica_aes_ctr(const unsigned char *in_data, unsigned char *out_data,
 	unsigned int function_code;
 
 #ifdef ICA_FIPS
+	/* Note that the FIPS ctr check cannot detect ctr wraps
+	 * over chained calls to this function. */
+	unsigned long num_blocks = data_length / AES_BLOCK_SIZE;
+	unsigned int num_additional_bytes = data_length % AES_BLOCK_SIZE;
 	if (fips >> 1)
 		return EACCES;
+	if (num_additional_bytes > 0)
+		num_blocks++;
+	if (ctr_width < 64U && num_blocks > (1ULL << ctr_width))
+		return EINVAL;
 #endif /* ICA_FIPS */
 
 	if (check_aes_parms(MODE_CTR, data_length, in_data, ctr, key_length,
