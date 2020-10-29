@@ -110,7 +110,7 @@ typedef enum stats_fields {
 	"ECDH",         \
 	"ECDSA Sign",   \
 	"ECDSA Verify", \
-	"ECKGEN",       \
+	"EC Keygen",    \
 	"Ed25519 Keygen",\
 	"Ed25519 Sign", \
 	"Ed25519 Verify",\
