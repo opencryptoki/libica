@@ -64,6 +64,18 @@ int scalar_mulx_cpacf(unsigned char *res_u,
 		      int curve_nid);
 
 /**
+ * Since kernel 4.10 the zcrypt device driver has multi domain support and
+ * accepts CPRBs via the ioctl ZSECSENDCPRB with domain addressing 0xFFFF
+ * (AUTOSELECT_DOM in zcrypyt.h). This allows for load balancing between
+ * multiple available crypto cards.
+ */
+typedef enum {
+	dom_addressing_autoselect = 0,
+	dom_addressing_default_domain,
+} dom_addressing_t;
+int dom_addressing = dom_addressing_autoselect;
+
+/**
  * Check if openssl does support this ec curve
  */
 static int is_supported_openssl_curve(int nid)
@@ -248,8 +260,10 @@ static unsigned int make_cprbx(struct CPRBX* cprbx, unsigned int parmlen,
 	cprbx->cprb_ver_id = 0x02;
 	memcpy(&(cprbx->func_id), "T2", 2);
 	cprbx->req_parml = parmlen;
-	cprbx->domain = get_default_domain();
-
+	if (dom_addressing == dom_addressing_autoselect)
+		cprbx->domain = 0xFFFF;
+	else
+		cprbx->domain = get_default_domain();
 	cprbx->rpl_msgbl = CPRBXSIZE + PARMBSIZE;
 	cprbx->req_parmb = ((uint8_t *) preqcblk) + CPRBXSIZE;
 	cprbx->rpl_parmb = ((uint8_t *) prepcblk) + CPRBXSIZE;
@@ -767,8 +781,18 @@ unsigned int ecdh_hw(ica_adapter_handle_t adapter_handle,
 
 	rc = ioctl(adapter_handle, ZSECSENDCPRB, xcrb);
 	if (rc != 0) {
-		rc = EIO;
-		goto ret;
+		dom_addressing = dom_addressing_default_domain;
+		reply_p = make_ecdh_request(privkey_A, pubkey_B, &xcrb, &buf, &len);
+		if (!reply_p) {
+			rc = EIO;
+			goto ret;
+		}
+
+		rc = ioctl(adapter_handle, ZSECSENDCPRB, xcrb);
+		if (rc != 0) {
+			rc = EIO;
+			goto ret;
+		}
 	}
 
 	if (reply_p->key_len - 4 != privlen) {
@@ -1164,8 +1188,19 @@ unsigned int ecdsa_sign_hw(ica_adapter_handle_t adapter_handle,
 
 	rc = ioctl(adapter_handle, ZSECSENDCPRB, xcrb);
 	if (rc != 0) {
-		rc = EIO;
-		goto ret;
+		dom_addressing = dom_addressing_default_domain;
+		reply_p = make_ecdsa_sign_request((const ICA_EC_KEY*)privkey,
+				X, Y, hash, hash_length, &xcrb, &buf, &len);
+		if (!reply_p) {
+			rc = EIO;
+			goto ret;
+		}
+
+		rc = ioctl(adapter_handle, ZSECSENDCPRB, xcrb);
+		if (rc != 0) {
+			rc = EIO;
+			goto ret;
+		}
 	}
 
 	if (reply_p->vud_len - 8 != 2 * privlen) {
@@ -1617,8 +1652,19 @@ unsigned int ecdsa_verify_hw(ica_adapter_handle_t adapter_handle,
 
 	rc = ioctl(adapter_handle, ZSECSENDCPRB, xcrb);
 	if (rc != 0) {
-		rc = EIO;
-		goto ret;
+		dom_addressing = dom_addressing_default_domain;
+		reply_p = make_ecdsa_verify_request(pubkey, hash, hash_length,
+						    signature, &xcrb, &buf, &len);
+		if (!reply_p) {
+			rc = EIO;
+			goto ret;
+		}
+
+		rc = ioctl(adapter_handle, ZSECSENDCPRB, xcrb);
+		if (rc != 0) {
+			rc = EIO;
+			goto ret;
+		}
 	}
 
 	if (((struct CPRBX*)reply_p)->ccp_rtcode == 4 &&
@@ -1978,8 +2024,18 @@ unsigned int eckeygen_hw(ica_adapter_handle_t adapter_handle, ICA_EC_KEY *key)
 
 	rc = ioctl(adapter_handle, ZSECSENDCPRB, xcrb);
 	if (rc != 0) {
-		rc = EIO;
-		goto ret;
+		dom_addressing = dom_addressing_default_domain;
+		reply_p = make_eckeygen_request(key, &xcrb, &buf, &len);
+		if (!reply_p) {
+			rc = EIO;
+			goto ret;
+		}
+
+		rc = ioctl(adapter_handle, ZSECSENDCPRB, xcrb);
+		if (rc != 0) {
+			rc = EIO;
+			goto ret;
+		}
 	}
 
 	if (reply_p->eckey.privsec.formatted_data_len != privlen) {
