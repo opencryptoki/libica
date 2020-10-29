@@ -83,7 +83,7 @@ static struct crypt_pair crypt_map[] = {
 	{"ECDH", EC_DH},
 	{"ECDSA Sign", EC_DSA_SIGN},
 	{"ECDSA Verify", EC_DSA_VERIFY},
-	{"ECKGEN", EC_KGEN},
+	{"EC Keygen", EC_KGEN},
 	{"Ed25519 Keygen", ED25519_KEYGEN},
 	{"Ed25519 Sign", ED25519_SIGN},
 	{"Ed25519 Verify", ED25519_VERIFY},
