@@ -280,7 +280,7 @@ static void set_switches(int msa)
 			s390_pcc(S390_CRYPTO_QUERY, mask);
 		end_sigill_section(&oldact, &oldset);
 	}
-	for (n = 0; n < (sizeof(s390_ppno_functions) /
+	for (n = 0; n < (sizeof(s390_pcc_functions) /
 			 sizeof(s390_supported_function_t)); n++)
 		if (S390_CRYPTO_TEST_MASK(mask, s390_pcc_functions[n].hw_fc))
 			*s390_pcc_functions[n].enabled = 1;
