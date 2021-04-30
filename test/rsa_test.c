@@ -70,7 +70,11 @@ int main(int argc, char **argv)
 		rc = ica_rsa_mod_expo(adapter_handle, input_data,
 				      &mod_expo_key, my_result);
 		if (rc)
+#ifndef NO_SW_FALLBACKS
 			exit(handle_ica_error(rc, "ica_rsa_key_mod_expo"));
+#else
+			rc == ENODEV ? exit(TEST_SKIP) : exit(handle_ica_error(rc, "ica_rsa_key_mod_expo"));
+#endif
 
 		VV_(printf("result of encrypt with public key\n"));
 		dump_array(my_result, RSA_BYTE_LENGHT[i]);
@@ -88,7 +92,11 @@ int main(int argc, char **argv)
 		gettimeofday(&start, NULL);
 		rc = ica_rsa_crt(adapter_handle, ciphertext[i], &crt_key, my_result2);
 		if(rc)
+#ifndef NO_SW_FALLBACKS
 			exit(handle_ica_error(rc, "ica_rsa_crt"));
+#else
+			rc == ENODEV ? exit(TEST_SKIP) : exit(handle_ica_error(rc, "ica_rsa_crt"));
+#endif
 		gettimeofday(&end, NULL);
 
 		V_(printf("RSA decrypt with key[%d] (l=%d) took %06lu µs.\n", i,

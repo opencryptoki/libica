@@ -185,8 +185,17 @@ int main(int argc, char **argv)
 	V_(printf("encrypt...\n"));
 	if((rc = ica_rsa_mod_expo(adapter_handle, plaintext, &modexpo_public_key,
 				  ciphertext)) != 0){
+#ifndef NO_SW_FALLBACKS
 		++rc_test;
 		print_error_report(rc, errno, "ica_rsa_mod_expo");
+#else
+		if (rc == ENODEV) {
+			return TEST_SKIP;
+		} else {
+			++rc_test;
+			print_error_report(rc, errno, "ica_rsa_mod_expo");
+		}
+#endif
 	}
 
 	VV_(printf("ciphertext:\n"));
@@ -195,8 +204,17 @@ int main(int argc, char **argv)
 	V_(printf("decrypt...\n"));
 	if((rc = ica_rsa_crt(adapter_handle, ciphertext, &crt_private_key,
 				  decrypted)) != 0){
+#ifndef NO_SW_FALLBACKS
 		++rc_test;
 		print_error_report(rc, errno, "ica_rsa_crt");
+#else
+		if (rc == ENODEV) {
+			return TEST_SKIP;
+		} else {
+			++rc_test;
+			print_error_report(rc, errno, "ica_rsa_crt");
+		}
+#endif
 	}
 
 	VV_(printf("result:\n"));

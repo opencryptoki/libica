@@ -29,6 +29,11 @@
 #include "s390_rsa.h"
 #include "s390_prng.h"
 
+#if defined(NO_SW_FALLBACKS)
+#define UNUSED(var)			((void)(var))
+#endif
+
+#ifndef NO_SW_FALLBACKS
 static unsigned int mod_expo_sw(int arg_length, char *arg, int exp_length,
 				char *exp, int mod_length, char *mod,
 				int *res_length, char *res, BN_CTX *ctx);
@@ -47,6 +52,7 @@ static unsigned int mul_sw(int fc_1_length, char *fc1, int fc_2_length,
 static unsigned int mod_expo_sw(int arg_length, char *arg, int exp_length,
 				char *exp, int mod_length, char *mod,
 				int *res_length, char *res, BN_CTX *ctx);
+#endif /* NO_SW_FALLBACKS */
 
 RSA* rsa_key_generate(unsigned int modulus_bit_length,
 		      unsigned long *public_exponent)
@@ -294,6 +300,8 @@ unsigned int rsa_key_generate_crt(ica_adapter_handle_t deviceHandle,
 
 	return 0;
 }
+
+#ifndef NO_SW_FALLBACKS
 /**
  * @deprecated Perform a modular muliplication operation in software.
  */
@@ -384,6 +392,7 @@ static unsigned int mod_mul_sw(int fc_1_length, char *fc1, int fc_2_length,
 
 	 return rc;
 }
+#endif /* NO_SW_FALLBACKS */
 
 /**
  * Perform a mod expo operation using a key in modulus/exponent form, in
@@ -403,6 +412,10 @@ static unsigned int mod_mul_sw(int fc_1_length, char *fc1, int fc_2_length,
  */
 unsigned int rsa_mod_expo_sw(ica_rsa_modexpo_t *pMex)
 {
+#ifdef NO_SW_FALLBACKS
+	UNUSED(pMex);
+	return EPERM;
+#else
 	int rc = 0;
 	BN_CTX *ctx = NULL;
 
@@ -429,8 +442,10 @@ unsigned int rsa_mod_expo_sw(ica_rsa_modexpo_t *pMex)
 	if (rc == 1)
 		rc = EIO;
 	return rc;
+#endif /* NO_SW_FALLBACKS */
 }
 
+#ifndef NO_SW_FALLBACKS
 /**
  * Perform a mod expo operation using a key in modulus/exponent form, in
  * software.
@@ -525,6 +540,7 @@ static unsigned int mod_expo_sw(int arg_length, char *arg, int exp_length,
 
 	return rc;
 }
+#endif /* NO_SW_FALLBACKS */
 
 /**
  * Perform a RSA mod expo on input data using a key in CRT format, in software.
@@ -547,6 +563,10 @@ static unsigned int mod_expo_sw(int arg_length, char *arg, int exp_length,
  */
 unsigned int rsa_crt_sw(ica_rsa_modexpo_crt_t * pCrt)
 {
+#ifdef NO_SW_FALLBACKS
+	UNUSED(pCrt);
+	return EPERM;
+#else
 	int rc = 0;
 	unsigned int long_length = 0;
 	unsigned int short_length = 0;
@@ -671,8 +691,10 @@ unsigned int rsa_crt_sw(ica_rsa_modexpo_crt_t * pCrt)
 	BN_CTX_free(ctx);
 
 	return rc;
+#endif /* NO_SW_FALLBACKS */
 }
 
+#ifndef NO_SW_FALLBACKS
 /**
  * Perform a 'residue modulo' operation using an argument and a modulus.
  * @param arg_length The byte length of the input data
@@ -995,4 +1017,4 @@ static unsigned int mul_sw(int fc_1_length, char *fc1, int fc_2_length,
 
 	return rc;
 }
-
+#endif /* NO_SW_FALLBACKS */

@@ -667,6 +667,10 @@ int s390_get_functionlist(libica_func_list_element *pmech_list,
 		pmech_list[x].property = 0;
 	}
 #endif /* ICA_FIPS */
+
+#ifdef NO_SW_FALLBACKS
+	pmech_list[x].flags &= ~ICA_FLAG_SW;
+#endif
   }
   return 0;
 }
