@@ -115,6 +115,12 @@ int random_3des_ctr(int iteration, unsigned int data_length)
 
 int main(int argc, char **argv)
 {
+#ifdef NO_CPACF
+	UNUSED(argc);
+	UNUSED(argv);
+	printf("Skipping TDES-CTR test, because CPACF support disabled via config option.\n");
+	return TEST_SKIP;
+#else
 	unsigned int endless = 0;
 	unsigned int data_length = 1;
 	unsigned int rdata;
@@ -164,5 +170,6 @@ int main(int argc, char **argv)
 
 	printf("All 3DES-CTR tests passed.\n");
 	return TEST_SUCC;
+#endif /* NO_CPACF */
 }
 

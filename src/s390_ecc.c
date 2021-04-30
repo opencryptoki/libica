@@ -2323,6 +2323,7 @@ do {									    \
 	exit(TEST_FAIL);						    \
 } while(0)
 
+#ifndef NO_CPACF
 static void ecdsa_test(void)
 {
 	unsigned long long rnd[2];
@@ -2369,6 +2370,7 @@ static void ecdsa_test(void)
 		default:
 			TEST_ERROR("Unknown hash", "ECDSA", i);
 		}
+
 
 		if (rc)
 			TEST_ERROR("Hashing failed", "ECDSA", i);
@@ -2711,9 +2713,14 @@ static void scalar_mul_test(void)
 		t4++;
 	}
 }
+#endif /* NO_CPACF */
 
 int main(void)
 {
+#ifdef NO_CPACF
+	printf("Skipping EC internal test, because CPACF support disabled via config option.\n");
+	exit(TEST_SKIP);
+#else
 	if (!msa9_switch)
 		exit(TEST_SKIP);
 
@@ -2722,6 +2729,7 @@ int main(void)
 	ecdsa_test();
 
 	return TEST_SUCC;
+#endif
 }
 
 #endif

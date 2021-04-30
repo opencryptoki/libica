@@ -87,6 +87,12 @@ int test_3des_new_api(int mode)
  */
 int main(int argc, char **argv)
 {
+#ifdef NO_CPACF
+	UNUSED(argc);
+	UNUSED(argv);
+	printf("Skipping TDES test, because CPACF support disabled via config option.\n");
+	return TEST_SKIP;
+#else
 	unsigned int mode = 0;
 	int rc = 0;
 	int error_count = 0;
@@ -137,5 +143,6 @@ int main(int argc, char **argv)
 		return TEST_FAIL;
 
 	return TEST_SUCC;
+#endif /* NO_CPACF */
 }
 

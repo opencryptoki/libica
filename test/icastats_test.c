@@ -45,6 +45,12 @@ void aes_tests(unsigned char *iv, unsigned char *cmac, unsigned char *ctr);
 
 int main (int argc, char **argv)
 {
+#ifdef NO_CPACF
+	UNUSED(argc);
+	UNUSED(argv);
+	printf("Skipping ICA-stats test, because CPACF support disabled via config option.\n");
+	return TEST_SKIP;
+#else
 	int rc = 0;
 	int value;
 	const char *ptr;
@@ -125,6 +131,7 @@ int main (int argc, char **argv)
 
 	printf("All icastats tests passed.\n");
 	return TEST_SUCC;
+#endif /* NO_CPACF */
 }
 
 

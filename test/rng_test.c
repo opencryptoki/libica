@@ -18,6 +18,12 @@ extern int errno;
 
 int main(int argc, char **argv)
 {
+#ifdef NO_CPACF
+	UNUSED(argc);
+	UNUSED(argv);
+	printf("Skipping RNG test, because CPACF support disabled via config option.\n");
+	return TEST_SKIP;
+#else
 	int rc;
 	ica_adapter_handle_t adapter_handle;
 
@@ -44,4 +50,5 @@ int main(int argc, char **argv)
 
 	ica_close_adapter(adapter_handle);
 	return TEST_SUCC;
+#endif /* NO_CPACF */
 }

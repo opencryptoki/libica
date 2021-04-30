@@ -495,6 +495,12 @@ int kat_aes_ofb(int iteration)
 
 int main(int argc, char **argv)
 {
+#ifdef NO_CPACF
+	UNUSED(argc);
+	UNUSED(argv);
+	printf("Skipping AES-OFB test, because CPACF support disabled via config option.\n");
+	return TEST_SKIP;
+#else
 	int rc = 0;
 	int error_count = 0;
 	int iteration;
@@ -536,5 +542,6 @@ out:
 
 	printf("All AES-OFB tests passed.\n");
 	return TEST_SUCC;
+#endif /* NO_CPACF */
 }
 

@@ -21,6 +21,7 @@
  *	     301	      65536 = 2 ^ (8 * 2)			  0.5
  *	    4823	   16777216 = 2 ^ (8 * 3)			  0.5
  */
+#ifndef NO_CPACF
 static const int THREADS[]   = {19, 301, 4823};
 static const int GEN_BYTES[] = { 1,   2,    3};
 
@@ -40,9 +41,17 @@ void *thread(void *buffer)
 
 	return NULL;
 }
+#endif /* NO_CPACF */
 
 int main(int argc, char **argv)
 {
+#ifdef NO_CPACF
+	UNUSED(argc);
+	UNUSED(argv);
+	printf("Skipping DRBG-Birthday test, because CPACF support disabled via config option.\n");
+	printf("Satisfy perl script: (p = 0.50).\n");
+	return TEST_SKIP;
+#else
 	long rnd_ex[3] = {0}, ex, pair_found;
 	int i, j, rc;
 	bool toggle;
@@ -137,4 +146,5 @@ int main(int argc, char **argv)
 		return TEST_FAIL;
 	}
 	return TEST_SUCC;
+#endif /* NO_CPACF */
 }

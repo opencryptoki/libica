@@ -58,6 +58,7 @@ typedef struct queue_t {
 	test_t *tail;
 } queue_t;
 
+#ifndef NO_CPACF
 static test_t new_test_t(void);
 static queue_t new_queue_t(void);
 static void push(queue_t * queue, test_t test);
@@ -79,9 +80,16 @@ static int sha3_384_api_test(test_t * test);
 static int sha3_512_api_test(test_t * test);
 
 static queue_t queue;
+#endif /* NO_CPACF */
 
 int main(int argc, char *argv[])
 {
+#ifdef NO_CPACF
+	UNUSED(argc);
+	UNUSED(argv);
+	printf("Skipping SHA-1 test, because CPACF support disabled via config option.\n");
+	return TEST_SKIP;
+#else
 	test_t *curr_test;
 	FILE *test_data;
 	int i, j, rc, sha3_flag, sha3;
@@ -210,8 +218,10 @@ int main(int argc, char *argv[])
 
 	printf("All SHA%s tests passed.\n", sha3_flag ? "3" : "");
 	return TEST_SUCC;
+#endif /* NO_CPACF */
 }
 
+#ifndef NO_CPACF
 static test_t new_test_t(void)
 {
 	test_t test;
@@ -1342,3 +1352,4 @@ static int sha3_512_api_test(test_t * test)
 
 	return TEST_SUCC;
 }
+#endif /* NO_CPACF */

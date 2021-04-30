@@ -668,6 +668,15 @@ int s390_get_functionlist(libica_func_list_element *pmech_list,
 	}
 #endif /* ICA_FIPS */
 
+#ifdef NO_CPACF
+	pmech_list[x].flags &= ~ICA_FLAG_SHW;
+	/* NO_CPACF also removes sw fallbacks for CPACF based functions, but not
+	 * for card-based functions. */
+	if (pmech_list[x].flags & ICA_FLAG_SW && !(pmech_list[x].flags & ICA_FLAG_DHW)) {
+		pmech_list[x].flags &= ~ICA_FLAG_SW;
+	}
+#endif /* NO_CPACF */
+
 #ifdef NO_SW_FALLBACKS
 	pmech_list[x].flags &= ~ICA_FLAG_SW;
 #endif

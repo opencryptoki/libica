@@ -138,6 +138,12 @@ int random_des_cfb(int iteration, unsigned int data_length,
 
 int main(int argc, char **argv)
 {
+#ifdef NO_CPACF
+	UNUSED(argc);
+	UNUSED(argv);
+	printf("Skipping DES-CFB test, because CPACF support disabled via config option.\n");
+	return TEST_SKIP;
+#else
 	int rc = 0;
 	int error_count = 0;
 	int iteration;
@@ -189,5 +195,6 @@ int main(int argc, char **argv)
 
 	printf("All DES-CFB tests passed.\n");
 	return TEST_SUCC;
+#endif /* NO_CPACF */
 }
 

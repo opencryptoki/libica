@@ -70,6 +70,35 @@ static int s390_prng_seed(void *srv, unsigned int count);
 /* Constant */
 #define PRNG_BLK_SZ	8
 
+#if defined(NO_CPACF) && defined(ICA_FIPS)
+/**
+ * Generate random numbers using fips-approved random sources.
+ * /dev/random can be used in fips mode, but not /dev/urandom.
+ */
+static int s390_prng_fips(unsigned char *output_data, unsigned int output_length)
+{
+	const char *const rng_list[] = {
+			"/dev/prandom",
+			"/dev/hwrng",
+			"/dev/random" };
+	const size_t rng_list_len = sizeof(rng_list) / sizeof(rng_list[0]);
+	size_t priority, status;
+	FILE *fd;
+
+	for (priority = 0; priority < rng_list_len; priority++) {
+		fd = fopen(rng_list[priority], "r");
+		if (fd) {
+			status = fread(output_data, output_length, 1, fd);
+			fclose(fd);
+			if (status == 1)
+				return 0;
+		}
+	}
+
+	return EIO;
+}
+#endif
+
 int s390_prng_init(void)
 {
 	int rc = -1;
@@ -215,6 +244,14 @@ int s390_prng(unsigned char *output_data, unsigned int output_length)
 		if (rc == 0)
 			return 0;
 	}
+
+#if defined(NO_CPACF) && defined(ICA_FIPS)
+	rc = s390_prng_fips(output_data, output_length);
+	if (rc == 0)
+		stats_increment(ICA_STATS_PRNG, ALGO_SW, ENCRYPT);
+
+	return rc;
+#endif
 
 #ifndef ICA_FIPS	/* Old prng code disabled with FIPS built. */
 	if (prng_switch)

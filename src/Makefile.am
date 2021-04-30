@@ -8,15 +8,14 @@ VERSION1 := $(MAJOR).$(MINOR).$(PATCH)
 
 # lib
 
-lib_LTLIBRARIES = libica.la
+lib_LTLIBRARIES = libica.la libica-cex.la
 
-libica_la_CFLAGS = ${AM_CFLAGS} -I${srcdir}/include -I${srcdir}/../include \
+CFLAGS_common = ${AM_CFLAGS} -I${srcdir}/include -I${srcdir}/../include \
 		   -fvisibility=hidden -pthread
-libica_la_CCASFLAGS = ${AM_CFLAGS}
-libica_la_LIBADD = @LIBS@ -lrt -lcrypto -ldl
-libica_la_LDFLAGS = -Wl,--version-script=${srcdir}/../libica.map \
+LIBS_common = @LIBS@ -lrt -lcrypto -ldl
+LDFLAGS_common = -Wl,--version-script=${srcdir}/../libica.map \
 		    -version-number ${VERSION}
-libica_la_SOURCES = ica_api.c init.c icastats_shared.c s390_rsa.c \
+SOURCES_common = ica_api.c init.c icastats_shared.c s390_rsa.c \
 		    s390_crypto.c s390_ecc.c s390_prng.c s390_sha.c \
 		    s390_drbg.c s390_drbg_sha512.c test_vec.c fips.c \
 		    mp.S rng.c \
@@ -30,6 +29,18 @@ libica_la_SOURCES = ica_api.c init.c icastats_shared.c s390_rsa.c \
 		    include/s390_rsa.h include/s390_sha.h include/test_vec.h \
 		    include/rng.h
 
+libica_la_CFLAGS = ${CFLAGS_common} -DLIBNAME=\"libica\"
+libica_la_CCASFLAGS = ${AM_CFLAGS}
+libica_la_LIBADD = ${LIBS_common}
+libica_la_LDFLAGS = ${LDFLAGS_common}
+libica_la_SOURCES = ${SOURCES_common}
+
+libica_cex_la_CFLAGS = ${CFLAGS_common} -DNO_CPACF -DNO_SW_FALLBACKS -DLIBNAME=\"libica-cex\"
+libica_cex_la_CCASFLAGS = ${AM_CFLAGS}
+libica_cex_la_LIBADD = ${LIBS_common}
+libica_cex_la_LDFLAGS = ${LDFLAGS_common}
+libica_cex_la_SOURCES = ${SOURCES_common}
+
 EXTRA_DIST = mp.pl
 mp.S	: mp.pl
 	./mp.pl mp.S
@@ -37,9 +48,11 @@ mp.S	: mp.pl
 if ICA_FIPS
 hmac-file-lnk: hmac-file
 	$(AM_V_GEN) cd ${top_builddir}/src/.libs && ln -sf .libica.so.$(VERSION1).hmac .libica.so.$(MAJOR).hmac
+	$(AM_V_GEN) cd ${top_builddir}/src/.libs && ln -sf .libica-cex.so.$(VERSION1).hmac .libica-cex.so.$(MAJOR).hmac
 
-hmac-file: libica.la
+hmac-file: libica.la libica-cex.la
 	$(AM_V_GEN) openssl dgst -sha256 -mac hmac -macopt hexkey:00000000 ${top_builddir}/src/.libs/libica.so.$(VERSION1) | sed -e 's/^.* //' > ${top_builddir}/src/.libs/.libica.so.$(VERSION1).hmac
+	$(AM_V_GEN) openssl dgst -sha256 -mac hmac -macopt hexkey:00000000 ${top_builddir}/src/.libs/libica-cex.so.$(VERSION1) | sed -e 's/^.* //' > ${top_builddir}/src/.libs/.libica-cex.so.$(VERSION1).hmac
 
 hmac_files = hmac-file hmac-file-lnk
 
@@ -67,7 +80,8 @@ bin_PROGRAMS += internal_tests/ec_internal_test
 internal_tests_ec_internal_test_CFLAGS = ${AM_CFLAGS} -I${srcdir}/include \
 					 -I${srcdir}/../include	\
 					 -DICA_INTERNAL_TEST \
-					 -DICA_INTERNAL_TEST_EC
+					 -DICA_INTERNAL_TEST_EC \
+					 -DLIBNAME=\"libica\"
 internal_tests_ec_internal_test_CCASFLAGS = ${AM_CFLAGS}
 internal_tests_ec_internal_test_LDADD = @LIBS@ -lrt -lcrypto -lpthread -ldl
 internal_tests_ec_internal_test_SOURCES = \

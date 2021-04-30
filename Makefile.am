@@ -20,9 +20,13 @@ if ICA_FIPS
 install-data-hook:
 	$(INSTALL) -m 0444 ${top_builddir}/src/.libs/.libica.so.$(VERSION).hmac $(DESTDIR)$(libdir)
 	cd $(DESTDIR)$(libdir) && ln -sf .libica.so.$(VERSION).hmac .libica.so.$(MAJOR).hmac
+	$(INSTALL) -m 0444 ${top_builddir}/src/.libs/.libica-cex.so.$(VERSION).hmac $(DESTDIR)$(libdir)
+	cd $(DESTDIR)$(libdir) && ln -sf .libica-cex.so.$(VERSION).hmac .libica-cex.so.$(MAJOR).hmac
 
 uninstall-hook:
 	rm -f $(DESTDIR)$(libdir)/.libica.so.$(MAJOR).hmac
 	rm -f $(DESTDIR)$(libdir)/.libica.so.$(VERSION).hmac
+	rm -f $(DESTDIR)$(libdir)/.libica-cex.so.$(MAJOR).hmac
+	rm -f $(DESTDIR)$(libdir)/.libica-cex.so.$(VERSION).hmac
 endif
 

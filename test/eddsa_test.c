@@ -18,6 +18,7 @@
 #define ITERATIONS	1000
 #define MSGLEN		(16384 * 2ULL)
 
+#ifndef NO_CPACF
 static void check_functionlist(void);
 
 static void ed25519_kat(void);
@@ -37,9 +38,16 @@ static void *thread_ed448(void *arg);
 
 time_t seed;
 pthread_t threads[THREADS];
+#endif /* NO_CPACF */
 
 int main(int argc, char *argv[])
 {
+#ifdef NO_CPACF
+	UNUSED(argc);
+	UNUSED(argv);
+	printf("Skipping ED-DSA test, because CPACF support disabled via config option.\n");
+	return TEST_SKIP;
+#else
 	int i;
 
 	set_verbosity(argc, argv);
@@ -75,8 +83,10 @@ int main(int argc, char *argv[])
 	ed448_speed();
 
 	return TEST_SUCC;
+#endif /* NO_CPACF */
 }
 
+#ifndef NO_CPACF
 static void check_functionlist(void)
 {
 	unsigned int i, listlen, func;
@@ -599,3 +609,4 @@ static void ed448_speed(void)
 	if (ica_ed448_ctx_del(&ctx))
 		EXIT_ERR("ica_ed448_ctx_del failed.");
 }
+#endif /* NO_CPACF */

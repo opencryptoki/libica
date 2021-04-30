@@ -71,6 +71,7 @@ static int des3_cmac_kat(void);
 
 static int rsa_kat(void);
 
+#ifndef NO_CPACF
 #define SHA_KAT(_sha_, _ctx_)						\
 static int sha##_sha_##_kat(void) {					\
 	sha##_ctx_##_context_t ctx;					\
@@ -94,6 +95,29 @@ SHA_KAT(256, 256);
 SHA_KAT(384, 512);
 SHA_KAT(512, 512);
 #undef SHA_KAT
+#else /* Don't write any error msg to syslog when CPACF is not avail */
+#define SHA_KAT(_sha_, _ctx_)						\
+static int sha##_sha_##_kat(void) {					\
+	sha##_ctx_##_context_t ctx;					\
+	size_t i;							\
+	unsigned char out[SHA##_sha_##_HASH_LENGTH];			\
+	for (i = 0; i < SHA##_sha_##_TV_LEN; i++) {			\
+		if (ica_sha##_sha_(SHA_MSG_PART_ONLY,			\
+		    SHA##_sha_##_TV[i].msg_len, SHA##_sha_##_TV[i].msg,	\
+		    &ctx, out) || memcmp(SHA##_sha_##_TV[i].md, out,	\
+		    SHA##_sha_##_HASH_LENGTH)) {			\
+			return 1;					\
+		}							\
+	}								\
+	return 0;							\
+}
+SHA_KAT(1, );
+SHA_KAT(224, 256);
+SHA_KAT(256, 256);
+SHA_KAT(384, 512);
+SHA_KAT(512, 512);
+#undef SHA_KAT
+#endif
 
 static inline int sha3_available(void)
 {
@@ -108,6 +132,7 @@ static inline int sha3_available(void)
 	return (rc == ENODEV ? 0 : 1);
 }
 
+#ifndef NO_CPACF
 #define SHA3_KAT(_sha_, _ctx_)						\
 static int sha3_##_sha_##_kat(void) {					\
 	sha3_##_ctx_##_context_t ctx;					\
@@ -120,7 +145,7 @@ static int sha3_##_sha_##_kat(void) {					\
 		    SHA3_##_sha_##_TV[i].msg_len, SHA3_##_sha_##_TV[i].msg,	\
 		    &ctx, out) || memcmp(SHA3_##_sha_##_TV[i].md, out,	\
 		    SHA3_##_sha_##_HASH_LENGTH)) {			\
-			syslog(LOG_ERR, "Libica SHA-3%d test failed.",	\
+			syslog(LOG_ERR, "Libica SHA-3 %d test failed.",	\
 			    _sha_);					\
 			return 1;					\
 		}							\
@@ -132,6 +157,30 @@ SHA3_KAT(256, 256);
 SHA3_KAT(384, 384);
 SHA3_KAT(512, 512);
 #undef SHA3_KAT
+#else /* Don't write any error msg to syslog when CPACF is not avail */
+#define SHA3_KAT(_sha_, _ctx_)						\
+static int sha3_##_sha_##_kat(void) {					\
+	sha3_##_ctx_##_context_t ctx;					\
+	size_t i;							\
+	unsigned char out[SHA3_##_sha_##_HASH_LENGTH];			\
+	if (!sha3_available()) 						\
+		return 0; 						\
+	for (i = 0; i < SHA3_##_sha_##_TV_LEN; i++) {			\
+		if (ica_sha3_##_sha_(SHA_MSG_PART_ONLY,			\
+		    SHA3_##_sha_##_TV[i].msg_len, SHA3_##_sha_##_TV[i].msg,	\
+		    &ctx, out) || memcmp(SHA3_##_sha_##_TV[i].md, out,	\
+		    SHA3_##_sha_##_HASH_LENGTH)) {			\
+			return 1;					\
+		}							\
+	}								\
+	return 0;							\
+}
+SHA3_KAT(224, 224);
+SHA3_KAT(256, 256);
+SHA3_KAT(384, 384);
+SHA3_KAT(512, 512);
+#undef SHA3_KAT
+#endif
 
 void
 fips_init(void)
@@ -158,33 +207,6 @@ fips_init(void)
 		 * FIPS_mode() function. */
 		FIPS_mode_set(1);
 	}
-}
-static int get_library_path(const char *libname, const char *symbolname,
-							char *path, size_t pathlen)
-{
-	Dl_info info;
-	void *dl, *sym;
-	int rc = -1;
-
-	dl = dlopen(libname, RTLD_LAZY);
-	if (dl == NULL)
-		goto done;
-
-	sym = dlsym(dl, symbolname);
-	if (sym != NULL && dladdr(sym, &info)) {
-		if (strlen(info.dli_fname) < pathlen)
-			strcpy(path, info.dli_fname);
-		else
-			goto done;
-	}
-
-	rc = 0;
-
-done:
-	if (dl != NULL)
-		dlclose(dl);
-
-	return rc;
 }
 
 static char *make_hmac_path(const char *origpath)
@@ -343,7 +365,7 @@ static void fips_lib_integrity_check(void)
 {
 	int rc;
 	char path[PATH_MAX];
-	const char *libname = "libica.so." VERSION;
+	const char *libname = LIBNAME ".so." VERSION;
 	const char *symbolname = "ica_sha256";
 
 	rc = get_library_path(libname, symbolname, path, sizeof(path));
@@ -365,16 +387,28 @@ static void fips_lib_integrity_check(void)
 void
 fips_powerup_tests(void)
 {
+#ifdef NO_CPACF
+	/* 27 out of the 28 tests return EPERM if CPACF is disabled via config.
+	 * The rsa_kat() is not affected. */
+	int num_cpacf_tests = 27;
+#endif
+	int rc;
+
 	/* Cryptographic algorithm test. */
-	if (ica_drbg_health_test(ica_drbg_generate, 256, true, ICA_DRBG_SHA512)
-	    || sha1_kat() || sha224_kat() || sha256_kat() || sha384_kat()
-	    || sha512_kat() || sha3_224_kat() || sha3_256_kat() || sha3_384_kat()
-	    || sha3_512_kat() || des3_ecb_kat() || des3_cbc_kat()
-	    || des3_cbc_cs_kat() || des3_cfb_kat() || des3_ofb_kat()
-	    || des3_ctr_kat() || des3_cmac_kat() || aes_ecb_kat()
-	    || aes_cbc_kat() || aes_cbc_cs_kat() || aes_cfb_kat()
-	    || aes_ctr_kat() || aes_ofb_kat() || aes_ccm_kat() || aes_gcm_kat()
-	    || aes_xts_kat() || aes_cmac_kat() || rsa_kat()) {
+	rc = ica_drbg_health_test(ica_drbg_generate, 256, true, ICA_DRBG_SHA512)
+	    + sha1_kat() + sha224_kat() + sha256_kat() + sha384_kat()
+	    + sha512_kat() + sha3_224_kat() + sha3_256_kat() + sha3_384_kat()
+	    + sha3_512_kat() + des3_ecb_kat() + des3_cbc_kat()
+	    + des3_cbc_cs_kat() + des3_cfb_kat() + des3_ofb_kat()
+	    + des3_ctr_kat() + des3_cmac_kat() + aes_ecb_kat()
+	    + aes_cbc_kat() + aes_cbc_cs_kat() + aes_cfb_kat()
+	    + aes_ctr_kat() + aes_ofb_kat() + aes_ccm_kat() + aes_gcm_kat()
+	    + aes_xts_kat() + aes_cmac_kat() + rsa_kat();
+#ifndef NO_CPACF
+	if (rc != 0) {
+#else
+	if (rc != 0 && rc != num_cpacf_tests * EPERM) {
+#endif
 		fips |= ICA_FIPS_CRYPTOALG;
 		return;
 	}
@@ -410,7 +444,9 @@ aes_ecb_kat(void) {
 
 _err_:
 	free(out);
+#ifndef NO_CPACF
 	syslog(LOG_ERR, "Libica AES-ECB test failed.");
+#endif
 	return 1;
 }
 
@@ -446,7 +482,9 @@ aes_cbc_kat(void) {
 
 _err_:
 	free(out);
+#ifndef NO_CPACF
 	syslog(LOG_ERR, "Libica AES-CBC test failed.");
+#endif
 	return 1;
 }
 
@@ -484,7 +522,9 @@ aes_cbc_cs_kat(void)
 
 _err_:
 	free(out);
+#ifndef NO_CPACF
 	syslog(LOG_ERR, "Libica AES-CBC-CS test failed.");
+#endif
 	return 1;
 }
 
@@ -520,7 +560,9 @@ aes_cfb_kat(void) {
 
 _err_:
 	free(out);
+#ifndef NO_CPACF
 	syslog(LOG_ERR, "Libica AES-CFB test failed.");
+#endif
 	return 1;
 }
 
@@ -556,7 +598,9 @@ aes_ofb_kat(void) {
 
 _err_:
 	free(out);
+#ifndef NO_CPACF
 	syslog(LOG_ERR, "Libica AES-OFB test failed.");
+#endif
 	return 1;
 }
 
@@ -592,7 +636,9 @@ aes_ctr_kat(void) {
 
 _err_:
 	free(out);
+#ifndef NO_CPACF
 	syslog(LOG_ERR, "Libica AES-CTR test failed.");
+#endif
 	return 1;
 }
 
@@ -633,7 +679,9 @@ aes_ccm_kat(void) {
 _err_:
 	free(ciphertext);
 	free(payload);
+#ifndef NO_CPACF
 	syslog(LOG_ERR, "Libica AES-CCM test failed.");
+#endif
 	return 1;
 }
 
@@ -733,7 +781,9 @@ aes_gcm_kat(void) {
 _err_:
 	free(tag);
 	free(out);
+#ifndef NO_CPACF
 	syslog(LOG_ERR, "Libica AES-GCM test failed.");
+#endif
 	return 1;
 }
 
@@ -769,7 +819,9 @@ aes_xts_kat(void) {
 
 _err_:
 	free(out);
+#ifndef NO_CPACF
 	syslog(LOG_ERR, "Libica AES-XTS test failed.");
+#endif
 	return 1;
 }
 
@@ -836,7 +888,9 @@ aes_cmac_kat(void)
 
 _err_:
 	free(mac);
+#ifndef NO_CPACF
 	syslog(LOG_ERR, "Libica AES-CMAC test failed.");
+#endif
 	return 1;
 }
 
@@ -868,7 +922,9 @@ des3_ecb_kat(void) {
 
 _err_:
 	free(out);
+#ifndef NO_CPACF
 	syslog(LOG_ERR, "Libica 3DES-ECB test failed.");
+#endif
 	return 1;
 }
 
@@ -904,7 +960,9 @@ des3_cbc_kat(void) {
 
 _err_:
 	free(out);
+#ifndef NO_CPACF
 	syslog(LOG_ERR, "Libica 3DES-CBC test failed.");
+#endif
 	return 1;
 }
 
@@ -941,7 +999,9 @@ des3_cbc_cs_kat(void){
 
 _err_:
 	free(out);
+#ifndef NO_CPACF
 	syslog(LOG_ERR, "Libica 3DES-CBC-CS test failed.");
+#endif
 	return 1;
 }
 
@@ -977,7 +1037,9 @@ des3_cfb_kat(void) {
 
 _err_:
 	free(out);
+#ifndef NO_CPACF
 	syslog(LOG_ERR, "Libica 3DES-CFB test failed.");
+#endif
 	return 1;
 }
 
@@ -1013,7 +1075,9 @@ des3_ofb_kat(void) {
 
 _err_:
 	free(out);
+#ifndef NO_CPACF
 	syslog(LOG_ERR, "Libica 3DES-OFB test failed.");
+#endif
 	return 1;
 }
 
@@ -1049,7 +1113,9 @@ des3_ctr_kat(void) {
 
 _err_:
 	free(out);
+#ifndef NO_CPACF
 	syslog(LOG_ERR, "Libica 3DES-CTR test failed.");
+#endif
 	return 1;
 }
 
@@ -1116,7 +1182,9 @@ des3_cmac_kat(void)
 
 _err_:
 	free(mac);
+#ifndef NO_CPACF
 	syslog(LOG_ERR, "Libica 3DES-CMAC test failed.");
+#endif
 	return 1;
 }
 

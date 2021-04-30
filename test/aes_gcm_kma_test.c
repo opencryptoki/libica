@@ -716,6 +716,12 @@ int test_gcm_kat_update_in_place(int iteration)
  */
 int main(int argc, char **argv)
 {
+#ifdef NO_CPACF
+	UNUSED(argc);
+	UNUSED(argv);
+	printf("Skipping AES-GCM-KMA test, because CPACF support disabled via config option.\n");
+	return TEST_SKIP;
+#else
 	int rc = 0;
 	int error_count = 0;
 	unsigned int iteration;
@@ -756,4 +762,5 @@ int main(int argc, char **argv)
 
 	printf("All AES-GCM-KMA tests passed.\n");
 	return TEST_SUCC;
+#endif /* NO_CPACF */
 }
