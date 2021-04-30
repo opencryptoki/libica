@@ -23,15 +23,23 @@ struct kat {
 	const unsigned char *shared_secret;
 };
 
+#ifndef NO_CPACF
 static void check_functionlist(void);
 
 static void x25519_kat(void);
 static void x448_kat(void);
 static void x25519_pc(void);
 static void x448_pc(void);
+#endif /* NO_CPACF */
 
 int main(int argc, char *argv[])
 {
+#ifdef NO_CPACF
+	UNUSED(argc);
+	UNUSED(argv);
+	printf("Skipping X25519/X448 test, because CPACF support disabled via config option.\n");
+	return TEST_SKIP;
+#else
 	int i;
 
 	set_verbosity(argc, argv);
@@ -51,8 +59,10 @@ int main(int argc, char *argv[])
 	VV_(printf("\n=== X448 PC ===\n"));
 	for (i = 0; i < ITERATIONS; i++)
 		x448_pc();
+#endif /* NO_CPACF */
 }
 
+#ifndef NO_CPACF
 static void check_functionlist(void)
 {
 	unsigned int i, listlen, func;
@@ -409,3 +419,4 @@ static void x448_kat(void)
 
 	(void)ica_x448_ctx_del(&ctx);
 }
+#endif /* NO_CPACF */

@@ -491,6 +491,12 @@ int test_aes128_new_api(void)
 
 int main(int argc, char **argv)
 {
+#ifdef NO_CPACF
+	UNUSED(argc);
+	UNUSED(argv);
+	printf("Skipping CBC-CS test, because CPACF support disabled via config option.\n");
+	return TEST_SKIP;
+#else
 	unsigned int variant;
 	int rc, error_count;
 
@@ -523,7 +529,7 @@ int main(int argc, char **argv)
 
 		/* DES tests */
 		rc = test_des_new_api(variant);
-		if (rc) {
+		if (rc && rc != TEST_SKIP) {
 			error_count++;
 			printf("test_des_new_api for CBC_CS mode with DES "
 			       "failed.\n");
@@ -542,5 +548,6 @@ int main(int argc, char **argv)
 
 	printf("All CBC-CS tests passed.\n");
 	return TEST_SUCC;
+#endif /* NO_CPACF */
 }
 

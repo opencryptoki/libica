@@ -761,6 +761,12 @@ int random_aes_cfb(int iteration, unsigned int data_length, unsigned int lcfb)
 
 int main(int argc, char **argv)
 {
+#ifdef NO_CPACF
+	UNUSED(argc);
+	UNUSED(argv);
+	printf("Skipping AES-CFB test, because CPACF support disabled via config option.\n");
+	return TEST_SKIP;
+#else
 	unsigned int data_length = 1;
 	unsigned int lcfb = 1;
 	unsigned int j;
@@ -815,4 +821,5 @@ int main(int argc, char **argv)
 
 	printf("All AES-CFB tests passed.\n");
 	return TEST_SUCC;
+#endif /* NO_CPACF */
 }

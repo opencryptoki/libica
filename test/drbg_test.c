@@ -80,6 +80,12 @@ typedef struct{
 int main(int argc,
 	 char **argv)
 {
+#ifdef NO_CPACF
+	UNUSED(argc);
+	UNUSED(argv);
+	printf("Skipping DRBG test, because CPACF support disabled via config option.\n");
+	return TEST_SKIP;
+#else
 	unsigned int i = 0;
 	int failed = 0;
 	int passed = 0;
@@ -621,4 +627,5 @@ int main(int argc,
 
 	printf("All DRBG tests passed.\n");
 	return TEST_SUCC;
+#endif /* NO_CPACF */
 }

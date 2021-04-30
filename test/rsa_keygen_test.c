@@ -108,11 +108,16 @@ int main(int argc, char **argv)
 	ica_adapter_handle_t adapter_handle = 0;
 
 	V_(printf("[TEST RSA CRT]\n"));
+#ifdef NO_CPACF
+	V_(printf("CPACF disabled, cannot create random plaintext, use static plaintext instead...\n"));
+	memset(plaintext, 0x12, BITSTOBYTES(key_bit_length));
+#else
 	V_(printf("generate random plaintext...\n"));
 	if((rc = ica_random_number_generate(BITSTOBYTES(key_bit_length) ,plaintext)) != 0){
 		++rc_test;
 		print_error_report(rc, errno, "ica_random_number_generate");
 	}
+#endif
 
 	/* make sure that plaintext < modulus */
 	plaintext[0] = 0;

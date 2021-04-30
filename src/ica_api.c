@@ -58,7 +58,7 @@ int ica_fallbacks_enabled = 1;
 int ica_fallbacks_enabled = 0;
 #endif
 
-#if defined(NO_SW_FALLBACKS)
+#if defined(NO_SW_FALLBACKS) || defined(NO_CPACF)
 #define UNUSED(var)			((void)(var))
 #endif
 
@@ -88,6 +88,18 @@ void ica_set_stats_mode(int stats_mode)
 	ica_stats_enabled = stats_mode ? 1 : 0;
 }
 
+#ifdef ICA_FIPS
+static unsigned int fips_check_3des_key(const ica_des_key_triple_t *key) {
+	if (!CRYPTO_memcmp(key->key1, key->key2, DES_KEY_LEN64)
+	    | !CRYPTO_memcmp(key->key1, key->key3, DES_KEY_LEN64)
+	    | !CRYPTO_memcmp(key->key2, key->key3, DES_KEY_LEN64))
+		return EINVAL;
+
+	return 0;
+}
+#endif
+
+#ifndef NO_CPACF
 static unsigned int check_des_parms(unsigned int mode,
 				    unsigned long data_length,
 				    const unsigned char *in_data,
@@ -136,17 +148,6 @@ static unsigned int check_des_parms(unsigned int mode,
 
 	return 0;
 }
-
-#ifdef ICA_FIPS
-static unsigned int fips_check_3des_key(const ica_des_key_triple_t *key) {
-	if (!CRYPTO_memcmp(key->key1, key->key2, DES_KEY_LEN64)
-	    | !CRYPTO_memcmp(key->key1, key->key3, DES_KEY_LEN64)
-	    | !CRYPTO_memcmp(key->key2, key->key3, DES_KEY_LEN64))
-		return EINVAL;
-
-	return 0;
-}
-#endif
 
 static unsigned int check_aes_parms(unsigned int mode,
 				    unsigned int data_length,
@@ -346,6 +347,7 @@ static unsigned int check_message_part(unsigned int message_part)
 	else
 		return 0;
 }
+#endif /* NO_CPACF */
 
 unsigned int ica_open_adapter(ica_adapter_handle_t *adapter_handle)
 {
@@ -396,6 +398,14 @@ unsigned int ica_sha1(unsigned int message_part,
 		      sha_context_t *sha_context,
 		      unsigned char *output_data)
 {
+#ifdef NO_CPACF
+	UNUSED(message_part);
+	UNUSED(input_length);
+	UNUSED(input_data);
+	UNUSED(sha_context);
+	UNUSED(output_data);
+	return EPERM;
+#else
 	int rc;
 
 #ifdef ICA_FIPS
@@ -434,6 +444,7 @@ unsigned int ica_sha1(unsigned int message_part,
 		memcpy(&sha_context->shaHash, output_data, SHA_HASH_LENGTH);
 
 	return rc;
+#endif /* NO_CPACF */
 }
 
 unsigned int ica_sha224(unsigned int message_part,
@@ -442,6 +453,14 @@ unsigned int ica_sha224(unsigned int message_part,
 			sha256_context_t *sha256_context,
 			unsigned char *output_data)
 {
+#ifdef NO_CPACF
+	UNUSED(message_part);
+	UNUSED(input_length);
+	UNUSED(input_data);
+	UNUSED(sha256_context);
+	UNUSED(output_data);
+	return EPERM;
+#else
 	unsigned int rc;
 
 #ifdef ICA_FIPS
@@ -472,6 +491,7 @@ unsigned int ica_sha224(unsigned int message_part,
 	return s390_sha224((unsigned char *) &sha256_context->sha256Hash,
 			   input_data, input_length, output_data, message_part,
 			   (uint64_t *)&sha256_context->runningLength);
+#endif /* NO_CPACF */
 }
 
 unsigned int ica_sha256(unsigned int message_part,
@@ -480,6 +500,14 @@ unsigned int ica_sha256(unsigned int message_part,
 			sha256_context_t *sha256_context,
 			unsigned char *output_data)
 {
+#ifdef NO_CPACF
+	UNUSED(message_part);
+	UNUSED(input_length);
+	UNUSED(input_data);
+	UNUSED(sha256_context);
+	UNUSED(output_data);
+	return EPERM;
+#else
 	unsigned int rc;
 
 #ifdef ICA_FIPS
@@ -510,6 +538,7 @@ unsigned int ica_sha256(unsigned int message_part,
 	return s390_sha256((unsigned char *) &sha256_context->sha256Hash,
 			   input_data, input_length, output_data, message_part,
 			   (uint64_t *) &sha256_context->runningLength);
+#endif /* NO_CPACF */
 }
 
 unsigned int ica_sha384(unsigned int message_part,
@@ -518,6 +547,14 @@ unsigned int ica_sha384(unsigned int message_part,
 			sha512_context_t *sha512_context,
 			unsigned char *output_data)
 {
+#ifdef NO_CPACF
+	UNUSED(message_part);
+	UNUSED(input_length);
+	UNUSED(input_data);
+	UNUSED(sha512_context);
+	UNUSED(output_data);
+	return EPERM;
+#else
 	unsigned int rc;
 
 #ifdef ICA_FIPS
@@ -549,6 +586,7 @@ unsigned int ica_sha384(unsigned int message_part,
 			   input_data, input_length, output_data, message_part,
 			   (uint64_t *) &(sha512_context->runningLengthLow),
 			   (uint64_t *) &(sha512_context->runningLengthHigh));
+#endif /* NO_CPACF */
 }
 
 unsigned int ica_sha512(unsigned int message_part,
@@ -557,6 +595,14 @@ unsigned int ica_sha512(unsigned int message_part,
 			sha512_context_t *sha512_context,
 			unsigned char *output_data)
 {
+#ifdef NO_CPACF
+	UNUSED(message_part);
+	UNUSED(input_length);
+	UNUSED(input_data);
+	UNUSED(sha512_context);
+	UNUSED(output_data);
+	return EPERM;
+#else
 	unsigned int rc;
 
 #ifdef ICA_FIPS
@@ -588,6 +634,7 @@ unsigned int ica_sha512(unsigned int message_part,
 			   input_data, input_length, output_data, message_part,
 			   (uint64_t *) &sha512_context->runningLengthLow,
 			   (uint64_t *) &sha512_context->runningLengthHigh);
+#endif /* NO_CPACF */
 }
 
 unsigned int ica_sha512_224(unsigned int message_part,
@@ -596,6 +643,14 @@ unsigned int ica_sha512_224(unsigned int message_part,
 			    sha512_context_t *sha512_context,
 			    unsigned char *output_data)
 {
+#ifdef NO_CPACF
+	UNUSED(message_part);
+	UNUSED(input_length);
+	UNUSED(input_data);
+	UNUSED(sha512_context);
+	UNUSED(output_data);
+	return EPERM;
+#else
 	unsigned int rc;
 
 #ifdef ICA_FIPS
@@ -627,6 +682,7 @@ unsigned int ica_sha512_224(unsigned int message_part,
 			       input_data, input_length, output_data, message_part,
 			       (uint64_t *) &sha512_context->runningLengthLow,
 			       (uint64_t *) &sha512_context->runningLengthHigh);
+#endif /* NO_CPACF */
 }
 
 unsigned int ica_sha512_256(unsigned int message_part,
@@ -635,6 +691,14 @@ unsigned int ica_sha512_256(unsigned int message_part,
 			    sha512_context_t *sha512_context,
 			    unsigned char *output_data)
 {
+#ifdef NO_CPACF
+	UNUSED(message_part);
+	UNUSED(input_length);
+	UNUSED(input_data);
+	UNUSED(sha512_context);
+	UNUSED(output_data);
+	return EPERM;
+#else
 	unsigned int rc;
 
 #ifdef ICA_FIPS
@@ -666,6 +730,7 @@ unsigned int ica_sha512_256(unsigned int message_part,
 			       input_data, input_length, output_data, message_part,
 			       (uint64_t *) &sha512_context->runningLengthLow,
 			       (uint64_t *) &sha512_context->runningLengthHigh);
+#endif /* NO_CPACF */
 }
 
 unsigned int ica_sha3_224(unsigned int message_part,
@@ -674,6 +739,14 @@ unsigned int ica_sha3_224(unsigned int message_part,
 			sha3_224_context_t *sha3_224_context,
 			unsigned char *output_data)
 {
+#ifdef NO_CPACF
+	UNUSED(message_part);
+	UNUSED(input_length);
+	UNUSED(input_data);
+	UNUSED(sha3_224_context);
+	UNUSED(output_data);
+	return EPERM;
+#else
 	unsigned int rc;
 
 #ifdef ICA_FIPS
@@ -704,6 +777,7 @@ unsigned int ica_sha3_224(unsigned int message_part,
 	return s390_sha3_224((unsigned char *) &sha3_224_context->sha3_224Hash,
 			   input_data, input_length, output_data, message_part,
 			   (uint64_t *)&sha3_224_context->runningLength);
+#endif /* NO_CPACF */
 }
 
 unsigned int ica_sha3_256(unsigned int message_part,
@@ -712,6 +786,14 @@ unsigned int ica_sha3_256(unsigned int message_part,
 			sha3_256_context_t *sha3_256_context,
 			unsigned char *output_data)
 {
+#ifdef NO_CPACF
+	UNUSED(message_part);
+	UNUSED(input_length);
+	UNUSED(input_data);
+	UNUSED(sha3_256_context);
+	UNUSED(output_data);
+	return EPERM;
+#else
 	unsigned int rc;
 
 #ifdef ICA_FIPS
@@ -742,6 +824,7 @@ unsigned int ica_sha3_256(unsigned int message_part,
 	return s390_sha3_256((unsigned char *) &sha3_256_context->sha3_256Hash,
 			   input_data, input_length, output_data, message_part,
 			   (uint64_t *) &sha3_256_context->runningLength);
+#endif /* NO_CPACF */
 }
 
 unsigned int ica_sha3_384(unsigned int message_part,
@@ -750,6 +833,14 @@ unsigned int ica_sha3_384(unsigned int message_part,
 			sha3_384_context_t *sha3_384_context,
 			unsigned char *output_data)
 {
+#ifdef NO_CPACF
+	UNUSED(message_part);
+	UNUSED(input_length);
+	UNUSED(input_data);
+	UNUSED(sha3_384_context);
+	UNUSED(output_data);
+	return EPERM;
+#else
 	unsigned int rc;
 
 #ifdef ICA_FIPS
@@ -781,6 +872,7 @@ unsigned int ica_sha3_384(unsigned int message_part,
 			   input_data, input_length, output_data, message_part,
 			   (uint64_t *) &(sha3_384_context->runningLengthLow),
 			   (uint64_t *) &(sha3_384_context->runningLengthHigh));
+#endif /* NO_CPACF */
 }
 
 unsigned int ica_sha3_512(unsigned int message_part,
@@ -789,6 +881,14 @@ unsigned int ica_sha3_512(unsigned int message_part,
 			sha3_512_context_t *sha3_512_context,
 			unsigned char *output_data)
 {
+#ifdef NO_CPACF
+	UNUSED(message_part);
+	UNUSED(input_length);
+	UNUSED(input_data);
+	UNUSED(sha3_512_context);
+	UNUSED(output_data);
+	return EPERM;
+#else
 	unsigned int rc;
 
 #ifdef ICA_FIPS
@@ -820,6 +920,7 @@ unsigned int ica_sha3_512(unsigned int message_part,
 			   input_data, input_length, output_data, message_part,
 			   (uint64_t *) &sha3_512_context->runningLengthLow,
 			   (uint64_t *) &sha3_512_context->runningLengthHigh);
+#endif /* NO_CPACF */
 }
 
 unsigned int ica_shake_128(unsigned int message_part,
@@ -828,6 +929,15 @@ unsigned int ica_shake_128(unsigned int message_part,
 			shake_128_context_t *shake_128_context,
 			unsigned char *output_data, unsigned int output_length)
 {
+#ifdef NO_CPACF
+	UNUSED(message_part);
+	UNUSED(input_length);
+	UNUSED(input_data);
+	UNUSED(shake_128_context);
+	UNUSED(output_data);
+	UNUSED(output_length);
+	return EPERM;
+#else
 	unsigned int rc;
 
 #ifdef ICA_FIPS
@@ -865,6 +975,7 @@ unsigned int ica_shake_128(unsigned int message_part,
 			   input_data, input_length, output_data, shake_128_context->output_length,
 			   message_part, (uint64_t *) &shake_128_context->runningLengthLow,
 			   (uint64_t *) &shake_128_context->runningLengthHigh);
+#endif /* NO_CPACF */
 }
 
 unsigned int ica_shake_256(unsigned int message_part,
@@ -873,6 +984,15 @@ unsigned int ica_shake_256(unsigned int message_part,
 			shake_256_context_t *shake_256_context,
 			unsigned char *output_data, unsigned int output_length)
 {
+#ifdef NO_CPACF
+	UNUSED(message_part);
+	UNUSED(input_length);
+	UNUSED(input_data);
+	UNUSED(shake_256_context);
+	UNUSED(output_data);
+	UNUSED(output_length);
+	return EPERM;
+#else
 	unsigned int rc;
 
 #ifdef ICA_FIPS
@@ -909,11 +1029,17 @@ unsigned int ica_shake_256(unsigned int message_part,
 			   input_data, input_length, output_data, shake_256_context->output_length,
 			   message_part, (uint64_t *) &shake_256_context->runningLengthLow,
 			   (uint64_t *) &shake_256_context->runningLengthHigh);
+#endif /* NO_CPACF */
 }
 
 unsigned int ica_random_number_generate(unsigned int output_length,
 					unsigned char *output_data)
 {
+#ifdef NO_CPACF
+	UNUSED(output_length);
+	UNUSED(output_data);
+	return EPERM;
+#else
 #ifdef ICA_FIPS
 	if (fips >> 1)
 		return EACCES;
@@ -924,6 +1050,7 @@ unsigned int ica_random_number_generate(unsigned int output_length,
 		return EINVAL;
 
 	return s390_prng(output_data, output_length);
+#endif /* NO_CPACF */
 }
 
 unsigned int ica_rsa_key_generate_mod_expo(ica_adapter_handle_t adapter_handle,
@@ -1473,44 +1600,70 @@ static inline int check_fips(void)
 
 int ica_x25519_ctx_new(ICA_X25519_CTX **ctx)
 {
+#ifdef NO_CPACF
+	UNUSED(ctx);
+	return EPERM;
+#else
 	if (!msa9_switch || ctx == NULL)
 		return -1;
 
 	*ctx = calloc(1, sizeof(**ctx));
 	return 0;
+#endif /* NO_CPACF */
 }
 
 int ica_x448_ctx_new(ICA_X448_CTX **ctx)
 {
+#ifdef NO_CPACF
+	UNUSED(ctx);
+	return EPERM;
+#else
 	if (!msa9_switch || ctx == NULL)
 		return -1;
 
 	*ctx = calloc(1, sizeof(**ctx));
 	return 0;
+#endif /* NO_CPACF */
 }
 
 int ica_ed25519_ctx_new(ICA_ED25519_CTX **ctx)
 {
+#ifdef NO_CPACF
+	UNUSED(ctx);
+	return EPERM;
+#else
 	if (!msa9_switch || ctx == NULL)
 		return -1;
 
 	*ctx = calloc(1, sizeof(**ctx));
 	return 0;
+#endif /* NO_CPACF */
 }
 
 int ica_ed448_ctx_new(ICA_ED448_CTX **ctx)
 {
+#ifdef NO_CPACF
+	UNUSED(ctx);
+	return EPERM;
+#else
 	if (!msa9_switch || ctx == NULL)
 		return -1;
 
 	*ctx = calloc(1, sizeof(**ctx));
 	return 0;
+#endif /* NO_CPACF */
 }
 
 int ica_x25519_key_set(ICA_X25519_CTX *ctx,
 		       const unsigned char priv[32],
 		       const unsigned char pub[32])
 {
+#ifdef NO_CPACF
+	UNUSED(ctx);
+	UNUSED(priv);
+	UNUSED(pub);
+	return EPERM;
+#else
 	if (check_fips() || !msa9_switch || ctx == NULL)
 		return -1;
 
@@ -1527,12 +1680,19 @@ int ica_x25519_key_set(ICA_X25519_CTX *ctx,
 	}
 
 	return 0;
+#endif /* NO_CPACF */
 }
 
 int ica_x448_key_set(ICA_X448_CTX *ctx,
 		     const unsigned char priv[56],
 		     const unsigned char pub[56])
 {
+#ifdef NO_CPACF
+	UNUSED(ctx);
+	UNUSED(priv);
+	UNUSED(pub);
+	return EPERM;
+#else
 	if (check_fips() || !msa9_switch || ctx == NULL)
 		return -1;
 
@@ -1549,12 +1709,19 @@ int ica_x448_key_set(ICA_X448_CTX *ctx,
 	}
 
 	return 0;
+#endif /* NO_CPACF */
 }
 
 int ica_ed25519_key_set(ICA_ED25519_CTX *ctx,
 			const unsigned char priv[32],
 			const unsigned char pub[32])
 {
+#ifdef NO_CPACF
+	UNUSED(ctx);
+	UNUSED(priv);
+	UNUSED(pub);
+	return EPERM;
+#else
 	if (check_fips() || !msa9_switch || ctx == NULL)
 		return -1;
 
@@ -1571,12 +1738,19 @@ int ica_ed25519_key_set(ICA_ED25519_CTX *ctx,
 	}
 
 	return 0;
+#endif /* NO_CPACF */
 }
 
 int ica_ed448_key_set(ICA_ED448_CTX *ctx,
 		      const unsigned char priv[57],
 		      const unsigned char pub[57])
 {
+#ifdef NO_CPACF
+	UNUSED(ctx);
+	UNUSED(priv);
+	UNUSED(pub);
+	return EPERM;
+#else
 	if (check_fips() || !msa9_switch || ctx == NULL)
 		return -1;
 
@@ -1598,11 +1772,18 @@ int ica_ed448_key_set(ICA_ED448_CTX *ctx,
 	}
 
 	return 0;
+#endif /* NO_CPACF */
 }
 
 int ica_x25519_key_get(ICA_X25519_CTX *ctx, unsigned char priv[32],
 		       unsigned char pub[32])
 {
+#ifdef NO_CPACF
+	UNUSED(ctx);
+	UNUSED(priv);
+	UNUSED(pub);
+	return EPERM;
+#else
 	int rc;
 
 	if (check_fips() || !msa9_switch || ctx == NULL)
@@ -1633,11 +1814,18 @@ int ica_x25519_key_get(ICA_X25519_CTX *ctx, unsigned char priv[32],
 	}
 
 	return 0;
+#endif /* NO_CPACF */
 }
 
 int ica_x448_key_get(ICA_X448_CTX *ctx, unsigned char priv[56],
 		     unsigned char pub[56])
 {
+#ifdef NO_CPACF
+	UNUSED(ctx);
+	UNUSED(priv);
+	UNUSED(pub);
+	return EPERM;
+#else
 	int rc;
 
 	if (check_fips() || !msa9_switch || ctx == NULL)
@@ -1668,11 +1856,18 @@ int ica_x448_key_get(ICA_X448_CTX *ctx, unsigned char priv[56],
 	}
 
 	return 0;
+#endif /* NO_CPACF */
 }
 
 int ica_ed25519_key_get(ICA_ED25519_CTX *ctx, unsigned char priv[32],
 			unsigned char pub[32])
 {
+#ifdef NO_CPACF
+	UNUSED(ctx);
+	UNUSED(priv);
+	UNUSED(pub);
+	return EPERM;
+#else
 	int rc;
 
 	if (check_fips() || !msa9_switch || ctx == NULL)
@@ -1705,11 +1900,18 @@ int ica_ed25519_key_get(ICA_ED25519_CTX *ctx, unsigned char priv[32],
 	}
 
 	return 0;
+#endif /* NO_CPACF */
 }
 
 int ica_ed448_key_get(ICA_ED448_CTX *ctx, unsigned char priv[57],
 			unsigned char pub[57])
 {
+#ifdef NO_CPACF
+	UNUSED(ctx);
+	UNUSED(priv);
+	UNUSED(pub);
+	return EPERM;
+#else
 	unsigned char pub64[64];
 	int rc;
 
@@ -1744,12 +1946,19 @@ int ica_ed448_key_get(ICA_ED448_CTX *ctx, unsigned char priv[57],
 	}
 
 	return 0;
+#endif /* NO_CPACF */
 }
 
 int ica_x25519_derive(ICA_X25519_CTX *ctx,
 		      unsigned char shared_secret[32],
 		      const unsigned char peer_pub[32])
 {
+#ifdef NO_CPACF
+	UNUSED(ctx);
+	UNUSED(shared_secret);
+	UNUSED(peer_pub);
+	return EPERM;
+#else
 	int rc;
 
 	if (check_fips() || !msa9_switch || ctx == NULL
@@ -1761,12 +1970,19 @@ int ica_x25519_derive(ICA_X25519_CTX *ctx,
 
 	stats_increment(ICA_STATS_X25519_DERIVE, ALGO_HW, ENCRYPT);
 	return rc;
+#endif /* NO_CPACF */
 }
 
 int ica_x448_derive(ICA_X448_CTX *ctx,
 		    unsigned char shared_secret[56],
 		    const unsigned char peer_pub[56])
 {
+#ifdef NO_CPACF
+	UNUSED(ctx);
+	UNUSED(shared_secret);
+	UNUSED(peer_pub);
+	return EPERM;
+#else
 	int rc;
 
 	if (check_fips() || !msa9_switch || ctx == NULL
@@ -1777,11 +1993,19 @@ int ica_x448_derive(ICA_X448_CTX *ctx,
 
 	stats_increment(ICA_STATS_X448_DERIVE, ALGO_HW, ENCRYPT);
 	return rc;
+#endif /* NO_CPACF */
 }
 
 int ica_ed25519_sign(ICA_ED25519_CTX *ctx, unsigned char sig[64],
 		     const unsigned char *msg, size_t msglen)
 {
+#ifdef NO_CPACF
+	UNUSED(ctx);
+	UNUSED(sig);
+	UNUSED(msg);
+	UNUSED(msglen);
+	return EPERM;
+#else
 	int rc;
 
 	if (check_fips() || !msa9_switch || ctx == NULL
@@ -1801,11 +2025,19 @@ int ica_ed25519_sign(ICA_ED25519_CTX *ctx, unsigned char sig[64],
 
 	stats_increment(ICA_STATS_ED25519_SIGN, ALGO_HW, ENCRYPT);
 	return 0;
+#endif /* NO_CPACF */
 }
 
 int ica_ed448_sign(ICA_ED448_CTX *ctx, unsigned char sig[114],
 		     const unsigned char *msg, size_t msglen)
 {
+#ifdef NO_CPACF
+	UNUSED(ctx);
+	UNUSED(sig);
+	UNUSED(msg);
+	UNUSED(msglen);
+	return EPERM;
+#else
 	int rc;
 
 	if (check_fips() || !msa9_switch || ctx == NULL
@@ -1828,11 +2060,19 @@ int ica_ed448_sign(ICA_ED448_CTX *ctx, unsigned char sig[114],
 
 	stats_increment(ICA_STATS_ED448_SIGN, ALGO_HW, ENCRYPT);
 	return 0;
+#endif /* NO_CPACF */
 }
 
 int ica_ed25519_verify(ICA_ED25519_CTX *ctx, const unsigned char sig[64],
 		       const unsigned char *msg, size_t msglen)
 {
+#ifdef NO_CPACF
+	UNUSED(ctx);
+	UNUSED(sig);
+	UNUSED(msg);
+	UNUSED(msglen);
+	return EPERM;
+#else
 	int rc;
 
 	if (check_fips() || !msa9_switch || ctx == NULL || sig == NULL
@@ -1863,11 +2103,19 @@ int ica_ed25519_verify(ICA_ED25519_CTX *ctx, const unsigned char sig[64],
 
 	stats_increment(ICA_STATS_ED25519_VERIFY, ALGO_HW, ENCRYPT);
 	return rc == 0 ? 0 : -1;
+#endif /* NO_CPACF */
 }
 
 int ica_ed448_verify(ICA_ED448_CTX *ctx, const unsigned char sig[114],
 		     const unsigned char *msg, size_t msglen)
 {
+#ifdef NO_CPACF
+	UNUSED(ctx);
+	UNUSED(sig);
+	UNUSED(msg);
+	UNUSED(msglen);
+	return EPERM;
+#else
 	int rc;
 
 	if (check_fips() || !msa9_switch || ctx == NULL || sig == NULL
@@ -1903,10 +2151,15 @@ int ica_ed448_verify(ICA_ED448_CTX *ctx, const unsigned char sig[114],
 
 	stats_increment(ICA_STATS_ED448_VERIFY, ALGO_HW, ENCRYPT);
 	return rc == 0 ? 0 : -1;
+#endif /* NO_CPACF */
 }
 
 int ica_x25519_ctx_del(ICA_X25519_CTX **ctx)
 {
+#ifdef NO_CPACF
+	UNUSED(ctx);
+	return EPERM;
+#else
 	if (!msa9_switch || ctx == NULL || *ctx == NULL)
 		return -1;
 
@@ -1914,10 +2167,15 @@ int ica_x25519_ctx_del(ICA_X25519_CTX **ctx)
 	free(*ctx);
 	*ctx = NULL;
 	return 0;
+#endif /* NO_CPACF */
 }
 
 int ica_x448_ctx_del(ICA_X448_CTX **ctx)
 {
+#ifdef NO_CPACF
+	UNUSED(ctx);
+	return EPERM;
+#else
 	if (!msa9_switch || ctx == NULL || *ctx == NULL)
 		return -1;
 
@@ -1925,10 +2183,15 @@ int ica_x448_ctx_del(ICA_X448_CTX **ctx)
 	free(*ctx);
 	*ctx = NULL;
 	return 0;
+#endif /* NO_CPACF */
 }
 
 int ica_ed25519_ctx_del(ICA_ED25519_CTX **ctx)
 {
+#ifdef NO_CPACF
+	UNUSED(ctx);
+	return EPERM;
+#else
 	if (!msa9_switch || ctx == NULL || *ctx == NULL)
 		return -1;
 
@@ -1936,10 +2199,15 @@ int ica_ed25519_ctx_del(ICA_ED25519_CTX **ctx)
 	free(*ctx);
 	*ctx = NULL;
 	return 0;
+#endif /* NO_CPACF */
 }
 
 int ica_ed448_ctx_del(ICA_ED448_CTX **ctx)
 {
+#ifdef NO_CPACF
+	UNUSED(ctx);
+	return EPERM;
+#else
 	if (!msa9_switch || ctx == NULL || *ctx == NULL)
 		return -1;
 
@@ -1947,10 +2215,15 @@ int ica_ed448_ctx_del(ICA_ED448_CTX **ctx)
 	free(*ctx);
 	*ctx = NULL;
 	return 0;
+#endif /* NO_CPACF */
 }
 
 int ica_x25519_key_gen(ICA_X25519_CTX *ctx)
 {
+#ifdef NO_CPACF
+	UNUSED(ctx);
+	return EPERM;
+#else
 	if (check_fips() || !msa9_switch || ctx == NULL)
 		return -1;
 
@@ -1960,10 +2233,15 @@ int ica_x25519_key_gen(ICA_X25519_CTX *ctx)
 	rng_gen(ctx->priv, 32);
 	ctx->priv_init = 1;
 	return 0;
+#endif /* NO_CPACF */
 }
 
 int ica_x448_key_gen(ICA_X448_CTX *ctx)
 {
+#ifdef NO_CPACF
+	UNUSED(ctx);
+	return EPERM;
+#else
 	if (check_fips() || !msa9_switch || ctx == NULL)
 		return -1;
 
@@ -1973,10 +2251,15 @@ int ica_x448_key_gen(ICA_X448_CTX *ctx)
 	rng_gen(ctx->priv, 56);
 	ctx->priv_init = 1;
 	return 0;
+#endif /* NO_CPACF */
 }
 
 int ica_ed25519_key_gen(ICA_ED25519_CTX *ctx)
 {
+#ifdef NO_CPACF
+	UNUSED(ctx);
+	return EPERM;
+#else
 	if (check_fips() || !msa9_switch || ctx == NULL)
 		return -1;
 
@@ -1986,10 +2269,15 @@ int ica_ed25519_key_gen(ICA_ED25519_CTX *ctx)
 	rng_gen(ctx->sign_param.priv, sizeof(ctx->sign_param.priv));
 	ctx->priv_init = 1;
 	return 0;
+#endif /* NO_CPACF */
 }
 
 int ica_ed448_key_gen(ICA_ED448_CTX *ctx)
 {
+#ifdef NO_CPACF
+	UNUSED(ctx);
+	return EPERM;
+#else
 	if (check_fips() || !msa9_switch || ctx == NULL)
 		return -1;
 
@@ -2000,6 +2288,7 @@ int ica_ed448_key_gen(ICA_ED448_CTX *ctx)
 		sizeof(ctx->sign_param.priv) - (64 - 57));
 	ctx->priv_init = 1;
 	return 0;
+#endif /* NO_CPACF */
 }
 
 
@@ -2015,6 +2304,15 @@ unsigned int ica_des_encrypt(unsigned int mode,
 			     ica_des_key_single_t *des_key,
 			     unsigned char *output_data)
 {
+#ifdef NO_CPACF
+	UNUSED(mode);
+	UNUSED(data_length);
+	UNUSED(input_data);
+	UNUSED(iv);
+	UNUSED(des_key);
+	UNUSED(output_data);
+	return EPERM;
+#else
 #ifdef ICA_FIPS
 	if (fips)
 		return EACCES;
@@ -2035,6 +2333,7 @@ unsigned int ica_des_encrypt(unsigned int mode,
 				    (unsigned char *) des_key, output_data);
 	}
 	return EINVAL;
+#endif /* NO_CPACF */
 }
 
 unsigned int ica_des_decrypt(unsigned int mode,
@@ -2044,6 +2343,15 @@ unsigned int ica_des_decrypt(unsigned int mode,
 			     ica_des_key_single_t *des_key,
 			     unsigned char *output_data)
 {
+#ifdef NO_CPACF
+	UNUSED(mode);
+	UNUSED(data_length);
+	UNUSED(input_data);
+	UNUSED(iv);
+	UNUSED(des_key);
+	UNUSED(output_data);
+	return EPERM;
+#else
 #ifdef ICA_FIPS
 	if (fips)
 		return EACCES;
@@ -2064,6 +2372,7 @@ unsigned int ica_des_decrypt(unsigned int mode,
 				    (unsigned char *) des_key, output_data);
 	}
 	return EINVAL;
+#endif /* NO_CPACF */
 }
 
 unsigned int ica_3des_encrypt(unsigned int mode,
@@ -2073,6 +2382,15 @@ unsigned int ica_3des_encrypt(unsigned int mode,
 			      ica_des_key_triple_t *des_key,
 			      unsigned char *output_data)
 {
+#ifdef NO_CPACF
+	UNUSED(mode);
+	UNUSED(data_length);
+	UNUSED(input_data);
+	UNUSED(iv);
+	UNUSED(des_key);
+	UNUSED(output_data);
+	return EPERM;
+#else
 #ifdef ICA_FIPS
 	if (fips >> 1)
 		return EACCES;
@@ -2095,6 +2413,7 @@ unsigned int ica_3des_encrypt(unsigned int mode,
 				    (unsigned char *) des_key, output_data);
 	}
 	return EINVAL;
+#endif /* NO_CPACF */
 }
 
 unsigned int ica_3des_decrypt(unsigned int mode,
@@ -2104,6 +2423,15 @@ unsigned int ica_3des_decrypt(unsigned int mode,
 			      ica_des_key_triple_t *des_key,
 			      unsigned char *output_data)
 {
+#ifdef NO_CPACF
+	UNUSED(mode);
+	UNUSED(data_length);
+	UNUSED(input_data);
+	UNUSED(iv);
+	UNUSED(des_key);
+	UNUSED(output_data);
+	return EPERM;
+#else
 #ifdef ICA_FIPS
 	if (fips >> 1)
 		return EACCES;
@@ -2126,6 +2454,7 @@ unsigned int ica_3des_decrypt(unsigned int mode,
 				    (unsigned char *) des_key, output_data);
 	}
 	return EINVAL;
+#endif /* NO_CPACF */
 }
 
 unsigned int ica_aes_encrypt(unsigned int mode,
@@ -2136,6 +2465,16 @@ unsigned int ica_aes_encrypt(unsigned int mode,
 			     unsigned char *aes_key,
 			     unsigned char *output_data)
 {
+#ifdef NO_CPACF
+	UNUSED(mode);
+	UNUSED(data_length);
+	UNUSED(input_data);
+	UNUSED(iv);
+	UNUSED(key_length);
+	UNUSED(aes_key);
+	UNUSED(output_data);
+	return EPERM;
+#else
 	unsigned int function_code;
 
 #ifdef ICA_FIPS
@@ -2164,6 +2503,7 @@ unsigned int ica_aes_encrypt(unsigned int mode,
 	}
 
 	return EINVAL;
+#endif /* NO_CPACF */
 }
 
 unsigned int ica_aes_decrypt(unsigned int mode,
@@ -2174,6 +2514,16 @@ unsigned int ica_aes_decrypt(unsigned int mode,
 			     unsigned char *aes_key,
 			     unsigned char *output_data)
 {
+#ifdef NO_CPACF
+	UNUSED(mode);
+	UNUSED(data_length);
+	UNUSED(input_data);
+	UNUSED(iv);
+	UNUSED(key_length);
+	UNUSED(aes_key);
+	UNUSED(output_data);
+	return EPERM;
+#else
 	unsigned int function_code;
 
 #ifdef ICA_FIPS
@@ -2202,12 +2552,21 @@ unsigned int ica_aes_decrypt(unsigned int mode,
 	}
 
 	return EINVAL;
+#endif /* NO_CPACF */
 }
 
 unsigned int ica_des_ecb(const unsigned char *in_data, unsigned char *out_data,
 			 unsigned long data_length, unsigned char *key,
 			 unsigned int direction)
 {
+#ifdef NO_CPACF
+	UNUSED(in_data);
+	UNUSED(out_data);
+	UNUSED(data_length);
+	UNUSED(key);
+	UNUSED(direction);
+	return EPERM;
+#else
 #ifdef ICA_FIPS
 	if (fips)
 		return EACCES;
@@ -2218,6 +2577,7 @@ unsigned int ica_des_ecb(const unsigned char *in_data, unsigned char *out_data,
 
 	return s390_des_ecb(des_directed_fc(direction), data_length,
 			    in_data, key, out_data);
+#endif /* NO_CPACF */
 }
 
 unsigned int ica_des_cbc(const unsigned char *in_data, unsigned char *out_data,
@@ -2225,6 +2585,15 @@ unsigned int ica_des_cbc(const unsigned char *in_data, unsigned char *out_data,
 			 unsigned char *iv,
 			 unsigned int direction)
 {
+#ifdef NO_CPACF
+	UNUSED(in_data);
+	UNUSED(out_data);
+	UNUSED(data_length);
+	UNUSED(key);
+	UNUSED(iv);
+	UNUSED(direction);
+	return EPERM;
+#else
 #ifdef ICA_FIPS
 	if (fips)
 		return EACCES;
@@ -2235,6 +2604,7 @@ unsigned int ica_des_cbc(const unsigned char *in_data, unsigned char *out_data,
 
 	return s390_des_cbc(des_directed_fc(direction), data_length,
 			    in_data, iv, key, out_data);
+#endif /* NO_CPACF */
 }
 
 unsigned int ica_des_cbc_cs(const unsigned char *in_data, unsigned char *out_data,
@@ -2242,6 +2612,16 @@ unsigned int ica_des_cbc_cs(const unsigned char *in_data, unsigned char *out_dat
 			    unsigned char *key, unsigned char *iv,
 			    unsigned int direction, unsigned int variant)
 {
+#ifdef NO_CPACF
+	UNUSED(in_data);
+	UNUSED(out_data);
+	UNUSED(data_length);
+	UNUSED(key);
+	UNUSED(iv);
+	UNUSED(direction);
+	UNUSED(variant);
+	return EPERM;
+#else
 #ifdef ICA_FIPS
 	if (fips)
 		return EACCES;
@@ -2253,6 +2633,7 @@ unsigned int ica_des_cbc_cs(const unsigned char *in_data, unsigned char *out_dat
 	return s390_des_cbccs(des_directed_fc(direction),
 			      in_data, out_data, data_length,
 			      key, iv, variant);
+#endif /* NO_CPACF */
 }
 
 unsigned int ica_des_cfb(const unsigned char *in_data, unsigned char *out_data,
@@ -2260,6 +2641,16 @@ unsigned int ica_des_cfb(const unsigned char *in_data, unsigned char *out_data,
 			 unsigned char *iv, unsigned int lcfb,
 			 unsigned int direction)
 {
+#ifdef NO_CPACF
+	UNUSED(in_data);
+	UNUSED(out_data);
+	UNUSED(data_length);
+	UNUSED(key);
+	UNUSED(iv);
+	UNUSED(lcfb);
+	UNUSED(direction);
+	return EPERM;
+#else
 #ifdef ICA_FIPS
 	if (fips)
 		return EACCES;
@@ -2273,12 +2664,22 @@ unsigned int ica_des_cfb(const unsigned char *in_data, unsigned char *out_data,
 
 	return s390_des_cfb(des_directed_fc(direction), data_length,
 			    in_data, iv, key, out_data, lcfb);
+#endif /* NO_CPACF */
 }
 
 unsigned int ica_des_ofb(const unsigned char *in_data, unsigned char *out_data,
 			 unsigned long data_length, unsigned char *key,
 			 unsigned char *iv, unsigned int direction)
 {
+#ifdef NO_CPACF
+	UNUSED(in_data);
+	UNUSED(out_data);
+	UNUSED(data_length);
+	UNUSED(key);
+	UNUSED(iv);
+	UNUSED(direction);
+	return EPERM;
+#else
 #ifdef ICA_FIPS
 	if (fips)
 		return EACCES;
@@ -2289,6 +2690,7 @@ unsigned int ica_des_ofb(const unsigned char *in_data, unsigned char *out_data,
 
 	return s390_des_ofb(des_directed_fc(direction), data_length,
 			    in_data, iv, key, out_data);
+#endif /* NO_CPACF */
 }
 
 unsigned int ica_des_ctr(const unsigned char *in_data, unsigned char *out_data,
@@ -2297,6 +2699,16 @@ unsigned int ica_des_ctr(const unsigned char *in_data, unsigned char *out_data,
 			 unsigned char *ctr, unsigned int ctr_width,
 			 unsigned int direction)
 {
+#ifdef NO_CPACF
+	UNUSED(in_data);
+	UNUSED(out_data);
+	UNUSED(data_length);
+	UNUSED(key);
+	UNUSED(ctr);
+	UNUSED(ctr_width);
+	UNUSED(direction);
+	return EPERM;
+#else
 #ifdef ICA_FIPS
 	if (fips)
 		return EACCES;
@@ -2313,6 +2725,7 @@ unsigned int ica_des_ctr(const unsigned char *in_data, unsigned char *out_data,
 	return s390_des_ctr(des_directed_fc(direction),
 			    in_data, out_data, data_length,
 			    key, ctr, ctr_width);
+#endif /* NO_CPACF */
 }
 
 unsigned int ica_des_ctrlist(const unsigned char *in_data, unsigned char *out_data,
@@ -2321,6 +2734,15 @@ unsigned int ica_des_ctrlist(const unsigned char *in_data, unsigned char *out_da
 			     const unsigned char *ctrlist,
 			     unsigned int direction)
 {
+#ifdef NO_CPACF
+	UNUSED(in_data);
+	UNUSED(out_data);
+	UNUSED(data_length);
+	UNUSED(key);
+	UNUSED(ctrlist);
+	UNUSED(direction);
+	return EPERM;
+#else
 #ifdef ICA_FIPS
 	if (fips)
 		return EACCES;
@@ -2332,6 +2754,7 @@ unsigned int ica_des_ctrlist(const unsigned char *in_data, unsigned char *out_da
 	return s390_des_ctrlist(des_directed_fc(direction),
 				data_length, in_data, ctrlist,
 				key, out_data);
+#endif /* NO_CPACF */
 }
 
 unsigned int ica_des_cmac(const unsigned char *message, unsigned long message_length,
@@ -2339,6 +2762,15 @@ unsigned int ica_des_cmac(const unsigned char *message, unsigned long message_le
 			  unsigned char *key,
 			  unsigned int direction)
 {
+#ifdef NO_CPACF
+	UNUSED(message);
+	UNUSED(message_length);
+	UNUSED(mac);
+	UNUSED(mac_length);
+	UNUSED(key);
+	UNUSED(direction);
+	return EPERM;
+#else
 #ifdef ICA_FIPS
 	if (fips)
 		return EACCES;
@@ -2349,6 +2781,7 @@ unsigned int ica_des_cmac(const unsigned char *message, unsigned long message_le
 				 key,
 				 NULL,
 				 direction);
+#endif /* NO_CPACF */
 }
 
 unsigned int ica_des_cmac_intermediate(const unsigned char *message,
@@ -2356,6 +2789,13 @@ unsigned int ica_des_cmac_intermediate(const unsigned char *message,
 				       unsigned char *key,
 				       unsigned char *iv)
 {
+#ifdef NO_CPACF
+	UNUSED(message);
+	UNUSED(message_length);
+	UNUSED(key);
+	UNUSED(iv);
+	return EPERM;
+#else
 	unsigned long function_code;
 	int rc;
 
@@ -2380,6 +2820,7 @@ unsigned int ica_des_cmac_intermediate(const unsigned char *message,
 	if(!rc)
 		stats_increment(ICA_STATS_DES_CMAC, ALGO_HW, ICA_DECRYPT);
 	return rc;
+#endif /* NO_CPACF */
 }
 
 unsigned int ica_des_cmac_last(const unsigned char *message, unsigned long message_length,
@@ -2388,6 +2829,16 @@ unsigned int ica_des_cmac_last(const unsigned char *message, unsigned long messa
 			       unsigned char *iv,
 			       unsigned int direction)
 {
+#ifdef NO_CPACF
+	UNUSED(message);
+	UNUSED(message_length);
+	UNUSED(mac);
+	UNUSED(mac_length);
+	UNUSED(key);
+	UNUSED(iv);
+	UNUSED(direction);
+	return EPERM;
+#else
 	unsigned char tmp_mac[DES_BLOCK_SIZE];
 	unsigned long function_code;
 	int rc;
@@ -2426,12 +2877,21 @@ unsigned int ica_des_cmac_last(const unsigned char *message, unsigned long messa
 	}
 
 	return 0;
+#endif /* NO_CPACF */
 }
 
 unsigned int ica_3des_ecb(const unsigned char *in_data, unsigned char *out_data,
 			  unsigned long data_length, unsigned char *key,
 			  unsigned int direction)
 {
+#ifdef NO_CPACF
+	UNUSED(in_data);
+	UNUSED(out_data);
+	UNUSED(data_length);
+	UNUSED(key);
+	UNUSED(direction);
+	return EPERM;
+#else
 #ifdef ICA_FIPS
 	if (fips >> 1)
 		return EACCES;
@@ -2444,6 +2904,7 @@ unsigned int ica_3des_ecb(const unsigned char *in_data, unsigned char *out_data,
 
 	return s390_des_ecb(tdes_directed_fc(direction), data_length,
 			    in_data, key, out_data);
+#endif /* NO_CPACF */
 }
 
 unsigned int ica_3des_cbc(const unsigned char *in_data, unsigned char *out_data,
@@ -2451,6 +2912,15 @@ unsigned int ica_3des_cbc(const unsigned char *in_data, unsigned char *out_data,
 			  unsigned char *iv,
 			  unsigned int direction)
 {
+#ifdef NO_CPACF
+	UNUSED(in_data);
+	UNUSED(out_data);
+	UNUSED(data_length);
+	UNUSED(key);
+	UNUSED(iv);
+	UNUSED(direction);
+	return EPERM;
+#else
 #ifdef ICA_FIPS
 	if (fips >> 1)
 		return EACCES;
@@ -2463,6 +2933,7 @@ unsigned int ica_3des_cbc(const unsigned char *in_data, unsigned char *out_data,
 
 	return s390_des_cbc(tdes_directed_fc(direction), data_length,
 			    in_data, iv, key, out_data);
+#endif /* NO_CPACF */
 }
 
 unsigned int ica_3des_cbc_cs(const unsigned char *in_data, unsigned char *out_data,
@@ -2470,6 +2941,16 @@ unsigned int ica_3des_cbc_cs(const unsigned char *in_data, unsigned char *out_da
 			     unsigned char *key, unsigned char *iv,
 			     unsigned int direction, unsigned int variant)
 {
+#ifdef NO_CPACF
+	UNUSED(in_data);
+	UNUSED(out_data);
+	UNUSED(data_length);
+	UNUSED(key);
+	UNUSED(iv);
+	UNUSED(direction);
+	UNUSED(variant);
+	return EPERM;
+#else
 #ifdef ICA_FIPS
 	if (fips >> 1)
 		return EACCES;
@@ -2483,6 +2964,7 @@ unsigned int ica_3des_cbc_cs(const unsigned char *in_data, unsigned char *out_da
 	return s390_des_cbccs(tdes_directed_fc(direction),
 			      in_data, out_data, data_length,
 			      key, iv, variant);
+#endif /* NO_CPACF */
 }
 
 unsigned int ica_3des_cfb(const unsigned char *in_data, unsigned char *out_data,
@@ -2490,6 +2972,16 @@ unsigned int ica_3des_cfb(const unsigned char *in_data, unsigned char *out_data,
 			  unsigned char *iv, unsigned int lcfb,
 			  unsigned int direction)
 {
+#ifdef NO_CPACF
+	UNUSED(in_data);
+	UNUSED(out_data);
+	UNUSED(data_length);
+	UNUSED(key);
+	UNUSED(iv);
+	UNUSED(lcfb);
+	UNUSED(direction);
+	return EPERM;
+#else
 #ifdef ICA_FIPS
 	if (fips >> 1)
 		return EACCES;
@@ -2505,12 +2997,22 @@ unsigned int ica_3des_cfb(const unsigned char *in_data, unsigned char *out_data,
 
 	return s390_des_cfb(tdes_directed_fc(direction), data_length,
 			    in_data, iv, key, out_data, lcfb);
+#endif /* NO_CPACF */
 }
 
 unsigned int ica_3des_ofb(const unsigned char *in_data, unsigned char *out_data,
 			  unsigned long data_length, unsigned char *key,
 			  unsigned char *iv, unsigned int direction)
 {
+#ifdef NO_CPACF
+	UNUSED(in_data);
+	UNUSED(out_data);
+	UNUSED(data_length);
+	UNUSED(key);
+	UNUSED(iv);
+	UNUSED(direction);
+	return EPERM;
+#else
 #ifdef ICA_FIPS
 	if (fips >> 1)
 		return EACCES;
@@ -2523,6 +3025,7 @@ unsigned int ica_3des_ofb(const unsigned char *in_data, unsigned char *out_data,
 
 	return s390_des_ofb(tdes_directed_fc(direction), data_length,
 			    in_data, iv, key, out_data);
+#endif /* NO_CPACF */
 }
 
 unsigned int ica_3des_ctr(const unsigned char *in_data, unsigned char *out_data,
@@ -2531,6 +3034,16 @@ unsigned int ica_3des_ctr(const unsigned char *in_data, unsigned char *out_data,
 			 unsigned char *ctr, unsigned int ctr_width,
 			 unsigned int direction)
 {
+#ifdef NO_CPACF
+	UNUSED(in_data);
+	UNUSED(out_data);
+	UNUSED(data_length);
+	UNUSED(key);
+	UNUSED(ctr);
+	UNUSED(ctr_width);
+	UNUSED(direction);
+	return EPERM;
+#else
 #ifdef ICA_FIPS
 	/* Note that the FIPS ctr check cannot detect ctr wraps
 	 * over chained calls to this function. */
@@ -2557,6 +3070,7 @@ unsigned int ica_3des_ctr(const unsigned char *in_data, unsigned char *out_data,
 	return s390_des_ctr(tdes_directed_fc(direction),
 			    in_data, out_data, data_length,
 			    key, ctr, ctr_width);
+#endif /* NO_CPACF */
 }
 
 unsigned int ica_3des_ctrlist(const unsigned char *in_data, unsigned char *out_data,
@@ -2565,6 +3079,15 @@ unsigned int ica_3des_ctrlist(const unsigned char *in_data, unsigned char *out_d
 			      const unsigned char *ctrlist,
 			      unsigned int direction)
 {
+#ifdef NO_CPACF
+	UNUSED(in_data);
+	UNUSED(out_data);
+	UNUSED(data_length);
+	UNUSED(key);
+	UNUSED(ctrlist);
+	UNUSED(direction);
+	return EPERM;
+#else
 #ifdef ICA_FIPS
 	if (fips >> 1)
 		return EACCES;
@@ -2578,6 +3101,7 @@ unsigned int ica_3des_ctrlist(const unsigned char *in_data, unsigned char *out_d
 	return s390_des_ctrlist(tdes_directed_fc(direction),
 				data_length, in_data, ctrlist,
 				key, out_data);
+#endif /* NO_CPACF */
 }
 
 unsigned int ica_3des_cmac(const unsigned char *message, unsigned long message_length,
@@ -2585,6 +3109,15 @@ unsigned int ica_3des_cmac(const unsigned char *message, unsigned long message_l
 			   unsigned char *key,
 			   unsigned int direction)
 {
+#ifdef NO_CPACF
+	UNUSED(message);
+	UNUSED(message_length);
+	UNUSED(mac);
+	UNUSED(mac_length);
+	UNUSED(key);
+	UNUSED(direction);
+	return EPERM;
+#else
 #ifdef ICA_FIPS
 	if (fips >> 1)
 		return EACCES;
@@ -2597,6 +3130,7 @@ unsigned int ica_3des_cmac(const unsigned char *message, unsigned long message_l
 				  key,
 				  NULL,
 				  direction);
+#endif /* NO_CPACF */
 }
 
 unsigned int ica_3des_cmac_intermediate(const unsigned char *message,
@@ -2604,6 +3138,13 @@ unsigned int ica_3des_cmac_intermediate(const unsigned char *message,
 					unsigned char *key,
 					unsigned char *iv)
 {
+#ifdef NO_CPACF
+	UNUSED(message);
+	UNUSED(message_length);
+	UNUSED(key);
+	UNUSED(iv);
+	return EPERM;
+#else
 	unsigned long function_code;
 	int rc;
 
@@ -2630,6 +3171,7 @@ unsigned int ica_3des_cmac_intermediate(const unsigned char *message,
 	if (!rc)
 		stats_increment(ICA_STATS_3DES_CMAC, ALGO_HW, DECRYPT);
 	return rc;
+#endif /* NO_CPACF */
 }
 
 unsigned int ica_3des_cmac_last(const unsigned char *message, unsigned long message_length,
@@ -2638,6 +3180,16 @@ unsigned int ica_3des_cmac_last(const unsigned char *message, unsigned long mess
 				unsigned char *iv,
 				unsigned int direction)
 {
+#ifdef NO_CPACF
+	UNUSED(message);
+	UNUSED(message_length);
+	UNUSED(mac);
+	UNUSED(mac_length);
+	UNUSED(key);
+	UNUSED(iv);
+	UNUSED(direction);
+	return EPERM;
+#else
 	unsigned char tmp_mac[DES_BLOCK_SIZE];
 	unsigned long function_code;
 	int rc;
@@ -2678,6 +3230,7 @@ unsigned int ica_3des_cmac_last(const unsigned char *message, unsigned long mess
 	}
 
 	return 0;
+#endif /* NO_CPACF */
 }
 
 unsigned int ica_aes_ecb(const unsigned char *in_data, unsigned char *out_data,
@@ -2685,6 +3238,15 @@ unsigned int ica_aes_ecb(const unsigned char *in_data, unsigned char *out_data,
 			 unsigned int key_length,
 			 unsigned int direction)
 {
+#ifdef NO_CPACF
+	UNUSED(in_data);
+	UNUSED(out_data);
+	UNUSED(data_length);
+	UNUSED(key);
+	UNUSED(key_length);
+	UNUSED(direction);
+	return EPERM;
+#else
 	unsigned int function_code;
 
 #ifdef ICA_FIPS
@@ -2698,6 +3260,7 @@ unsigned int ica_aes_ecb(const unsigned char *in_data, unsigned char *out_data,
 
 	function_code = aes_directed_fc(key_length, direction);
 	return s390_aes_ecb(function_code, data_length, in_data, key, out_data);
+#endif /* NO_CPACF */
 }
 
 unsigned int ica_aes_cbc(const unsigned char *in_data, unsigned char *out_data,
@@ -2705,6 +3268,16 @@ unsigned int ica_aes_cbc(const unsigned char *in_data, unsigned char *out_data,
 			 unsigned int key_length, unsigned char *iv,
 			 unsigned int direction)
 {
+#ifdef NO_CPACF
+	UNUSED(in_data);
+	UNUSED(out_data);
+	UNUSED(data_length);
+	UNUSED(key);
+	UNUSED(key_length);
+	UNUSED(iv);
+	UNUSED(direction);
+	return EPERM;
+#else
 	unsigned int function_code;
 
 #ifdef ICA_FIPS
@@ -2718,6 +3291,7 @@ unsigned int ica_aes_cbc(const unsigned char *in_data, unsigned char *out_data,
 
 	function_code = aes_directed_fc(key_length, direction);
 	return s390_aes_cbc(function_code, data_length, in_data, iv, key, out_data);
+#endif /* NO_CPACF */
 }
 
 unsigned int ica_aes_cbc_cs(const unsigned char *in_data, unsigned char *out_data,
@@ -2726,6 +3300,17 @@ unsigned int ica_aes_cbc_cs(const unsigned char *in_data, unsigned char *out_dat
 			    unsigned char *iv,
 			    unsigned int direction, unsigned int variant)
 {
+#ifdef NO_CPACF
+	UNUSED(in_data);
+	UNUSED(out_data);
+	UNUSED(data_length);
+	UNUSED(key);
+	UNUSED(key_length);
+	UNUSED(iv);
+	UNUSED(direction);
+	UNUSED(variant);
+	return EPERM;
+#else
 	unsigned int function_code;
 
 #ifdef ICA_FIPS
@@ -2740,6 +3325,7 @@ unsigned int ica_aes_cbc_cs(const unsigned char *in_data, unsigned char *out_dat
 	function_code = aes_directed_fc(key_length, direction);
 	return s390_aes_cbccs(function_code, in_data, out_data, data_length,
 			      key, iv, variant);
+#endif /* NO_CPACF */
 }
 
 unsigned int ica_aes_cfb(const unsigned char *in_data, unsigned char *out_data,
@@ -2747,6 +3333,17 @@ unsigned int ica_aes_cfb(const unsigned char *in_data, unsigned char *out_data,
 			 unsigned int key_length, unsigned char *iv, unsigned int lcfb,
 			 unsigned int direction)
 {
+#ifdef NO_CPACF
+	UNUSED(in_data);
+	UNUSED(out_data);
+	UNUSED(data_length);
+	UNUSED(key);
+	UNUSED(key_length);
+	UNUSED(iv);
+	UNUSED(lcfb);
+	UNUSED(direction);
+	return EPERM;
+#else
 	unsigned int function_code;
 
 #ifdef ICA_FIPS
@@ -2764,6 +3361,7 @@ unsigned int ica_aes_cfb(const unsigned char *in_data, unsigned char *out_data,
 	function_code = aes_directed_fc(key_length, direction);
 	return s390_aes_cfb(function_code, data_length, in_data, iv, key, out_data,
 			    lcfb);
+#endif /* NO_CPACF */
 }
 
 unsigned int ica_aes_ofb(const unsigned char *in_data, unsigned char *out_data,
@@ -2771,6 +3369,16 @@ unsigned int ica_aes_ofb(const unsigned char *in_data, unsigned char *out_data,
 			 unsigned int key_length, unsigned char *iv,
 			 unsigned int direction)
 {
+#ifdef NO_CPACF
+	UNUSED(in_data);
+	UNUSED(out_data);
+	UNUSED(data_length);
+	UNUSED(key);
+	UNUSED(key_length);
+	UNUSED(iv);
+	UNUSED(direction);
+	return EPERM;
+#else
 	unsigned int function_code;
 
 #ifdef ICA_FIPS
@@ -2784,6 +3392,7 @@ unsigned int ica_aes_ofb(const unsigned char *in_data, unsigned char *out_data,
 
 	function_code = aes_directed_fc(key_length, direction);
 	return s390_aes_ofb(function_code, data_length, in_data, iv, key, out_data);
+#endif /* NO_CPACF */
 }
 
 unsigned int ica_aes_ctr(const unsigned char *in_data, unsigned char *out_data,
@@ -2792,6 +3401,17 @@ unsigned int ica_aes_ctr(const unsigned char *in_data, unsigned char *out_data,
 			 unsigned char *ctr, unsigned int ctr_width,
 			 unsigned int direction)
 {
+#ifdef NO_CPACF
+	UNUSED(in_data);
+	UNUSED(out_data);
+	UNUSED(data_length);
+	UNUSED(key);
+	UNUSED(key_length);
+	UNUSED(ctr);
+	UNUSED(ctr_width);
+	UNUSED(direction);
+	return EPERM;
+#else
 	unsigned int function_code;
 
 #ifdef ICA_FIPS
@@ -2820,6 +3440,7 @@ unsigned int ica_aes_ctr(const unsigned char *in_data, unsigned char *out_data,
 	return s390_aes_ctr(function_code,
 			    in_data, out_data, data_length,
 			    key, ctr, ctr_width);
+#endif /* NO_CPACF */
 }
 
 unsigned int ica_aes_ctrlist(const unsigned char *in_data, unsigned char *out_data,
@@ -2828,6 +3449,16 @@ unsigned int ica_aes_ctrlist(const unsigned char *in_data, unsigned char *out_da
 			     const unsigned char *ctrlist,
 			     unsigned int direction)
 {
+#ifdef NO_CPACF
+	UNUSED(in_data);
+	UNUSED(out_data);
+	UNUSED(data_length);
+	UNUSED(key);
+	UNUSED(key_length);
+	UNUSED(ctrlist);
+	UNUSED(direction);
+	return EPERM;
+#else
 	unsigned int function_code;
 
 #ifdef ICA_FIPS
@@ -2842,6 +3473,7 @@ unsigned int ica_aes_ctrlist(const unsigned char *in_data, unsigned char *out_da
 	function_code = aes_directed_fc(key_length, direction);
 	return s390_aes_ctrlist(function_code, data_length, in_data, ctrlist,
 			    key, out_data);
+#endif /* NO_CPACF */
 }
 
 unsigned int ica_aes_xts(const unsigned char *in_data, unsigned char *out_data,
@@ -2850,6 +3482,17 @@ unsigned int ica_aes_xts(const unsigned char *in_data, unsigned char *out_data,
 			 unsigned int key_length, unsigned char *tweak,
 			 unsigned int direction)
 {
+#ifdef NO_CPACF
+	UNUSED(in_data);
+	UNUSED(out_data);
+	UNUSED(data_length);
+	UNUSED(key1);
+	UNUSED(key2);
+	UNUSED(key_length);
+	UNUSED(tweak);
+	UNUSED(direction);
+	return EPERM;
+#else
 	unsigned int function_code;
 
 #ifdef ICA_FIPS
@@ -2881,6 +3524,7 @@ unsigned int ica_aes_xts(const unsigned char *in_data, unsigned char *out_data,
 
 	return s390_aes_xts(function_code, data_length, in_data, tweak,
 			    key1, key2, key_length, out_data);
+#endif /* NO_CPACF */
 }
 
 unsigned int ica_aes_cmac(const unsigned char *message, unsigned long message_length,
@@ -2888,6 +3532,16 @@ unsigned int ica_aes_cmac(const unsigned char *message, unsigned long message_le
 			  unsigned char *key, unsigned int key_length,
 			  unsigned int direction)
 {
+#ifdef NO_CPACF
+	UNUSED(message);
+	UNUSED(message_length);
+	UNUSED(mac);
+	UNUSED(mac_length);
+	UNUSED(key);
+	UNUSED(key_length);
+	UNUSED(direction);
+	return EPERM;
+#else
 #ifdef ICA_FIPS
 	if (fips >> 1)
 		return EACCES;
@@ -2898,6 +3552,7 @@ unsigned int ica_aes_cmac(const unsigned char *message, unsigned long message_le
 				 key, key_length,
 				 NULL,
 				 direction);
+#endif /* NO_CPACF */
 }
 
 unsigned int ica_aes_cmac_intermediate(const unsigned char *message,
@@ -2905,6 +3560,14 @@ unsigned int ica_aes_cmac_intermediate(const unsigned char *message,
 				       unsigned char *key, unsigned int key_length,
 				       unsigned char *iv)
 {
+#ifdef NO_CPACF
+	UNUSED(message);
+	UNUSED(message_length);
+	UNUSED(key);
+	UNUSED(key_length);
+	UNUSED(iv);
+	return EPERM;
+#else
 	unsigned long function_code;
 	int rc;
 
@@ -2929,6 +3592,7 @@ unsigned int ica_aes_cmac_intermediate(const unsigned char *message,
 	if (!rc)
 		stats_increment(ICA_STATS_AES_CMAC, ALGO_HW, ICA_DECRYPT);
 	return rc;
+#endif /* NO_CPACF */
 }
 
 unsigned int ica_aes_cmac_last(const unsigned char *message, unsigned long message_length,
@@ -2937,6 +3601,17 @@ unsigned int ica_aes_cmac_last(const unsigned char *message, unsigned long messa
 			       unsigned char *iv,
 			       unsigned int direction)
 {
+#ifdef NO_CPACF
+	UNUSED(message);
+	UNUSED(message_length);
+	UNUSED(mac);
+	UNUSED(mac_length);
+	UNUSED(key);
+	UNUSED(key_length);
+	UNUSED(iv);
+	UNUSED(direction);
+	return EPERM;
+#else
 	unsigned char tmp_mac[AES_BLOCK_SIZE];
 	unsigned long function_code;
 	int rc;
@@ -2975,6 +3650,7 @@ unsigned int ica_aes_cmac_last(const unsigned char *message, unsigned long messa
 	}
 
 	return 0;
+#endif /* NO_CPACF */
 }
 
 unsigned int ica_aes_ccm(unsigned char *payload, unsigned long payload_length,
@@ -2984,6 +3660,20 @@ unsigned int ica_aes_ccm(unsigned char *payload, unsigned long payload_length,
 			 unsigned char *key, unsigned int key_length,
 			 unsigned int direction)
 {
+#ifdef NO_CPACF
+	UNUSED(payload);
+	UNUSED(payload_length);
+	UNUSED(ciphertext_n_mac);
+	UNUSED(mac_length);
+	UNUSED(assoc_data);
+	UNUSED(assoc_data_length);
+	UNUSED(nonce);
+	UNUSED(nonce_length);
+	UNUSED(key);
+	UNUSED(key_length);
+	UNUSED(direction);
+	return EPERM;
+#else
 	unsigned char tmp_mac[AES_BLOCK_SIZE];
 	unsigned char *mac;
 	unsigned long function_code;
@@ -3025,6 +3715,7 @@ unsigned int ica_aes_ccm(unsigned char *payload, unsigned long payload_length,
 	}
 
 	return 0;
+#endif /* NO_CPACF */
 }
 
 unsigned int ica_aes_gcm(unsigned char *plaintext, unsigned long plaintext_length,
@@ -3035,6 +3726,21 @@ unsigned int ica_aes_gcm(unsigned char *plaintext, unsigned long plaintext_lengt
 			 unsigned char *key, unsigned int key_length,
 			 unsigned int direction)
 {
+#ifdef NO_CPACF
+	UNUSED(plaintext);
+	UNUSED(plaintext_length);
+	UNUSED(ciphertext);
+	UNUSED(iv);
+	UNUSED(iv_length);
+	UNUSED(aad);
+	UNUSED(aad_length);
+	UNUSED(tag);
+	UNUSED(tag_length);
+	UNUSED(key);
+	UNUSED(key_length);
+	UNUSED(direction);
+	return EPERM;
+#else
 	unsigned char tmp_tag[AES_BLOCK_SIZE];
 	unsigned long function_code;
 	int rc;
@@ -3087,6 +3793,7 @@ unsigned int ica_aes_gcm(unsigned char *plaintext, unsigned long plaintext_lengt
 			return EFAULT;
 	}
 	return 0;
+#endif /* NO_CPACF */
 }
 
 unsigned int ica_aes_gcm_initialize(const unsigned char *iv,
@@ -3098,6 +3805,17 @@ unsigned int ica_aes_gcm_initialize(const unsigned char *iv,
 				    unsigned char *subkey,
 				    unsigned int direction)
 {
+#ifdef NO_CPACF
+	UNUSED(iv);
+	UNUSED(iv_length);
+	UNUSED(key);
+	UNUSED(key_length);
+	UNUSED(icb);
+	UNUSED(ucb);
+	UNUSED(subkey);
+	UNUSED(direction);
+	return EPERM;
+#else
 	unsigned long function_code;
 
 #ifdef ICA_FIPS
@@ -3109,6 +3827,7 @@ unsigned int ica_aes_gcm_initialize(const unsigned char *iv,
 
 	return s390_gcm_initialize(function_code, iv, iv_length,
 							   key, icb, ucb, subkey);
+#endif /* NO_CPACF */
 }
 
 unsigned int ica_aes_gcm_intermediate(unsigned char *plaintext,
@@ -3120,6 +3839,21 @@ unsigned int ica_aes_gcm_intermediate(unsigned char *plaintext,
 			 unsigned char *key, unsigned int key_length,
 			 unsigned char *subkey, unsigned int direction)
 {
+#ifdef NO_CPACF
+	UNUSED(plaintext);
+	UNUSED(plaintext_length);
+	UNUSED(ciphertext);
+	UNUSED(cb);
+	UNUSED(aad);
+	UNUSED(aad_length);
+	UNUSED(tag);
+	UNUSED(tag_length);
+	UNUSED(key);
+	UNUSED(key_length);
+	UNUSED(subkey);
+	UNUSED(direction);
+	return EPERM;
+#else
 	unsigned long function_code;
 	int rc, iv_length_dummy = 12;
 
@@ -3157,6 +3891,7 @@ unsigned int ica_aes_gcm_intermediate(unsigned char *plaintext,
 			return rc;
 	}
 	return 0;
+#endif /* NO_CPACF */
 }
 
 unsigned int ica_aes_gcm_last( unsigned char *icb,
@@ -3166,6 +3901,19 @@ unsigned int ica_aes_gcm_last( unsigned char *icb,
 			 unsigned char *key, unsigned int key_length,
 			 unsigned char *subkey, unsigned int direction)
 {
+#ifdef NO_CPACF
+	UNUSED(icb);
+	UNUSED(aad_length);
+	UNUSED(ciph_length);
+	UNUSED(tag);
+	UNUSED(final_tag);
+	UNUSED(final_tag_length);
+	UNUSED(key);
+	UNUSED(key_length);
+	UNUSED(subkey);
+	UNUSED(direction);
+	return EPERM;
+#else
 	unsigned long function_code;
 	int rc;
 
@@ -3192,6 +3940,7 @@ unsigned int ica_aes_gcm_last( unsigned char *icb,
 			return EFAULT;
 	}
 	return 0;
+#endif /* NO_CPACF */
 }
 
 /*************************************************************************************
@@ -3201,6 +3950,9 @@ unsigned int ica_aes_gcm_last( unsigned char *icb,
 
 kma_ctx* ica_aes_gcm_kma_ctx_new(void)
 {
+#ifdef NO_CPACF
+	return NULL;
+#else
 	kma_ctx* ctx = malloc(sizeof(kma_ctx));
 	if (!ctx)
 		return NULL;
@@ -3208,6 +3960,7 @@ kma_ctx* ica_aes_gcm_kma_ctx_new(void)
 	memset(ctx, 0, sizeof(kma_ctx));
 
 	return ctx;
+#endif /* NO_CPACF */
 }
 
 int ica_aes_gcm_kma_init(unsigned int direction,
@@ -3215,6 +3968,15 @@ int ica_aes_gcm_kma_init(unsigned int direction,
 		const unsigned char *key, unsigned int key_length,
 		kma_ctx* ctx)
 {
+#ifdef NO_CPACF
+	UNUSED(direction);
+	UNUSED(iv);
+	UNUSED(iv_length);
+	UNUSED(key);
+	UNUSED(key_length);
+	UNUSED(ctx);
+	return EPERM;
+#else
 	int rc = 0;
 	unsigned long function_code = aes_directed_fc(key_length, direction);
 
@@ -3254,6 +4016,7 @@ int ica_aes_gcm_kma_init(unsigned int direction,
 	}
 
 	return rc;
+#endif /* NO_CPACF */
 }
 
 int ica_aes_gcm_kma_update(const unsigned char *in_data,
@@ -3262,6 +4025,17 @@ int ica_aes_gcm_kma_update(const unsigned char *in_data,
 		unsigned int end_of_aad, unsigned int end_of_data,
 		kma_ctx* ctx)
 {
+#ifdef NO_CPACF
+	UNUSED(in_data);
+	UNUSED(out_data);
+	UNUSED(data_length);
+	UNUSED(aad);
+	UNUSED(aad_length);
+	UNUSED(end_of_aad);
+	UNUSED(end_of_data);
+	UNUSED(ctx);
+	return EPERM;
+#else
 	unsigned int function_code = aes_directed_fc(ctx->key_length, ctx->direction);
 
 #ifdef ICA_FIPS
@@ -3289,10 +4063,17 @@ int ica_aes_gcm_kma_update(const unsigned char *in_data,
 		return s390_aes_gcm_kma(in_data, out_data, data_length,
 								aad, aad_length, end_of_aad, end_of_data, ctx);
 	}
+#endif /* NO_CPACF */
 }
 
 int ica_aes_gcm_kma_get_tag(unsigned char *tag, unsigned int tag_length, const kma_ctx* ctx)
 {
+#ifdef NO_CPACF
+	UNUSED(tag);
+	UNUSED(tag_length);
+	UNUSED(ctx);
+	return EPERM;
+#else
 	int rc=0;
 	unsigned int function_code = aes_directed_fc(ctx->key_length, ctx->direction);
 
@@ -3314,10 +4095,17 @@ int ica_aes_gcm_kma_get_tag(unsigned char *tag, unsigned int tag_length, const k
 	memcpy(tag, ctx->tag, tag_length);
 
 	return 0;
+#endif /* NO_CPACF */
 }
 
 int ica_aes_gcm_kma_verify_tag(const unsigned char* known_tag, unsigned int tag_length, const kma_ctx* ctx)
 {
+#ifdef NO_CPACF
+	UNUSED(known_tag);
+	UNUSED(tag_length);
+	UNUSED(ctx);
+	return EPERM;
+#else
 	int rc;
 	unsigned int function_code = aes_directed_fc(ctx->key_length, ctx->direction);
 
@@ -3340,6 +4128,7 @@ int ica_aes_gcm_kma_verify_tag(const unsigned char* known_tag, unsigned int tag_
 		return EFAULT;
 
 	return 0;
+#endif /* NO_CPACF */
 }
 
 void ica_aes_gcm_kma_ctx_free(kma_ctx* ctx)
@@ -3454,6 +4243,15 @@ int ica_drbg_instantiate(ica_drbg_t **sh,
 			 const unsigned char *pers,
 			 size_t pers_len)
 {
+#ifdef NO_CPACF
+	UNUSED(sh);
+	UNUSED(sec);
+	UNUSED(pr);
+	UNUSED(mech);
+	UNUSED(pers);
+	UNUSED(pers_len);
+	return EPERM;
+#else
 	int status;
 
 #ifdef ICA_FIPS
@@ -3479,6 +4277,7 @@ int ica_drbg_instantiate(ica_drbg_t **sh,
 		mech->error_state = status;
 
 	return ica_drbg_error(status);
+#endif /* NO_CPACF */
 }
 
 int ica_drbg_reseed(ica_drbg_t *sh,
@@ -3486,6 +4285,13 @@ int ica_drbg_reseed(ica_drbg_t *sh,
 		    const unsigned char *add,
 		    size_t add_len)
 {
+#ifdef NO_CPACF
+	UNUSED(sh);
+	UNUSED(pr);
+	UNUSED(add);
+	UNUSED(add_len);
+	return EPERM;
+#else
 	int status;
 
 #ifdef ICA_FIPS
@@ -3507,6 +4313,7 @@ int ica_drbg_reseed(ica_drbg_t *sh,
 		sh->mech->error_state = status;
 
 	return ica_drbg_error(status);
+#endif /* NO_CPACF */
 }
 
 int ica_drbg_generate(ica_drbg_t *sh,
@@ -3517,6 +4324,16 @@ int ica_drbg_generate(ica_drbg_t *sh,
 		      unsigned char *prnd,
 		      size_t prnd_len)
 {
+#ifdef NO_CPACF
+	UNUSED(sh);
+	UNUSED(sec);
+	UNUSED(pr);
+	UNUSED(add);
+	UNUSED(add_len);
+	UNUSED(prnd);
+	UNUSED(prnd_len);
+	return EPERM;
+#else
 	int status;
 
 #ifdef ICA_FIPS
@@ -3561,15 +4378,21 @@ int ica_drbg_generate(ica_drbg_t *sh,
 		drbg_zmem(prnd, prnd_len);
 
 	return ica_drbg_error(status);
+#endif /* NO_CPACF */
 }
 
 int ica_drbg_uninstantiate(ica_drbg_t **sh)
 {
+#ifdef NO_CPACF
+	UNUSED(sh);
+	return EPERM;
+#else
 	/* Uninstantiate health test runs whenever other functions are
 	 * tested (11.3.5). */
 
 	/* Uninstantiate. */
 	return ica_drbg_error(drbg_uninstantiate(sh, false));
+#endif /* NO_CPACF */
 }
 
 int ica_drbg_health_test(void *func,
@@ -3577,6 +4400,13 @@ int ica_drbg_health_test(void *func,
 			 bool pr,
 			 ica_drbg_mech_t *mech)
 {
+#ifdef NO_CPACF
+	UNUSED(func);
+	UNUSED(sec);
+	UNUSED(pr);
+	UNUSED(mech);
+	return EPERM;
+#else
 	int status;
 
 	status = drbg_mech_valid(mech);
@@ -3601,6 +4431,7 @@ int ica_drbg_health_test(void *func,
 	pthread_rwlock_unlock(&mech->lock);
 
 	return ica_drbg_error(status);
+#endif /* NO_CPACF */
 }
 
 #ifdef ICA_FIPS

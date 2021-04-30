@@ -204,6 +204,12 @@ int new_api_shake_128_test(void)
 
 int main(int argc, char **argv)
 {
+#ifdef NO_CPACF
+	UNUSED(argc);
+	UNUSED(argv);
+	printf("Skipping SHAKE-128 test, because CPACF support disabled via config option.\n");
+	return TEST_SKIP;
+#else
 	int rc = 0;
 
 	set_verbosity(argc, argv);
@@ -220,4 +226,5 @@ int main(int argc, char **argv)
 	}
 
 	return TEST_SUCC;
+#endif /* NO_CPACF */
 }

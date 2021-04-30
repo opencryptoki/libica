@@ -17,7 +17,7 @@
 
 #include "../include/ica_api.h"
 
-#if defined(NO_SW_FALLBACKS)
+#if defined(NO_SW_FALLBACKS) || defined(NO_CPACF)
 #define UNUSED(var)			((void)(var))
 #endif
 

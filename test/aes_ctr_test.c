@@ -584,6 +584,12 @@ int kat_aes_ctr(int iteration)
  */
 int main(int argc, char **argv)
 {
+#ifdef NO_CPACF
+	UNUSED(argc);
+	UNUSED(argv);
+	printf("Skipping AES-CTR test, because CPACF support disabled via config option.\n");
+	return TEST_SKIP;
+#else
 	unsigned int endless = 0;
 	int i = 0;
 	int rc = 0;
@@ -648,5 +654,6 @@ int main(int argc, char **argv)
 
 	printf("All AES-CTR tests passed.\n");
 	return TEST_SUCC;
+#endif /* NO_CPACF */
 }
 
