@@ -871,7 +871,11 @@ unsigned char qinv[] =
 	rc = ica_rsa_mod_expo(handle, data, &mod_expo_key,
 			      output_data);
 	if(rc)
+#ifndef NO_SW_FALLBACKS
 		exit(handle_ica_error(rc, "ica_rsa_key_mod_expo"));
+#else
+		rc == ENODEV ? exit(TEST_SKIP) : exit(handle_ica_error(rc, "ica_rsa_key_mod_expo"));
+#endif
 	check_icastats(RSA_ME, "RSA-ME");
 
 	rc = system("icastats -r");
@@ -881,7 +885,11 @@ unsigned char qinv[] =
 	rc = ica_rsa_crt(handle, data, &crt_key,
 			 output_data);
 	if(rc)
+#ifndef NO_SW_FALLBACKS
 		exit(handle_ica_error(rc, "ica_rsa_crt"));
+#else
+		rc == ENODEV ? exit(TEST_SKIP) : exit(handle_ica_error(rc, "ica_rsa_crt"));
+#endif
 	check_icastats(RSA_CRT, "RSA-CRT");
 
 	free(output_data);

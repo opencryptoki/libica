@@ -177,7 +177,11 @@ int main(int argc, char **argv)
 				if (((ica_fips_status() & ICA_FIPS_MODE)
 				    && !fips_approved(pmech_list[j].mech_mode_id))
 				    || ica_fips_status() >> 1) {
+#if defined (NO_SW_FALLBACKS)
+					printf("%14s |  blocked   |   blocked  |      -   \n",
+#else
 					printf("%14s |  blocked   |   blocked  |   blocked\n",
+#endif
 						crypt_map[i].name);
 					break;
 				}
@@ -189,7 +193,11 @@ int main(int argc, char **argv)
 					CELL_SIZE,
 					pmech_list[j].flags & ICA_FLAG_SHW ? "yes" : "no",
 					CELL_SIZE,
+#if defined(NO_SW_FALLBACKS)
+					pmech_list[j].flags & ICA_FLAG_SW ? "yes" : "-");
+#else
 					pmech_list[j].flags & ICA_FLAG_SW ? "yes" : "no");
+#endif
 			}
 		}
 	}
@@ -205,5 +213,8 @@ int main(int argc, char **argv)
 	printf("No built-in FIPS support.\n");
 #endif /* ICA_FIPS */
 
+#ifdef NO_SW_FALLBACKS
+	printf("Software fallbacks are disabled in libica-cex.\n");
+#endif
 	return EXIT_SUCCESS;
 }

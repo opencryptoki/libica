@@ -52,14 +52,26 @@
 
 #define MAX_VERSION_LENGTH 16
 
+#ifndef NO_SW_FALLBACKS
 int ica_fallbacks_enabled = 1;
+#else
+int ica_fallbacks_enabled = 0;
+#endif
+
+#if defined(NO_SW_FALLBACKS)
+#define UNUSED(var)			((void)(var))
+#endif
 
 void ica_set_fallback_mode(int fallback_mode)
 {
+#ifdef NO_SW_FALLBACKS
+	UNUSED(fallback_mode);
+#else
 	if (fallback_mode)
 		ica_fallbacks_enabled = 1;
 	else
 		ica_fallbacks_enabled = 0;
+#endif
 }
 
 int ica_offload_enabled = 0;
@@ -1237,7 +1249,11 @@ int ica_ec_key_generate(ica_adapter_handle_t adapter_handle, ICA_EC_KEY *key)
 	if (key == NULL)
 		return EINVAL;
 
+#ifndef NO_SW_FALLBACKS
 	icapath = getenv_icapath();
+#else
+	icapath = 1;
+#endif
 	switch (icapath) {
 	case 1: /* hw only */
 		hardware = ALGO_HW;
@@ -1280,7 +1296,11 @@ int ica_ecdh_derive_secret(ica_adapter_handle_t adapter_handle,
 	if (z == NULL || z_length < privlen || privkey_A->nid != pubkey_B->nid)
 		return EINVAL;
 
+#ifndef NO_SW_FALLBACKS
 	icapath = getenv_icapath();
+#else
+	icapath = 1;
+#endif
 	switch (icapath) {
 	case 1: /* hw only */
 		hardware = ALGO_HW;
@@ -1324,7 +1344,11 @@ int ica_ecdsa_sign(ica_adapter_handle_t adapter_handle,
 		signature == NULL || signature_length < 2*privlen)
 		return EINVAL;
 
+#ifndef NO_SW_FALLBACKS
 	icapath = getenv_icapath();
+#else
+	icapath = 1;
+#endif
 	switch (icapath) {
 	case 1: /* hw only */
 		hardware = ALGO_HW;
@@ -1368,7 +1392,11 @@ int ica_ecdsa_verify(ica_adapter_handle_t adapter_handle,
 		signature == NULL || signature_length < 2*privlen)
 		return EINVAL;
 
+#ifndef NO_SW_FALLBACKS
 	icapath = getenv_icapath();
+#else
+	icapath = 1;
+#endif
 	switch (icapath) {
 	case 1: /* hw only */
 		hardware = ALGO_HW;
