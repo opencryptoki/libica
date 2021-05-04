@@ -62,6 +62,12 @@ AM_CONDITIONAL(ICA_FIPS, test x$enable_fips = xyes)
 if test "x$enable_fips" = xyes; then
 	FLAGS="$FLAGS -DICA_FIPS"
 	AC_MSG_RESULT([*** Building libica-fips at user request ***])
+        AC_CHECK_PROG([openssl_var],[openssl],[yes],[no])
+
+        if test "x$openssl_var" != xyes; then
+              AC_MSG_ERROR([Missing openssl binary application required for FIPS build])
+        fi
+
 fi
 
 dnl --- enable_sanitizer
