@@ -241,14 +241,14 @@ int s390_sha512_224_sw(unsigned char *iv, unsigned char *input_data,
 	if (message_part == SHA_MSG_PART_ONLY || message_part == SHA_MSG_PART_FIRST) {
 		SHA512_Init(&ctx);
 		/* SHA-512/224 uses a distinct initial hash value */
-		ctx.h[0] = U64(0x8c3d37c819544da2);
-		ctx.h[1] = U64(0x73e1996689dcd4d6);
-		ctx.h[2] = U64(0x1dfab7ae32ff9c82);
-		ctx.h[3] = U64(0x679dd514582f9fcf);
-		ctx.h[4] = U64(0x0f6d2b697bd44da8);
-		ctx.h[5] = U64(0x77e36f7304c48942);
-		ctx.h[6] = U64(0x3f9d85a86a1d36c8);
-		ctx.h[7] = U64(0x1112e6ad91d692a1);
+		ctx.h[0] = UINT64_C(0x8c3d37c819544da2);
+		ctx.h[1] = UINT64_C(0x73e1996689dcd4d6);
+		ctx.h[2] = UINT64_C(0x1dfab7ae32ff9c82);
+		ctx.h[3] = UINT64_C(0x679dd514582f9fcf);
+		ctx.h[4] = UINT64_C(0x0f6d2b697bd44da8);
+		ctx.h[5] = UINT64_C(0x77e36f7304c48942);
+		ctx.h[6] = UINT64_C(0x3f9d85a86a1d36c8);
+		ctx.h[7] = UINT64_C(0x1112e6ad91d692a1);
 	} else {
 		ctx.md_len = SHA224_DIGEST_LENGTH;
 		ctx.Nl = *running_length_lo;
@@ -289,14 +289,14 @@ int s390_sha512_256_sw(unsigned char *iv, unsigned char *input_data,
 	if (message_part == SHA_MSG_PART_ONLY || message_part == SHA_MSG_PART_FIRST) {
 		SHA512_Init(&ctx);
 		/* SHA-512/256 uses a distinct initial hash value */
-		ctx.h[0] = U64(0x22312194fc2bf72c);
-		ctx.h[1] = U64(0x9f555fa3c84c64c2);
-		ctx.h[2] = U64(0x2393b86b6f53b151);
-		ctx.h[3] = U64(0x963877195940eabd);
-		ctx.h[4] = U64(0x96283ee2a88effe3);
-		ctx.h[5] = U64(0xbe5e1e2553863992);
-		ctx.h[6] = U64(0x2b0199fc2c85b8aa);
-		ctx.h[7] = U64(0x0eb72ddc81c52ca2);
+		ctx.h[0] = UINT64_C(0x22312194fc2bf72c);
+		ctx.h[1] = UINT64_C(0x9f555fa3c84c64c2);
+		ctx.h[2] = UINT64_C(0x2393b86b6f53b151);
+		ctx.h[3] = UINT64_C(0x963877195940eabd);
+		ctx.h[4] = UINT64_C(0x96283ee2a88effe3);
+		ctx.h[5] = UINT64_C(0xbe5e1e2553863992);
+		ctx.h[6] = UINT64_C(0x2b0199fc2c85b8aa);
+		ctx.h[7] = UINT64_C(0x0eb72ddc81c52ca2);
 	} else {
 		ctx.md_len = SHA256_DIGEST_LENGTH;
 		ctx.Nl = *running_length_lo;
