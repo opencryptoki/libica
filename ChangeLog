@@ -1,3 +1,8 @@
+v3.8.0
+ - [FEATURE] provide libica-cex module to satisfy special security requirements
+   [FEATURE] FIPS: enforce the HMAC check
+ - [UPDATE] exploit autoselect domain support for ECC
+ - [UPDATE] FIPS: Add SHA3 kats to fips powerup tests
 v3.7.0
  - [FEATURE] FIPS: Add HMAC based library integrity check
  - [PATCH] icainfo: bugfix for RSA and EC related info for software column.
