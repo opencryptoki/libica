@@ -61,12 +61,20 @@ endif
 
 # bin
 
-bin_PROGRAMS = icainfo icastats
+bin_PROGRAMS = icainfo icastats icainfo-cex
 
-icainfo_CFLAGS = ${AM_CFLAGS} -I${srcdir}/include -I${srcdir}/../include
-icainfo_LDADD = @LIBS@ libica.la
-icainfo_SOURCES = icainfo.c include/fips.h include/s390_crypto.h \
+icainfo_CFLAGS_COMMON = ${AM_CFLAGS} -I${srcdir}/include -I${srcdir}/../include
+icainfo_LDADD_COMMON = @LIBS@
+icainfo_SOURCES_COMMON = icainfo.c include/fips.h include/s390_crypto.h \
 		  ../include/ica_api.h
+
+icainfo_CFLAGS = ${icainfo_CFLAGS_COMMON}
+icainfo_LDADD = ${icainfo_LDADD_COMMON} libica.la
+icainfo_SOURCES = ${icainfo_SOURCES_COMMON}
+
+icainfo_cex_CFLAGS = ${icainfo_CFLAGS_COMMON} -DNO_CPACF -DNO_SW_FALLBACKS
+icainfo_cex_LDADD = ${icainfo_LDADD_COMMON} libica-cex.la
+icainfo_cex_SOURCES = ${icainfo_SOURCES_COMMON}
 
 icastats_CFLAGS = ${AM_CFLAGS} -I${srcdir}/include -DICASTATS
 icastats_LDADD = @LIBS@ -lrt
