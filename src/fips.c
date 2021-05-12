@@ -20,6 +20,7 @@
 #include <string.h>
 #include <syslog.h>
 #include <dlfcn.h>
+#include <link.h>
 
 #include <openssl/opensslconf.h>
 #ifdef OPENSSL_FIPS
@@ -355,6 +356,41 @@ static const char msg1[] = "Libica FIPS library integrity check failed. Cannot d
 static const char msg2[] = "Libica FIPS library integrity check failed. Module %s probably corrupted.\n";
 static const char msg3[] = "Libica FIPS library integrity check passed.\n";
 
+struct phdr_cb_data {
+	/* User-provided storage for library path. */
+	char *librarypath;
+	/* Length of storage provided by user. */
+	size_t length;
+	/* How many times did we find a proper library. This is used
+	 * as a sanity check. */
+	int count;
+};
+
+static int phdr_callback(struct dl_phdr_info *info, size_t size, void *data)
+{
+	int j;
+	unsigned long start, end;
+	struct phdr_cb_data *d = data;
+	unsigned long myaddr = (unsigned long)&phdr_callback;
+
+	(void)size;
+	for (j = 0; j < info->dlpi_phnum; j++) {
+		// Only consider loadable program segments
+		if (info->dlpi_phdr[j].p_type == PT_LOAD) {
+			start = info->dlpi_addr + info->dlpi_phdr[j].p_vaddr;
+			end = start + info->dlpi_phdr[j].p_memsz;
+			if (start <= myaddr && myaddr < end) {
+				if (d->librarypath[0] == 0
+					&& strlen(info->dlpi_name) < d->length) {
+					strcpy(d->librarypath, info->dlpi_name);
+				}
+				d->count++;
+			}
+		}
+	}
+	return 0;
+}
+
 /*
  * Perform an integrity check on libica.so by calculating an HMAC from
  * the file contents using a static HMAC key, and comparing it to a
@@ -363,13 +399,16 @@ static const char msg3[] = "Libica FIPS library integrity check passed.\n";
  */
 static void fips_lib_integrity_check(void)
 {
-	int rc;
 	char path[PATH_MAX];
-	const char *libname = LIBNAME ".so." VERSION;
-	const char *symbolname = "ica_sha256";
+	struct phdr_cb_data data = {
+		.librarypath = (char *)path,
+		.length = sizeof(path),
+		.count = 0
+	};
 
-	rc = get_library_path(libname, symbolname, path, sizeof(path));
-	if (rc != 0) {
+	path[0] = 0;
+	dl_iterate_phdr(phdr_callback, &data);
+	if (data.count != 1) {
 		syslog(LOG_ERR, msg1);
 		fips |= ICA_FIPS_INTEGRITY;
 		return;
@@ -413,8 +452,13 @@ fips_powerup_tests(void)
 		return;
 	}
 
+/* ICA internal test does not link against the library. So we should
+ * skip the library integrity check in that case.
+ */
+#ifndef ICA_INTERNAL_TEST
 	/* Library integrity test */
 	fips_lib_integrity_check();
+#endif
 }
 
 static int
