@@ -31,12 +31,21 @@
 #include "ica_api.h"
 #include "s390_crypto.h"
 
+#if defined(NO_SW_FALLBACKS) && defined(NO_CPACF)
+#define CMD_NAME "icainfo-cex"
+#else
 #define CMD_NAME "icainfo"
-#define COPYRIGHT "Copyright IBM Corp. 2007, 2016."
+#endif
+#define COPYRIGHT "Copyright IBM Corp. 2007, 2021."
+
 
 void print_version(void)
 {
+#if defined(NO_SW_FALLBACKS) && defined(NO_CPACF)
+	printf(CMD_NAME ": libica-cex version " VERSION "\n" COPYRIGHT "\n");
+#else
 	printf(CMD_NAME ": libica version " VERSION "\n" COPYRIGHT "\n");
+#endif
 }
 
 void print_help(char *cmd)
