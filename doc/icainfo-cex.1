@@ -1,0 +1,68 @@
+.\" icainfo-cex man page source
+.\"
+.\" use
+.\"   groff -man -Tutf8 icainfo-cex.1
+.\" or
+.\"   nroff -man icainfo-cex.1
+.\" to process this source
+.\"
+.TH ICAINFO-CEX 1 2021-05-12 IBM "icainfo-cex user manual"
+.SH NAME
+icainfo-cex \- print information about cryptographic functions supported by libica-cex
+.SH SYNOPSIS
+.B icainfo-cex
+[-v | --version] [-h | --help]
+.SH DESCRIPTION
+.B icainfo-cex
+prints a table that shows libica-cex's support for various cryptographic
+algorithms and information about FIPS support.
+
+The icainfo-cex output also indicates, whether it is in an error state.
+Algorithms that are not FIPS approved are marked as blocked in both table
+columns when running in FIPS mode. All algorithms are marked as blocked when
+libica is in an error state.
+
+Available hardware support is divided into two columns: dynamic hardware
+means crypto cards, static hardware support means CPACF. Software support
+is provided via openssl.
+
+If a function is disabled via build option, this is indicated
+by a dash '-' in the related column.
+
+A shortened sample output is given below:
+.P
+.nf
+      Cryptographic algorithm support
+------------------------------------------------------
+               |         hardware        |
+ function      |   dynamic  |   static   |  software
+---------------+------------+------------+------------
+         SHA-1 |     no     |      -     |      -
+       SHA-224 |     no     |      -     |      -
+       SHA-256 |     no     |      -     |      -
+       SHA-384 |     no     |      -     |      -
+       SHA-512 |     no     |      -     |      -
+         GHASH |     no     |      -     |      -
+         P_RNG |  blocked   |      -     |      -
+  DRBG-SHA-512 |     no     |      -     |      -
+        RSA ME |    yes     |      -     |      -
+       RSA CRT |    yes     |      -     |      -
+           ...
+------------------------------------------------------
+Built-in FIPS support: FIPS mode active.
+Software fallbacks are disabled in libica-cex.
+CPACF support (including fallbacks) is disabled in libica-cex.
+.fi
+.SH OPTIONS
+.IP "-v or --version"
+show libica-cex version and copyright
+.IP "-h or --help"
+display this help and exit
+.SH RETURN VALUE
+.IP 1
+unknown or invalid argument on invocation
+.IP 0
+successful program execution
+.SH "SEE ALSO"
+.BR icastats (1)
+
