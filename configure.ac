@@ -35,7 +35,7 @@ FLAGS="-Wall -Wextra -mzarch"
 dnl --- enable_debug
 AC_ARG_ENABLE(debug,
               [  --enable-debug          turn on debugging flags],
-              [enable_debug="yes"],[enable_debug="no"])
+              [],[enable_debug="no"])
 AM_CONDITIONAL(DEBUG, test x$enable_debug = xyes)
 
 if test "x$enable_debug" = xyes; then
@@ -46,7 +46,7 @@ fi
 dnl --- enable_coverage
 AC_ARG_ENABLE(coverage,
               [  --enable-coverage       turn on coverage testing],
-              [enable_coverage="yes"],[enable_coverage="no"])
+              [],[enable_coverage="no"])
 AM_CONDITIONAL(COVERAGE, test x$enable_coverage = xyes)
 
 if test "x$enable_coverage" = xyes; then
@@ -57,7 +57,7 @@ fi
 dnl --- enable_fips
 AC_ARG_ENABLE(fips,
               [  --enable-fips           built with FIPS mode support],
-              [enable_fips="yes"],[enable_fips="no"])
+              [],[enable_fips="no"])
 AM_CONDITIONAL(ICA_FIPS, test x$enable_fips = xyes)
 
 if test "x$enable_fips" = xyes; then
@@ -74,7 +74,7 @@ fi
 dnl --- enable_sanitizer
 AC_ARG_ENABLE(sanitizer,
               [  --enable-sanitizer      turn on sanitizer (may not work on all systems)],
-              [enable_sanitizer="yes"],[enable_sanitizer="no"])
+              [],[enable_sanitizer="no"])
 AM_CONDITIONAL(SANITIZER, test x$enable_sanitizer = xyes)
 
 if test "x$enable_sanitizer" = xyes; then
@@ -86,7 +86,7 @@ fi
 dnl --- enable_internal tests
 AC_ARG_ENABLE(internal_tests,
               [  --enable-internal-tests built internal tests],
-              [enable_internal_tests="yes"],[enable_internal_tests="no"])
+              [],[enable_internal_tests="no"])
 AM_CONDITIONAL(ICA_INTERNAL_TESTS, test x$enable_internal_tests = xyes)
 
 if test "x$enable_internal_tests" = xyes; then
