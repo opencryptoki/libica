@@ -121,6 +121,10 @@ static EC_KEY *make_eckey(int nid, const unsigned char *p, size_t plen)
 	if (!EC_KEY_set_public_key(k, pub)) {
 		goto err;
 	}
+
+	if (!EC_KEY_check_key(k)) {
+		goto err;
+	}
 	ok = 1;
 
 err:
@@ -170,6 +174,10 @@ static EC_KEY *make_public_eckey(int nid, BIGNUM *x, BIGNUM *y, size_t plen)
 
 	if (!EC_KEY_set_public_key(k, pub))
 		goto err;
+
+	if (!EC_KEY_check_key(k))
+		goto err;
+
 	ok = 1;
 
 err:
