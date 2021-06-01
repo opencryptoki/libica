@@ -1337,7 +1337,7 @@ ICA_EC_KEY* ica_ec_key_new(unsigned int nid, unsigned int *privlen)
 int ica_ec_key_init(const unsigned char *X, const unsigned char *Y,
 		const unsigned char *D, ICA_EC_KEY *key)
 {
-	unsigned int privlen = privlen_from_nid(key->nid);
+	unsigned int privlen;
 
 #ifdef ICA_FIPS
 	if (fips >> 1)
@@ -1350,6 +1350,8 @@ int ica_ec_key_init(const unsigned char *X, const unsigned char *Y,
 
 	if ((X == NULL && Y != NULL) || (X != NULL && Y == NULL))
 		return EINVAL;
+
+	privlen = privlen_from_nid(key->nid);
 
 	if (X != NULL && Y != NULL) {
 		memcpy(key->X, X, privlen);
@@ -1411,7 +1413,7 @@ int ica_ecdh_derive_secret(ica_adapter_handle_t adapter_handle,
 		unsigned char *z, unsigned int z_length)
 {
 	int hardware, rc;
-	unsigned int privlen = privlen_from_nid(privkey_A->nid);
+	unsigned int privlen;
 	unsigned int icapath = 0;
 
 #ifdef ICA_FIPS
@@ -1420,6 +1422,10 @@ int ica_ecdh_derive_secret(ica_adapter_handle_t adapter_handle,
 #endif /* ICA_FIPS */
 
 	/* check for obvious errors in parms */
+	if (privkey_A == NULL || pubkey_B == NULL)
+		return EINVAL;
+
+	privlen = privlen_from_nid(privkey_A->nid);
 	if (z == NULL || z_length < privlen || privkey_A->nid != pubkey_B->nid)
 		return EINVAL;
 
@@ -1458,7 +1464,7 @@ int ica_ecdsa_sign(ica_adapter_handle_t adapter_handle,
 		unsigned char *signature, unsigned int signature_length)
 {
 	int hardware, rc;
-	unsigned int privlen = privlen_from_nid(privkey->nid);
+	unsigned int privlen;
 	unsigned int icapath = 0;
 
 #ifdef ICA_FIPS
@@ -1467,7 +1473,11 @@ int ica_ecdsa_sign(ica_adapter_handle_t adapter_handle,
 #endif /* ICA_FIPS */
 
 	/* check for obvious errors in parms */
-	if (privkey == NULL || hash == NULL || !hash_length_valid(hash_length) ||
+	if (privkey == NULL)
+		return EINVAL;
+
+	privlen = privlen_from_nid(privkey->nid);
+	if (hash == NULL || !hash_length_valid(hash_length) ||
 		signature == NULL || signature_length < 2*privlen)
 		return EINVAL;
 
@@ -1506,7 +1516,7 @@ int ica_ecdsa_verify(ica_adapter_handle_t adapter_handle,
 		const unsigned char *signature, unsigned int signature_length)
 {
 	int hardware, rc;
-	unsigned int privlen = privlen_from_nid(pubkey->nid);
+	unsigned int privlen;
 	unsigned int icapath = 0;
 
 #ifdef ICA_FIPS
@@ -1515,7 +1525,11 @@ int ica_ecdsa_verify(ica_adapter_handle_t adapter_handle,
 #endif /* ICA_FIPS */
 
 	/* check for obvious errors in parms */
-	if (pubkey == NULL || hash == NULL || !hash_length_valid(hash_length) ||
+	if (pubkey == NULL)
+		return EINVAL;
+
+	privlen = privlen_from_nid(pubkey->nid);
+	if (hash == NULL || !hash_length_valid(hash_length) ||
 		signature == NULL || signature_length < 2*privlen)
 		return EINVAL;
 
