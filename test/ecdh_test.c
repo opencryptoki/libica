@@ -336,14 +336,40 @@ int main(int argc, char **argv)
 		memset(shared_secret, 0, sizeof(shared_secret));
 
 		eckey_A = ica_ec_key_new(ecdh_kats[i].nid, &privlen);
+		if (!eckey_A)
+			continue;
+
 		rc = ica_ec_key_init(ecdh_kats[i].xa, ecdh_kats[i].ya, ecdh_kats[i].da, eckey_A);
+		if (rc != 0) {
+			if (rc == EPERM) {
+				V_(printf("Curve %d not supported on this system, skipping ...\n", ecdh_kats[i].nid));
+				continue;
+			} else {
+				V_(printf("Failed to initialize key for nid %d, rc=%i.\n", ecdh_kats[i].nid, rc));
+				errors++;
+				continue;
+			}
+		}
 
 		eckey_B = ica_ec_key_new(ecdh_kats[i].nid, &privlen);
+		if (!eckey_B)
+			continue;
+
 		rc = ica_ec_key_init(ecdh_kats[i].xb, ecdh_kats[i].yb, ecdh_kats[i].db, eckey_B);
+		if (rc != 0) {
+			if (rc == EPERM) {
+				V_(printf("Curve %d not supported on this system, skipping ...\n", ecdh_kats[i].nid));
+				continue;
+			} else {
+				V_(printf("Failed to initialize key for nid %d, rc=%i.\n", ecdh_kats[i].nid, rc));
+				errors++;
+				continue;
+			}
+		}
 
 		for (j = 0; j < NUM_HW_SW_TESTS; j++) {
 
-			if (is_supported_openssl_curve(ecdh_kats[i].nid) || (getenv_icapath() == 2))
+			if (can_toggle(ecdh_kats[i].nid))
 				toggle_env_icapath();
 
 			VV_(printf("  performing test with ICAPATH=%d \n", getenv_icapath()));

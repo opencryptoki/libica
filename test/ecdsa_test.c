@@ -222,13 +222,26 @@ int main(int argc, char **argv)
 		memset(signature, 0, MAX_ECDSA_SIG_SIZE);
 
 		eckey = ica_ec_key_new(ecdsa_kats[i].nid, &privlen);
+		if (!eckey)
+			continue;
+
 		rc = ica_ec_key_init(ecdsa_kats[i].x, ecdsa_kats[i].y, ecdsa_kats[i].d, eckey);
+		if (rc != 0) {
+			if (rc == EPERM) {
+				V_(printf("Curve %d not supported on this system, skipping ...\n", ecdsa_kats[i].nid));
+				continue;
+			} else {
+				V_(printf("Failed to initialize key for nid %d, rc=%i.\n", ecdsa_kats[i].nid, rc));
+				errors++;
+				continue;
+			}
+		}
 
 		for (j = 0; j<NUM_HASH_LENGTHS; j++) {
 
 			for (k = 0; k < NUM_HW_SW_TESTS; k++) {
 
-				if (is_supported_openssl_curve(ecdsa_kats[i].nid) || getenv_icapath() == 2)
+				if (can_toggle(ecdsa_kats[i].nid))
 					toggle_env_icapath();
 
 				/* calculate ECDSA signature */
@@ -242,7 +255,7 @@ int main(int argc, char **argv)
 					break;
 				} else {
 
-					if (is_supported_openssl_curve(ecdsa_kats[i].nid))
+					if (can_toggle(ecdsa_kats[i].nid))
 						toggle_env_icapath();
 
 					/* verify ECDSA signature */

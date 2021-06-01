@@ -108,7 +108,7 @@ sha3_available(void)
 }
 
 static inline int
-ecc_available(void)
+is_supported_by_hw(int nid)
 {
 	ica_adapter_handle_t adapter_handle;
 	ICA_EC_KEY *key;
@@ -128,7 +128,7 @@ ecc_available(void)
 	if (ica_open_adapter(&adapter_handle))
 		goto _ret_;
 
-	key = ica_ec_key_new(NID_X9_62_prime256v1, &privlen);
+	key = ica_ec_key_new(nid, &privlen);
 	if (key == NULL)
 		goto _ret_;
 
@@ -144,6 +144,12 @@ _ret_:
 	if (icapath != NULL)
 		setenv("ICAPATH", icapath, 1);
 	return rc;
+}
+
+static inline int
+ecc_available(void)
+{
+	return is_supported_by_hw(NID_X9_62_prime256v1);
 }
 
 #ifndef ICA_INTERNAL_TEST
@@ -189,6 +195,49 @@ is_supported_openssl_curve(int nid)
 	if (ptr)
 		EC_GROUP_free(ptr);
 	return ptr ? 1 : 0;
+}
+
+static inline int sw_fallbacks_available(int nid)
+{
+	switch (nid) {
+	case NID_X9_62_prime192v1:
+	case NID_secp224r1:
+	case NID_X9_62_prime256v1:
+	case NID_secp384r1:
+	case NID_secp521r1:
+#if OPENSSL_VERSION_NUMBER >= 0x010002000
+	case NID_brainpoolP160r1:
+	case NID_brainpoolP192r1:
+	case NID_brainpoolP224r1:
+	case NID_brainpoolP256r1:
+	case NID_brainpoolP320r1:
+	case NID_brainpoolP384r1:
+	case NID_brainpoolP512r1:
+#endif
+		return 1;
+	default:
+		return 0;
+	}
+}
+
+static inline int
+can_toggle(int nid)
+{
+	unsigned int icapath = getenv_icapath();
+
+	switch (icapath) {
+	case 0:
+	case 1:
+		if (is_supported_openssl_curve(nid) && sw_fallbacks_available(nid))
+			return 1;
+		break;
+	default: /* 2 */
+		if (is_supported_by_hw(nid))
+			return 1;
+		break;
+	}
+
+	return 0;
 }
 #endif
 
