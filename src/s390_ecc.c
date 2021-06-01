@@ -775,7 +775,8 @@ unsigned int ecdh_hw(ica_adapter_handle_t adapter_handle,
 			return rc;
 	}
 
-	if (!ecc_via_online_card)
+	if (privkey_A->nid != pubkey_B->nid ||
+		!curve_supported_via_online_card(privkey_A->nid))
 		return ENODEV;
 
 	if (adapter_handle == DRIVER_NOT_LOADED)
@@ -1177,7 +1178,7 @@ unsigned int ecdsa_sign_hw(ica_adapter_handle_t adapter_handle,
 			return rc;
 	}
 
-	if (!ecc_via_online_card)
+	if (!curve_supported_via_online_card(privkey->nid))
 		return ENODEV;
 
 	if (adapter_handle == DRIVER_NOT_LOADED)
@@ -1645,7 +1646,7 @@ unsigned int ecdsa_verify_hw(ica_adapter_handle_t adapter_handle,
 			return rc;
 	}
 
-	if (!ecc_via_online_card)
+	if (!curve_supported_via_online_card(pubkey->nid))
 		return ENODEV;
 
 	if (adapter_handle == DRIVER_NOT_LOADED)
@@ -2021,7 +2022,7 @@ unsigned int eckeygen_hw(ica_adapter_handle_t adapter_handle, ICA_EC_KEY *key)
 			return rc;
 	}
 
-	if (!ecc_via_online_card)
+	if (!curve_supported_via_online_card(key->nid))
 		return ENODEV;
 
 	reply_p = make_eckeygen_request(key, &xcrb, &buf, &len);
