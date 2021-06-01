@@ -1312,10 +1312,6 @@ ICA_EC_KEY* ica_ec_key_new(unsigned int nid, unsigned int *privlen)
 		return NULL;
 #endif /* ICA_FIPS */
 
-	/* check for obvious errors in parms */
-	if (!curve_supported(nid))
-		return NULL;
-
 	if ((key = malloc(sizeof(ICA_EC_KEY))) == NULL)
 		return NULL;
 
@@ -1348,6 +1344,11 @@ int ica_ec_key_init(const unsigned char *X, const unsigned char *Y,
 	if (key == NULL)
 		return EINVAL;
 
+	/* check if curve is supported by hw */
+	if (!(curve_supported_via_online_card(key->nid) ||
+		  curve_supported_via_cpacf(key->nid)))
+		return EPERM;
+
 	if ((X == NULL && Y != NULL) || (X != NULL && Y == NULL))
 		return EINVAL;
 
@@ -1360,6 +1361,11 @@ int ica_ec_key_init(const unsigned char *X, const unsigned char *Y,
 
 	if (D != NULL)
 		memcpy(key->D, D, privlen);
+
+	/* try to check key via openssl. This may not be possible if curve is
+	 * supported via card or CPACF, but openssl is in fips mode. */
+	if (curve_supported_via_openssl(key->nid) && ec_key_check(key) != 0)
+		return EINVAL;
 
 	return 0;
 }
@@ -1377,6 +1383,11 @@ int ica_ec_key_generate(ica_adapter_handle_t adapter_handle, ICA_EC_KEY *key)
 	/* check for obvious errors in parms */
 	if (key == NULL)
 		return EINVAL;
+
+	/* check if curve is supported by hw */
+	if (!(curve_supported_via_online_card(key->nid) ||
+		  curve_supported_via_cpacf(key->nid)))
+		return EPERM;
 
 #ifndef NO_SW_FALLBACKS
 	icapath = getenv_icapath();
@@ -1428,6 +1439,11 @@ int ica_ecdh_derive_secret(ica_adapter_handle_t adapter_handle,
 	privlen = privlen_from_nid(privkey_A->nid);
 	if (z == NULL || z_length < privlen || privkey_A->nid != pubkey_B->nid)
 		return EINVAL;
+
+	/* check if curve is supported by hw */
+	if (!(curve_supported_via_online_card(privkey_A->nid) ||
+		  curve_supported_via_cpacf(privkey_A->nid)))
+		return EPERM;
 
 #ifndef NO_SW_FALLBACKS
 	icapath = getenv_icapath();

@@ -14,6 +14,7 @@
 #define S390_ECDH_H
 
 #include <openssl/bn.h>
+#include <openssl/ec.h>
 #include <openssl/obj_mac.h>
 #include <asm/zcrypt.h>
 #include "ica_api.h"
@@ -376,6 +377,8 @@ unsigned int eckeygen_hw(ica_adapter_handle_t adapter_handle, ICA_EC_KEY *key);
 
 unsigned int eckeygen_sw(ICA_EC_KEY *key);
 
+int ec_key_check(ICA_EC_KEY *ica_key);
+
 /**
  * returns 1 if the given data length is valid for Crypto Express, 0 otherwise.
  */
@@ -393,11 +396,17 @@ static inline int hash_length_valid(unsigned int length)
 	}
 }
 
+extern unsigned int msa9_switch, ecc_via_online_card;
+
 /**
- * returns 1 if the curve specified by nid is supported, 0 otherwise.
+ * returns 1 if the curve specified by nid is supported by CCA cards,
+ * and there is a CCA card online, 0 otherwise.
  */
-static inline int curve_supported(unsigned int nid)
+static inline int curve_supported_via_online_card(unsigned int nid)
 {
+	if (!ecc_via_online_card)
+		return 0;
+
 	switch (nid) {
 	case NID_X9_62_prime192v1:
 	case NID_secp224r1:
@@ -417,6 +426,46 @@ static inline int curve_supported(unsigned int nid)
 	default:
 		return 0;
 	}
+}
+
+/**
+ * returns 1 if the curve specified by nid is supported by CPACF within the
+ * EC API, 0 otherwise.
+ *
+ * Note: ED25519, ED448, X25519, and X448 must be used via the related ica_ed
+ * and ica_x API functions. CPACF support within the ica_ec API is just a
+ * performance improvement over CCA cards, but does not suppport curves
+ * that are not supported via CCA cards.
+ */
+static inline int curve_supported_via_cpacf(unsigned int nid)
+{
+#ifdef NO_CPACF
+	(void)(nid);
+	return 0;
+#else
+	if (!msa9_switch)
+		return 0;
+
+	switch (nid) {
+	case NID_X9_62_prime256v1:
+	case NID_secp384r1:
+	case NID_secp521r1:
+		return 1;
+	default:
+		return 0;
+	}
+#endif
+}
+
+/**
+ * returns 1 if the curve specified by nid is supported by openssl, 0 otherwise.
+ */
+static inline int curve_supported_via_openssl(unsigned int nid)
+{
+	EC_GROUP *ptr = EC_GROUP_new_by_curve_name(nid);
+	if (ptr)
+		EC_GROUP_free(ptr);
+	return ptr ? 1 : 0;
 }
 
 /**
