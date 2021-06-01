@@ -2145,6 +2145,52 @@ err:
 	return rc;
 }
 
+/**
+ * Check if the given ICA_EC_KEY is valid. This check is performed via openssl,
+ * so we can only check keys that are supported by openssl. If e.g. openssl
+ * is in fips mode, very few curves are supported.
+ *
+ * @return:
+ *    0       success
+ *    EINVAL  key check failed
+ */
+int ec_key_check(ICA_EC_KEY *ica_key)
+{
+	EC_KEY *pubkey = NULL, *privkey = NULL;
+	BIGNUM *x, *y, *d;
+	int privlen, rc = EINVAL;
+
+	if (!ica_key)
+		goto done;
+
+	privlen = privlen_from_nid(ica_key->nid);
+
+	d = BN_bin2bn(ica_key->D, privlen, NULL);
+	if (!BN_is_zero(d)) {
+		privkey = make_eckey(ica_key->nid, ica_key->D, privlen);
+		if (!privkey)
+			goto done;
+	}
+
+	x = BN_bin2bn(ica_key->X, privlen, NULL);
+	y = BN_bin2bn(ica_key->Y, privlen, NULL);
+	if (!BN_is_zero(x) && !BN_is_zero(y)) {
+		pubkey = make_public_eckey(ica_key->nid, x, y, privlen);
+		if (!pubkey)
+			goto done;
+	}
+
+	rc = 0;
+
+done:
+	BN_clear_free(d);
+	BN_clear_free(x);
+	BN_clear_free(y);
+	EC_KEY_free(pubkey);
+	EC_KEY_free(privkey);
+
+	return rc;
+}
 
 /*
  * Derive public key.
