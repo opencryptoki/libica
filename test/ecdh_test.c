@@ -309,7 +309,7 @@ int main(int argc, char **argv)
 	set_verbosity(argc, argv);
 
 	if (!ecc_available()) {
-		printf("Skipping EC keygen test, because the required HW"
+		printf("Skipping ECDH test, because the required HW"
 		       " is not available on this machine.\n");
 		return TEST_SKIP;
 	}
