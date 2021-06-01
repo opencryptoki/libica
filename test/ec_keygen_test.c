@@ -106,47 +106,55 @@ int main(int argc, char **argv)
 
 		for (k = 0; k < NUM_HW_SW_TESTS; k++) {
 
-			if (is_supported_openssl_curve(eckeygen_tests[i].nid) || (getenv_icapath() == 2))
+			if (can_toggle(eckeygen_tests[i].nid))
 				toggle_env_icapath();
 
 			/* generate EC key with given curve */
 			VV_(printf("  performing keygen with ICAPATH=%d \n", getenv_icapath()));
 			eckey = ica_ec_key_new(eckeygen_tests[i].nid, &privlen);
+			if (!eckey)
+				continue;
+
 			rc = ica_ec_key_generate(adapter_handle, eckey);
 			if (rc) {
-				V_(printf("EC key for curve %i could not be generated, rc=%i.\n", eckeygen_tests[i].nid, rc));
-				test_failed = 1;
-			} else {
+				if (rc == EPERM) {
+					V_(printf("Curve %d not supported on this system, skipping ...\n", eckeygen_tests[i].nid));
+					continue;
+				} else {
+					V_(printf("EC key for curve %i could not be generated, rc=%i.\n", eckeygen_tests[i].nid, rc));
+					errors++;
+					continue;
+				}
+			}
 
-				for (j = 0; j<NUM_HASH_LENGTHS; j++) {
+			for (j = 0; j<NUM_HASH_LENGTHS; j++) {
 
-					if (is_supported_openssl_curve(eckeygen_tests[i].nid))
+				if (can_toggle(eckeygen_tests[i].nid))
+					toggle_env_icapath();
+
+				/* calculate ECDSA signature with this key */
+				VV_(printf("  performing sign with ICAPATH=%d \n", getenv_icapath()));
+				rc = ica_ecdsa_sign(adapter_handle, eckey, hash, hash_length[j],
+								signature, MAX_ECDSA_SIG_SIZE);
+
+				if (rc) {
+					V_(printf("Signature could not be created, key not usable, rc=%i.\n",rc));
+					test_failed = 1;
+					break;
+				} else {
+
+					if (can_toggle(eckeygen_tests[i].nid))
 						toggle_env_icapath();
 
-					/* calculate ECDSA signature with this key */
-					VV_(printf("  performing sign with ICAPATH=%d \n", getenv_icapath()));
-					rc = ica_ecdsa_sign(adapter_handle, eckey, hash, hash_length[j],
+					/* verify ECDSA signature with this key */
+					VV_(printf("  performing verify with ICAPATH=%d \n", getenv_icapath()));
+					rc = ica_ecdsa_verify(adapter_handle, eckey, hash, hash_length[j],
 									signature, MAX_ECDSA_SIG_SIZE);
 
 					if (rc) {
-						V_(printf("Signature could not be created, key not usable, rc=%i.\n",rc));
+						V_(printf("Signature could not be verified, key not usable, rc=%i.\n",rc));
 						test_failed = 1;
 						break;
-					} else {
-
-						if (is_supported_openssl_curve(eckeygen_tests[i].nid))
-							toggle_env_icapath();
-
-						/* verify ECDSA signature with this key */
-						VV_(printf("  performing verify with ICAPATH=%d \n", getenv_icapath()));
-						rc = ica_ecdsa_verify(adapter_handle, eckey, hash, hash_length[j],
-										signature, MAX_ECDSA_SIG_SIZE);
-
-						if (rc) {
-							V_(printf("Signature could not be verified, key not usable, rc=%i.\n",rc));
-							test_failed = 1;
-							break;
-						}
 					}
 				}
 			}
