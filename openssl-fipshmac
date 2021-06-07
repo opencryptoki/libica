@@ -1,0 +1,12 @@
+#!/bin/sh -e
+
+if [ "$#" -eq 0 ] ; then
+    echo "No library to hash specified." >&2
+    exit 22
+fi
+
+while [ -n "$1" ] ; do
+    dgst="$(openssl dgst -sha256 -mac hmac -macopt hexkey:00000000 "$1")"
+    echo "$dgst" | sed -e 's/^.* //' > "$(dirname "$1")/.$(basename "$1")".hmac
+    shift
+done

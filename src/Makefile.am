@@ -46,13 +46,13 @@ mp.S	: mp.pl
 	./mp.pl mp.S
 
 if ICA_FIPS
+FIPSHMAC ?= ${top_srcdir}/openssl-fipshmac
 hmac-file-lnk: hmac-file
 	$(AM_V_GEN) cd ${top_builddir}/src/.libs && ln -sf .libica.so.$(VERSION1).hmac .libica.so.$(MAJOR).hmac
 	$(AM_V_GEN) cd ${top_builddir}/src/.libs && ln -sf .libica-cex.so.$(VERSION1).hmac .libica-cex.so.$(MAJOR).hmac
 
 hmac-file: libica.la libica-cex.la
-	$(AM_V_GEN) openssl dgst -sha256 -mac hmac -macopt hexkey:00000000 ${top_builddir}/src/.libs/libica.so.$(VERSION1) | sed -e 's/^.* //' > ${top_builddir}/src/.libs/.libica.so.$(VERSION1).hmac
-	$(AM_V_GEN) openssl dgst -sha256 -mac hmac -macopt hexkey:00000000 ${top_builddir}/src/.libs/libica-cex.so.$(VERSION1) | sed -e 's/^.* //' > ${top_builddir}/src/.libs/.libica-cex.so.$(VERSION1).hmac
+	$(AM_V_GEN) $(FIPSHMAC) ${top_builddir}/src/.libs/libica.so.$(VERSION1) ${top_builddir}/src/.libs/libica-cex.so.$(VERSION1)
 
 hmac_files = hmac-file hmac-file-lnk
 
