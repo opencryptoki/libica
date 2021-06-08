@@ -758,7 +758,7 @@ unsigned int ica_sha384(unsigned int message_part,
  * @param sha512_context
  * Pointer to the SHA-512 context structure used to store intermediate values
  * needed when chaining is used. The contents are ignored for message part
- * SHA_MSG_PART_ONLY and SHA_MSG_PART_FIRST. This structuremust
+ * SHA_MSG_PART_ONLY and SHA_MSG_PART_FIRST. This structure must
  * contain the returned value of the preceding call to ica_sha512 for message
  * part SHA_MSG_PART_MIDDLE and SHA_MSG_PART_FINAL. For message part
  * SHA_MSG_PART_FIRST and SHA_MSG_PART_FINAL, the returned value can
@@ -1009,7 +1009,7 @@ int ica_ec_key_init(const unsigned char *X, const unsigned char *Y,
  * @return 0 if success
  * EPERM if the EC curve is not supported in this environment
  * EINVAL if at least one invalid parameter is given.
- * ENOMEM if memeory could not be allocated.
+ * ENOMEM if memory could not be allocated.
  * EIO if an internal processing error occurred.
  */
 ICA_EXPORT
@@ -1280,7 +1280,7 @@ int ica_ed448_ctx_del(ICA_ED448_CTX **ctx);
  * @param public_key
  * Pointer to where the generated public key is to be placed. If the exponent
  * element in the public key is not set, it will be randomly generated. A not
- * well chosen exponent may result in the program loooping endlessly. Common
+ * well chosen exponent may result in the program looping endlessly. Common
  * public exponents are 3 and 65537.
  * @param private_key
  * Pointer to where the generated private key in modulus/exponent format is to
@@ -1308,7 +1308,7 @@ unsigned int ica_rsa_key_generate_mod_expo(ica_adapter_handle_t adapter_handle,
  * @param public_key
  * Pointer to where the generated public key is to be placed. If the exponent
  * element in the public key is not set, it will be randomly generated. A not
- * well chosen exponent may result in the program loooping endlessly. Common
+ * well chosen exponent may result in the program looping endlessly. Common
  * public exponents are 3 and 65537.
  * @param private_key
  * Pointer to where the generated private key in CRT format is to be placed.
@@ -2006,7 +2006,7 @@ unsigned int ica_des_cmac(const unsigned char *message, unsigned long message_le
  * the Block Cipher Based Message Authentication Code (CMAC) mode as described
  * in NIST Special Publication 800-38B.
  * ica_des_cmc_intermediate and ica_des_cmac_last can be used when the message
- * to be authenticated or to be verfied using CMAC is supplied in multiple
+ * to be authenticated or to be verified using CMAC is supplied in multiple
  * chunks. ica_des_cmac_intermediate is used to process all but the last
  * chunk. All message chunks to preprocessed by ica_des_cmac_intermediate
  * must have a size that is a multiple of the cipher block size (i.e a
@@ -2190,7 +2190,7 @@ unsigned int ica_3des_cbc(const unsigned char *in_data, unsigned char *out_data,
  * message consisting of multiple chunks where all but the last chunk are
  * encrypted or decrypted by chained calls to ica_3des_cbc and the resulting
  * iv of the last call to ica_3des_cbc is fed into the iv of the
- * ica_3des_cbc_cs call provided the chunc is greater than cipher block size
+ * ica_3des_cbc_cs call provided the chunk is greater than cipher block size
  * (greater than 8 bytes for 3DES).
  *
  * Required HW Support
@@ -2443,7 +2443,7 @@ unsigned int ica_3des_ofb(const unsigned char *in_data, unsigned char *out_data,
 
 /**
  * Authenticate data or verify the authenticity of data with an 3DES key
- * using the Block Cipher Based Message Authetication Code (CMAC) mode as
+ * using the Block Cipher Based Message Authentication Code (CMAC) mode as
  * described in NIST Special Publication 800-38B.
  * ica_3des_cmac can be used to authenticate or verify the authenticity of a
  * complete message.
@@ -2494,7 +2494,7 @@ unsigned int ica_3des_cmac(const unsigned char *message, unsigned long message_l
  * the Block Cipher Based Message Authentication Code (CMAC) mode as described
  * in NIST Special Publication 800-38B.
  * ica_3des_cmc_intermediate and ica_3des_cmac_last can be used when the
- * message to be authenticated or to be verfied using CMAC is supplied in
+ * message to be authenticated or to be verified using CMAC is supplied in
  * multiple chunks. ica_3des_cmac_intermediate is used to process all but the
  * last chunk. All message chunks to preprocessed by
  * ica_3des_cmac_intermediate must have a size that is a multiple of the
@@ -2656,7 +2656,7 @@ unsigned int ica_aes_ecb(const unsigned char *in_data, unsigned char *out_data,
  * AES-128, AES-192 and AES-256 respectively. Therefore, you can use the
  * macros: AES_KEY_LEN128, AES_KEY_LEN192, and AES_KEY_LEN256.
  * @param iv
- * Pointer to a valid initialization vector of size chipher block size. This
+ * Pointer to a valid initialization vector of size cipher block size. This
  * vector will be overwritten during the function. The result value in iv may
  * be used as initialization vector for a chained ica_aes_cbc call with the
  * same key.
@@ -3014,7 +3014,7 @@ unsigned int ica_aes_cmac(const unsigned char *message, unsigned long message_le
  * the Block Cipher Based Message Authentication Code (CMAC) mode as described
  * in NIST Special Publication 800-38B.
  * ica_aes_cmc_intermediate and ica_aes_cmac_last can be used when the message
- * to be authenticated or to be verfied using CMAC is supplied in multiple
+ * to be authenticated or to be verified using CMAC is supplied in multiple
  * chunks. ica_aes_cmac_intermediate is used to process all but the last
  * chunk. All message chunks to preprocessed by ica_aes_cmac_intermediate
  * must have a size that is a multiple of the cipher block size (i.e. a
@@ -3545,7 +3545,7 @@ int ica_aes_gcm_kma_get_tag(unsigned char *tag, unsigned int tag_length,
 		const kma_ctx* ctx);
 
 /**
- * Verify if the specifed known authentication tag is identical to the
+ * Verify if the specified known authentication tag is identical to the
  * calculated tag after a decryption process.
  *
  * @param known_tag
@@ -3734,7 +3734,7 @@ int ica_drbg_instantiate(ica_drbg_t **sh,
  * (reseed a DRBG instantiation)
  *
  * @sh: State Handle. Identifies the DRBG instantiation to be reseeded.
- * @pr: Prediciton Resistance request. Indicates whether or not prediction
+ * @pr: Prediction Resistance request. Indicates whether or not prediction
  * resistance is required.
  * @add: ADDitional input: An optional input. NULL indicates that no additional
  * input is used.
@@ -3761,7 +3761,7 @@ int ica_drbg_reseed(ica_drbg_t *sh,
  * bytes are requested.
  * @sec: requested SECurity strength: Minimum bits of security that the
  * generated pseudorandom bytes SHALL offer.
- * @pr: Prediciton Resistance request. Indicates whether or not prediction
+ * @pr: Prediction Resistance request. Indicates whether or not prediction
  * resistance is required.
  * @add: ADDitional input. An optional input. NULL indicates that no additional input
  * is used.
@@ -3790,7 +3790,7 @@ int ica_drbg_generate(ica_drbg_t *sh,
 
 /*
  * Uninstantiate function
- * (destroy an existing DRBG instiantiation)
+ * (destroy an existing DRBG instantiation)
  *
  * @sh: State Handle pointer. The corresponding DRBG instantiation is destroyed
  * and the state handle is set to NULL (invalid).
