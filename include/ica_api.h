@@ -965,7 +965,7 @@ typedef struct ec_key_t ICA_EC_KEY;
  * Also an ECDSA signature has twice the length of D.
  *
  * @return Pointer to opaque ICA_EC_KEY structure if success.
- * NULL if no memory could be allocated, or an unsupported nid is specified.
+ * NULL if no memory could be allocated.
  */
 ICA_EXPORT
 ICA_EC_KEY* ica_ec_key_new(unsigned int nid, unsigned int *privlen);
@@ -990,6 +990,7 @@ ICA_EC_KEY* ica_ec_key_new(unsigned int nid, unsigned int *privlen);
  * ICA_EC_KEY object.
  *
  * @return 0 if success
+ * EPERM if the EC curve is not supported in this environment
  * EINVAL if at least one invalid parameter is given.
  */
 ICA_EXPORT
@@ -1006,6 +1007,7 @@ int ica_ec_key_init(const unsigned char *X, const unsigned char *Y,
  * Pointer to a previously allocated ICA_EC_KEY object.
  *
  * @return 0 if success
+ * EPERM if the EC curve is not supported in this environment
  * EINVAL if at least one invalid parameter is given.
  * ENOMEM if memeory could not be allocated.
  * EIO if an internal processing error occurred.
@@ -1034,6 +1036,7 @@ int ica_ec_key_generate(ica_adapter_handle_t adapter_handle, ICA_EC_KEY *key);
  * both keys have the same lengths of D, and (X,Y).
  *
  * @return 0 if success
+ * EPERM if the EC curve is not supported in this environment
  * EINVAL if at least one invalid parameter is given.
  * EIO if an internal processing error occurred.
  */
