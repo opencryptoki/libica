@@ -87,3 +87,7 @@ sha2_test.sh ecdh1_test.sh ecdsa2_test.sh ecdh2_test.sh \
 drbg_birthdays_test.pl sha3_test.sh ec_keygen1_test.sh ec_keygen2_test.sh \
 rsa_keygen2048_test.sh rsa_keygen1024_test.sh rsa_keygen4096_test.sh \
 rsa_keygen3072_test.sh rsa_keygen_test.sh
+
+icastats_test.c: icastats_test.c.in
+	@SED@   -e s!\@builddir\@!"@abs_top_builddir@/src/"!g < $< > $@-t
+	mv $@-t $@
