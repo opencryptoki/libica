@@ -95,7 +95,7 @@ int main (int argc, char **argv)
 	  /*
 	 * Reset Counters
 	 **/
-	rc = system("icastats -r");
+	rc = system("@builddir@icastats -r");
 	if (rc == -1)
 		exit(handle_ica_error(rc, "system"));
 	rc = ica_random_number_generate(AES_CIPHER_BLOCK, ctr);
@@ -251,7 +251,7 @@ void check_icastats(int algo_id, char *stat)
 	hw = check_hw(algo_id);
 	if (hw < 0) return; /* unknown algo_id */
 
-	sprintf(cmd, "icastats | grep '%s'", stat);
+	sprintf(cmd, "@builddir@icastats | grep '%s'", stat);
 	f = popen(cmd, "r");
 	if (!f) {
 		perror("error in peopen");
@@ -396,7 +396,7 @@ void des_tests(unsigned char *iv, unsigned char *cmac, unsigned char *ctr)
 	}
 
 
-	rc = system("icastats -r");
+	rc = system("@builddir@icastats -r");
 	if (rc == -1)
 		exit(handle_ica_error(rc, "system"));
 
@@ -413,7 +413,7 @@ void des_tests(unsigned char *iv, unsigned char *cmac, unsigned char *ctr)
 	}
 	check_icastats(DES_ECB, "DES ECB");
 
-	rc = system("icastats -r");
+	rc = system("@builddir@icastats -r");
 	if (rc == -1)
 		exit(handle_ica_error(rc, "system"));
 
@@ -430,7 +430,7 @@ void des_tests(unsigned char *iv, unsigned char *cmac, unsigned char *ctr)
 	}
 	check_icastats(DES_CBC, "DES CBC");
 
-	rc = system("icastats -r");
+	rc = system("@builddir@icastats -r");
 	if (rc == -1)
 		exit(handle_ica_error(rc, "system"));
 
@@ -447,7 +447,7 @@ void des_tests(unsigned char *iv, unsigned char *cmac, unsigned char *ctr)
 	}
 	check_icastats(DES_CFB, "DES CFB");
 
-	rc = system("icastats -r");
+	rc = system("@builddir@icastats -r");
 	if (rc == -1)
 		exit(handle_ica_error(rc, "system"));
 
@@ -459,7 +459,7 @@ void des_tests(unsigned char *iv, unsigned char *cmac, unsigned char *ctr)
 	}
 	check_icastats(DES_CMAC, "DES CMAC");
 
-	rc = system("icastats -r");
+	rc = system("@builddir@icastats -r");
 	if (rc == -1)
 		exit(handle_ica_error(rc, "system"));
 
@@ -476,7 +476,7 @@ void des_tests(unsigned char *iv, unsigned char *cmac, unsigned char *ctr)
 	}
 	check_icastats(DES_CTR, "DES CTR");
 
-	rc = system("icastats -r");
+	rc = system("@builddir@icastats -r");
 	if (rc == -1)
 		exit(handle_ica_error(rc, "system"));
 
@@ -513,7 +513,7 @@ void tdes_tests(unsigned char *iv, unsigned char *cmac, unsigned char *ctr)
 		exit(TEST_FAIL);
 	}
 
-	rc = system("icastats -r");
+	rc = system("@builddir@icastats -r");
 	if (rc == -1)
 		exit(handle_ica_error(rc, "system"));
 
@@ -530,7 +530,7 @@ void tdes_tests(unsigned char *iv, unsigned char *cmac, unsigned char *ctr)
 	}
 	check_icastats(DES3_ECB, "3DES ECB");
 
-	rc = system("icastats -r");
+	rc = system("@builddir@icastats -r");
 	if (rc == -1)
 		exit(handle_ica_error(rc, "system"));
 
@@ -547,7 +547,7 @@ void tdes_tests(unsigned char *iv, unsigned char *cmac, unsigned char *ctr)
 	}
 	check_icastats(DES3_CBC, "3DES CBC");
 
-	rc = system("icastats -r");
+	rc = system("@builddir@icastats -r");
 	if (rc == -1)
 		exit(handle_ica_error(rc, "system"));
 
@@ -564,7 +564,7 @@ void tdes_tests(unsigned char *iv, unsigned char *cmac, unsigned char *ctr)
 	}
 	check_icastats(DES3_CFB, "3DES CFB");
 
-	rc = system("icastats -r");
+	rc = system("@builddir@icastats -r");
 	if (rc == -1)
 		exit(handle_ica_error(rc, "system"));
 
@@ -576,7 +576,7 @@ void tdes_tests(unsigned char *iv, unsigned char *cmac, unsigned char *ctr)
 	}
 	check_icastats(DES3_CMAC, "3DES CMAC");
 
-	rc = system("icastats -r");
+	rc = system("@builddir@icastats -r");
 	if (rc == -1)
 		exit(handle_ica_error(rc, "system"));
 
@@ -593,7 +593,7 @@ void tdes_tests(unsigned char *iv, unsigned char *cmac, unsigned char *ctr)
 	}
 	check_icastats(DES3_CTR, "3DES CTR");
 
-	rc = system("icastats -r");
+	rc = system("@builddir@icastats -r");
 	if (rc == -1)
 		exit(handle_ica_error(rc, "system"));
 
@@ -633,7 +633,7 @@ void sha_tests()
 	shake_128_context_t shake_128_context;
 	shake_256_context_t shake_256_context;
 
-	rc = system("icastats -r");
+	rc = system("@builddir@icastats -r");
 	if (rc == -1)
 		exit(handle_ica_error(rc, "system"));
 
@@ -643,7 +643,7 @@ void sha_tests()
 		exit(handle_ica_error(rc, "ica_sha1"));
 	check_icastats(SHA1, "SHA-1");
 
-	rc = system("icastats -r");
+	rc = system("@builddir@icastats -r");
 	if (rc == -1)
 		exit(handle_ica_error(rc, "system"));
 
@@ -653,7 +653,7 @@ void sha_tests()
 		exit(handle_ica_error(rc, "ica_sha224"));
 	check_icastats(SHA224, "SHA-224");
 
-	rc = system("icastats -r");
+	rc = system("@builddir@icastats -r");
 	if (rc == -1)
 		exit(handle_ica_error(rc, "system"));
 
@@ -663,7 +663,7 @@ void sha_tests()
 		exit(handle_ica_error(rc, "ica_sha256"));
 	check_icastats(SHA256, "SHA-256");
 
-	rc = system("icastats -r");
+	rc = system("@builddir@icastats -r");
 	if (rc == -1)
 		exit(handle_ica_error(rc, "system"));
 
@@ -673,7 +673,7 @@ void sha_tests()
 		exit(handle_ica_error(rc, "ica_sha384"));
 	check_icastats(SHA384, "SHA-384");
 
-	rc = system("icastats -r");
+	rc = system("@builddir@icastats -r");
 	if (rc == -1)
 		exit(handle_ica_error(rc, "system"));
 
@@ -684,7 +684,7 @@ void sha_tests()
 	check_icastats(SHA512, "SHA-512");
 
 	if (check_hw(SHA3_224)) {
-		rc = system("icastats -r");
+		rc = system("@builddir@icastats -r");
 		if (rc == -1)
 			exit(handle_ica_error(rc, "system"));
 
@@ -694,7 +694,7 @@ void sha_tests()
 			exit(handle_ica_error(rc, "ica_sha3_224"));
 		check_icastats(SHA3_224, "SHA3-224");
 
-		rc = system("icastats -r");
+		rc = system("@builddir@icastats -r");
 		if (rc == -1)
 			exit(handle_ica_error(rc, "system"));
 
@@ -704,7 +704,7 @@ void sha_tests()
 			exit(handle_ica_error(rc, "ica_sha3_256"));
 		check_icastats(SHA3_256, "SHA3-256");
 
-		rc = system("icastats -r");
+		rc = system("@builddir@icastats -r");
 		if (rc == -1)
 			exit(handle_ica_error(rc, "system"));
 
@@ -714,7 +714,7 @@ void sha_tests()
 			exit(handle_ica_error(rc, "ica_sha3_384"));
 		check_icastats(SHA3_384, "SHA3-384");
 
-		rc = system("icastats -r");
+		rc = system("@builddir@icastats -r");
 		if (rc == -1)
 			exit(handle_ica_error(rc, "system"));
 
@@ -724,7 +724,7 @@ void sha_tests()
 			exit(handle_ica_error(rc, "ica_sha3_512"));
 		check_icastats(SHA3_512, "SHA3-512");
 
-		rc = system("icastats -r");
+		rc = system("@builddir@icastats -r");
 		if (rc == -1)
 			exit(handle_ica_error(rc, "system"));
 
@@ -735,7 +735,7 @@ void sha_tests()
 			exit(handle_ica_error(rc, "ica_shake_128"));
 		check_icastats(SHAKE128, "SHAKE-128");
 
-		rc = system("icastats -r");
+		rc = system("@builddir@icastats -r");
 		if (rc == -1)
 			exit(handle_ica_error(rc, "system"));
 
@@ -871,7 +871,7 @@ unsigned char qinv[] =
 	ica_rsa_key_mod_expo_t mod_expo_key= {RSA_BYTE_LENGHT, n, e};
 	ica_rsa_key_crt_t crt_key = {RSA_BYTE_LENGHT, p, q, dp, dq, qinv};
 
-	rc = system("icastats -r");
+	rc = system("@builddir@icastats -r");
 	if (rc == -1)
 		exit(handle_ica_error(rc, "system"));
 
@@ -885,7 +885,7 @@ unsigned char qinv[] =
 #endif
 	check_icastats(RSA_ME, "RSA-ME");
 
-	rc = system("icastats -r");
+	rc = system("@builddir@icastats -r");
 	if (rc == -1)
 		exit(handle_ica_error(rc, "system"));
 
@@ -945,7 +945,7 @@ void aes_tests(unsigned char *iv, unsigned char *cmac, unsigned char *ctr)
 		exit(TEST_FAIL);
 	}
 
-	rc = system("icastats -r");
+	rc = system("@builddir@icastats -r");
 	if (rc == -1)
 		exit(handle_ica_error(rc, "system"));
 
@@ -961,7 +961,7 @@ void aes_tests(unsigned char *iv, unsigned char *cmac, unsigned char *ctr)
 	}
 	check_icastats(AES_CBC, "AES CBC");
 
-	rc = system("icastats -r");
+	rc = system("@builddir@icastats -r");
 	if (rc == -1)
 		exit(handle_ica_error(rc, "system"));
 
@@ -979,7 +979,7 @@ void aes_tests(unsigned char *iv, unsigned char *cmac, unsigned char *ctr)
 	}
 	check_icastats(AES_CFB, "AES CFB");
 
-	rc = system("icastats -r");
+	rc = system("@builddir@icastats -r");
 	if (rc == -1)
 		exit(handle_ica_error(rc, "system"));
 
@@ -992,7 +992,7 @@ void aes_tests(unsigned char *iv, unsigned char *cmac, unsigned char *ctr)
 	}
 	check_icastats(AES_CMAC, "AES CMAC");
 
-	rc = system("icastats -r");
+	rc = system("@builddir@icastats -r");
 	if (rc == -1)
 		exit(handle_ica_error(rc, "system"));
 
@@ -1010,7 +1010,7 @@ void aes_tests(unsigned char *iv, unsigned char *cmac, unsigned char *ctr)
 	}
 	check_icastats(AES_CTR, "AES CTR");
 
-	rc = system("icastats -r");
+	rc = system("@builddir@icastats -r");
 	if (rc == -1)
 		exit(handle_ica_error(rc, "system"));
 
@@ -1027,7 +1027,7 @@ void aes_tests(unsigned char *iv, unsigned char *cmac, unsigned char *ctr)
 	}
 	check_icastats(AES_ECB, "AES ECB");
 
-	rc = system("icastats -r");
+	rc = system("@builddir@icastats -r");
 	if (rc == -1)
 		exit(handle_ica_error(rc, "system"));
 
@@ -1045,7 +1045,7 @@ void aes_tests(unsigned char *iv, unsigned char *cmac, unsigned char *ctr)
 	}
 	check_icastats(AES_OFB, "AES OFB");
 
-	rc = system("icastats -r");
+	rc = system("@builddir@icastats -r");
 	if (rc == -1)
 		exit(handle_ica_error(rc, "system"));
 
