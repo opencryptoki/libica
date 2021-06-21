@@ -1338,6 +1338,8 @@ int ica_ec_key_init(const unsigned char *X, const unsigned char *Y,
 #ifdef ICA_FIPS
 	if (fips >> 1)
 		return EACCES;
+	if (!curve_supported_via_openssl(key->nid))
+		return EPERM;
 #endif /* ICA_FIPS */
 
 	/* check for obvious errors in parms */
@@ -1378,6 +1380,8 @@ int ica_ec_key_generate(ica_adapter_handle_t adapter_handle, ICA_EC_KEY *key)
 #ifdef ICA_FIPS
 	if (fips >> 1)
 		return EACCES;
+	if (!curve_supported_via_openssl(key->nid))
+		return EPERM;
 #endif /* ICA_FIPS */
 
 	/* check for obvious errors in parms */
@@ -1430,6 +1434,8 @@ int ica_ecdh_derive_secret(ica_adapter_handle_t adapter_handle,
 #ifdef ICA_FIPS
 	if (fips >> 1)
 		return EACCES;
+	if (privkey_A != NULL && !curve_supported_via_openssl(privkey_A->nid))
+		return EPERM;
 #endif /* ICA_FIPS */
 
 	/* check for obvious errors in parms */
