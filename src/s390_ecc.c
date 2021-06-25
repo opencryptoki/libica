@@ -2166,7 +2166,7 @@ err:
 int ec_key_check(ICA_EC_KEY *ica_key)
 {
 	EC_KEY *pubkey = NULL, *privkey = NULL;
-	BIGNUM *x, *y, *d;
+	BIGNUM *x = NULL, *y = NULL, *d = NULL;
 	int privlen, rc = EINVAL;
 
 	if (!ica_key)
