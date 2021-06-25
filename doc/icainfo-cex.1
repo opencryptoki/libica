@@ -6,12 +6,12 @@
 .\"   nroff -man icainfo-cex.1
 .\" to process this source
 .\"
-.TH ICAINFO-CEX 1 2021-05-12 IBM "icainfo-cex user manual"
+.TH ICAINFO-CEX 1 2021-06-25 IBM "icainfo-cex user manual"
 .SH NAME
 icainfo-cex \- print information about cryptographic functions supported by libica-cex
 .SH SYNOPSIS
 .B icainfo-cex
-[-v | --version] [-h | --help]
+[-v | --version] [-h | --help] [-c | --list-curves]
 .SH DESCRIPTION
 .B icainfo-cex
 prints a table that shows libica-cex's support for various cryptographic
@@ -58,6 +58,8 @@ CPACF support (including fallbacks) is disabled in libica-cex.
 show libica-cex version and copyright
 .IP "-h or --help"
 display this help and exit
+.IP "-c or --list-curves"
+show supported elliptic curves
 .SH RETURN VALUE
 .IP 1
 unknown or invalid argument on invocation

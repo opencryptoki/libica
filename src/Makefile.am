@@ -64,7 +64,7 @@ endif
 bin_PROGRAMS = icainfo icastats icainfo-cex
 
 icainfo_CFLAGS_COMMON = ${AM_CFLAGS} -I${srcdir}/include -I${srcdir}/../include
-icainfo_LDADD_COMMON = @LIBS@
+icainfo_LDADD_COMMON = @LIBS@ -lcrypto
 icainfo_SOURCES_COMMON = icainfo.c include/fips.h include/s390_crypto.h \
 		  ../include/ica_api.h
 
