@@ -434,7 +434,7 @@ static inline int curve_supported_via_online_card(unsigned int nid)
  *
  * Note: ED25519, ED448, X25519, and X448 must be used via the related ica_ed
  * and ica_x API functions. CPACF support within the ica_ec API is just a
- * performance improvement over CCA cards, but does not suppport curves
+ * performance improvement over CCA cards, but does not support curves
  * that are not supported via CCA cards.
  */
 static inline int curve_supported_via_cpacf(unsigned int nid)
