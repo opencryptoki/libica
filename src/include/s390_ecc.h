@@ -468,6 +468,29 @@ static inline int curve_supported_via_openssl(unsigned int nid)
 	return ptr ? 1 : 0;
 }
 
+static inline int sw_fallbacks_implemented(int nid)
+{
+	switch (nid) {
+	case NID_X9_62_prime192v1:
+	case NID_secp224r1:
+	case NID_X9_62_prime256v1:
+	case NID_secp384r1:
+	case NID_secp521r1:
+#if OPENSSL_VERSION_NUMBER >= 0x010002000
+	case NID_brainpoolP160r1:
+	case NID_brainpoolP192r1:
+	case NID_brainpoolP224r1:
+	case NID_brainpoolP256r1:
+	case NID_brainpoolP320r1:
+	case NID_brainpoolP384r1:
+	case NID_brainpoolP512r1:
+#endif
+		return 1;
+	default:
+		return 0;
+	}
+}
+
 /**
  * returns the curve type (prime or brainpool) for the given nid.
  * returns -1 for any unknown nid.
