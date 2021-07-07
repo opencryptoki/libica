@@ -30,13 +30,13 @@ SOURCES_common = ica_api.c init.c icastats_shared.c s390_rsa.c \
 		    include/rng.h
 
 libica_la_CFLAGS = ${CFLAGS_common} -DLIBNAME=\"libica\"
-libica_la_CCASFLAGS = ${AM_CFLAGS}
+libica_la_CCASFLAGS = ${AM_CFLAGS} ${ICA_ASFLAGS}
 libica_la_LIBADD = ${LIBS_common}
 libica_la_LDFLAGS = ${LDFLAGS_common}
 libica_la_SOURCES = ${SOURCES_common}
 
 libica_cex_la_CFLAGS = ${CFLAGS_common} -DNO_CPACF -DNO_SW_FALLBACKS -DLIBNAME=\"libica-cex\"
-libica_cex_la_CCASFLAGS = ${AM_CFLAGS}
+libica_cex_la_CCASFLAGS = ${AM_CFLAGS} ${ICA_ASFLAGS}
 libica_cex_la_LIBADD = ${LIBS_common}
 libica_cex_la_LDFLAGS = ${LDFLAGS_common}
 libica_cex_la_SOURCES = ${SOURCES_common}
