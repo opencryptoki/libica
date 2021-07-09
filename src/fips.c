@@ -288,7 +288,7 @@ end:
 	if (pkey != NULL)
 		EVP_PKEY_free(pkey);
 
-	free(keybuf);
+	OPENSSL_free(keybuf);
 	EVP_MD_CTX_destroy(mdctx);
 	if (fp)
 		fclose(fp);
