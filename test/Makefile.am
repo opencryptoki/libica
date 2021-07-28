@@ -2,6 +2,7 @@ TESTS = \
 fips_test \
 icastats_test.sh \
 get_functionlist_test \
+get_functionlist_cex_test \
 get_version_test \
 rng_test \
 drbg_test \
@@ -70,6 +71,9 @@ TESTS_ENVIRONMENT = export LD_LIBRARY_PATH=${builddir}/../src/.libs/ \
 AM_CFLAGS = @FLAGS@ -I${srcdir}/../include/ -I${srcdir}/../src/include/
 LDADD = @LIBS@ ${top_builddir}/src/.libs/libica.so -lcrypto -lpthread
 
+get_functionlist_cex_test_SOURCES = get_functionlist_cex_test.c 
+get_functionlist_cex_test_LDADD = @LIBS@ ${top_builddir}/src/.libs/libica-cex.so -lcrypto -lpthread
+
 check_PROGRAMS = fips_test icastats_test get_functionlist_test \
 get_version_test rng_test drbg_test drbg_birthdays_test des_test \
 des_ecb_test des_cbc_test des_ctr_test des_cfb_test des_ofb_test \
@@ -80,7 +84,7 @@ aes_gcm_test aes_gcm_kma_test cbccs_test ccm_test cmac_test sha_test \
 sha1_test sha256_test sha3_224_test sha3_256_test sha3_384_test \
 sha3_512_test shake_128_test shake_256_test rsa_keygen_test \
 rsa_key_check_test rsa_test ec_keygen_test ecdh_test ecdsa_test mp_test \
-eddsa_test x_test
+eddsa_test x_test get_functionlist_cex_test
 
 EXTRA_DIST = testdata testcase.h rsa_test.h aes_gcm_test.h ecdsa1_test.sh \
 sha2_test.sh ecdh1_test.sh ecdsa2_test.sh ecdh2_test.sh \
