@@ -324,6 +324,9 @@ static void ed25519_pc(void)
 		EXIT_ERR("libcrypto Ed25519 signature differs.");
 	}
 
+	if (EVP_DigestVerifyInit(ctx2, &pctx, NULL, NULL, pkey) != 1)
+		EXIT_ERR("EVP_DigestVerifyInit failed.");
+
 	if (EVP_DigestVerify(ctx2, ica_sig, sizeof(ica_sig), msg, msglen) != 1)
 		EXIT_ERR("EVP_DigestVerify failed.");
 
@@ -407,6 +410,9 @@ static void ed448_pc(void)
 		dump_array(ossl_sig, sizeof(ossl_sig));
 		EXIT_ERR("libcrypto Ed448 signature differs.");
 	}
+
+	if (EVP_DigestVerifyInit(ctx2, &pctx, NULL, NULL, pkey) != 1)
+		EXIT_ERR("EVP_DigestVerifyInit failed.");
 
 	if (EVP_DigestVerify(ctx2, ica_sig, sizeof(ica_sig), msg, msglen) != 1)
 		EXIT_ERR("EVP_DigestVerify failed.");
