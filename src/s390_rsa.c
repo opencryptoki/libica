@@ -78,17 +78,12 @@ RSA* rsa_key_generate(unsigned int modulus_bit_length,
 		BN_free(exp);
 		return NULL;
 	}
-#if OPENSSL_VERSION_NUMBER >= 0x10100000L
 	BN_GENCB *cb = BN_GENCB_new();
 	if(!cb) {
 		RSA_free(rsa);
 		BN_free(exp);
 		return NULL;
 	}
-#else
-	BN_GENCB dummy;
-	BN_GENCB *cb = &dummy;
-#endif /* OPENSSL_VERSION_NUMBER */
 
 	BN_set_word(exp, *public_exponent);
 	BN_GENCB_set_old(cb, NULL, NULL);
@@ -99,9 +94,7 @@ RSA* rsa_key_generate(unsigned int modulus_bit_length,
 	}
 
 	BN_free(exp);
-#if OPENSSL_VERSION_NUMBER >= 0x10100000L
 	BN_GENCB_free(cb);
-#endif /* OPENSSL_VERSION_NUMBER */
 	return rsa;
 }
 
@@ -142,12 +135,7 @@ unsigned int rsa_key_generate_mod_expo(ica_adapter_handle_t deviceHandle,
 		return errno;
 
 	const BIGNUM *n, *d;
-#if OPENSSL_VERSION_NUMBER >= 0x10100000L
 	RSA_get0_key(rsa, &n, NULL,  &d);
-#else
-	n = rsa->n;
-	d = rsa->d;
-#endif /* OPENSSL_VERSION_NUMBER */
 
 	/* Set key buffers zero to make sure there is no
 	 * unneeded junk in between.
@@ -214,18 +202,9 @@ unsigned int rsa_key_generate_crt(ica_adapter_handle_t deviceHandle,
 		return errno;
 
 	const BIGNUM *n, *p, *q, *dmp1, *dmq1, *iqmp;
-#if OPENSSL_VERSION_NUMBER >= 0x10100000L
 	RSA_get0_key(rsa, &n, NULL,  NULL);
 	RSA_get0_factors(rsa, &p, &q);
 	RSA_get0_crt_params(rsa, &dmp1, &dmq1, &iqmp);
-#else
-	n = rsa->n;
-	p = rsa->p;
-	q = rsa->q;
-	dmp1 = rsa->dmp1;
-	dmq1 = rsa->dmq1;
-	iqmp = rsa->iqmp;
-#endif /* OPENSSL_VERSION_NUMBER */
 
 	/* Public exponent has already been set, no need to do this here.
 	 * For public key, only modulus needs to be set.
