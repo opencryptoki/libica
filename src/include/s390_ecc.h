@@ -413,7 +413,6 @@ static inline int curve_supported_via_online_card(unsigned int nid)
 	case NID_X9_62_prime256v1:
 	case NID_secp384r1:
 	case NID_secp521r1:
-#if OPENSSL_VERSION_NUMBER >= 0x010002000
 	case NID_brainpoolP160r1:
 	case NID_brainpoolP192r1:
 	case NID_brainpoolP224r1:
@@ -421,7 +420,6 @@ static inline int curve_supported_via_online_card(unsigned int nid)
 	case NID_brainpoolP320r1:
 	case NID_brainpoolP384r1:
 	case NID_brainpoolP512r1:
-#endif
 		return 1;
 	default:
 		return 0;
@@ -476,7 +474,6 @@ static inline int sw_fallbacks_implemented(int nid)
 	case NID_X9_62_prime256v1:
 	case NID_secp384r1:
 	case NID_secp521r1:
-#if OPENSSL_VERSION_NUMBER >= 0x010002000
 	case NID_brainpoolP160r1:
 	case NID_brainpoolP192r1:
 	case NID_brainpoolP224r1:
@@ -484,7 +481,6 @@ static inline int sw_fallbacks_implemented(int nid)
 	case NID_brainpoolP320r1:
 	case NID_brainpoolP384r1:
 	case NID_brainpoolP512r1:
-#endif
 		return 1;
 	default:
 		return 0;
@@ -504,7 +500,6 @@ static inline short curve_type_from_nid(unsigned int nid)
 	case NID_secp384r1:
 	case NID_secp521r1:
 		return CURVE_TYPE_PRIME;
-#if OPENSSL_VERSION_NUMBER >= 0x010002000
 	case NID_brainpoolP160r1:
 	case NID_brainpoolP192r1:
 	case NID_brainpoolP224r1:
@@ -513,7 +508,6 @@ static inline short curve_type_from_nid(unsigned int nid)
 	case NID_brainpoolP384r1:
 	case NID_brainpoolP512r1:
 		return CURVE_TYPE_BRAINPOOL;
-#endif
 	default:
 		return -1;
 	}
@@ -527,42 +521,30 @@ static inline short curve_type_from_nid(unsigned int nid)
 static inline int privlen_from_nid(unsigned int nid)
 {
 	switch (nid) {
-#if OPENSSL_VERSION_NUMBER >= 0x010002000
 	case NID_brainpoolP160r1:
 		return 20;
-#endif
 	case NID_X9_62_prime192v1:
-#if OPENSSL_VERSION_NUMBER >= 0x010002000
 	case NID_brainpoolP192r1:
 		return 24;
-#endif
 	case NID_secp224r1:
-#if OPENSSL_VERSION_NUMBER >= 0x010002000
 	case NID_brainpoolP224r1:
 		return 28;
-#endif
 	case NID_ED25519:
 	case NID_X25519:
 	case NID_X9_62_prime256v1:
-#if OPENSSL_VERSION_NUMBER >= 0x010002000
 	case NID_brainpoolP256r1:
 		return 32;
 	case NID_brainpoolP320r1:
 		return 40;
-#endif
 	case NID_secp384r1:
-#if OPENSSL_VERSION_NUMBER >= 0x010002000
 	case NID_brainpoolP384r1:
-#endif
 		return 48;
 	case NID_X448:
 		return 56;
 	case NID_ED448:
 		return 57;
-#if OPENSSL_VERSION_NUMBER >= 0x010002000
 	case NID_brainpoolP512r1:
 		return 64;
-#endif
 	case NID_secp521r1:
 		return 66;
 	default:

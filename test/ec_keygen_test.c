@@ -32,7 +32,6 @@ static eckeygen_test_t eckeygen_tests[] = {
 	{NID_X9_62_prime256v1, "NID_X9_62_prime256v1"},
 	{NID_secp384r1, "NID_secp384r1"},
 	{NID_secp521r1, "NID_secp521r1"},
-#if OPENSSL_VERSION_NUMBER >= 0x010002000
 	{NID_brainpoolP160r1, "NID_brainpoolP160r1"},
 	{NID_brainpoolP192r1, "NID_brainpoolP192r1"},
 	{NID_brainpoolP224r1, "NID_brainpoolP224r1"},
@@ -40,7 +39,6 @@ static eckeygen_test_t eckeygen_tests[] = {
 	{NID_brainpoolP320r1, "NID_brainpoolP320r1"},
 	{NID_brainpoolP384r1, "NID_brainpoolP384r1"},
 	{NID_brainpoolP512r1, "NID_brainpoolP512r1"},
-#endif
 };
 
 static unsigned char hash[] = {

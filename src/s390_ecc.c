@@ -35,18 +35,6 @@
 #define CPRBXSIZE (sizeof(struct CPRBX))
 #define PARMBSIZE (2048)
 
-#if OPENSSL_VERSION_NUMBER < 0x10100000L
-#define ECDSA_SIG_get0(sig,pr,ps) \
-do { \
-*(pr)=(sig)->r; \
-*(ps)=(sig)->s; \
-} while (0)
-#define ECDSA_SIG_set0(sig,pr,ps) \
-do { \
-(sig)->r=pr; \
-(sig)->s=ps; \
-} while (0)
-#endif
 
 static int eckeygen_cpacf(ICA_EC_KEY *key);
 static int ecdsa_sign_cpacf(const ICA_EC_KEY *priv, const unsigned char *hash,
@@ -859,11 +847,7 @@ unsigned int ecdh_sw(const ICA_EC_KEY *privkey_A, const ICA_EC_KEY *pubkey_B,
 	 * Make sure to use original openssl compute_key method to avoid endless loop
 	 * when being called from IBMCA engine in software fallback.
 	 */
-#if OPENSSL_VERSION_NUMBER < 0x10100000L
-	ECDH_set_method(a, ECDH_OpenSSL());
-#else
 	EC_KEY_set_method(a, EC_KEY_OpenSSL());
-#endif
 	rc = ECDH_compute_key(z, privlen, EC_KEY_get0_public_key(b), a, NULL);
 	if (rc == 0)
 		goto err;
@@ -1262,11 +1246,7 @@ unsigned int ecdsa_sign_sw(const ICA_EC_KEY *privkey,
 	 * Make sure to use original openssl sign method to avoid endless loop when being
 	 * called from IBMCA engine in software fallback.
 	 */
-#if OPENSSL_VERSION_NUMBER < 0x10100000L
-	ECDSA_set_method(a, ECDSA_OpenSSL());
-#else
 	EC_KEY_set_method(a, EC_KEY_OpenSSL());
-#endif
 	sig = ECDSA_do_sign(hash, hash_length, a);
 	if (!sig)
 		goto err;
@@ -1739,11 +1719,7 @@ unsigned int ecdsa_verify_sw(const ICA_EC_KEY *pubkey,
 	 * Make sure to use original openssl verify method to avoid endless loop
 	 * when being called from IBMCA engine in software fallback.
 	 */
-#if OPENSSL_VERSION_NUMBER < 0x10100000L
-	ECDSA_set_method(a, ECDSA_OpenSSL());
-#else
 	EC_KEY_set_method(a, EC_KEY_OpenSSL());
-#endif
 	rc = ECDSA_do_verify(hash, hash_length, sig, a);
 	switch (rc) {
 	case 0: /* signature invalid */
@@ -2101,19 +2077,12 @@ unsigned int eckeygen_sw(ICA_EC_KEY *key)
 	if ((group = EC_KEY_get0_group(a)) == NULL)
 		goto err;
 
-#if OPENSSL_VERSION_NUMBER < 0x10100000L
-	/* Openssl 1.0.2 does not provide a default ec_key_gen method, so IBMCA does not
-	 * override such a function. Therefore nothing to do here.
-	 */
-#else
 	/**
 	 * IBMCA overrides the default ec_key_gen method for openssl 1.1.0 and later.
 	 * Make sure to use original openssl method to avoid endless loop when being
 	 * called from IBMCA engine in software fallback.
 	 */
 	EC_KEY_set_method(a, EC_KEY_OpenSSL());
-#endif
-
 	if (!EC_KEY_generate_key(a))
 		goto err;
 

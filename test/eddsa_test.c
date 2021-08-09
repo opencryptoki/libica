@@ -259,7 +259,6 @@ static void ed448_kat(void)
 
 static void ed25519_pc(void)
 {
-#if OPENSSL_VERSION_NUMBER >= 0x10101000L
 	ICA_ED25519_CTX *ctx;
 	EVP_PKEY_CTX *pctx = NULL;
 	EVP_MD_CTX *ctx2;
@@ -340,12 +339,10 @@ static void ed25519_pc(void)
 		EXIT_ERR("ica_ed25519_ctx_del failed.");
 
 	free(msg);
-#endif
 }
 
 static void ed448_pc(void)
 {
-#if OPENSSL_VERSION_NUMBER >= 0x10101000L
 	ICA_ED448_CTX *ctx;
 	EVP_PKEY_CTX *pctx = NULL;
 	EVP_MD_CTX *ctx2;
@@ -427,7 +424,6 @@ static void ed448_pc(void)
 		EXIT_ERR("ica_ed448_ctx_del failed.");
 
 	free(msg);
-#endif
 }
 
 static void ed25519_stress(void)
