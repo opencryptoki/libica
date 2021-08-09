@@ -103,7 +103,6 @@ static void check_functionlist(void)
 
 static void x25519_pc(void)
 {
-#if OPENSSL_VERSION_NUMBER >= 0x10101000L
 	ICA_X25519_CTX *ctx1 = NULL, *ctx2 = NULL;
 	EVP_PKEY *pkey1 = NULL, *pkey2 = NULL;
 	EVP_PKEY_CTX *pctx = NULL;
@@ -165,12 +164,10 @@ static void x25519_pc(void)
 	EVP_PKEY_free(pkey1);
 	EVP_PKEY_free(pkey2);
 	EVP_PKEY_CTX_free(pctx);
-#endif
 }
 
 static void x448_pc(void)
 {
-#if OPENSSL_VERSION_NUMBER >= 0x10101000L
 	ICA_X448_CTX *ctx1 = NULL, *ctx2 = NULL;
 	EVP_PKEY *pkey1 = NULL, *pkey2 = NULL;
 	EVP_PKEY_CTX *pctx = NULL;
@@ -232,7 +229,6 @@ static void x448_pc(void)
 	EVP_PKEY_free(pkey1);
 	EVP_PKEY_free(pkey2);
 	EVP_PKEY_CTX_free(pctx);
-#endif
 }
 
 static void x25519_kat(void)

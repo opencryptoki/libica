@@ -205,7 +205,6 @@ static inline int sw_fallbacks_available(int nid)
 	case NID_X9_62_prime256v1:
 	case NID_secp384r1:
 	case NID_secp521r1:
-#if OPENSSL_VERSION_NUMBER >= 0x010002000
 	case NID_brainpoolP160r1:
 	case NID_brainpoolP192r1:
 	case NID_brainpoolP224r1:
@@ -213,7 +212,6 @@ static inline int sw_fallbacks_available(int nid)
 	case NID_brainpoolP320r1:
 	case NID_brainpoolP384r1:
 	case NID_brainpoolP512r1:
-#endif
 		return 1;
 	default:
 		return 0;
