@@ -19,6 +19,7 @@
 #include <stdint.h>
 #include <openssl/crypto.h>
 #include <openssl/rsa.h>
+#include <openssl/evp.h>
 
 #include <openssl/opensslconf.h>
 #ifdef OPENSSL_FIPS
@@ -28,6 +29,12 @@
 #include "fips.h"
 #include "s390_rsa.h"
 #include "s390_prng.h"
+#include "s390_crypto.h"
+
+#if OPENSSL_VERSION_PREREQ(3, 0)
+#include <openssl/core_names.h>
+#include <openssl/param_build.h>
+#endif
 
 #if defined(NO_SW_FALLBACKS)
 #define UNUSED(var)			((void)(var))
@@ -54,6 +61,7 @@ static unsigned int mod_expo_sw(int arg_length, char *arg, int exp_length,
 				int *res_length, char *res, BN_CTX *ctx);
 #endif /* NO_SW_FALLBACKS */
 
+#if !OPENSSL_VERSION_PREREQ(3, 0)
 RSA* rsa_key_generate(unsigned int modulus_bit_length,
 		      unsigned long *public_exponent)
 {
@@ -97,6 +105,59 @@ RSA* rsa_key_generate(unsigned int modulus_bit_length,
 	BN_GENCB_free(cb);
 	return rsa;
 }
+#else /* openssl 3.0 */
+EVP_PKEY* rsa_key_generate(unsigned int modulus_bit_length,
+		      unsigned long *public_exponent)
+{
+	EVP_PKEY *pkey = NULL;
+	EVP_PKEY_CTX *pctx = NULL;
+	BIGNUM *e = NULL;
+
+#ifdef ICA_FIPS
+	if ((fips & ICA_FIPS_MODE) && (!FIPS_mode()))
+		return NULL;
+#endif /* ICA_FIPS */
+
+	if (*public_exponent == 0)
+	{
+		do {
+			if (s390_prng((unsigned char*)public_exponent,
+			    sizeof(unsigned long)) != 0)
+				return NULL;
+		} while (*public_exponent <= 2 || !(*public_exponent % 2));
+	}
+
+	e = BN_bin2bn(public_exponent, sizeof(unsigned long), NULL);
+	if (e == NULL) {
+		goto done;
+	}
+
+	pctx = EVP_PKEY_CTX_new_id(EVP_PKEY_RSA, NULL);
+	if (pctx == NULL) {
+		goto done;
+	}
+
+	if (EVP_PKEY_keygen_init(pctx) != 1 ||
+		EVP_PKEY_CTX_set_rsa_keygen_bits(pctx, modulus_bit_length) != 1 ||
+		EVP_PKEY_CTX_set1_rsa_keygen_pubexp(pctx, e) != 1) {
+		goto done;
+	}
+
+	if (EVP_PKEY_keygen(pctx, &pkey) != 1) {
+		if (pkey)
+			EVP_PKEY_free(pkey);
+		pkey = NULL;
+	}
+
+done:
+	if (pctx != NULL)
+		EVP_PKEY_CTX_free(pctx);
+	if (e != NULL)
+		BN_free(e);
+
+	return pkey;
+}
+#endif
 
 /**
  * @brief Create a RSA modulus/expo key pair
@@ -127,6 +188,9 @@ unsigned int rsa_key_generate_mod_expo(ica_adapter_handle_t deviceHandle,
 		return EACCES;
 #endif /* ICA_FIPS */
 
+#if !OPENSSL_VERSION_PREREQ(3, 0)
+	const BIGNUM *n, *d;
+
 	RSA *rsa = rsa_key_generate(modulus_bit_length,
 				    (unsigned long*)(public_key->exponent +
 				    public_key->key_length -
@@ -134,8 +198,23 @@ unsigned int rsa_key_generate_mod_expo(ica_adapter_handle_t deviceHandle,
 	if (!rsa)
 		return errno;
 
-	const BIGNUM *n, *d;
 	RSA_get0_key(rsa, &n, NULL,  &d);
+#else
+	BIGNUM *n = NULL, *d = NULL;
+
+	EVP_PKEY *pkey = rsa_key_generate(modulus_bit_length,
+				    (unsigned long*)(public_key->exponent +
+				    public_key->key_length -
+				    sizeof(unsigned long)));
+	if (!pkey)
+		return errno;
+
+	if (!EVP_PKEY_get_bn_param(pkey, OSSL_PKEY_PARAM_RSA_N, &n) ||
+		!EVP_PKEY_get_bn_param(pkey, OSSL_PKEY_PARAM_RSA_D, &d)) {
+		rc = EFAULT;
+		goto err;
+	}
+#endif
 
 	/* Set key buffers zero to make sure there is no
 	 * unneeded junk in between.
@@ -163,7 +242,13 @@ unsigned int rsa_key_generate_mod_expo(ica_adapter_handle_t deviceHandle,
 		offset = 0;
 	BN_bn2bin(d, private_key->exponent + offset);
 
+err:
+
+#if !OPENSSL_VERSION_PREREQ(3, 0)
 	RSA_free(rsa);
+#else
+	EVP_PKEY_free(pkey);
+#endif
 
 	return 0;
 }
@@ -194,6 +279,9 @@ unsigned int rsa_key_generate_crt(ica_adapter_handle_t deviceHandle,
 		return EACCES;
 #endif /* ICA_FIPS */
 
+#if !OPENSSL_VERSION_PREREQ(3, 0)
+	const BIGNUM *n, *p, *q, *dmp1, *dmq1, *iqmp;
+
 	RSA *rsa = rsa_key_generate(modulus_bit_length,
 				    (unsigned long*)(public_key->exponent +
 				    public_key->key_length -
@@ -201,10 +289,29 @@ unsigned int rsa_key_generate_crt(ica_adapter_handle_t deviceHandle,
 	if (!rsa)
 		return errno;
 
-	const BIGNUM *n, *p, *q, *dmp1, *dmq1, *iqmp;
 	RSA_get0_key(rsa, &n, NULL,  NULL);
 	RSA_get0_factors(rsa, &p, &q);
 	RSA_get0_crt_params(rsa, &dmp1, &dmq1, &iqmp);
+#else
+	BIGNUM *n = NULL, *p = NULL, *q = NULL, *dmp1 = NULL, *dmq1 = NULL, *iqmp = NULL;
+
+	EVP_PKEY *pkey = rsa_key_generate(modulus_bit_length,
+				    (unsigned long*)(public_key->exponent +
+				    public_key->key_length -
+				    sizeof(unsigned long)));
+	if (!pkey)
+		return errno;
+
+	if (!EVP_PKEY_get_bn_param(pkey, OSSL_PKEY_PARAM_RSA_N, &n) ||
+		!EVP_PKEY_get_bn_param(pkey, OSSL_PKEY_PARAM_RSA_FACTOR1, &p) ||
+		!EVP_PKEY_get_bn_param(pkey, OSSL_PKEY_PARAM_RSA_FACTOR2, &q) ||
+		!EVP_PKEY_get_bn_param(pkey, OSSL_PKEY_PARAM_RSA_EXPONENT1, &dmp1) ||
+		!EVP_PKEY_get_bn_param(pkey, OSSL_PKEY_PARAM_RSA_EXPONENT2, &dmq1) ||
+		!EVP_PKEY_get_bn_param(pkey, OSSL_PKEY_PARAM_RSA_COEFFICIENT1, &iqmp)) {
+		rc = EFAULT;
+		goto err;
+	}
+#endif
 
 	/* Public exponent has already been set, no need to do this here.
 	 * For public key, only modulus needs to be set.
@@ -275,7 +382,12 @@ unsigned int rsa_key_generate_crt(ica_adapter_handle_t deviceHandle,
 
 	BN_bn2bin(iqmp, private_key->qInverse + 8 + offset);
 
+err:
+#if !OPENSSL_VERSION_PREREQ(3, 0)
 	RSA_free(rsa);
+#else
+	EVP_PKEY_free(pkey);
+#endif
 
 	return 0;
 }
