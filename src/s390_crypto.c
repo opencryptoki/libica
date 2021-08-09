@@ -449,13 +449,13 @@ void s390_crypto_switches_init(void)
  * The last field represents the property flags indicating key lengths
  */
 libica_func_list_element_int icaList[] = {
- {SHA1,   KIMD, SHA_1  , ICA_FLAG_SW, 0},
- {SHA224, KIMD, SHA_256, ICA_FLAG_SW, 0},
- {SHA256, KIMD, SHA_256, ICA_FLAG_SW, 0},
- {SHA384, KIMD, SHA_512, ICA_FLAG_SW, 0},
- {SHA512, KIMD, SHA_512, ICA_FLAG_SW, 0},
- {SHA512_224, KIMD, SHA_512_224, ICA_FLAG_SW, 0},
- {SHA512_256, KIMD, SHA_512_256, ICA_FLAG_SW, 0},
+ {SHA1,   KIMD, SHA_1  , 0, 0},
+ {SHA224, KIMD, SHA_256, 0, 0},
+ {SHA256, KIMD, SHA_256, 0, 0},
+ {SHA384, KIMD, SHA_512, 0, 0},
+ {SHA512, KIMD, SHA_512, 0, 0},
+ {SHA512_224, KIMD, SHA_512_224, 0, 0},
+ {SHA512_256, KIMD, SHA_512_256, 0, 0},
  {SHA3_224, KIMD, SHA_3_224, 0, 0},
  {SHA3_256, KIMD, SHA_3_256, 0, 0},
  {SHA3_384, KIMD, SHA_3_384, 0, 0},
