@@ -22,6 +22,21 @@
 #ifndef S390_CRYPTO_H
 #define S390_CRYPTO_H
 
+
+#include <openssl/opensslv.h>
+
+#ifndef OPENSSL_VERSION_PREREQ
+    #if defined(OPENSSL_VERSION_MAJOR) && defined(OPENSSL_VERSION_MINOR)
+        #define OPENSSL_VERSION_PREREQ(maj, min)        \
+            ((OPENSSL_VERSION_MAJOR << 16) +        \
+            OPENSSL_VERSION_MINOR >= ((maj) << 16) + (min))
+    #else
+        #define OPENSSL_VERSION_PREREQ(maj, min)        \
+            (OPENSSL_VERSION_NUMBER >= (((maj) << 28) | \
+            ((min) << 20)))
+    #endif
+#endif
+
 #define S390_CRYPTO_TEST_MASK(mask, function) \
 	(((unsigned char *)(mask))[((function) & 0x7F) >> 3] & \
 	(0x80 >> ((function) & 0x07)))
