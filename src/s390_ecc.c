@@ -36,6 +36,7 @@
 #if OPENSSL_VERSION_PREREQ(3, 0)
 #include <openssl/core_names.h>
 #include <openssl/param_build.h>
+extern OSSL_LIB_CTX *openssl_libctx;
 #endif
 
 #define CPRBXSIZE (sizeof(struct CPRBX))
@@ -972,36 +973,44 @@ ret:
 unsigned int ecdh_sw(const ICA_EC_KEY *privkey_A, const ICA_EC_KEY *pubkey_B,
 		unsigned char *z)
 {
-	int ret = EIO;
+	int ret = 0;
 	EVP_PKEY *a = NULL, *b = NULL;
 	EVP_PKEY_CTX *ctx = NULL;
 	size_t privlen = privlen_from_nid(privkey_A->nid);
 
 #ifdef ICA_FIPS
-	if ((fips & ICA_FIPS_MODE) && (!FIPS_mode()))
+	if ((fips & ICA_FIPS_MODE) && (!openssl_in_fips_mode()))
 	return EACCES;
 #endif /* ICA_FIPS */
 
+	BEGIN_OPENSSL_LIBCTX(openssl_libctx, ret);
+
 	if (!is_supported_openssl_curve(privkey_A->nid)) {
-		return EPERM;
+		ret = EPERM;
+		goto err;
 	}
 
 	a = make_eckey(privkey_A->nid, privkey_A->D, privlen);
 	b = make_public_eckey(pubkey_B->nid, pubkey_B->X, 2 * privlen);
-	if (!a || !b)
+	if (!a || !b) {
+		ret = EIO;
 		goto err;
+	}
 
 	ctx = EVP_PKEY_CTX_new(a, NULL);
 	if (ctx == NULL) {
+		ret = EIO;
 		goto err;
 	}
 
 	if (EVP_PKEY_derive_init(ctx) <= 0 ||
 			EVP_PKEY_derive_set_peer(ctx, b) <= 0) {
+		ret = EIO;
 		goto err;
 	}
 
 	if (EVP_PKEY_derive(ctx, z, &privlen) <= 0) {
+		ret = EIO;
 		goto err;
 	}
 
@@ -1015,6 +1024,7 @@ err:
 	if (ctx != NULL)
 		EVP_PKEY_CTX_free(ctx);
 
+	END_OPENSSL_LIBCTX(ret);
 	return ret;
 }
 
@@ -1415,7 +1425,7 @@ unsigned int ecdsa_sign_sw(const ICA_EC_KEY *privkey,
 		const unsigned char *hash, unsigned int hash_length,
 		unsigned char *signature)
 {
-	int n, rc = EIO;
+	int n, rc = 0;
     EVP_PKEY *ec_pkey;
     ECDSA_SIG *sig = NULL;
     const BIGNUM *r, *s;
@@ -1426,44 +1436,54 @@ unsigned int ecdsa_sign_sw(const ICA_EC_KEY *privkey,
 	unsigned int privlen = privlen_from_nid(privkey->nid);
 
 #ifdef ICA_FIPS
-	if ((fips & ICA_FIPS_MODE) && (!FIPS_mode()))
+	if ((fips & ICA_FIPS_MODE) && (!openssl_in_fips_mode()))
 		return EACCES;
 #endif /* ICA_FIPS */
 
+	BEGIN_OPENSSL_LIBCTX(openssl_libctx, rc);
+
 	if (!is_supported_openssl_curve(privkey->nid)) {
-		return EPERM;
+		rc = EPERM;
+		goto err;
 	}
 
 	ec_pkey = make_eckey(privkey->nid, privkey->D, privlen);
 	if (ec_pkey == NULL) {
+		rc = EIO;
 		goto err;
 	}
 
 	ctx = EVP_PKEY_CTX_new(ec_pkey, NULL);
 	if (ctx == NULL) {
+		rc = EIO;
 		goto err;
 	}
 
 	if (EVP_PKEY_sign_init(ctx) <= 0) {
+		rc = EIO;
 		goto err;
 	}
 
 	if (EVP_PKEY_sign(ctx, NULL, &siglen, hash, (size_t)hash_length) <= 0) {
+		rc = EIO;
 		goto err;
 	}
 
 	sigbuf = malloc(siglen);
 	if (sigbuf == NULL) {
+		rc = EIO;
 		goto err;
 	}
 
 	if (EVP_PKEY_sign(ctx, sigbuf, &siglen, hash, (size_t)hash_length) <= 0) {
+		rc = EIO;
 		goto err;
 	}
 
 	p = sigbuf;
 	sig = d2i_ECDSA_SIG(NULL, &p, siglen);
 	if (sig == NULL) {
+		rc = EIO;
 		goto err;
 	}
 
@@ -1490,6 +1510,7 @@ err:
 	if (ctx != NULL)
 		EVP_PKEY_CTX_free(ctx);
 
+	END_OPENSSL_LIBCTX(rc);
 	return rc;
 }
 
@@ -1907,7 +1928,7 @@ ret:
 unsigned int ecdsa_verify_sw(const ICA_EC_KEY *pubkey,
 		const unsigned char *hash, unsigned int hash_length,
 		const unsigned char *signature) {
-	int rc = EIO;
+	int rc = 0;
 	BIGNUM *r = NULL, *s = NULL;
 	ECDSA_SIG *sig = NULL;
 	unsigned char *sigbuf = NULL;
@@ -1917,44 +1938,55 @@ unsigned int ecdsa_verify_sw(const ICA_EC_KEY *pubkey,
 	unsigned int privlen = privlen_from_nid(pubkey->nid);
 
 #ifdef ICA_FIPS
-	if ((fips & ICA_FIPS_MODE) && (!FIPS_mode()))
+	if ((fips & ICA_FIPS_MODE) && (!openssl_in_fips_mode()))
 	return EACCES;
 #endif /* ICA_FIPS */
 
-	if (!is_supported_openssl_curve(pubkey->nid))
-		return EINVAL;
+	BEGIN_OPENSSL_LIBCTX(openssl_libctx, rc);
+
+	if (!is_supported_openssl_curve(pubkey->nid)) {
+		rc = EINVAL;
+		goto err;
+	}
 
 	sig = ECDSA_SIG_new();
 	if (sig == NULL) {
+		rc = EIO;
 		goto err;
 	}
 
 	r = BN_bin2bn(signature, privlen, NULL);
 	s = BN_bin2bn(signature + privlen, privlen, NULL);
 	if (r == NULL || s == NULL) {
+		rc = EIO;
 		goto err;
 	}
 
 	if (!ECDSA_SIG_set0(sig, r, s)) {
+		rc = EIO;
 		goto err;
 	}
 
 	siglen = i2d_ECDSA_SIG(sig, &sigbuf);
 	if (siglen <= 0) {
+		rc = EIO;
 		goto err;
 	}
 
 	ec_pkey = make_public_eckey(pubkey->nid, pubkey->X, 2 * privlen);
 	if (ec_pkey == NULL) {
+		rc = EIO;
 		goto err;
 	}
 
 	ctx = EVP_PKEY_CTX_new(ec_pkey, NULL);
 	if (ctx == NULL) {
+		rc = EIO;
 		goto err;
 	}
 
 	if (EVP_PKEY_verify_init(ctx) <= 0) {
+		rc = EIO;
 		goto err;
 	}
 
@@ -1981,6 +2013,7 @@ err:
 	if (ctx != NULL)
 		EVP_PKEY_CTX_free(ctx);
 
+	END_OPENSSL_LIBCTX(rc);
 	return rc;
 }
 
@@ -2304,7 +2337,7 @@ unsigned int eckeygen_sw(ICA_EC_KEY *key)
 #else
 	BIGNUM *bn_d = NULL;
 #endif
-	int rc = EIO;
+	int rc = 0;
 	EVP_PKEY_CTX *ctx = NULL;
 	EVP_PKEY *ec_pkey = NULL;
 	unsigned char *ecpoint = NULL, *d = NULL;
@@ -2312,28 +2345,34 @@ unsigned int eckeygen_sw(ICA_EC_KEY *key)
 	unsigned int privlen = privlen_from_nid(key->nid);
 
 #ifdef ICA_FIPS
-	if ((fips & ICA_FIPS_MODE) && (!FIPS_mode()))
+	if ((fips & ICA_FIPS_MODE) && (!openssl_in_fips_mode()))
 		return EACCES;
 #endif /* ICA_FIPS */
 
+	BEGIN_OPENSSL_LIBCTX(openssl_libctx, rc);
+
 	if (!is_supported_openssl_curve(key->nid)) {
-		return EPERM;
+		rc = EPERM;
+		goto err;
 	}
 
 	ctx = EVP_PKEY_CTX_new_id(EVP_PKEY_EC, NULL);
 	if (ctx == NULL) {
+		rc = EIO;
 		goto err;
 	}
 
 	if (EVP_PKEY_keygen_init(ctx) <= 0 ||
 		EVP_PKEY_CTX_set_ec_paramgen_curve_nid(ctx, key->nid) <= 0 ||
 		EVP_PKEY_keygen(ctx, &ec_pkey) <= 0) {
+		rc = EIO;
 		goto err;
 	}
 
 #if !OPENSSL_VERSION_PREREQ(3, 0)
 	ec_key = EVP_PKEY_get0_EC_KEY(ec_pkey);
 	if (ec_key == NULL) {
+		rc = EIO;
 		goto err;
 	}
 
@@ -2346,6 +2385,7 @@ unsigned int eckeygen_sw(ICA_EC_KEY *key)
 	ecpoint_len = EC_KEY_key2buf(ec_key, POINT_CONVERSION_UNCOMPRESSED,
 								&ecpoint, bnctx);
 	if (ecpoint_len == 0) {
+		rc = EIO;
 		goto err;
 	}
 
@@ -2354,6 +2394,7 @@ unsigned int eckeygen_sw(ICA_EC_KEY *key)
 
 	d_len = EC_KEY_priv2buf(ec_key, &d);
 	if (d_len != privlen) {
+		rc = EIO;
 		goto err;
 	}
 	memcpy(key->D, d, d_len);
@@ -2363,17 +2404,20 @@ unsigned int eckeygen_sw(ICA_EC_KEY *key)
 	if (!EVP_PKEY_get_octet_string_param(ec_pkey,
 					OSSL_PKEY_PARAM_ENCODED_PUBLIC_KEY,
 					NULL, 0, &ecpoint_len)) {
+		rc = EIO;
 		goto err;
 	}
 
 	ecpoint = OPENSSL_zalloc(ecpoint_len);
 	if (ecpoint == NULL) {
+		rc = EIO;
 		goto err;
 	}
 
 	if (!EVP_PKEY_get_octet_string_param(ec_pkey,
 					OSSL_PKEY_PARAM_ENCODED_PUBLIC_KEY,
 					ecpoint, ecpoint_len, &ecpoint_len)) {
+		rc = EIO;
 		goto err;
 	}
 
@@ -2382,6 +2426,7 @@ unsigned int eckeygen_sw(ICA_EC_KEY *key)
 
 	/* Provide private key (D) */
 	if (!EVP_PKEY_get_bn_param(ec_pkey, OSSL_PKEY_PARAM_PRIV_KEY, &bn_d)) {
+		rc = EIO;
 		goto err;
 	}
 	BN_bn2binpad(bn_d, key->D, privlen);
@@ -2406,6 +2451,7 @@ err:
 	if (d != NULL)
 		OPENSSL_free(d);
 
+	END_OPENSSL_LIBCTX(rc);
 	return rc;
 }
 

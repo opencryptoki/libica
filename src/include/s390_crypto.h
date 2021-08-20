@@ -37,6 +37,34 @@
     #endif
 #endif
 
+#if OPENSSL_VERSION_PREREQ(3, 0)
+extern int openssl3_initialized;
+#define BEGIN_OPENSSL_LIBCTX(ossl_ctx, rc)                                  \
+        do {                                                                \
+            if (ossl_ctx == NULL || openssl3_initialized == 0) {            \
+                 printf("lib ctx null or openssl 3 not initialized\n");     \
+                 (rc) = EFAULT;                                             \
+                 break;                                                     \
+            }                                                               \
+            OSSL_LIB_CTX *prev_ctx = OSSL_LIB_CTX_set0_default((ossl_ctx)); \
+            if (prev_ctx == NULL) {                                         \
+                (rc) = EFAULT;                                              \
+                printf("OSSL_LIB_CTX_set0_default failed\n");               \
+                break;                                                      \
+            }
+
+#define END_OPENSSL_LIBCTX(rc)                                              \
+            if (OSSL_LIB_CTX_set0_default(prev_ctx) == NULL) {              \
+                if ((rc) == 0)                                              \
+                    (rc) = EFAULT;                                          \
+                printf("OSSL_LIB_CTX_set0_default failed\n");               \
+            }                                                               \
+        } while (0);
+#else
+#define BEGIN_OPENSSL_LIBCTX(ossl_ctx, rc)  do {
+#define END_OPENSSL_LIBCTX(rc)              } while (0);
+#endif
+
 #define S390_CRYPTO_TEST_MASK(mask, function) \
 	(((unsigned char *)(mask))[((function) & 0x7F) >> 3] & \
 	(0x80 >> ((function) & 0x07)))

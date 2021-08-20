@@ -19,6 +19,7 @@
 
 extern int fips;			/* module status */
 
+int openssl_in_fips_mode(void);
 
 /*
  * Initialize global fips var to 1 resp. 0 when FIPS_FLAG is 1 resp. 0 (or not

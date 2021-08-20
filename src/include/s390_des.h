@@ -31,6 +31,10 @@
 #include "s390_crypto.h"
 #include "s390_ctr.h"
 
+#if OPENSSL_VERSION_PREREQ(3, 0)
+extern OSSL_LIB_CTX *openssl_libctx;
+#endif
+
 #define DES_BLOCK_SIZE  8
 
 static inline int s390_des_ecb_hw(unsigned int function_code, unsigned long input_length,
@@ -52,10 +56,14 @@ static inline int s390_des_ecb_sw(unsigned int function_code, unsigned long inpu
 		    const unsigned char *input_data, const unsigned char *keys,
 		    unsigned char *output_data)
 {
+	int rc = 0;
+
 #ifdef ICA_FIPS
-	if ((fips & ICA_FIPS_MODE) && (!FIPS_mode()))
+	if ((fips & ICA_FIPS_MODE) && (!openssl_in_fips_mode()))
 		return EACCES;
 #endif /* ICA_FIPS */
+
+	BEGIN_OPENSSL_LIBCTX(openssl_libctx, rc);
 
 	DES_key_schedule key_schedule1;
 	DES_key_schedule key_schedule2;
@@ -116,7 +124,8 @@ static inline int s390_des_ecb_sw(unsigned int function_code, unsigned long inpu
 	OPENSSL_cleanse(&key_schedule2, sizeof(key_schedule2));
 	OPENSSL_cleanse(&key_schedule2, sizeof(key_schedule3));
 
-	return 0;
+	END_OPENSSL_LIBCTX(rc);
+	return rc;
 }
 
 
@@ -154,14 +163,19 @@ static inline int s390_des_cbc_sw(unsigned int function_code,
 			   const unsigned char *input_data, unsigned char *iv,
 			   const unsigned char *keys, unsigned char *output_data)
 {
+	int rc = 0;
+
 #ifdef ICA_FIPS
-	if ((fips & ICA_FIPS_MODE) && (!FIPS_mode()))
+	if ((fips & ICA_FIPS_MODE) && (!openssl_in_fips_mode()))
 		return EACCES;
 #endif /* ICA_FIPS */
 
 	DES_key_schedule key_schedule1;
 	DES_key_schedule key_schedule2;
 	DES_key_schedule key_schedule3;
+
+	BEGIN_OPENSSL_LIBCTX(openssl_libctx, rc);
+
 	switch (function_code & S390_CRYPTO_FUNCTION_MASK) {
 	case S390_CRYPTO_DEA_ENCRYPT:
 		DES_set_key_unchecked((const_DES_cblock *) keys,
@@ -201,7 +215,8 @@ static inline int s390_des_cbc_sw(unsigned int function_code,
 	OPENSSL_cleanse(&key_schedule2, sizeof(key_schedule2));
 	OPENSSL_cleanse(&key_schedule2, sizeof(key_schedule3));
 
-	return 0;
+	END_OPENSSL_LIBCTX(rc);
+	return rc;
 }
 
 static inline int s390_des_ecb(unsigned int fc, unsigned long data_length,

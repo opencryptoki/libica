@@ -30,6 +30,26 @@
 #include "fips.h"
 #include "ica_api.h"
 #include "test_vec.h"
+#include "s390_crypto.h"
+
+#if OPENSSL_VERSION_PREREQ(3, 0)
+#include <openssl/crypto.h>
+#include <openssl/provider.h>
+extern OSSL_LIB_CTX *openssl_libctx;
+extern OSSL_PROVIDER *openssl_provider;
+#endif
+
+int openssl_in_fips_mode(void)
+{
+#if !OPENSSL_VERSION_PREREQ(3, 0)
+	return FIPS_mode();
+#else
+	if (fips & ICA_FIPS_INTEGRITY)
+		return 0;
+	else
+		return 1;
+#endif
+}
 
 #ifndef PATH_MAX
 #define PATH_MAX 4096
@@ -50,6 +70,8 @@ static const char hmackey[] =
 	"0000000000000000000000000000000000000000000000000000000000000000";
 
 int fips;
+
+#define LIBICA_FIPS_CONFIG		LIBICA_CONFDIR "/libica/openssl3-fips.cnf"
 
 static int aes_ecb_kat(void);
 static int aes_cbc_kat(void);
@@ -199,6 +221,7 @@ fips_init(void)
 	fclose(fd);
 
 	if (fips_flag - '0') {
+#if !OPENSSL_VERSION_PREREQ(3, 0)
 		/* Set libica into FIPS mode. */
 		fips |= ICA_FIPS_MODE;
 
@@ -207,6 +230,30 @@ fips_init(void)
 		 * be disabled. OpenSSL FIPS mode can be queried using the
 		 * FIPS_mode() function. */
 		FIPS_mode_set(1);
+#else
+		fips = 0;
+		if (!OSSL_LIB_CTX_load_config(openssl_libctx, LIBICA_FIPS_CONFIG)) {
+			syslog(LOG_ERR, "Libica failed to load openssl fips config %s\n",
+					LIBICA_FIPS_CONFIG);
+			fips |= ICA_FIPS_INTEGRITY;
+			return;
+		}
+
+		openssl_provider = OSSL_PROVIDER_load(openssl_libctx, "fips");
+		if (openssl_provider == NULL) {
+			syslog(LOG_ERR, "Libica failed to load fips provider.\n");
+			fips |= ICA_FIPS_INTEGRITY;
+			return;
+		}
+
+		if (!EVP_set_default_properties(openssl_libctx, "fips=yes")) {
+			syslog(LOG_ERR, "Libica failed to set default properties 'fips=yes'\n");
+			fips |= ICA_FIPS_INTEGRITY;
+			return;
+		}
+
+		fips |= ICA_FIPS_MODE;
+#endif
 	}
 }
 

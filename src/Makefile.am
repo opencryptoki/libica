@@ -11,6 +11,7 @@ VERSION1 := $(MAJOR).$(MINOR).$(PATCH)
 lib_LTLIBRARIES = libica.la libica-cex.la
 
 CFLAGS_common = ${AM_CFLAGS} -I${srcdir}/include -I${srcdir}/../include \
+		   -DLIBICA_CONFDIR=\"${sysconfdir}\" \
 		   -fvisibility=hidden -pthread
 LIBS_common = @LIBS@ -lrt -lcrypto -ldl
 LDFLAGS_common = -Wl,--version-script=${srcdir}/../libica.map \
@@ -89,7 +90,8 @@ internal_tests_ec_internal_test_CFLAGS = ${AM_CFLAGS} -I${srcdir}/include \
 					 -I${srcdir}/../include	\
 					 -DICA_INTERNAL_TEST \
 					 -DICA_INTERNAL_TEST_EC \
-					 -DLIBNAME=\"libica\"
+					 -DLIBNAME=\"libica\" \
+					 -DLIBICA_CONFDIR=\"${sysconfdir}\" 
 internal_tests_ec_internal_test_CCASFLAGS = ${AM_CFLAGS}
 internal_tests_ec_internal_test_LDADD = @LIBS@ -lrt -lcrypto -lpthread -ldl
 internal_tests_ec_internal_test_SOURCES = \

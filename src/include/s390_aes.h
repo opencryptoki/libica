@@ -30,6 +30,10 @@
 #include "s390_crypto.h"
 #include "s390_ctr.h"
 
+#if OPENSSL_VERSION_PREREQ(3, 0)
+extern OSSL_LIB_CTX *openssl_libctx;
+#endif
+
 #define AES_BLOCK_SIZE 16
 #define GCM_RECOMMENDED_IV_LENGTH 12
 
@@ -308,11 +312,14 @@ static inline int s390_aes_ecb_sw(unsigned int function_code,
 	unsigned int direction;
 	unsigned int key_size = (function_code & 0x0f) *
 				sizeof(ica_aes_key_single_t);
+	int rc = 0;
 
 #ifdef ICA_FIPS
-	if ((fips & ICA_FIPS_MODE) && (!FIPS_mode()))
+	if ((fips & ICA_FIPS_MODE) && (!openssl_in_fips_mode()))
 		return EACCES;
 #endif /* ICA_FIPS */
+
+	BEGIN_OPENSSL_LIBCTX(openssl_libctx, rc);
 
 	if (function_code & S390_CRYPTO_DIRECTION_MASK) {
 		AES_set_decrypt_key(keys, key_size * 8, &aes_key);
@@ -329,7 +336,8 @@ static inline int s390_aes_ecb_sw(unsigned int function_code,
 
 	OPENSSL_cleanse(&aes_key, sizeof(aes_key));
 
-	return 0;
+	END_OPENSSL_LIBCTX(rc);
+	return rc;
 }
 
 static inline int s390_aes_cbc_hw(unsigned int function_code,
@@ -374,11 +382,14 @@ static inline int s390_aes_cbc_sw(unsigned int function_code,
 	unsigned int direction;
 	unsigned int key_size = (function_code & 0x0f) *
 				sizeof(ica_aes_key_single_t);
+	int rc = 0;
 
 #ifdef ICA_FIPS
-	if ((fips & ICA_FIPS_MODE) && (!FIPS_mode()))
+	if ((fips & ICA_FIPS_MODE) && (!openssl_in_fips_mode()))
 		return EACCES;
 #endif /* ICA_FIPS */
+
+	BEGIN_OPENSSL_LIBCTX(openssl_libctx, rc);
 
 	if (function_code & S390_CRYPTO_DIRECTION_MASK) {
 		AES_set_decrypt_key(keys, key_size * 8, &aes_key);
@@ -392,7 +403,8 @@ static inline int s390_aes_cbc_sw(unsigned int function_code,
 
 	OPENSSL_cleanse(&aes_key, sizeof(aes_key));
 
-	return 0;
+	END_OPENSSL_LIBCTX(rc);
+	return rc;
 }
 
 static inline int s390_aes_ecb(unsigned int fc, unsigned long data_length,

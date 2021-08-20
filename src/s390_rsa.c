@@ -34,6 +34,7 @@
 #if OPENSSL_VERSION_PREREQ(3, 0)
 #include <openssl/core_names.h>
 #include <openssl/param_build.h>
+extern OSSL_LIB_CTX *openssl_libctx;
 #endif
 
 #if defined(NO_SW_FALLBACKS)
@@ -66,7 +67,7 @@ RSA* rsa_key_generate(unsigned int modulus_bit_length,
 		      unsigned long *public_exponent)
 {
 #ifdef ICA_FIPS
-	if ((fips & ICA_FIPS_MODE) && (!FIPS_mode()))
+	if ((fips & ICA_FIPS_MODE) && (!openssl_in_fips_mode()))
 		return NULL;
 #endif /* ICA_FIPS */
 
@@ -114,7 +115,7 @@ EVP_PKEY* rsa_key_generate(unsigned int modulus_bit_length,
 	BIGNUM *e = NULL;
 
 #ifdef ICA_FIPS
-	if ((fips & ICA_FIPS_MODE) && (!FIPS_mode()))
+	if ((fips & ICA_FIPS_MODE) && (!openssl_in_fips_mode()))
 		return NULL;
 #endif /* ICA_FIPS */
 
@@ -182,11 +183,14 @@ unsigned int rsa_key_generate_mod_expo(ica_adapter_handle_t deviceHandle,
 				       ica_rsa_key_mod_expo_t *private_key)
 {
 	(void)deviceHandle;	/* suppress unused param warning */
+	int rc = 0;
 
 #ifdef ICA_FIPS
-	if ((fips & ICA_FIPS_MODE) && (!FIPS_mode()))
+	if ((fips & ICA_FIPS_MODE) && (!openssl_in_fips_mode()))
 		return EACCES;
 #endif /* ICA_FIPS */
+
+	BEGIN_OPENSSL_LIBCTX(openssl_libctx, rc);
 
 #if !OPENSSL_VERSION_PREREQ(3, 0)
 	const BIGNUM *n, *d;
@@ -195,8 +199,10 @@ unsigned int rsa_key_generate_mod_expo(ica_adapter_handle_t deviceHandle,
 				    (unsigned long*)(public_key->exponent +
 				    public_key->key_length -
 				    sizeof(unsigned long)));
-	if (!rsa)
-		return errno;
+	if (!rsa) {
+		rc = errno;
+		goto err;
+	}
 
 	RSA_get0_key(rsa, &n, NULL,  &d);
 #else
@@ -206,8 +212,10 @@ unsigned int rsa_key_generate_mod_expo(ica_adapter_handle_t deviceHandle,
 				    (unsigned long*)(public_key->exponent +
 				    public_key->key_length -
 				    sizeof(unsigned long)));
-	if (!pkey)
-		return errno;
+	if (!pkey) {
+		rc = errno;
+		goto err;
+	}
 
 	if (!EVP_PKEY_get_bn_param(pkey, OSSL_PKEY_PARAM_RSA_N, &n) ||
 		!EVP_PKEY_get_bn_param(pkey, OSSL_PKEY_PARAM_RSA_D, &d)) {
@@ -250,7 +258,8 @@ err:
 	EVP_PKEY_free(pkey);
 #endif
 
-	return 0;
+	END_OPENSSL_LIBCTX(rc);
+	return rc;
 }
 
 /**
@@ -273,11 +282,14 @@ unsigned int rsa_key_generate_crt(ica_adapter_handle_t deviceHandle,
 				  ica_rsa_key_crt_t *private_key)
 {
 	(void)deviceHandle;	/* suppress unused param warning */
+	int rc = 0;
 
 #ifdef ICA_FIPS
-	if ((fips & ICA_FIPS_MODE) && (!FIPS_mode()))
+	if ((fips & ICA_FIPS_MODE) && (!openssl_in_fips_mode()))
 		return EACCES;
 #endif /* ICA_FIPS */
+
+	BEGIN_OPENSSL_LIBCTX(openssl_libctx, rc);
 
 #if !OPENSSL_VERSION_PREREQ(3, 0)
 	const BIGNUM *n, *p, *q, *dmp1, *dmq1, *iqmp;
@@ -286,8 +298,10 @@ unsigned int rsa_key_generate_crt(ica_adapter_handle_t deviceHandle,
 				    (unsigned long*)(public_key->exponent +
 				    public_key->key_length -
 				    sizeof(unsigned long)));
-	if (!rsa)
-		return errno;
+	if (!rsa) {
+		rc = errno;
+		goto err;
+	}
 
 	RSA_get0_key(rsa, &n, NULL,  NULL);
 	RSA_get0_factors(rsa, &p, &q);
@@ -299,8 +313,10 @@ unsigned int rsa_key_generate_crt(ica_adapter_handle_t deviceHandle,
 				    (unsigned long*)(public_key->exponent +
 				    public_key->key_length -
 				    sizeof(unsigned long)));
-	if (!pkey)
-		return errno;
+	if (!pkey) {
+		rc = errno;
+		goto err;
+	}
 
 	if (!EVP_PKEY_get_bn_param(pkey, OSSL_PKEY_PARAM_RSA_N, &n) ||
 		!EVP_PKEY_get_bn_param(pkey, OSSL_PKEY_PARAM_RSA_FACTOR1, &p) ||
@@ -389,7 +405,8 @@ err:
 	EVP_PKEY_free(pkey);
 #endif
 
-	return 0;
+	END_OPENSSL_LIBCTX(rc);
+	return rc;
 }
 
 #ifndef NO_SW_FALLBACKS
@@ -402,7 +419,7 @@ unsigned int rsa_mod_mult_sw(ica_rsa_modmult_t *pMul)
 	BN_CTX *ctx = NULL;
 
 #ifdef ICA_FIPS
-	if ((fips & ICA_FIPS_MODE) && (!FIPS_mode()))
+	if ((fips & ICA_FIPS_MODE) && (!openssl_in_fips_mode()))
 		return EACCES;
 #endif /* ICA_FIPS */
 
@@ -438,7 +455,7 @@ static unsigned int mod_mul_sw(int fc_1_length, char *fc1, int fc_2_length,
 	BIGNUM *b_res = NULL;
 
 #ifdef ICA_FIPS
-	if ((fips & ICA_FIPS_MODE) && (!FIPS_mode()))
+	if ((fips & ICA_FIPS_MODE) && (!openssl_in_fips_mode()))
 		return EACCES;
 #endif /* ICA_FIPS */
 
@@ -511,7 +528,7 @@ unsigned int rsa_mod_expo_sw(ica_rsa_modexpo_t *pMex)
 	BN_CTX *ctx = NULL;
 
 #ifdef ICA_FIPS
-	if ((fips & ICA_FIPS_MODE) && (!FIPS_mode()))
+	if ((fips & ICA_FIPS_MODE) && (!openssl_in_fips_mode()))
 		return EACCES;
 #endif /* ICA_FIPS */
 
@@ -577,7 +594,7 @@ static unsigned int mod_expo_sw(int arg_length, char *arg, int exp_length,
 	int mod_expo_rc = 1;
 
 #ifdef ICA_FIPS
-	if ((fips & ICA_FIPS_MODE) && (!FIPS_mode()))
+	if ((fips & ICA_FIPS_MODE) && (!openssl_in_fips_mode()))
 		return EACCES;
 #endif /* ICA_FIPS */
 
@@ -664,7 +681,7 @@ unsigned int rsa_crt_sw(ica_rsa_modexpo_crt_t * pCrt)
 	BN_CTX *ctx = NULL;
 
 #ifdef ICA_FIPS
-	if ((fips & ICA_FIPS_MODE) && (!FIPS_mode()))
+	if ((fips & ICA_FIPS_MODE) && (!openssl_in_fips_mode()))
 		return EACCES;
 #endif /* ICA_FIPS */
 
@@ -811,7 +828,7 @@ static unsigned int mod_sw(int arg_length, char *arg, int mod_length,
 	BIGNUM *b_res = NULL;
 
 #ifdef ICA_FIPS
-	if ((fips & ICA_FIPS_MODE) && (!FIPS_mode()))
+	if ((fips & ICA_FIPS_MODE) && (!openssl_in_fips_mode()))
 		return EACCES;
 #endif /* ICA_FIPS */
 
@@ -892,7 +909,7 @@ static unsigned int mod_sub_sw(int min_length, char *minu, int sub_length,
 	int min_size, sub_size, dif_size;
 
 #ifdef ICA_FIPS
-	if ((fips & ICA_FIPS_MODE) && (!FIPS_mode()))
+	if ((fips & ICA_FIPS_MODE) && (!openssl_in_fips_mode()))
 		return EACCES;
 #endif /* ICA_FIPS */
 
@@ -998,7 +1015,7 @@ static unsigned int add_sw(int aug_length, char *aug, int add_length,
 	BN_CTX_start(ctx);
 
 #ifdef ICA_FIPS
-	if ((fips & ICA_FIPS_MODE) && (!FIPS_mode()))
+	if ((fips & ICA_FIPS_MODE) && (!openssl_in_fips_mode()))
 		return EACCES;
 #endif /* ICA_FIPS */
 
@@ -1067,7 +1084,7 @@ static unsigned int mul_sw(int fc_1_length, char *fc1, int fc_2_length,
 	BN_CTX_start(ctx);
 
 #ifdef ICA_FIPS
-	if ((fips & ICA_FIPS_MODE) && (!FIPS_mode()))
+	if ((fips & ICA_FIPS_MODE) && (!openssl_in_fips_mode()))
 		return EACCES;
 #endif /* ICA_FIPS */
 
