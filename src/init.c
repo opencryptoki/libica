@@ -29,6 +29,14 @@
 #include "ica_api.h"
 #include "rng.h"
 
+#if OPENSSL_VERSION_PREREQ(3, 0)
+#include <openssl/crypto.h>
+#include <openssl/provider.h>
+OSSL_LIB_CTX *openssl_libctx;
+OSSL_PROVIDER *openssl_provider;
+int openssl3_initialized = 0;
+#endif
+
 static sigjmp_buf sigill_jmp;
 
 static void sigill_handler(int sig)
@@ -92,10 +100,31 @@ void __attribute__ ((constructor)) icainit(void)
 	if (ptr && sscanf(ptr, "%i", &value) == 1)
 		ica_set_stats_mode(value);
 
+#if OPENSSL_VERSION_PREREQ(3, 0)
+	/*
+	 * OpenSSL >= 3.0:
+	 * Create a separate library context for libica's use of OpenSSL services
+	 * and explicitly load the 'default' or 'fips' provider for this context.
+	 */
+	openssl_libctx = OSSL_LIB_CTX_new();
+	if (openssl_libctx == NULL) {
+		syslog(LOG_ERR, "Libica: failed to create openssl lib context\n");
+		return;
+	}
+#endif
+
 #ifdef ICA_FIPS
 	fips_init();
 	fips_powerup_tests();
 #else
+#if OPENSSL_VERSION_PREREQ(3, 0)
+	openssl_provider = OSSL_PROVIDER_load(openssl_libctx, "default");
+	if (openssl_provider == NULL) {
+		syslog(LOG_ERR, "Libica: failed to load default provider\n");
+		return;
+	}
+#endif
+
 	/* The fips_powerup_tests() include the ica_drbg_health_test(). */
 	ica_drbg_health_test(ica_drbg_generate, 256, true,
 				     ICA_DRBG_SHA512);
@@ -106,6 +135,10 @@ void __attribute__ ((constructor)) icainit(void)
 	s390_prng_init();
 
 	s390_initialize_functionlist();
+
+#if OPENSSL_VERSION_PREREQ(3, 0)
+	openssl3_initialized = 1;
+#endif
 }
 
 void __attribute__ ((destructor)) icaexit(void)
@@ -113,4 +146,12 @@ void __attribute__ ((destructor)) icaexit(void)
 	rng_fini();
 
 	stats_munmap(SHM_CLOSE);
+
+#if OPENSSL_VERSION_PREREQ(3, 0)
+	if (openssl_provider != NULL)
+		OSSL_PROVIDER_unload(openssl_provider);
+	if (openssl_libctx != NULL)
+		OSSL_LIB_CTX_free(openssl_libctx);
+#endif
+
 }

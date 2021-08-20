@@ -60,15 +60,22 @@ AC_ARG_ENABLE(fips,
               [],[enable_fips="no"])
 AM_CONDITIONAL(ICA_FIPS, test x$enable_fips = xyes)
 
+AC_CHECK_LIB([crypto], [OSSL_PROVIDER_load], [openssl3=yes], [])
+AM_CONDITIONAL(ICA_OPENSSL3, test x$openssl3 = xyes)
+
 if test "x$enable_fips" = xyes; then
 	FLAGS="$FLAGS -DICA_FIPS"
 	AC_MSG_RESULT([*** Building libica-fips at user request ***])
-        AC_CHECK_PROG([openssl_var],[openssl],[yes],[no])
-
-        if test "x$openssl_var" != xyes; then
-              AC_MSG_ERROR([Missing openssl binary application required for FIPS build])
-        fi
-
+    AC_CHECK_PROG([openssl_var],[openssl],[yes],[no])
+    if test "x$openssl_var" != xyes; then
+        AC_MSG_ERROR([Missing openssl binary application required for FIPS build])
+    fi
+    if test "x$openssl3" = "xyes"; then
+        FIPSDIR=`openssl version -d | cut -f 2- -d ' ' | tr -d \"`
+        AC_SUBST(FIPSDIR)
+        AC_CONFIG_FILES([src/openssl3-fips.cnf])
+        AC_OUTPUT
+    fi
 fi
 
 dnl --- enable_sanitizer

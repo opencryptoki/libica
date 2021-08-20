@@ -64,7 +64,7 @@ main(void)
 #endif /* ICA_FIPS */
 
 	printf("OpenSSL version is '%s'.\n", OPENSSL_VERSION_TEXT);
-	printf("OpenSSL %s in FIPS mode.\n\n", FIPS_mode() ?
+	printf("OpenSSL %s in FIPS mode.\n\n", fips ?
 	    "runs" : "doesn't run");
 
 	if (rv)

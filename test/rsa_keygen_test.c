@@ -250,9 +250,18 @@ int main(int argc, char **argv)
 	} else {
 		printf("RSA keygen (%u) tests failed: %u errors.",
 		    key_bit_length, rc_test);
-		if (FIPS_mode())
+#ifdef ICA_FIPS
+		if (ica_fips_status()) {
 			printf(" (Parameters might be non FIPS conformant.)");
+#if OPENSSL_VERSION_NUMBER >= 0x30000000L
+			if (rc_test != 0 && BITSTOBYTES(key_bit_length) <= 1024) {
+				printf("\nOpenSSL 3.0 does not allow RSA 1024 in FIPS mode.\n");
+				return TEST_SKIP;
+			}
+#endif
+		}
 		printf("\n");
+#endif
 
 		return TEST_FAIL;
 	}
