@@ -13,6 +13,10 @@ AC_PROG_INSTALL
 
 AC_CHECK_HEADERS([fcntl.h memory.h stddef.h stdint.h stdlib.h string.h strings.h sys/file.h sys/ioctl.h sys/time.h syslog.h unistd.h])
 
+AC_CHECK_HEADER([openssl/evp.h], [], [
+	AC_MSG_ERROR([OpenSSL 1.1.1 or later is required but OpenSSL headers couldn't be found])
+])
+
 AC_C_INLINE
 AC_TYPE_SIZE_T
 AC_TYPE_UID_T
@@ -25,6 +29,10 @@ AC_FUNC_MALLOC
 AC_FUNC_MMAP
 AC_FUNC_STRNLEN
 AC_CHECK_FUNCS([bzero ftruncate gettimeofday memchr memset munmap strcasecmp strerror strstr strtol setenv strtoull])
+
+AC_CHECK_LIB([crypto], [EVP_sha3_256], [], [
+	AC_MSG_ERROR([OpenSSL 1.1.1 or later is required but OpenSSL libraries version 1.1.1 or later couldn't be found])
+])
 
 AM_PROG_AS
 LT_INIT
@@ -74,7 +82,6 @@ if test "x$enable_fips" = xyes; then
         FIPSDIR=`openssl version -d | cut -f 2- -d ' ' | tr -d \"`
         AC_SUBST(FIPSDIR)
         AC_CONFIG_FILES([src/openssl3-fips.cnf])
-        AC_OUTPUT
     fi
 fi
 
