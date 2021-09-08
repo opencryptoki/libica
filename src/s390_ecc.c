@@ -2467,7 +2467,7 @@ err:
 int ec_key_check(ICA_EC_KEY *ica_key)
 {
 	EVP_PKEY *privkey = NULL, *pubkey = NULL;
-	BIGNUM *d = NULL;
+	BIGNUM *d = NULL, *x = NULL, *y = NULL;
 	int privlen, rc = EINVAL;
 
 	if (!ica_key)
@@ -2482,14 +2482,20 @@ int ec_key_check(ICA_EC_KEY *ica_key)
 			goto done;
 	}
 
-	pubkey = make_public_eckey(ica_key->nid, ica_key->X, 2 * privlen);
-	if (!pubkey)
-		goto done;
+	x = BN_bin2bn(ica_key->X, privlen, NULL);
+	y = BN_bin2bn(ica_key->Y, privlen, NULL);
+	if (!BN_is_zero(x) && !BN_is_zero(y)) {
+		pubkey = make_public_eckey(ica_key->nid, ica_key->X, 2 * privlen);
+		if (!pubkey)
+			goto done;
+	}
 
 	rc = 0;
 
 done:
 	BN_clear_free(d);
+	BN_clear_free(x);
+	BN_clear_free(y);
 	if (pubkey)
 		EVP_PKEY_free(pubkey);
 	if (privkey)
