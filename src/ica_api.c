@@ -1401,7 +1401,10 @@ int ica_ec_key_generate(ica_adapter_handle_t adapter_handle, ICA_EC_KEY *key)
 	switch (icapath) {
 	case 1: /* hw only */
 		hardware = ALGO_HW;
-		rc = eckeygen_hw(adapter_handle, key);
+		if (ecc_via_online_card || msa9_switch)
+			rc = eckeygen_hw(adapter_handle, key);
+		else
+			rc = ENODEV;
 		break;
 	case 2: /* sw only */
 		hardware = ALGO_SW;
@@ -1459,7 +1462,10 @@ int ica_ecdh_derive_secret(ica_adapter_handle_t adapter_handle,
 	switch (icapath) {
 	case 1: /* hw only */
 		hardware = ALGO_HW;
-		rc = ecdh_hw(adapter_handle, privkey_A, pubkey_B, z);
+		if (ecc_via_online_card || msa9_switch)
+			rc = ecdh_hw(adapter_handle, privkey_A, pubkey_B, z);
+		else
+			rc = ENODEV;
 		break;
 	case 2: /* sw only */
 		hardware = ALGO_SW;
@@ -1511,7 +1517,10 @@ int ica_ecdsa_sign(ica_adapter_handle_t adapter_handle,
 	switch (icapath) {
 	case 1: /* hw only */
 		hardware = ALGO_HW;
-		rc = ecdsa_sign_hw(adapter_handle, privkey, hash, hash_length, signature);
+		if (ecc_via_online_card || msa9_switch)
+			rc = ecdsa_sign_hw(adapter_handle, privkey, hash, hash_length, signature);
+		else
+			rc = ENODEV;
 		break;
 	case 2: /* sw only */
 		hardware = ALGO_SW;
@@ -1563,7 +1572,10 @@ int ica_ecdsa_verify(ica_adapter_handle_t adapter_handle,
 	switch (icapath) {
 	case 1: /* hw only */
 		hardware = ALGO_HW;
-		rc = ecdsa_verify_hw(adapter_handle, pubkey, hash, hash_length, signature);
+		if (ecc_via_online_card || msa9_switch)
+			rc = ecdsa_verify_hw(adapter_handle, pubkey, hash, hash_length, signature);
+		else
+			rc = ENODEV;
 		break;
 	case 2: /* sw only */
 		hardware = ALGO_SW;
