@@ -83,6 +83,7 @@ typedef ica_adapter_handle_t ICA_ADAPTER_HANDLE;
 #define ICA_PROPERTY_AES_256		0x00000004
 
 #define ICA_PROPERTY_RSA_ALL		0x0000000F /* All RSA key lengths */
+#define ICA_PROPERTY_RSA_FIPS		0x0000000C /* RSA 2k and higher */
 #define ICA_PROPERTY_EC_BP			0x00000001 /* Brainpool curves */
 #define ICA_PROPERTY_EC_NIST		0x00000002 /* NIST curves */
 #define ICA_PROPERTY_EC_ED			0x00000004 /* Edwards curves */
