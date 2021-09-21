@@ -598,6 +598,15 @@ int s390_initialize_functionlist()
 				e->property |= ICA_PROPERTY_RSA_ALL;
 			}
 			break;
+		case RSA_KEY_GEN_ME: /* fall-through */
+		case RSA_KEY_GEN_CRT:
+#if defined(ICA_FIPS) && OPENSSL_VERSION_PREREQ(3, 0)
+			if (fips & ICA_FIPS_MODE)
+				e->property |= ICA_PROPERTY_RSA_FIPS;
+			else
+				e->property |= ICA_PROPERTY_RSA_ALL;
+#endif
+			break;
 		default:
 			/* Do nothing. */
 			break;
