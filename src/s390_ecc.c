@@ -1231,7 +1231,6 @@ static unsigned int provide_pubkey(const ICA_EC_KEY *privkey, unsigned char *X, 
 #if !OPENSSL_VERSION_PREREQ(3, 0)
 	const EC_GROUP *group = NULL;
 	EC_KEY *eckey = NULL;
-	int n, i;
 #else
 	EVP_PKEY *eckey = NULL;
 	unsigned char *ecpoint = NULL;
@@ -1282,17 +1281,9 @@ static unsigned int provide_pubkey(const ICA_EC_KEY *privkey, unsigned char *X, 
 		goto end;
 	}
 
-	/* Format (X) as char array, with leading zeros if necessary */
-	n = privlen - BN_num_bytes(bn_x);
-	for (i = 0; i < n; i++)
-		X[i] = 0x00;
-	BN_bn2bin(bn_x, &(X[n]));
-
-	/* Format (Y) as char array, with leading zeros if necessary */
-	n = privlen - BN_num_bytes(bn_y);
-	for (i = 0; i < n; i++)
-		Y[i] = 0x00;
-	BN_bn2bin(bn_y, &(Y[n]));
+	/* Format (X,Y) as char array, with leading zeros if necessary */
+	BN_bn2binpad(bn_x, X, privlen);
+	BN_bn2binpad(bn_y, Y, privlen);
 
 #else
 	eckey = make_eckey(privkey->nid, privkey->D, privlen);
@@ -1425,7 +1416,7 @@ unsigned int ecdsa_sign_sw(const ICA_EC_KEY *privkey,
 		const unsigned char *hash, unsigned int hash_length,
 		unsigned char *signature)
 {
-	int n, rc = 0;
+	int rc = 0;
     EVP_PKEY *ec_pkey;
     ECDSA_SIG *sig = NULL;
     const BIGNUM *r, *s;
@@ -1490,13 +1481,8 @@ unsigned int ecdsa_sign_sw(const ICA_EC_KEY *privkey,
 	ECDSA_SIG_get0(sig, &r, &s);
 
 	/* Insert leading 0x00's if r or s shorter than privlen */
-	n = privlen - BN_num_bytes(r);
-	memset(signature, 0x00, n);
-	BN_bn2bin(r, &signature[n]);
-
-	n = privlen - BN_num_bytes(s);
-	memset(signature + privlen, 0x00, n);
-	BN_bn2bin(s, &signature[privlen + n]);
+	BN_bn2binpad(r, signature, privlen);
+	BN_bn2binpad(s, signature + privlen, privlen);
 
 	rc = 0;
 
