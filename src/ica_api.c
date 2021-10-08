@@ -1230,6 +1230,7 @@ unsigned int ica_rsa_crt_key_check(ica_rsa_key_crt_t *rsa_key)
 
 		free(tmp_buf);
 
+		BN_CTX_free(ctx);
 		BN_clear_free(bn_p);
 		BN_clear_free(bn_q);
 		BN_clear_free(bn_invq);
