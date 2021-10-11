@@ -1291,7 +1291,7 @@ int ica_ed448_ctx_del(ICA_ED448_CTX **ctx);
  *
  * @return 0 if successful.
  * EINVAL if at least one invalid parameter is given.
- * errno of OpenSSL key generation if it should fail.
+ * EFAULT if OpenSSL key generation should fail.
  */
 ICA_EXPORT
 unsigned int ica_rsa_key_generate_mod_expo(ica_adapter_handle_t adapter_handle,
@@ -1319,7 +1319,7 @@ unsigned int ica_rsa_key_generate_mod_expo(ica_adapter_handle_t adapter_handle,
  *
  * @return 0 if successful.
  * EINVAL if at least one invalid parameter is given.
- * errno of OpenSSL key generation if it should fail.
+ * EFAULT if OpenSSL key generation should fail.
  */
 ICA_EXPORT
 unsigned int ica_rsa_key_generate_crt(ica_adapter_handle_t adapter_handle,
