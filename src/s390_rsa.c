@@ -204,7 +204,7 @@ unsigned int rsa_key_generate_mod_expo(ica_adapter_handle_t deviceHandle,
 				    public_key->key_length -
 				    sizeof(unsigned long)));
 	if (!rsa) {
-		rc = errno;
+		rc = EFAULT;
 		goto err;
 	}
 
@@ -217,7 +217,7 @@ unsigned int rsa_key_generate_mod_expo(ica_adapter_handle_t deviceHandle,
 				    public_key->key_length -
 				    sizeof(unsigned long)));
 	if (!pkey) {
-		rc = errno;
+		rc = EFAULT;
 		goto err;
 	}
 
@@ -307,7 +307,7 @@ unsigned int rsa_key_generate_crt(ica_adapter_handle_t deviceHandle,
 				    public_key->key_length -
 				    sizeof(unsigned long)));
 	if (!rsa) {
-		rc = errno;
+		rc = EFAULT;
 		goto err;
 	}
 
@@ -322,7 +322,7 @@ unsigned int rsa_key_generate_crt(ica_adapter_handle_t deviceHandle,
 				    public_key->key_length -
 				    sizeof(unsigned long)));
 	if (!pkey) {
-		rc = errno;
+		rc = EFAULT;
 		goto err;
 	}
 
@@ -432,7 +432,7 @@ unsigned int rsa_mod_mult_sw(ica_rsa_modmult_t *pMul)
 #endif /* ICA_FIPS */
 
 	if ((ctx = BN_CTX_new()) == NULL) {
-		return errno;
+		return EFAULT;
 	}
 
 	rc = mod_mul_sw(pMul->inputdatalength, pMul->inputdata,
@@ -541,7 +541,7 @@ unsigned int rsa_mod_expo_sw(ica_rsa_modexpo_t *pMex)
 #endif /* ICA_FIPS */
 
 	if ((ctx = BN_CTX_new()) == NULL) {
-		return errno;
+		return EFAULT;
 	}
 
 	/* check if modulus value > data value */
@@ -708,7 +708,7 @@ unsigned int rsa_crt_sw(ica_rsa_modexpo_crt_t * pCrt)
 	int temp_length = sizeof(temp);
 
 	if ((ctx = BN_CTX_new()) == NULL) {
-		return errno;
+		return EFAULT;
 	}
 
 	memset(ir1, 0, sizeof(ir1));
