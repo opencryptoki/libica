@@ -1,3 +1,6 @@
+v3.9.0
+ - [FEATURE] Add support for OpenSSL 3.0
+   [FEATURE] icainfo: new parm -c to display available EC curves
 v3.8.0
  - [FEATURE] provide libica-cex module to satisfy special security requirements
    [FEATURE] FIPS: enforce the HMAC check
