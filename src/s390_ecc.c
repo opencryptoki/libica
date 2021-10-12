@@ -1417,7 +1417,7 @@ unsigned int ecdsa_sign_sw(const ICA_EC_KEY *privkey,
 		unsigned char *signature)
 {
 	int rc = 0;
-    EVP_PKEY *ec_pkey;
+    EVP_PKEY *ec_pkey = NULL;
     ECDSA_SIG *sig = NULL;
     const BIGNUM *r, *s;
     EVP_PKEY_CTX *ctx = NULL;
@@ -1920,7 +1920,7 @@ unsigned int ecdsa_verify_sw(const ICA_EC_KEY *pubkey,
 	unsigned char *sigbuf = NULL;
 	EVP_PKEY_CTX *ctx = NULL;
 	size_t siglen;
-	EVP_PKEY *ec_pkey;
+	EVP_PKEY *ec_pkey = NULL;
 	unsigned int privlen = privlen_from_nid(pubkey->nid);
 
 #ifdef ICA_FIPS
