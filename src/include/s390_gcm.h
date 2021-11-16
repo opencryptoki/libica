@@ -745,9 +745,13 @@ static inline int s390_aes_gcm_kma(const unsigned char *in_data,
 	if (rc >= 0) {
 		ctx->subkey_provided = 1;
 		if (ctx->direction)
-			stats_increment(ICA_STATS_AES_GCM, ALGO_HW, ENCRYPT);
+			stats_increment(ICA_STATS_AES_GCM_128 +
+					aes_directed_fc_stats_ofs(function_code),
+					ALGO_HW, ENCRYPT);
 		else
-			stats_increment(ICA_STATS_AES_GCM, ALGO_HW, DECRYPT);
+			stats_increment(ICA_STATS_AES_GCM_128 +
+					aes_directed_fc_stats_ofs(function_code),
+					ALGO_HW, DECRYPT);
 		return 0;
 	} else
 		return EIO;

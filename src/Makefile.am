@@ -77,7 +77,7 @@ icainfo_cex_CFLAGS = ${icainfo_CFLAGS_COMMON} -DNO_CPACF -DNO_SW_FALLBACKS
 icainfo_cex_LDADD = ${icainfo_LDADD_COMMON} libica-cex.la
 icainfo_cex_SOURCES = ${icainfo_SOURCES_COMMON}
 
-icastats_CFLAGS = ${AM_CFLAGS} -I${srcdir}/include -DICASTATS
+icastats_CFLAGS = ${AM_CFLAGS} -I${srcdir}/include -I${srcdir}/../include -DICASTATS
 icastats_LDADD = @LIBS@ -lrt
 icastats_SOURCES = icastats.c icastats_shared.c include/icastats.h
 

@@ -3639,7 +3639,9 @@ unsigned int ica_aes_cmac_intermediate(const unsigned char *message,
 		       iv);
 
 	if (!rc)
-		stats_increment(ICA_STATS_AES_CMAC, ALGO_HW, ICA_DECRYPT);
+		stats_increment(ICA_STATS_AES_CMAC_128 +
+				aes_directed_fc_stats_ofs(function_code),
+				ALGO_HW, ICA_DECRYPT);
 	return rc;
 #endif /* NO_CPACF */
 }
@@ -3684,8 +3686,10 @@ unsigned int ica_aes_cmac_last(const unsigned char *message, unsigned long messa
 			       key_length, key, mac_length, mac, iv);
 		if (rc)
 			return rc;
-		else
-			stats_increment(ICA_STATS_AES_CMAC, ALGO_HW, direction);
+
+		stats_increment(ICA_STATS_AES_CMAC_128 +
+				aes_directed_fc_stats_ofs(function_code),
+				ALGO_HW, direction);
 	} else {
 		/* verify */
 		rc = s390_cmac(function_code, message, message_length,
@@ -3694,8 +3698,10 @@ unsigned int ica_aes_cmac_last(const unsigned char *message, unsigned long messa
 			return rc;
 		if (CRYPTO_memcmp(tmp_mac, mac, mac_length))
 			return EFAULT;
-		else
-			stats_increment(ICA_STATS_AES_CMAC, ALGO_HW, direction);
+
+		stats_increment(ICA_STATS_AES_CMAC_128 +
+				aes_directed_fc_stats_ofs(function_code),
+				ALGO_HW, direction);
 	}
 
 	return 0;

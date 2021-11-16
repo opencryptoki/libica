@@ -16,6 +16,7 @@
 
 #include <stdint.h>
 
+#include "ica_api.h"
 
 typedef struct crypt_opts{
 	uint64_t hw;
@@ -78,13 +79,36 @@ typedef enum stats_fields {
 	ICA_STATS_3DES_CTR,
 	ICA_STATS_3DES_CMAC,
 	ICA_STATS_AES_ECB,
+	ICA_STATS_AES_ECB_128,
+	ICA_STATS_AES_ECB_192,
+	ICA_STATS_AES_ECB_256,
 	ICA_STATS_AES_CBC,
+	ICA_STATS_AES_CBC_128,
+	ICA_STATS_AES_CBC_192,
+	ICA_STATS_AES_CBC_256,
 	ICA_STATS_AES_OFB,
+	ICA_STATS_AES_OFB_128,
+	ICA_STATS_AES_OFB_192,
+	ICA_STATS_AES_OFB_256,
 	ICA_STATS_AES_CFB,
+	ICA_STATS_AES_CFB_128,
+	ICA_STATS_AES_CFB_192,
+	ICA_STATS_AES_CFB_256,
 	ICA_STATS_AES_CTR,
+	ICA_STATS_AES_CTR_128,
+	ICA_STATS_AES_CTR_192,
+	ICA_STATS_AES_CTR_256,
 	ICA_STATS_AES_CMAC,
+	ICA_STATS_AES_CMAC_128,
+	ICA_STATS_AES_CMAC_192,
+	ICA_STATS_AES_CMAC_256,
 	ICA_STATS_AES_XTS,
+	ICA_STATS_AES_XTS_128,
+	ICA_STATS_AES_XTS_256,
 	ICA_STATS_AES_GCM,
+	ICA_STATS_AES_GCM_128,
+	ICA_STATS_AES_GCM_192,
+	ICA_STATS_AES_GCM_256,
 
 	/* number of counters */
 	ICA_NUM_STATS
@@ -136,15 +160,36 @@ typedef enum stats_fields {
 	"3DES CTR",   	\
 	"3DES CMAC",	\
 	"AES ECB",	\
+	"- 128",	\
+	"- 192",	\
+	"- 256",	\
 	"AES CBC",	\
+	"- 128",	\
+	"- 192",	\
+	"- 256",	\
 	"AES OFB",	\
+	"- 128",	\
+	"- 192",	\
+	"- 256",	\
 	"AES CFB",	\
+	"- 128",	\
+	"- 192",	\
+	"- 256",	\
 	"AES CTR",	\
+	"- 128",	\
+	"- 192",	\
+	"- 256",	\
 	"AES CMAC",	\
-	"AES XTS",  \
-	"AES GCM"
-
-
+	"- 128",	\
+	"- 192",	\
+	"- 256",	\
+	"AES XTS",	\
+	"- 128",	\
+	"- 256",	\
+	"AES GCM",	\
+	"- 128",	\
+	"- 192",	\
+	"- 256"
 
 #define STATS_SHM_SIZE (sizeof(stats_entry_t) * ICA_NUM_STATS)
 #define ENCRYPT 1
@@ -167,5 +212,26 @@ char *get_next_usr();
 void stats_reset();
 int delete_all();
 
+static inline int aes_directed_fc_stats_ofs(unsigned int fc)
+{
+	switch (fc) {
+	case AES_128_DECRYPT:
+	case AES_128_ENCRYPT:
+		return 0;
+	case AES_192_DECRYPT:
+	case AES_192_ENCRYPT:
+		return 1;
+	case AES_256_DECRYPT:
+	case AES_256_ENCRYPT:
+		return 2;
+	case AES_128_XTS_ENCRYPT:
+	case AES_128_XTS_DECRYPT:
+		return 0;
+	case AES_256_XTS_ENCRYPT:
+	case AES_256_XTS_DECRYPT:
+		return 1;
+	}
+	return 0;
+}
 
 #endif
