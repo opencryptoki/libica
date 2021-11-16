@@ -126,18 +126,61 @@ uint64_t stats_query(stats_fields_t field, int hardware, int direction)
 			return stats[field].dec.sw;
 }
 
+static uint64_t calc_summary(stats_fields_t start, unsigned int num,
+		             int hardware, int direction)
+{
+	unsigned int i;
+	uint64_t sum = 0;
+
+	for (i = 0; i < num; i++)
+		sum += stats_query(start + i, hardware, direction);
+
+	return sum;
+}
+
 /* Returns the statistic data in a stats_entry_t array
  * @entries - Needs to be a array of size ICA_NUM_STATS.
  */
-
 void get_stats_data(stats_entry_t *entries)
 {
 	unsigned int i;
-	for(i = 0;i<ICA_NUM_STATS; i++){
-		entries[i].enc.hw = stats_query(i, ALGO_HW, ENCRYPT);
-		entries[i].enc.sw = stats_query(i, ALGO_SW, ENCRYPT);
-		entries[i].dec.hw = stats_query(i, ALGO_HW, DECRYPT);
-		entries[i].dec.sw = stats_query(i, ALGO_SW, DECRYPT);
+	for(i = 0; i < ICA_NUM_STATS; i++) {
+		switch (i) {
+		case ICA_STATS_AES_ECB:
+		case ICA_STATS_AES_CBC:
+		case ICA_STATS_AES_OFB:
+		case ICA_STATS_AES_CFB:
+		case ICA_STATS_AES_CTR:
+		case ICA_STATS_AES_CMAC:
+		case ICA_STATS_AES_GCM:
+			entries[i].enc.hw = calc_summary(i + 1, 3,
+					                 ALGO_HW, ENCRYPT);
+			entries[i].enc.sw = calc_summary(i + 1, 3,
+					                 ALGO_SW, ENCRYPT);
+			entries[i].dec.hw = calc_summary(i + 1, 3,
+					                 ALGO_HW, DECRYPT);
+			entries[i].dec.sw = calc_summary(i + 1, 3,
+					                 ALGO_SW, DECRYPT);
+			break;
+
+		case ICA_STATS_AES_XTS:
+			entries[i].enc.hw = calc_summary(i + 1, 2,
+					                 ALGO_HW, ENCRYPT);
+			entries[i].enc.sw = calc_summary(i + 1, 2,
+					                 ALGO_SW, ENCRYPT);
+			entries[i].dec.hw = calc_summary(i + 1, 2,
+					                 ALGO_HW, DECRYPT);
+			entries[i].dec.sw = calc_summary(i + 1, 2,
+					                 ALGO_SW, DECRYPT);
+			break;
+
+		default:
+			entries[i].enc.hw = stats_query(i, ALGO_HW, ENCRYPT);
+			entries[i].enc.sw = stats_query(i, ALGO_SW, ENCRYPT);
+			entries[i].dec.hw = stats_query(i, ALGO_HW, DECRYPT);
+			entries[i].dec.sw = stats_query(i, ALGO_SW, DECRYPT);
+			break;
+		}
 	}
 }
 

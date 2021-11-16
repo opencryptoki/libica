@@ -90,7 +90,9 @@ static inline void _stats_increment(unsigned int fc, int hw, int direction)
 		case 26:
 		case 27:
 		case 28:
-			stats_increment(ICA_STATS_AES_CMAC, hw, direction);
+			stats_increment(ICA_STATS_AES_CMAC_128 +
+					aes_directed_fc_stats_ofs(fc),
+					hw, direction);
 			break;
 		default:
 			break;
