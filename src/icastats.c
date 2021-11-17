@@ -45,11 +45,12 @@ void print_help(char *cmd)
 	       " -U, --user <userid> show the statistics from one user. (root user only)\n"
 	       " -S, --summary       show the accumulated statistics from alle users. (root user only)\n"
 	       " -A, --all	     show the statistic tables from all users. (root user only)\n"
+	       " -k, --key-sizes     show statistics per key size.\n"
 	       " -v, --version       output version information\n"
 	       " -h, --help          display help information\n");
 }
 
-#define getopt_string "rRdDU:SAvh"
+#define getopt_string "rRdDU:SAkvh"
 static struct option getopt_long_options[] = {
 	{"reset", 0, 0, 'r'},
 	{"reset-all", 0, 0, 'R'},
@@ -58,6 +59,7 @@ static struct option getopt_long_options[] = {
 	{"user", required_argument, 0, 'U'},
 	{"summary", 0, 0, 'S'},
 	{"all", 0, 0, 'A'},
+	{"key-sizes", 0, 0, 'k'},
 	{"version", 0, 0, 'v'},
 	{"help", 0, 0, 'h'},
 	{0, 0, 0, 0}
@@ -70,22 +72,25 @@ const char *const STATS_DESC[ICA_NUM_STATS] = {
 
 
 #define CELL_SIZE 12
-void print_stats(stats_entry_t *stats)
+void print_stats(stats_entry_t *stats, int key_sizes)
 {
 	printf(" function       |             hardware         |              software\n");
 	printf("----------------+------------------------------+-----------------------------\n");
 	printf("                |        ENC    CRYPT     DEC  |        ENC     CRYPT    DEC \n");
 	printf("----------------+------------------------------+-----------------------------\n");
 	unsigned int i;
-	for (i = 0; i < ICA_NUM_STATS; ++i){
-		if(i<=ICA_STATS_RSA_CRT_4096){
+	for (i = 0; i < ICA_NUM_STATS; ++i) {
+		if (!key_sizes && strncmp(STATS_DESC[i], "- ", 2) == 0)
+			continue;
+
+		if(i <= ICA_STATS_RSA_CRT_4096) {
 			printf(" %14s |        %*lu          |         %*lu\n",
 			       STATS_DESC[i],
 			       CELL_SIZE,
 			       stats[i].enc.hw,
 			       CELL_SIZE,
 			       stats[i].enc.sw);
-		} else{
+		} else {
 			printf(" %14s |%*lu     %*lu |%*lu    %*lu\n",
 			       STATS_DESC[i],
 			       CELL_SIZE,
@@ -113,6 +118,7 @@ int main(int argc, char *argv[])
 	int sum = 0;
 	int user = -1;
 	int all = 0;
+	int key_sizes = 0;
 	struct passwd *pswd;
 
 	while ((rc = getopt_long(argc, argv, getopt_string,
@@ -155,6 +161,9 @@ int main(int argc, char *argv[])
 		case 'A':
 			all = 1;
 			break;
+		case 'k':
+			key_sizes = 1;
+			break;
 		case 'v':
 			print_version();
 			exit(0);
@@ -196,9 +205,9 @@ int main(int argc, char *argv[])
 				perror("malloc: ");
 				return EXIT_FAILURE;
 			}
-			get_stats_data(entries);;
+			get_stats_data(entries);
 			printf("user: %s\n", usr);
-			print_stats(entries);
+			print_stats(entries, key_sizes);
 			free(entries);
 		}
 		return EXIT_SUCCESS;
@@ -215,7 +224,7 @@ int main(int argc, char *argv[])
 			perror("get_stats_sum: ");
 			return EXIT_FAILURE;
 		}
-		print_stats(entries);
+		print_stats(entries, key_sizes);
 		return EXIT_SUCCESS;
 
 
@@ -243,7 +252,7 @@ int main(int argc, char *argv[])
 			return EXIT_FAILURE;
 		}
 		get_stats_data(stats);
-		print_stats(stats);
+		print_stats(stats, key_sizes);
 
 	}
 	return EXIT_SUCCESS;
