@@ -174,6 +174,18 @@ void get_stats_data(stats_entry_t *entries)
 					                 ALGO_SW, DECRYPT);
 			break;
 
+		case ICA_STATS_RSA_ME:
+		case ICA_STATS_RSA_CRT:
+			entries[i].enc.hw = calc_summary(i + 1, 4,
+					                 ALGO_HW, ENCRYPT);
+			entries[i].enc.sw = calc_summary(i + 1, 4,
+					                 ALGO_SW, ENCRYPT);
+			entries[i].dec.hw = calc_summary(i + 1, 4,
+					                 ALGO_HW, DECRYPT);
+			entries[i].dec.sw = calc_summary(i + 1, 4,
+					                 ALGO_SW, DECRYPT);
+			break;
+
 		default:
 			entries[i].enc.hw = stats_query(i, ALGO_HW, ENCRYPT);
 			entries[i].enc.sw = stats_query(i, ALGO_SW, ENCRYPT);

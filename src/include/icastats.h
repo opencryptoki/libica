@@ -62,7 +62,15 @@ typedef enum stats_fields {
 	ICA_STATS_X448_KEYGEN,
 	ICA_STATS_X448_DERIVE,
 	ICA_STATS_RSA_ME,
-	ICA_STATS_RSA_CRT, /* add new crypt counters above RSA_CRT
+	ICA_STATS_RSA_ME_512,
+	ICA_STATS_RSA_ME_1024,
+	ICA_STATS_RSA_ME_2048,
+	ICA_STATS_RSA_ME_4096,
+	ICA_STATS_RSA_CRT,
+	ICA_STATS_RSA_CRT_512,
+	ICA_STATS_RSA_CRT_1024,
+	ICA_STATS_RSA_CRT_2048,
+	ICA_STATS_RSA_CRT_4096, /* add new crypt counters above RSA_CRT_4096
 			      (see print_stats function) */
 
 	/* enc and dec counter  */
@@ -145,8 +153,16 @@ typedef enum stats_fields {
 	"X25519 Derive",\
 	"X448 Keygen",  \
 	"X448 Derive",  \
-	"RSA-ME",     	\
-	"RSA-CRT",    	\
+	"RSA-ME",	\
+	"- 512",	\
+	"- 1024",	\
+	"- 2048",	\
+	"- 4096",	\
+	"RSA-CRT",	\
+	"- 512",	\
+	"- 1024",	\
+	"- 2048",	\
+	"- 4096",	\
 	"DES ECB",    	\
 	"DES CBC",    	\
 	"DES OFB",    	\
@@ -231,6 +247,17 @@ static inline int aes_directed_fc_stats_ofs(unsigned int fc)
 	case AES_256_XTS_DECRYPT:
 		return 1;
 	}
+	return 0;
+}
+
+static inline int rsa_keysize_stats_ofs(unsigned int key_length)
+{
+	if (key_length >= 4096 / 8)
+		return 3;
+	if (key_length >= 2048 / 8)
+		return 2;
+	if (key_length >= 1024 / 8)
+		return 1;
 	return 0;
 }
 

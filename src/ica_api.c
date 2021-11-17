@@ -1171,7 +1171,9 @@ unsigned int ica_rsa_mod_expo(ica_adapter_handle_t adapter_handle,
 				rsa_mod_expo_sw(&rb) : ENODEV;
 	}
 	if (rc == 0)
-		stats_increment(ICA_STATS_RSA_ME, hardware, ENCRYPT);
+		stats_increment(ICA_STATS_RSA_ME_512 +
+				rsa_keysize_stats_ofs(rsa_key->key_length),
+				hardware, ENCRYPT);
 
 	OPENSSL_cleanse(&rb, sizeof(rb));
 
@@ -1291,7 +1293,9 @@ unsigned int ica_rsa_crt(ica_adapter_handle_t adapter_handle,
 				rsa_crt_sw(&rb) : ENODEV;
 	}
 	if (rc == 0)
-		stats_increment(ICA_STATS_RSA_CRT, hardware, ENCRYPT);
+		stats_increment(ICA_STATS_RSA_CRT_512 +
+				rsa_keysize_stats_ofs(rsa_key->key_length),
+				hardware, ENCRYPT);
 
 	OPENSSL_cleanse(&rb, sizeof(rb));
 
