@@ -33,22 +33,6 @@
 static stats_entry_t *stats = NULL;
 volatile int stats_shm_handle = NOT_INITIALIZED;
 
-
-static inline void atomic_add(uint64_t *x, uint64_t i)
-{
-    uint64_t old;
-    uint64_t new;
-    asm volatile ("   lg      %0,%2\n"
-                  "0: lgr     %1,%0\n"
-                  "   agr     %1,%3\n"
-                  "   csg     %0,%1,%2\n"
-                  "   jl      0b"
-                 :"=&d" (old), "=&d"(new), "=Q"(*x)
-                 :"d"(i), "Q"(*x)
-                 :"cc", "memory");
-}
-
-
 /* open shared memory segment
  * Arguments:
  * @user: if user is -1 stats_mmap will open the shared memory segent of the same
@@ -277,14 +261,14 @@ void stats_increment(stats_fields_t field, int hardware, int direction)
 
 	if(direction == ENCRYPT)
 		if (hardware == ALGO_HW)
-			atomic_add(&stats[field].enc.hw, 1);
+			__sync_add_and_fetch(&stats[field].enc.hw, 1);
 		else
-			atomic_add(&stats[field].enc.sw, 1);
+			__sync_add_and_fetch(&stats[field].enc.sw, 1);
 	else
 		if (hardware == ALGO_HW)
-			atomic_add(&stats[field].dec.hw, 1);
+			__sync_add_and_fetch(&stats[field].dec.hw, 1);
 		else
-			atomic_add(&stats[field].dec.sw, 1);
+			__sync_add_and_fetch(&stats[field].dec.sw, 1);
 }
 #endif
 
