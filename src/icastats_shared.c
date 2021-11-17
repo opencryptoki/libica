@@ -47,6 +47,7 @@ volatile int stats_shm_handle = NOT_INITIALIZED;
 int stats_mmap(int user)
 {
 	char shm_id[NAME_LENGHT];
+	struct stat stat_buf;
 
 	if (stats == NULL) {
 		sprintf(shm_id, "icastats_%d",
@@ -59,12 +60,21 @@ int stats_mmap(int user)
 			return -1;
 
 		if (user > 0 && geteuid() == 0) {
-			if (fchown(stats_shm_handle, user, user) == -1)
+			if (fchown(stats_shm_handle, user, user) == -1) {
+				close(stats_shm_handle);
 				return -1;
+			}
 		}
 
-		if (ftruncate(stats_shm_handle, STATS_SHM_SIZE) == -1)
+		if (fstat(stats_shm_handle, &stat_buf)) {
+			close(stats_shm_handle);
 			return -1;
+		}
+
+		if (ftruncate(stats_shm_handle, STATS_SHM_SIZE) == -1) {
+			close(stats_shm_handle);
+			return -1;
+		}
 
 		stats = (stats_entry_t *) mmap(NULL, STATS_SHM_SIZE, PROT_READ |
 						 PROT_WRITE, MAP_SHARED,
@@ -74,6 +84,9 @@ int stats_mmap(int user)
 			stats = NULL;
 			return -1;
 		}
+
+		if (stat_buf.st_size != STATS_SHM_SIZE)
+			memset(stats, 0, STATS_SHM_SIZE);
 	}
 	return 0;
 }
