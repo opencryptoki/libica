@@ -16,6 +16,8 @@
 
 #include <stdint.h>
 
+#include <openssl/obj_mac.h>
+
 #include "ica_api.h"
 
 typedef struct crypt_opts{
@@ -48,9 +50,41 @@ typedef enum stats_fields {
 	ICA_STATS_PRNG,
 	ICA_STATS_DRBGSHA512,
 	ICA_STATS_ECDH,
+	ICA_STATS_ECDH_160,
+	ICA_STATS_ECDH_192,
+	ICA_STATS_ECDH_224,
+	ICA_STATS_ECDH_256,
+	ICA_STATS_ECDH_320,
+	ICA_STATS_ECDH_384,
+	ICA_STATS_ECDH_512,
+	ICA_STATS_ECDH_521,
 	ICA_STATS_ECDSA_SIGN,
+	ICA_STATS_ECDSA_SIGN_160,
+	ICA_STATS_ECDSA_SIGN_192,
+	ICA_STATS_ECDSA_SIGN_224,
+	ICA_STATS_ECDSA_SIGN_256,
+	ICA_STATS_ECDSA_SIGN_320,
+	ICA_STATS_ECDSA_SIGN_384,
+	ICA_STATS_ECDSA_SIGN_512,
+	ICA_STATS_ECDSA_SIGN_521,
 	ICA_STATS_ECDSA_VERIFY,
+	ICA_STATS_ECDSA_VERIFY_160,
+	ICA_STATS_ECDSA_VERIFY_192,
+	ICA_STATS_ECDSA_VERIFY_224,
+	ICA_STATS_ECDSA_VERIFY_256,
+	ICA_STATS_ECDSA_VERIFY_320,
+	ICA_STATS_ECDSA_VERIFY_384,
+	ICA_STATS_ECDSA_VERIFY_512,
+	ICA_STATS_ECDSA_VERIFY_521,
 	ICA_STATS_ECKGEN,
+	ICA_STATS_ECKGEN_160,
+	ICA_STATS_ECKGEN_192,
+	ICA_STATS_ECKGEN_224,
+	ICA_STATS_ECKGEN_256,
+	ICA_STATS_ECKGEN_320,
+	ICA_STATS_ECKGEN_384,
+	ICA_STATS_ECKGEN_512,
+	ICA_STATS_ECKGEN_521,
 	ICA_STATS_ED25519_KEYGEN,
 	ICA_STATS_ED25519_SIGN,
 	ICA_STATS_ED25519_VERIFY,
@@ -139,10 +173,42 @@ typedef enum stats_fields {
 	"GHASH",      	\
 	"P_RNG",      	\
 	"DRBG-SHA-512",	\
-	"ECDH",         \
-	"ECDSA Sign",   \
-	"ECDSA Verify", \
-	"EC Keygen",    \
+	"ECDH",		\
+	"- 160",	\
+	"- 192",	\
+	"- 224",	\
+	"- 256",	\
+	"- 320",	\
+	"- 384",	\
+	"- 512",	\
+	"- 521",	\
+	"ECDSA Sign",	\
+	"- 160",	\
+	"- 192",	\
+	"- 224",	\
+	"- 256",	\
+	"- 320",	\
+	"- 384",	\
+	"- 512",	\
+	"- 521",	\
+	"ECDSA Verify",	\
+	"- 160",	\
+	"- 192",	\
+	"- 224",	\
+	"- 256",	\
+	"- 320",	\
+	"- 384",	\
+	"- 512",	\
+	"- 521",	\
+	"EC Keygen",	\
+	"- 160",	\
+	"- 192",	\
+	"- 224",	\
+	"- 256",	\
+	"- 320",	\
+	"- 384",	\
+	"- 512",	\
+	"- 521",	\
 	"Ed25519 Keygen",\
 	"Ed25519 Sign", \
 	"Ed25519 Verify",\
@@ -258,6 +324,33 @@ static inline int rsa_keysize_stats_ofs(unsigned int key_length)
 		return 2;
 	if (key_length >= 1024 / 8)
 		return 1;
+	return 0;
+}
+
+static inline int ecc_keysize_stats_ofs(int nid)
+{
+	switch (nid) {
+	case NID_brainpoolP160r1:
+		return 0;
+	case NID_X9_62_prime192v1:
+	case NID_brainpoolP192r1:
+		return 1;
+	case NID_secp224r1:
+	case NID_brainpoolP224r1:
+		return 2;
+	case NID_X9_62_prime256v1:
+	case NID_brainpoolP256r1:
+		return 3;
+	case NID_brainpoolP320r1:
+		return 4;
+	case NID_secp384r1:
+	case NID_brainpoolP384r1:
+		return 5;
+	case NID_brainpoolP512r1:
+		return 6;
+	case NID_secp521r1:
+		return 7;
+	}
 	return 0;
 }
 

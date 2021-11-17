@@ -1426,7 +1426,9 @@ int ica_ec_key_generate(ica_adapter_handle_t adapter_handle, ICA_EC_KEY *key)
 	}
 
 	if (rc == 0)
-		stats_increment(ICA_STATS_ECKGEN, hardware, ENCRYPT);
+		stats_increment(ICA_STATS_ECKGEN_160 +
+				ecc_keysize_stats_ofs(key->nid),
+				hardware, ENCRYPT);
 
 	return rc;
 }
@@ -1487,7 +1489,9 @@ int ica_ecdh_derive_secret(ica_adapter_handle_t adapter_handle,
 	}
 
 	if (rc == 0)
-		stats_increment(ICA_STATS_ECDH, hardware, ENCRYPT);
+		stats_increment(ICA_STATS_ECDH_160 +
+				ecc_keysize_stats_ofs(privkey_A->nid),
+				hardware, ENCRYPT);
 
 	return rc;
 }
@@ -1542,7 +1546,9 @@ int ica_ecdsa_sign(ica_adapter_handle_t adapter_handle,
 	}
 
 	if (rc == 0)
-		stats_increment(ICA_STATS_ECDSA_SIGN, hardware, ENCRYPT);
+		stats_increment(ICA_STATS_ECDSA_SIGN_160 +
+				ecc_keysize_stats_ofs(privkey->nid),
+				hardware, ENCRYPT);
 
 	return rc;
 }
@@ -1599,7 +1605,9 @@ int ica_ecdsa_verify(ica_adapter_handle_t adapter_handle,
 	}
 
 	if (rc == 0)
-		stats_increment(ICA_STATS_ECDSA_VERIFY, hardware, ENCRYPT);
+		stats_increment(ICA_STATS_ECDSA_VERIFY_160 +
+				ecc_keysize_stats_ofs(pubkey->nid),
+				hardware, ENCRYPT);
 
 	return rc;
 }
