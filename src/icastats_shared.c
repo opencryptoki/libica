@@ -53,7 +53,9 @@ int stats_mmap(int user)
 		sprintf(shm_id, "icastats_%d",
 			user == -1 ? geteuid() : (uid_t)user);
 
-		stats_shm_handle = shm_open(shm_id, O_CREAT | O_RDWR,
+		stats_shm_handle = shm_open(shm_id, O_RDWR,  S_IRUSR | S_IWUSR);
+		if (stats_shm_handle == NOT_INITIALIZED)
+			stats_shm_handle = shm_open(shm_id, O_CREAT | O_RDWR,
 						    S_IRUSR | S_IWUSR);
 
 		if (stats_shm_handle == NOT_INITIALIZED)
