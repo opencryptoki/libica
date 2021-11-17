@@ -21,6 +21,9 @@
 #include <getopt.h>
 #include <pwd.h>
 #include <libgen.h>
+#include <errno.h>
+#include <time.h>
+#include <sys/utsname.h>
 #include "icastats.h"
 
 #define CMD_NAME "icastats"
@@ -46,11 +49,12 @@ void print_help(char *cmd)
 	       " -S, --summary       show the accumulated statistics from alle users. (root user only)\n"
 	       " -A, --all	     show the statistic tables from all users. (root user only)\n"
 	       " -k, --key-sizes     show statistics per key size.\n"
+	       " -j, --json          output the statistics in JSON format.\n"
 	       " -v, --version       output version information\n"
 	       " -h, --help          display help information\n");
 }
 
-#define getopt_string "rRdDU:SAkvh"
+#define getopt_string "rRdDU:SAkjvh"
 static struct option getopt_long_options[] = {
 	{"reset", 0, 0, 'r'},
 	{"reset-all", 0, 0, 'R'},
@@ -60,6 +64,7 @@ static struct option getopt_long_options[] = {
 	{"summary", 0, 0, 'S'},
 	{"all", 0, 0, 'A'},
 	{"key-sizes", 0, 0, 'k'},
+	{"json", 0, 0, 'j'},
 	{"version", 0, 0, 'v'},
 	{"help", 0, 0, 'h'},
 	{0, 0, 0, 0}
@@ -106,8 +111,96 @@ void print_stats(stats_entry_t *stats, int key_sizes)
 	}
 }
 
+static int first_usr;
 
+void print_json_header()
+{
+	char timestamp[200];
+	struct utsname un;
+	struct tm *tm;
+	time_t t;
 
+	time(&t);
+	tm = gmtime(&t);
+	/* ISO 8601 format: e.g. 2021-11-17T08:01:23Z (always UTC) */
+	strftime(timestamp, sizeof(timestamp), "%FT%TZ", tm);
+
+	if (uname(&un) != 0) {
+		fprintf(stderr, "Failed to obtain system information, uname: %s",
+		       strerror(errno));
+		return;
+	}
+
+	printf("{\n\t\"host\": {\n");
+	printf("\t\t\"nodename\": \"%s\",\n", un.nodename);
+	printf("\t\t\"sysname\": \"%s\",\n", un.sysname);
+	printf("\t\t\"release\": \"%s\",\n", un.release);
+	printf("\t\t\"machine\": \"%s\",\n", un.machine);
+	printf("\t\t\"date\": \"%s\"\n", timestamp);
+	printf("\t},\n\t\"users\": [");
+
+	first_usr = 1;
+}
+
+void print_stats_json(stats_entry_t *stats, const char *usr)
+{
+	unsigned int i;
+	const char *last_func = NULL;
+
+	if (!first_usr)
+		printf(",");
+	printf("\n\t\t{\n\t\t\t\"user\": \"%s\",\n", usr);
+	printf("\t\t\t\"functions\": [");
+
+	for (i = 0; i < ICA_NUM_STATS; ++i) {
+		if (i < ICA_NUM_STATS - 1 &&
+		    strncmp(STATS_DESC[i + 1], "- ", 2) == 0 &&
+		    strncmp(STATS_DESC[i], "- ", 2) != 0) {
+			last_func = STATS_DESC[i];
+			continue;
+		}
+
+		if (i != 0)
+			printf(",");
+		printf("\n\t\t\t\t{\n");
+
+		if (strncmp(STATS_DESC[i], "- ", 2) == 0 && last_func != NULL) {
+			printf("\t\t\t\t\t\"function\": \"%s %s\",\n",
+			       last_func, STATS_DESC[i]);
+		} else {
+			printf("\t\t\t\t\t\"function\": \"%s\",\n",
+			       STATS_DESC[i]);
+			last_func = NULL;
+		}
+
+		if (i <= ICA_STATS_RSA_CRT_4096) {
+			printf("\t\t\t\t\t\"hw-crypt\": %lu,\n",
+			       stats[i].enc.hw);
+			printf("\t\t\t\t\t\"sw-crypt\": %lu\n",
+			       stats[i].enc.sw);
+		} else {
+			printf("\t\t\t\t\t\"hw-enc\": %lu,\n",
+			       stats[i].enc.hw);
+			printf("\t\t\t\t\t\"sw-enc\": %lu,\n",
+			       stats[i].enc.sw);
+			printf("\t\t\t\t\t\"hw-dec\": %lu,\n",
+			       stats[i].dec.hw);
+			printf("\t\t\t\t\t\"sw-dec\": %lu\n",
+			       stats[i].dec.sw);
+		}
+
+		printf("\t\t\t\t}");
+	}
+
+	printf("\n\t\t\t]\n\t\t}");
+
+	first_usr = 0;
+}
+
+void print_json_footer()
+{
+	printf("\n\t]\n}\n");
+}
 
 int main(int argc, char *argv[])
 {
@@ -119,6 +212,7 @@ int main(int argc, char *argv[])
 	int user = -1;
 	int all = 0;
 	int key_sizes = 0;
+	int json = 0;
 	struct passwd *pswd;
 
 	while ((rc = getopt_long(argc, argv, getopt_string,
@@ -164,6 +258,9 @@ int main(int argc, char *argv[])
 		case 'k':
 			key_sizes = 1;
 			break;
+		case 'j':
+			json = 1;
+			break;
 		case 'v':
 			print_version();
 			exit(0);
@@ -200,16 +297,24 @@ int main(int argc, char *argv[])
 	if(all){
 		char *usr;
 		stats_entry_t *entries;
+		if (json)
+			print_json_header();
 		while((usr = get_next_usr()) != NULL){
 			if((entries = malloc(sizeof(stats_entry_t)*ICA_NUM_STATS)) == NULL){
 				perror("malloc: ");
 				return EXIT_FAILURE;
 			}
 			get_stats_data(entries);
-			printf("user: %s\n", usr);
-			print_stats(entries, key_sizes);
+			if (json) {
+				print_stats_json(entries, usr);
+			} else {
+				printf("user: %s\n", usr);
+				print_stats(entries, key_sizes);
+			}
 			free(entries);
 		}
+		if (json)
+			print_json_footer();
 		return EXIT_SUCCESS;
 	}
 
@@ -224,10 +329,14 @@ int main(int argc, char *argv[])
 			perror("get_stats_sum: ");
 			return EXIT_FAILURE;
 		}
-		print_stats(entries, key_sizes);
+		if (json) {
+			print_json_header();
+			print_stats_json(entries, "all users");
+			print_json_footer();
+		} else {
+			print_stats(entries, key_sizes);
+		}
 		return EXIT_SUCCESS;
-
-
 	}
 
 	if(reset == 2){
@@ -252,7 +361,18 @@ int main(int argc, char *argv[])
 			return EXIT_FAILURE;
 		}
 		get_stats_data(stats);
-		print_stats(stats, key_sizes);
+		if (json) {
+			pswd = getpwuid(user == -1 ? geteuid() : (uid_t)user);
+			if (pswd == NULL) {
+				fprintf(stderr, "Failed to get user name");
+				return EXIT_FAILURE;
+			}
+			print_json_header();
+			print_stats_json(stats, pswd->pw_name);
+			print_json_footer();
+		} else {
+			print_stats(stats, key_sizes);
+		}
 
 	}
 	return EXIT_SUCCESS;
