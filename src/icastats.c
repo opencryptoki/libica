@@ -78,7 +78,7 @@ void print_stats(stats_entry_t *stats)
 	printf("----------------+------------------------------+-----------------------------\n");
 	unsigned int i;
 	for (i = 0; i < ICA_NUM_STATS; ++i){
-		if(i<=ICA_STATS_RSA_CRT){
+		if(i<=ICA_STATS_RSA_CRT_4096){
 			printf(" %14s |        %*lu          |         %*lu\n",
 			       STATS_DESC[i],
 			       CELL_SIZE,
