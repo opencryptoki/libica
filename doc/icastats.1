@@ -13,7 +13,7 @@ icastats \- display statistic data for the libica cryptographic functions
 .B icastats
 [-v | --version] [-h | --help] [--reset-all | -R] [--reset | -r]
 [--delete-all |-D] [--delete | -d] [--all | -A] [--summary | -S] [-U |
---user <username>] [--key-sizes | -k]
+--user <username>] [--key-sizes | -k] [--json | -j]
 .SH DESCRIPTION
 .B icastats
 displays statistic data about the usage of cryptographic functions provided by
@@ -50,12 +50,16 @@ Here is a shortened sample output:
       AES GCM |       0             0 |       0            0
 .fi
 .P
+In addition to the default output format, a machine readable JSON output format
+can be selected using the --json | -j option.
+.P
 For each cryptographic function the table shows the number of invocations
 where hardware support was involved or the libica fall back implementation
 in software was used. For the ciphering methods the invocation counter is
 further divided into encrypt and decrypt operation counter values.
 For some cryptographic functions (AES, RSA, ECC) counters exist per key size.
-Use the --key-sizes | -k option to display those counters as well.
+Use the --key-sizes | -k option to display those counters as well. For the JSON
+output format, only the per key size counters are reported.
 .P
 All the counter values are stored and maintained in one shared memory page
 for each user. This memory area is created automatically with the first run
@@ -107,6 +111,8 @@ values (only root user)
 show statistic values from the given user (only root user)
 .IP "-k or --key-sizes"
 show libica statistic data per key size
+.IP "-j or --json"
+output the statistics in JSON format
 .SH FILES
 .nf
 /shm/dev/icastats_<userid>
