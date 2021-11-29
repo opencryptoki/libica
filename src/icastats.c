@@ -27,7 +27,7 @@
 #include "icastats.h"
 
 #define CMD_NAME "icastats"
-#define COPYRIGHT "Copyright IBM Corp. 2009-2019"
+#define COPYRIGHT "Copyright IBM Corp. 2009-2021"
 
 void print_version(void)
 {
@@ -46,7 +46,7 @@ void print_help(char *cmd)
 	       " -d, --delete        delete your own statistics.\n"
 	       " -D, --delete-all    delete the statistics from all users. (root user only)\n"
 	       " -U, --user <userid> show the statistics from one user. (root user only)\n"
-	       " -S, --summary       show the accumulated statistics from alle users. (root user only)\n"
+	       " -S, --summary       show the accumulated statistics from all users. (root user only)\n"
 	       " -A, --all	     show the statistic tables from all users. (root user only)\n"
 	       " -k, --key-sizes     show statistics per key size.\n"
 	       " -j, --json          output the statistics in JSON format.\n"
