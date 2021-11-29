@@ -28,7 +28,7 @@
 #include "init.h"
 #include "icastats.h"
 
-int s390_sha1(unsigned char *iv, unsigned char *input_data,
+int s390_sha1(unsigned char *iv, const unsigned char *input_data,
 	      unsigned int input_length, unsigned char *output_data,
 	      unsigned int message_part, uint64_t *running_length)
 {
@@ -44,7 +44,7 @@ int s390_sha1(unsigned char *iv, unsigned char *input_data,
 	return rc;
 }
 
-int s390_sha224(unsigned char *iv, unsigned char *input_data,
+int s390_sha224(unsigned char *iv, const unsigned char *input_data,
 		unsigned int input_length, unsigned char *output_data,
 		unsigned int message_part, uint64_t *running_length)
 {
@@ -60,7 +60,7 @@ int s390_sha224(unsigned char *iv, unsigned char *input_data,
 	return rc;
 }
 
-int s390_sha256(unsigned char *iv, unsigned char *input_data,
+int s390_sha256(unsigned char *iv, const unsigned char *input_data,
 		unsigned int input_length, unsigned char *output_data,
 		unsigned int message_part, uint64_t *running_length)
 {
@@ -75,7 +75,7 @@ int s390_sha256(unsigned char *iv, unsigned char *input_data,
 
 	return rc;
 }
-int s390_sha384(unsigned char *iv, unsigned char *input_data,
+int s390_sha384(unsigned char *iv, const unsigned char *input_data,
 		uint64_t input_length, unsigned char *output_data,
 		unsigned int message_part, uint64_t *running_length_lo,
 		uint64_t *running_length_hi)
@@ -93,7 +93,7 @@ int s390_sha384(unsigned char *iv, unsigned char *input_data,
 	return rc;
 }
 
-int s390_sha512(unsigned char *iv, unsigned char *input_data,
+int s390_sha512(unsigned char *iv, const unsigned char *input_data,
 		uint64_t input_length, unsigned char *output_data,
 		unsigned int message_part, uint64_t *running_length_lo,
 		uint64_t *running_length_hi)
@@ -111,7 +111,7 @@ int s390_sha512(unsigned char *iv, unsigned char *input_data,
 	return rc;
 }
 
-int s390_sha512_224(unsigned char *iv, unsigned char *input_data,
+int s390_sha512_224(unsigned char *iv, const unsigned char *input_data,
 		    uint64_t input_length, unsigned char *output_data,
 		    unsigned int message_part, uint64_t *running_length_lo,
 		    uint64_t *running_length_hi)
@@ -129,7 +129,7 @@ int s390_sha512_224(unsigned char *iv, unsigned char *input_data,
 	return rc;
 }
 
-int s390_sha512_256(unsigned char *iv, unsigned char *input_data,
+int s390_sha512_256(unsigned char *iv, const unsigned char *input_data,
 		    uint64_t input_length, unsigned char *output_data,
 		    unsigned int message_part, uint64_t *running_length_lo,
 		    uint64_t *running_length_hi)
@@ -147,7 +147,7 @@ int s390_sha512_256(unsigned char *iv, unsigned char *input_data,
 	return rc;
 }
 
-int s390_sha3_224(unsigned char *iv, unsigned char *input_data,
+int s390_sha3_224(unsigned char *iv, const unsigned char *input_data,
 		unsigned int input_length, unsigned char *output_data,
 		unsigned int message_part, uint64_t *running_length)
 {
@@ -163,7 +163,7 @@ int s390_sha3_224(unsigned char *iv, unsigned char *input_data,
 	return rc;
 }
 
-int s390_sha3_256(unsigned char *iv, unsigned char *input_data,
+int s390_sha3_256(unsigned char *iv, const unsigned char *input_data,
 		unsigned int input_length, unsigned char *output_data,
 		unsigned int message_part, uint64_t *running_length)
 {
@@ -179,7 +179,7 @@ int s390_sha3_256(unsigned char *iv, unsigned char *input_data,
 	return rc;
 }
 
-int s390_sha3_384(unsigned char *iv, unsigned char *input_data,
+int s390_sha3_384(unsigned char *iv, const unsigned char *input_data,
 		uint64_t input_length, unsigned char *output_data,
 		unsigned int message_part, uint64_t *running_length_lo,
 		uint64_t *running_length_hi)
@@ -197,7 +197,7 @@ int s390_sha3_384(unsigned char *iv, unsigned char *input_data,
 	return rc;
 }
 
-int s390_sha3_512(unsigned char *iv, unsigned char *input_data,
+int s390_sha3_512(unsigned char *iv, const unsigned char *input_data,
 		uint64_t input_length, unsigned char *output_data,
 		unsigned int message_part, uint64_t *running_length_lo,
 		uint64_t *running_length_hi)
@@ -215,7 +215,7 @@ int s390_sha3_512(unsigned char *iv, unsigned char *input_data,
 	return rc;
 }
 
-int s390_shake_128(unsigned char *iv, unsigned char *input_data,
+int s390_shake_128(unsigned char *iv, const unsigned char *input_data,
 		uint64_t input_length, unsigned char *output_data, unsigned int output_length,
 		unsigned int message_part, uint64_t *running_length_lo,
 		uint64_t *running_length_hi)
@@ -232,7 +232,7 @@ int s390_shake_128(unsigned char *iv, unsigned char *input_data,
 	return rc;
 }
 
-int s390_shake_256(unsigned char *iv, unsigned char *input_data,
+int s390_shake_256(unsigned char *iv, const unsigned char *input_data,
 		uint64_t input_length, unsigned char *output_data, unsigned int output_length,
 		unsigned int message_part, uint64_t *running_length_lo,
 		uint64_t *running_length_hi)

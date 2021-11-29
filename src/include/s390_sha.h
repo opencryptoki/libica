@@ -104,67 +104,67 @@ static const SHA_CONSTANTS sha_constants[] = {
 	{S390_CRYPTO_SHA_512, 32, 64, 128, SHA_512_256_DEFAULT_IV},
 };
 
-int s390_sha1(unsigned char *iv, unsigned char *input_data,
+int s390_sha1(unsigned char *iv, const unsigned char *input_data,
 	      unsigned int input_length, unsigned char *output_data,
 	      unsigned int message_part, uint64_t *running_length);
 
-int s390_sha224(unsigned char *iv, unsigned char *input_data,
+int s390_sha224(unsigned char *iv, const unsigned char *input_data,
 		unsigned int input_length, unsigned char *output_data,
 		unsigned int message_part, uint64_t *running_length);
 
-int s390_sha256(unsigned char *iv, unsigned char *input_data,
+int s390_sha256(unsigned char *iv, const unsigned char *input_data,
 		unsigned int input_length, unsigned char *output_data,
 		unsigned int message_part, uint64_t *running_length);
 
-int s390_sha384(unsigned char *iv, unsigned char *input_data,
+int s390_sha384(unsigned char *iv, const unsigned char *input_data,
 		uint64_t input_length, unsigned char *output_data,
 		unsigned int message_part, uint64_t *running_length_lo,
 		uint64_t *running_length_hi);
 
-int s390_sha512(unsigned char *iv, unsigned char *input_data,
+int s390_sha512(unsigned char *iv, const unsigned char *input_data,
 		uint64_t input_length, unsigned char *output_data,
 		unsigned int message_part, uint64_t *running_length_lo,
 		uint64_t *running_length_hi);
 
-int s390_sha512_224(unsigned char *iv, unsigned char *input_data,
+int s390_sha512_224(unsigned char *iv, const unsigned char *input_data,
 		uint64_t input_length, unsigned char *output_data,
 		unsigned int message_part, uint64_t *running_length_lo,
 		uint64_t *running_length_hi);
 
-int s390_sha512_256(unsigned char *iv, unsigned char *input_data,
+int s390_sha512_256(unsigned char *iv, const unsigned char *input_data,
 		uint64_t input_length, unsigned char *output_data,
 		unsigned int message_part, uint64_t *running_length_lo,
 		uint64_t *running_length_hi);
 
-int s390_sha3_224(unsigned char *iv, unsigned char *input_data,
+int s390_sha3_224(unsigned char *iv, const unsigned char *input_data,
 		unsigned int input_length, unsigned char *output_data,
 		unsigned int message_part, uint64_t *running_length);
 
-int s390_sha3_256(unsigned char *iv, unsigned char *input_data,
+int s390_sha3_256(unsigned char *iv, const unsigned char *input_data,
 		unsigned int input_length, unsigned char *output_data,
 		unsigned int message_part, uint64_t *running_length);
 
-int s390_sha3_384(unsigned char *iv, unsigned char *input_data,
+int s390_sha3_384(unsigned char *iv, const unsigned char *input_data,
 		uint64_t input_length, unsigned char *output_data,
 		unsigned int message_part, uint64_t *running_length_lo,
 		uint64_t *running_length_hi);
 
-int s390_sha3_512(unsigned char *iv, unsigned char *input_data,
+int s390_sha3_512(unsigned char *iv, const unsigned char *input_data,
 		uint64_t input_length, unsigned char *output_data,
 		unsigned int message_part, uint64_t *running_length_lo,
 		uint64_t *running_length_hi);
 
-int s390_shake_128(unsigned char *iv, unsigned char *input_data,
+int s390_shake_128(unsigned char *iv, const unsigned char *input_data,
 		uint64_t input_length, unsigned char *output_data, unsigned int output_length,
 		unsigned int message_part, uint64_t *running_length_lo,
 		uint64_t *running_length_hi);
 
-int s390_shake_256(unsigned char *iv, unsigned char *input_data,
+int s390_shake_256(unsigned char *iv, const unsigned char *input_data,
 		uint64_t input_length, unsigned char *output_data, unsigned int output_length,
 		unsigned int message_part, uint64_t *running_length_lo,
 		uint64_t *running_length_hi);
 
-int s390_shake_hw(unsigned char *iv, unsigned char *input_data,
+int s390_shake_hw(unsigned char *iv, const unsigned char *input_data,
 		       uint64_t input_length, unsigned char *output_data, unsigned int output_length,
 		       unsigned int message_part, uint64_t *running_length_lo,
 		       uint64_t *running_length_hi, kimd_functions_t sha_function);
@@ -179,7 +179,7 @@ static inline int is_sha3(unsigned int n)
 	return (n >= SHA_3_224 && n <= SHA_3_512 ? 1 : 0);
 }
 
-static inline int s390_sha_hw(unsigned char *iv, unsigned char *input_data,
+static inline int s390_sha_hw(unsigned char *iv, const unsigned char *input_data,
 		       uint64_t input_length, unsigned char *output_data, unsigned int output_length,
 		       unsigned int message_part, uint64_t *running_length_lo,
 		       uint64_t *running_length_hi, kimd_functions_t sha_function)

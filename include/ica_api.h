@@ -597,7 +597,7 @@ unsigned int ica_random_number_generate(unsigned int output_length,
 ICA_EXPORT
 unsigned int ica_sha1(unsigned int message_part,
 		      unsigned int input_length,
-		      unsigned char *input_data,
+		      const unsigned char *input_data,
 		      sha_context_t *sha_context,
 		      unsigned char *output_data);
 
@@ -643,7 +643,7 @@ unsigned int ica_sha1(unsigned int message_part,
 ICA_EXPORT
 unsigned int ica_sha224(unsigned int message_part,
 			unsigned int input_length,
-			unsigned char *input_data,
+			const unsigned char *input_data,
 			sha256_context_t *sha256_context,
 			unsigned char *output_data);
 
@@ -687,7 +687,7 @@ unsigned int ica_sha224(unsigned int message_part,
 ICA_EXPORT
 unsigned int ica_sha256(unsigned int message_part,
 			unsigned int input_length,
-			unsigned char *input_data,
+			const unsigned char *input_data,
 			sha256_context_t *sha256_context,
 			unsigned char *output_data);
 
@@ -733,7 +733,7 @@ unsigned int ica_sha256(unsigned int message_part,
 ICA_EXPORT
 unsigned int ica_sha384(unsigned int message_part,
 			uint64_t input_length,
-			unsigned char *input_data,
+			const unsigned char *input_data,
 			sha512_context_t *sha512_context,
 			unsigned char *output_data);
 
@@ -777,7 +777,7 @@ unsigned int ica_sha384(unsigned int message_part,
 ICA_EXPORT
 unsigned int ica_sha512(unsigned int message_part,
 			uint64_t input_length,
-			unsigned char *input_data,
+			const unsigned char *input_data,
 			sha512_context_t *sha512_context,
 			unsigned char *output_data);
 
@@ -821,7 +821,7 @@ unsigned int ica_sha512(unsigned int message_part,
 ICA_EXPORT
 unsigned int ica_sha512_224(unsigned int message_part,
 			    uint64_t input_length,
-			    unsigned char *input_data,
+			    const unsigned char *input_data,
 			    sha512_context_t *sha512_context,
 			    unsigned char *output_data);
 
@@ -864,42 +864,42 @@ unsigned int ica_sha512_224(unsigned int message_part,
  */ICA_EXPORT
 unsigned int ica_sha512_256(unsigned int message_part,
 			    uint64_t input_length,
-			    unsigned char *input_data,
+			    const unsigned char *input_data,
 			    sha512_context_t *sha512_context,
 			    unsigned char *output_data);
 
 ICA_EXPORT
 unsigned int ica_sha3_224(unsigned int message_part,
 			unsigned int input_length,
-			unsigned char *input_data,
+			const unsigned char *input_data,
 			sha3_224_context_t *sha3_224_context,
 			unsigned char *output_data);
 
 ICA_EXPORT
 unsigned int ica_sha3_256(unsigned int message_part,
 			unsigned int input_length,
-			unsigned char *input_data,
+			const unsigned char *input_data,
 			sha3_256_context_t *sha3_256_context,
 			unsigned char *output_data);
 
 ICA_EXPORT
 unsigned int ica_sha3_384(unsigned int message_part,
 			uint64_t input_length,
-			unsigned char *input_data,
+			const unsigned char *input_data,
 			sha3_384_context_t *sha3_384_context,
 			unsigned char *output_data);
 
 ICA_EXPORT
 unsigned int ica_sha3_512(unsigned int message_part,
 			uint64_t input_length,
-			unsigned char *input_data,
+			const unsigned char *input_data,
 			sha3_512_context_t *sha3_512_context,
 			unsigned char *output_data);
 
 ICA_EXPORT
 unsigned int ica_shake_128(unsigned int message_part,
 			uint64_t input_length,
-			unsigned char *input_data,
+			const unsigned char *input_data,
 			shake_128_context_t *shake_128_context,
 			unsigned char *output_data,
 			unsigned int output_length);
@@ -907,7 +907,7 @@ unsigned int ica_shake_128(unsigned int message_part,
 ICA_EXPORT
 unsigned int ica_shake_256(unsigned int message_part,
 			uint64_t input_length,
-			unsigned char *input_data,
+			const unsigned char *input_data,
 			shake_256_context_t *shake_256_context,
 			unsigned char *output_data,
 			unsigned int output_length);
@@ -1351,7 +1351,7 @@ unsigned int ica_rsa_key_generate_crt(ica_adapter_handle_t adapter_handle,
  */
 ICA_EXPORT
 unsigned int ica_rsa_mod_expo(ica_adapter_handle_t adapter_handle,
-			      unsigned char *input_data,
+			      const unsigned char *input_data,
 			      ica_rsa_key_mod_expo_t *rsa_key,
 			      unsigned char *output_data);
 
@@ -1380,7 +1380,7 @@ unsigned int ica_rsa_mod_expo(ica_adapter_handle_t adapter_handle,
  */
 ICA_EXPORT
 unsigned int ica_rsa_crt(ica_adapter_handle_t adapter_handle,
-			 unsigned char *input_data,
+			 const unsigned char *input_data,
 			 ica_rsa_key_crt_t *rsa_key,
 			 unsigned char *output_data);
 
