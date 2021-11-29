@@ -3638,11 +3638,6 @@ int ica_mp_mul512(uint64_t r[16], const uint64_t a[8], const uint64_t b[8]);
 ICA_EXPORT
 int ica_mp_sqr512(uint64_t r[16], const uint64_t a[8]);
 
-#ifdef ICA_FIPS
-/*
- * Additional FIPS interfaces are available for built-in FIPS mode.
- */
-
 /*
  * FIPS status output interface.
  *
@@ -3651,6 +3646,11 @@ int ica_mp_sqr512(uint64_t r[16], const uint64_t a[8]);
  */
 ICA_EXPORT
 int ica_fips_status(void);
+
+#ifdef ICA_FIPS
+/*
+ * Additional FIPS interfaces are available for built-in FIPS mode.
+ */
 
 /*
  * FIPS powerups tests.
