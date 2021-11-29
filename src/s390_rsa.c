@@ -42,24 +42,24 @@ extern OSSL_LIB_CTX *openssl_libctx;
 #endif
 
 #ifndef NO_SW_FALLBACKS
-static unsigned int mod_expo_sw(int arg_length, char *arg, int exp_length,
-				char *exp, int mod_length, char *mod,
-				int *res_length, char *res, BN_CTX *ctx);
-static unsigned int mod_mul_sw(int fc_1_length, char *fc1, int fc_2_length,
-			      char *fc2, int mod_length, char *mod,
-			      int *res_length, char *res, BN_CTX *ctx);
-static unsigned int mod_sw(int arg_length, char *arg, int mod_length,
-			   char *mod, int *res_length, char *res, BN_CTX *ctx);
-static unsigned int add_sw(int aug_length, char *aug, int add_length,
-			   char *add, int *res_length, char *res, BN_CTX *ctx);
-static unsigned int mod_sub_sw(int min_length, char *minu, int sub_length,
-			       char *sub, int mod_length, char *mod,
-			       int *res_length, char *res, BN_CTX * ctx);
-static unsigned int mul_sw(int fc_1_length, char *fc1, int fc_2_length,
-			   char *fc2, int *res_length, char *res, BN_CTX *ctx);
-static unsigned int mod_expo_sw(int arg_length, char *arg, int exp_length,
-				char *exp, int mod_length, char *mod,
-				int *res_length, char *res, BN_CTX *ctx);
+static unsigned int mod_expo_sw(int arg_length, unsigned char *arg, int exp_length,
+				unsigned char *exp, int mod_length, unsigned char *mod,
+				int *res_length, unsigned char *res, BN_CTX *ctx);
+static unsigned int mod_mul_sw(int fc_1_length, unsigned char *fc1, int fc_2_length,
+			      unsigned char *fc2, int mod_length, unsigned char *mod,
+			      int *res_length, unsigned char *res, BN_CTX *ctx);
+static unsigned int mod_sw(int arg_length, unsigned char *arg, int mod_length,
+			   unsigned char *mod, int *res_length, unsigned char *res, BN_CTX *ctx);
+static unsigned int add_sw(int aug_length, unsigned char *aug, int add_length,
+			   unsigned char *add, int *res_length, unsigned char *res, BN_CTX *ctx);
+static unsigned int mod_sub_sw(int min_length, unsigned char *minu, int sub_length,
+			       unsigned char *sub, int mod_length, unsigned char *mod,
+			       int *res_length, unsigned char *res, BN_CTX * ctx);
+static unsigned int mul_sw(int fc_1_length, unsigned char *fc1, int fc_2_length,
+			   unsigned char *fc2, int *res_length, unsigned char *res, BN_CTX *ctx);
+static unsigned int mod_expo_sw(int arg_length, unsigned char *arg, int exp_length,
+				unsigned char *exp, int mod_length, unsigned char *mod,
+				int *res_length, unsigned char *res, BN_CTX *ctx);
 #endif /* NO_SW_FALLBACKS */
 
 #if !OPENSSL_VERSION_PREREQ(3, 0)
@@ -450,9 +450,9 @@ unsigned int rsa_mod_mult_sw(ica_rsa_modmult_t *pMul)
  * Perform a multiprecision modular multiplication using a multiplicand,
  * multiplier and modulus.
  */
-static unsigned int mod_mul_sw(int fc_1_length, char *fc1, int fc_2_length,
-			      char *fc2, int mod_length, char *mod,
-			      int *res_length, char *res, BN_CTX *ctx)
+static unsigned int mod_mul_sw(int fc_1_length, unsigned char *fc1, int fc_2_length,
+			      unsigned char *fc2, int mod_length, unsigned char *mod,
+			      int *res_length, unsigned char *res, BN_CTX *ctx)
 {
 	int rc = 0;
 	int ln = 0;
@@ -587,9 +587,9 @@ unsigned int rsa_mod_expo_sw(ica_rsa_modexpo_t *pMex)
  *
  * Returns 0 if successful BN error code if unsuccessful.
  */
-static unsigned int mod_expo_sw(int arg_length, char *arg, int exp_length,
-				char *exp, int mod_length, char *mod,
-				int *res_length, char *res, BN_CTX *ctx)
+static unsigned int mod_expo_sw(int arg_length, unsigned char *arg, int exp_length,
+				unsigned char *exp, int mod_length, unsigned char *mod,
+				int *res_length, unsigned char *res, BN_CTX *ctx)
 {
 	int rc = 0;
 	int ln = 0;
@@ -700,11 +700,11 @@ unsigned int rsa_crt_sw(ica_rsa_modexpo_crt_t * pCrt)
 	size for ir buffers. Thus the software fallback should be able to
 	handle keys of bigger size, too.
 */
-	char ir1[long_length];
+	unsigned char ir1[long_length];
 	int ir_1_length = sizeof(ir1);
-	char ir2[long_length];
+	unsigned char ir2[long_length];
 	int ir_2_length = sizeof(ir2);
-	char temp[long_length];
+	unsigned char temp[long_length];
 	int temp_length = sizeof(temp);
 
 	if ((ctx = BN_CTX_new()) == NULL) {
@@ -825,8 +825,8 @@ unsigned int rsa_crt_sw(ica_rsa_modexpo_crt_t * pCrt)
  *
  * Returns 0 if successful, BN error code if unsuccessful
  */
-static unsigned int mod_sw(int arg_length, char *arg, int mod_length,
-			   char *mod, int *res_length, char *res, BN_CTX *ctx)
+static unsigned int mod_sw(int arg_length, unsigned char *arg, int mod_length,
+			   unsigned char *mod, int *res_length, unsigned char *res, BN_CTX *ctx)
 {
 	int rc = 0;
 	int ln = 0;
@@ -906,9 +906,9 @@ static unsigned int mod_sw(int arg_length, char *arg, int mod_length,
  * 5) Convert the result from a BN to a string using BN_bn2bin
  * 6) Call BN_free for the minuend, subtrahend and result BN's
  */
-static unsigned int mod_sub_sw(int min_length, char *minu, int sub_length,
-			       char *sub, int mod_length, char *mod,
-			       int *res_length, char *res, BN_CTX * ctx)
+static unsigned int mod_sub_sw(int min_length, unsigned char *minu, int sub_length,
+			       unsigned char *sub, int mod_length, unsigned char *mod,
+			       int *res_length, unsigned char *res, BN_CTX * ctx)
 {
 	int rc = 0;
 	int ln = 0;
@@ -1010,8 +1010,8 @@ static unsigned int mod_sub_sw(int min_length, char *minu, int sub_length,
  * 4) Convert the result from a BN to a string using BN_bn2bin
  * 5) Call BN_free for the augend, addend and result BN's
 */
-static unsigned int add_sw(int aug_length, char *aug, int add_length,
-			   char *add, int *res_length, char *res, BN_CTX *ctx)
+static unsigned int add_sw(int aug_length, unsigned char *aug, int add_length,
+			   unsigned char *add, int *res_length, unsigned char *res, BN_CTX *ctx)
 {
 	int rc = 0;
 	int ln = 0;
@@ -1079,8 +1079,8 @@ static unsigned int add_sw(int aug_length, char *aug, int add_length,
  *
  * Returns 0 if successful, BN error code if unsuccessful
  */
-static unsigned int mul_sw(int fc_1_length, char *fc1, int fc_2_length,
-			   char *fc2, int *res_length, char *res, BN_CTX *ctx)
+static unsigned int mul_sw(int fc_1_length, unsigned char *fc1, int fc_2_length,
+			   unsigned char *fc2, int *res_length, unsigned char *res, BN_CTX *ctx)
 {
 	int rc = 0;
 	int ln = 0;

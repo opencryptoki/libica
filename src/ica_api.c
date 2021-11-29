@@ -1147,12 +1147,12 @@ unsigned int ica_rsa_mod_expo(ica_adapter_handle_t adapter_handle,
 		return EINVAL;
 
 	/* fill driver structure */
-	rb.inputdata = (char *)input_data;
+	rb.inputdata = input_data;
 	rb.inputdatalength = rsa_key->key_length;
-	rb.outputdata = (char *)output_data;
+	rb.outputdata = output_data;
 	rb.outputdatalength = rsa_key->key_length;
-	rb.b_key = (char *)rsa_key->exponent;
-	rb.n_modulus = (char *)rsa_key->modulus;
+	rb.b_key = rsa_key->exponent;
+	rb.n_modulus = rsa_key->modulus;
 
 	hardware = ALGO_SW;
 	if (adapter_handle == DRIVER_NOT_LOADED)
@@ -1266,18 +1266,18 @@ unsigned int ica_rsa_crt(ica_adapter_handle_t adapter_handle,
 		return EINVAL;
 
 	/* fill driver structure */
-	rb.inputdata = (char *)input_data;
+	rb.inputdata = input_data;
 	rb.inputdatalength = rsa_key->key_length;
-	rb.outputdata = (char *)output_data;
+	rb.outputdata = output_data;
 	rb.outputdatalength = rsa_key->key_length;
 
 	ica_rsa_crt_key_check(rsa_key);
 
-	rb.np_prime = (char *)rsa_key->p;
-	rb.nq_prime = (char *)rsa_key->q;
-	rb.bp_key = (char *)rsa_key->dp;
-	rb.bq_key = (char *)rsa_key->dq;
-	rb.u_mult_inv = (char *)rsa_key->qInverse;
+	rb.np_prime = rsa_key->p;
+	rb.nq_prime = rsa_key->q;
+	rb.bp_key = rsa_key->dp;
+	rb.bq_key = rsa_key->dq;
+	rb.u_mult_inv = rsa_key->qInverse;
 
 	hardware = ALGO_SW;
 	if (adapter_handle == DRIVER_NOT_LOADED)
