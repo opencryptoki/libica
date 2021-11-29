@@ -59,6 +59,7 @@ int openssl_in_fips_mode(void)
 #define HMAC_SUFFIX ".hmac"
 #define READ_BUFFER_LENGTH 16384
 
+#ifndef ICA_INTERNAL_TEST
 /*
  * The hard-coded HMAC key to be optionally provided for the library
  * integrity test. The recommended key size for HMAC-SHA256 is 64 bytes.
@@ -68,6 +69,8 @@ int openssl_in_fips_mode(void)
 static const char hmackey[] =
 	"0000000000000000000000000000000000000000000000000000000000000000"
 	"0000000000000000000000000000000000000000000000000000000000000000";
+
+#endif /* ICA_INTERNAL_TEST */
 
 int fips;
 
@@ -256,6 +259,8 @@ fips_init(void)
 #endif
 	}
 }
+
+#ifndef ICA_INTERNAL_TEST
 
 static char *make_hmac_path(const char *origpath)
 {
@@ -469,6 +474,7 @@ static void fips_lib_integrity_check(void)
 
 	syslog(LOG_INFO, msg3);
 }
+#endif /* ICA_INTERNAL_TEST */
 
 void
 fips_powerup_tests(void)
