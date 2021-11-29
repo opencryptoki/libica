@@ -23,11 +23,14 @@
  * For libica-cex, all CPACF-related functions and software fallbacks are
  * unavailable. Only RSA-ME, RSA-CRT, ECDH, ECDSA, and EC keygen may be
  * available via a CCA card. As we don't check for a CCA card here, just
- * skip these.
+ * skip these. Also RSA keygen is an exception: it's no sw fallback, but
+ * a sw implementation.
  */
 int cex_check_ok(libica_func_list_element func)
 {
 	switch (func.mech_mode_id) {
+	case RSA_KEY_GEN_ME:
+	case RSA_KEY_GEN_CRT:
 	case RSA_ME:
 	case RSA_CRT:
 	case EC_DH:

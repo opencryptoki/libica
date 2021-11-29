@@ -687,7 +687,11 @@ int s390_get_functionlist(libica_func_list_element *pmech_list,
 #endif /* NO_CPACF */
 
 #ifdef NO_SW_FALLBACKS
-	pmech_list[x].flags &= ~ICA_FLAG_SW;
+	/* Set SW flag to 0 if we don't have sw fallbacks, except for RSA keygen,
+	 * because there is no hw path for RSA keygen. */
+	if (pmech_list[x].mech_mode_id != RSA_KEY_GEN_ME &&
+		pmech_list[x].mech_mode_id != RSA_KEY_GEN_CRT)
+		pmech_list[x].flags &= ~ICA_FLAG_SW;
 #endif
   }
   return 0;
