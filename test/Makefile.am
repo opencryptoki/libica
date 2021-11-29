@@ -68,7 +68,7 @@ TEST_EXTENSIONS = .sh .pl
 TESTS_ENVIRONMENT = export LD_LIBRARY_PATH=${builddir}/../src/.libs/ \
 			   PATH=${builddir}/../src/:$$PATH \
 			   LIBICA_TESTDATA=${srcdir}/testdata/;
-AM_CFLAGS = @FLAGS@ -I${srcdir}/../include/ -I${srcdir}/../src/include/
+AM_CFLAGS = @FLAGS@ -DNO_SW_FALLBACKS -I${srcdir}/../include/ -I${srcdir}/../src/include/
 LDADD = @LIBS@ ${top_builddir}/src/.libs/libica.so -lcrypto -lpthread
 
 get_functionlist_cex_test_SOURCES = get_functionlist_cex_test.c 

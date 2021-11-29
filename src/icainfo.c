@@ -462,7 +462,7 @@ int main(int argc, char **argv)
 #endif /* ICA_FIPS */
 
 #ifdef NO_SW_FALLBACKS
-	printf("Software fallbacks are disabled in libica-cex.\n");
+	printf("Software fallbacks are disabled.\n");
 #endif
 #ifdef NO_CPACF
 	printf("CPACF support (including fallbacks) is disabled in libica-cex.\n");
