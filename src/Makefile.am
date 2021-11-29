@@ -10,7 +10,7 @@ VERSION1 := $(MAJOR).$(MINOR).$(PATCH)
 
 lib_LTLIBRARIES = libica.la libica-cex.la
 
-CFLAGS_common = ${AM_CFLAGS} -I${srcdir}/include -I${srcdir}/../include \
+CFLAGS_common = ${AM_CFLAGS} -DNO_SW_FALLBACKS -I${srcdir}/include -I${srcdir}/../include \
 		   -DLIBICA_CONFDIR=\"${sysconfdir}\" \
 		   -fvisibility=hidden -pthread
 LIBS_common = @LIBS@ -lrt -lcrypto -ldl
@@ -36,7 +36,7 @@ libica_la_LIBADD = ${LIBS_common}
 libica_la_LDFLAGS = ${LDFLAGS_common}
 libica_la_SOURCES = ${SOURCES_common}
 
-libica_cex_la_CFLAGS = ${CFLAGS_common} -DNO_CPACF -DNO_SW_FALLBACKS -DLIBNAME=\"libica-cex\"
+libica_cex_la_CFLAGS = ${CFLAGS_common} -DNO_CPACF -DLIBNAME=\"libica-cex\"
 libica_cex_la_CCASFLAGS = ${AM_CFLAGS}
 libica_cex_la_LIBADD = ${LIBS_common}
 libica_cex_la_LDFLAGS = ${LDFLAGS_common}
@@ -64,7 +64,7 @@ endif
 
 bin_PROGRAMS = icainfo icastats icainfo-cex
 
-icainfo_CFLAGS_COMMON = ${AM_CFLAGS} -I${srcdir}/include -I${srcdir}/../include
+icainfo_CFLAGS_COMMON = ${AM_CFLAGS} -DNO_SW_FALLBACKS -I${srcdir}/include -I${srcdir}/../include
 icainfo_LDADD_COMMON = @LIBS@ -lcrypto
 icainfo_SOURCES_COMMON = icainfo.c include/fips.h include/s390_crypto.h \
 		  ../include/ica_api.h
@@ -73,7 +73,7 @@ icainfo_CFLAGS = ${icainfo_CFLAGS_COMMON}
 icainfo_LDADD = ${icainfo_LDADD_COMMON} libica.la
 icainfo_SOURCES = ${icainfo_SOURCES_COMMON}
 
-icainfo_cex_CFLAGS = ${icainfo_CFLAGS_COMMON} -DNO_CPACF -DNO_SW_FALLBACKS
+icainfo_cex_CFLAGS = ${icainfo_CFLAGS_COMMON} -DNO_CPACF
 icainfo_cex_LDADD = ${icainfo_LDADD_COMMON} libica-cex.la
 icainfo_cex_SOURCES = ${icainfo_SOURCES_COMMON}
 
