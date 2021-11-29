@@ -1184,8 +1184,8 @@ ICA_EXPORT
 int ica_ed25519_key_set(ICA_ED25519_CTX *ctx, const unsigned char priv[32],
 			const unsigned char pub[32]);
 ICA_EXPORT
-int ica_ed448_key_set(ICA_ED448_CTX *ctx, const unsigned char priv[56],
-		      const unsigned char pub[56]);
+int ica_ed448_key_set(ICA_ED448_CTX *ctx, const unsigned char priv[57],
+		      const unsigned char pub[57]);
 
 /*
  * Copy the private and public key from the context. MSA9 required.
