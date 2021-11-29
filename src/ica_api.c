@@ -4246,13 +4246,17 @@ int ica_drbg_health_test(void *func,
 #endif /* NO_CPACF */
 }
 
-#ifdef ICA_FIPS
-
 int
 ica_fips_status(void)
 {
+#ifdef ICA_FIPS
 	return fips;
+#else
+	return 0;
+#endif
 }
+
+#ifdef ICA_FIPS
 
 void
 ica_fips_powerup_tests(void)
