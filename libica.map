@@ -3,15 +3,11 @@ LIBICA_3.0.0 {
 	_fini;
 	_init;
 
-	s390_initialize_functionlist;
-	s390_get_functionlist;
 	ica_get_functionlist;
 	ica_get_version;
 
 	ica_random_number_generate;
 
-	ica_des_encrypt;
-	ica_des_decrypt;
 	ica_des_ecb;
 	ica_des_cbc;
 	ica_des_cbc_cs;
@@ -23,8 +19,6 @@ LIBICA_3.0.0 {
 	ica_des_cmac_intermediate;
 	ica_des_cmac_last;
 
-	ica_3des_encrypt;
-	ica_3des_decrypt;
 	ica_3des_ecb;
 	ica_3des_cbc;
 	ica_3des_cbc_cs;
@@ -36,8 +30,6 @@ LIBICA_3.0.0 {
 	ica_3des_cmac_intermediate;
 	ica_3des_cmac_last;
 
-	ica_aes_encrypt;
-	ica_aes_decrypt;
 	ica_aes_ecb;
 	ica_aes_cbc;
 	ica_aes_cbc_cs;

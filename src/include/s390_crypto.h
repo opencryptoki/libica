@@ -25,6 +25,11 @@
 
 #include <openssl/opensslv.h>
 
+/* major 4.0: no more exported, now internal */
+int s390_initialize_functionlist(void);
+int s390_get_functionlist(libica_func_list_element *pmech_list,
+			  unsigned int *pmech_list_len);
+
 #ifndef OPENSSL_VERSION_PREREQ
     #if defined(OPENSSL_VERSION_MAJOR) && defined(OPENSSL_VERSION_MINOR)
         #define OPENSSL_VERSION_PREREQ(maj, min)        \
