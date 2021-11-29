@@ -257,6 +257,17 @@ fips_init(void)
 
 		fips |= ICA_FIPS_MODE;
 #endif
+	} else {
+		/* kernel fips flag == 0, load default provider in case we are
+		 * running with openssl 3.0 */
+#if OPENSSL_VERSION_PREREQ(3, 0)
+		openssl_provider = OSSL_PROVIDER_load(openssl_libctx, "default");
+		if (openssl_provider == NULL) {
+			syslog(LOG_ERR, "Libica: failed to load default provider\n");
+			fips |= ICA_FIPS_INTEGRITY;
+			return;
+		}
+#endif
 	}
 }
 
