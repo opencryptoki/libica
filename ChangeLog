@@ -1,3 +1,8 @@
+v4.0.0
+ - [UPDATE] NO_SW_FALLBACKS is now the default for libica.so
+   [UPDATE] Removed deprecated API functions including tests
+   [UPDATE] Introduced 'const' for some API function parameters
+   [FEATURE] icastats: new parm -k to display detailed counters
 v3.9.0
  - [FEATURE] Add support for OpenSSL 3.0
    [FEATURE] icainfo: new parm -c to display available EC curves
