@@ -333,6 +333,8 @@ static struct crypt_pair crypt_map[] = {
 	{"X25519 Derive", X25519_DERIVE},
 	{"X448 Keygen", X448_KEYGEN},
 	{"X448 Derive", X448_DERIVE},
+	{"RSA Keygen ME", RSA_KEY_GEN_ME},
+	{"RSA Keygen CRT", RSA_KEY_GEN_CRT},
 	{"RSA ME", RSA_ME},
 	{"RSA CRT", RSA_CRT},
 	{"DES ECB", DES_ECB},
