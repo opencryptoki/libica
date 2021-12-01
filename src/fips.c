@@ -1288,9 +1288,32 @@ rsa_kat(void)
 	const struct rsa_tv *tv;
 	size_t i, keylen, crtparamlen;
 	unsigned char *out;
+	libica_func_list_element* libica_func_list;
+	unsigned int count;
 
 	if (ica_open_adapter(&ah))
 		return 1;
+
+	if (ica_get_functionlist(NULL, &count) != 0)
+		goto _err_;
+
+	libica_func_list = malloc(sizeof(libica_func_list_element) * count);
+	if (!libica_func_list)
+		goto _err_;
+
+	if (ica_get_functionlist(libica_func_list, &count) != 0)
+		goto _err_;
+
+	for (i = 0; i < count; i++) {
+		if (libica_func_list[i].mech_mode_id == RSA_CRT &&
+			libica_func_list[i].flags == 0) {
+			/* RSA_CRT, and probably also RSA_ME, not available, skip test.
+			 * Looks like we don't have cards nor sw fallbacks. */
+			free(libica_func_list);
+			ica_close_adapter(ah);
+			return 0;
+		}
+	}
 
 	for (i = 0; i < RSA_TV_LEN; i++) {
 		tv = &RSA_TV[i];
@@ -1340,10 +1363,12 @@ rsa_kat(void)
 		free(privkey.dq);
 		free(privkey.qInverse);
 	}
+	free(libica_func_list);
 	ica_close_adapter(ah);
 	return 0;
 
 _err_:
+	free(libica_func_list);
 	ica_close_adapter(ah);
 	free(out);
 	free(pubkey.exponent);
