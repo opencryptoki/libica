@@ -38,6 +38,12 @@ int main(int argc, char **argv)
 	V_(printf("Retrieved number of elements: %d\n", count));
 
 	libica_func_list = malloc(sizeof(libica_func_list_element) * count);
+	if (!libica_func_list) {
+		V_(printf("Cannot malloc libica_func_list\n"));
+		failed++;
+		goto done;
+	}
+
 	rc = ica_get_functionlist(libica_func_list, &count);
 	if (rc) {
 		V_(printf("Retrieving function list failed with rc=%02x\n", rc));
@@ -57,6 +63,9 @@ int main(int argc, char **argv)
 		V_(printf("Operation failed: Expected: %d Actual: %d\n", EINVAL, rc));
 		failed++;
 	}
+
+done:
+	free(libica_func_list);
 
 	if (failed) {
 		printf("ica_get_functionlist tests failed.\n");
