@@ -1291,6 +1291,7 @@ int ica_ed448_ctx_del(ICA_ED448_CTX **ctx);
  *
  * @return 0 if successful.
  * EINVAL if at least one invalid parameter is given.
+ * EPERM if modulus bit length is greater than 4096 (CEX adapter restriction).
  * EFAULT if OpenSSL key generation should fail.
  */
 ICA_EXPORT
@@ -1319,6 +1320,7 @@ unsigned int ica_rsa_key_generate_mod_expo(ica_adapter_handle_t adapter_handle,
  *
  * @return 0 if successful.
  * EINVAL if at least one invalid parameter is given.
+ * EPERM if modulus bit length is greater than 4096 (CEX adapter restriction).
  * EFAULT if OpenSSL key generation should fail.
  */
 ICA_EXPORT
@@ -1346,6 +1348,7 @@ unsigned int ica_rsa_key_generate_crt(ica_adapter_handle_t adapter_handle,
  *
  * @return 0 if successful.
  * EINVAL if at least one invalid parameter is given.
+ * EPERM if key bit length is greater than 4096 (CEX adapter restriction).
  * ENOMEM if memory allocation fails.
  * EIO if the operation fails. This should never happen.
  */
@@ -1375,6 +1378,7 @@ unsigned int ica_rsa_mod_expo(ica_adapter_handle_t adapter_handle,
  *
  * @return 0 if successful.
  * EINVAL if at least one invalid parameter is given.
+ * EPERM if key bit length is greater than 4096 (CEX adapter restriction).
  * ENOMEM if memory allocation fails.
  * EIO if the operation fails. This should never happen.
  */

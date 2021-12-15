@@ -52,6 +52,8 @@
 
 #define MAX_VERSION_LENGTH 16
 
+#define MAX_RSA_KEY_BITS		4096
+
 #ifndef NO_SW_FALLBACKS
 int ica_fallbacks_enabled = 1;
 #else
@@ -1071,9 +1073,12 @@ unsigned int ica_rsa_key_generate_mod_expo(ica_adapter_handle_t adapter_handle,
 	/* Keys should comply with modulus_bit_length */
 	if ((modulus_bit_length + 7) / 8 != public_key->key_length)
 		return EINVAL;
-	/* Minimum length for public exponent is sizeof(unsigned long) */
+	/* Minimum key length is sizeof(unsigned long) */
 	if (public_key->key_length < sizeof(unsigned long))
 		return EINVAL;
+	/* Max key bit length is 4096 because of CEX adapter restriction */
+	if (modulus_bit_length > MAX_RSA_KEY_BITS)
+		return EPERM;
 
 	/* OpenSSL takes only exponents of type unsigned long, so we have to
 	 * be sure that we give a value of the right size to OpenSSL.
@@ -1111,6 +1116,8 @@ unsigned int ica_rsa_key_generate_crt(ica_adapter_handle_t adapter_handle,
 		return EINVAL;
 	if (public_key->key_length < sizeof(unsigned long))
 		return EINVAL;
+	if (modulus_bit_length > MAX_RSA_KEY_BITS)
+		return EPERM;
 
 	num_ignored_bytes = public_key->key_length - sizeof(unsigned long);
 	public_exponent = public_key->exponent;
@@ -1145,6 +1152,8 @@ unsigned int ica_rsa_mod_expo(ica_adapter_handle_t adapter_handle,
 
 	if (rsa_key->key_length < sizeof(unsigned long))
 		return EINVAL;
+	if (rsa_key->key_length * 8 > MAX_RSA_KEY_BITS)
+		return EPERM;
 
 	/* fill driver structure */
 	rb.inputdata = (unsigned char *)input_data;
@@ -1264,6 +1273,8 @@ unsigned int ica_rsa_crt(ica_adapter_handle_t adapter_handle,
 
 	if (rsa_key->key_length < sizeof(unsigned long))
 		return EINVAL;
+	if (rsa_key->key_length * 8 > MAX_RSA_KEY_BITS)
+		return EPERM;
 
 	/* fill driver structure */
 	rb.inputdata = (unsigned char *)input_data;
