@@ -2458,6 +2458,8 @@ int ec_key_check(ICA_EC_KEY *ica_key)
 	BIGNUM *d = NULL, *x = NULL, *y = NULL;
 	int privlen, rc = EINVAL;
 
+	BEGIN_OPENSSL_LIBCTX(openssl_libctx, rc);
+
 	if (!ica_key)
 		goto done;
 
@@ -2489,6 +2491,7 @@ done:
 	if (privkey)
 		EVP_PKEY_free(privkey);
 
+	END_OPENSSL_LIBCTX(rc);
 	return rc;
 }
 
