@@ -146,12 +146,12 @@ static EVP_PKEY *make_eckey(int nid, const unsigned char *p, size_t plen)
 	EC_GROUP *group = NULL;
 	EC_POINT *point = NULL;
 	BIGNUM *bn_priv = NULL;
-	unsigned char *pub_key = NULL;
-	unsigned int pub_key_len;
-	point_conversion_form_t form;
 #if !OPENSSL_VERSION_PREREQ(3, 0)
 	EC_KEY *ec_key;
 #else
+	unsigned char *pub_key = NULL;
+	unsigned int pub_key_len;
+	point_conversion_form_t form;
 	OSSL_PARAM_BLD *tmpl = NULL;
 	int rc;
 #endif
@@ -175,18 +175,13 @@ static EVP_PKEY *make_eckey(int nid, const unsigned char *p, size_t plen)
 		goto err;
 	}
 
-	form = EC_GROUP_get_point_conversion_form(group);
-	pub_key_len = EC_POINT_point2buf(group, point, form, &pub_key, NULL);
-	if (pub_key_len == 0) {
-		goto err;
-	}
-
 #if !OPENSSL_VERSION_PREREQ(3, 0)
 	ec_key = EC_KEY_new_by_curve_name(nid);
 	if (ec_key == NULL) {
 		goto err;
 	}
 
+	EC_POINT_free(point);
 	point = EC_POINT_new(EC_KEY_get0_group(ec_key));
 	if (point == NULL) {
 		goto err;
@@ -209,6 +204,11 @@ static EVP_PKEY *make_eckey(int nid, const unsigned char *p, size_t plen)
 	}
 
 #else
+	form = EC_GROUP_get_point_conversion_form(group);
+	pub_key_len = EC_POINT_point2buf(group, point, form, &pub_key, NULL);
+	if (pub_key_len == 0) {
+		goto err;
+	}
 
 	tmpl = OSSL_PARAM_BLD_new();
 	if (tmpl == NULL) {
@@ -243,6 +243,8 @@ err:
 #else
 	if (tmpl)
 		OSSL_PARAM_BLD_free(tmpl);
+	if (pub_key)
+		OPENSSL_free(pub_key);
 #endif
 
 	if (ok)
