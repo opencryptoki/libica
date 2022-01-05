@@ -128,7 +128,8 @@ EVP_PKEY* rsa_key_generate(unsigned int modulus_bit_length,
 		} while (*public_exponent <= 2 || !(*public_exponent % 2));
 	}
 
-	e = BN_bin2bn(public_exponent, sizeof(unsigned long), NULL);
+	e = BN_bin2bn((const unsigned char *)public_exponent,
+		      sizeof(unsigned long), NULL);
 	if (e == NULL) {
 		goto done;
 	}
@@ -259,6 +260,8 @@ err:
 #if !OPENSSL_VERSION_PREREQ(3, 0)
 	RSA_free(rsa);
 #else
+	BN_free(n);
+	BN_free(d);
 	EVP_PKEY_free(pkey);
 #endif
 
@@ -410,6 +413,12 @@ err:
 #if !OPENSSL_VERSION_PREREQ(3, 0)
 	RSA_free(rsa);
 #else
+	BN_free(n);
+	BN_free(p);
+	BN_free(q);
+	BN_free(dmp1);
+	BN_free(dmq1);
+	BN_free(iqmp);
 	EVP_PKEY_free(pkey);
 #endif
 
