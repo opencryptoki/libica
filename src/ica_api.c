@@ -1336,9 +1336,15 @@ ICA_EC_KEY* ica_ec_key_new(unsigned int nid, unsigned int *privlen)
 
 	/* allocate clear memory for the 3 key parts */
 	len = privlen_from_nid(nid);
-	key->X = calloc(1, 3*len);
-	if (!key->X)
+	if (len <= 0) {
+		free(key);
 		return NULL;
+	}
+	key->X = calloc(1, 3*len);
+	if (!key->X) {
+		free(key);
+		return NULL;
+	}
 
 	key->nid = nid;
 	key->Y = key->X + len;
