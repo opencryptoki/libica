@@ -115,6 +115,8 @@ int main(int argc, char **argv)
 
 			rc = ica_ec_key_generate(adapter_handle, eckey);
 			if (rc) {
+				ica_ec_key_free(eckey);
+				eckey = NULL;
 				if (rc == EPERM) {
 					V_(printf("Curve %d not supported on this system, skipping ...\n", eckeygen_tests[i].nid));
 					continue;
@@ -156,12 +158,14 @@ int main(int argc, char **argv)
 					}
 				}
 			}
+
+			ica_ec_key_free(eckey);
+			eckey = NULL;
 		}
 
 		if (test_failed)
 			errors++;
 
-		ica_ec_key_free(eckey);
 		unset_env_icapath();
 	}
 

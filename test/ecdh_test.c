@@ -339,6 +339,8 @@ int main(int argc, char **argv)
 
 		rc = ica_ec_key_init(ecdh_kats[i].xa, ecdh_kats[i].ya, ecdh_kats[i].da, eckey_A);
 		if (rc != 0) {
+			ica_ec_key_free(eckey_A);
+			eckey_A = NULL;
 			if (rc == EPERM) {
 				V_(printf("Curve %d not supported on this system, skipping ...\n", ecdh_kats[i].nid));
 				continue;
@@ -350,11 +352,18 @@ int main(int argc, char **argv)
 		}
 
 		eckey_B = ica_ec_key_new(ecdh_kats[i].nid, &privlen);
-		if (!eckey_B)
+		if (!eckey_B) {
+			ica_ec_key_free(eckey_A);
+			eckey_A = NULL;
 			continue;
+		}
 
 		rc = ica_ec_key_init(ecdh_kats[i].xb, ecdh_kats[i].yb, ecdh_kats[i].db, eckey_B);
 		if (rc != 0) {
+			ica_ec_key_free(eckey_B);
+			eckey_B = NULL;
+			ica_ec_key_free(eckey_A);
+			eckey_A = NULL;
 			if (rc == EPERM) {
 				V_(printf("Curve %d not supported on this system, skipping ...\n", ecdh_kats[i].nid));
 				continue;
@@ -415,7 +424,9 @@ int main(int argc, char **argv)
 			errors++;
 
 		ica_ec_key_free(eckey_A);
+		eckey_A = NULL;
 		ica_ec_key_free(eckey_B);
+		eckey_B = NULL;
 		unset_env_icapath();
 	}
 
