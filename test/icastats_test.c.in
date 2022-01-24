@@ -186,6 +186,7 @@ int is_crypto_card_loaded()
 			}
 			if((c = fgetc(file)) == '1'){
 				fclose(file);
+				closedir(sysDir);
 				return 1;
 			}
 			fclose(file);

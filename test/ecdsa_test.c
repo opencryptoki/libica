@@ -225,6 +225,8 @@ int main(int argc, char **argv)
 
 		rc = ica_ec_key_init(ecdsa_kats[i].x, ecdsa_kats[i].y, ecdsa_kats[i].d, eckey);
 		if (rc != 0) {
+			ica_ec_key_free(eckey);
+			eckey = NULL;
 			if (rc == EPERM) {
 				V_(printf("Curve %d not supported on this system, skipping ...\n", ecdsa_kats[i].nid));
 				continue;
@@ -274,6 +276,7 @@ int main(int argc, char **argv)
 			errors++;
 
 		ica_ec_key_free(eckey);
+		eckey = NULL;
 		unset_env_icapath();
 	}
 
