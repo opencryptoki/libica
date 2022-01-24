@@ -1304,8 +1304,8 @@ rsa_kat(void)
 	ica_adapter_handle_t ah;
 	const struct rsa_tv *tv;
 	size_t i, keylen, crtparamlen;
-	unsigned char *out;
-	libica_func_list_element* libica_func_list;
+	unsigned char *out = NULL;
+	libica_func_list_element* libica_func_list = NULL;
 	unsigned int count;
 
 	if (ica_open_adapter(&ah))
