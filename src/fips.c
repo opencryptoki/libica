@@ -333,6 +333,7 @@ static int compute_file_hmac(const char *path, void **buf, size_t *hmaclen)
 		}
 	}
 
+	hlen = sizeof(rbuf);
 	if (EVP_DigestSignFinal(mdctx, rbuf, &hlen) <= 0)
 		goto end;
 
