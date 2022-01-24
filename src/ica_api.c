@@ -90,6 +90,7 @@ void ica_set_stats_mode(int stats_mode)
 	ica_stats_enabled = stats_mode ? 1 : 0;
 }
 
+#ifndef NO_CPACF
 #ifdef ICA_FIPS
 static unsigned int fips_check_3des_key(const ica_des_key_triple_t *key) {
 	if (!CRYPTO_memcmp(key->key1, key->key2, DES_KEY_LEN64)
@@ -101,7 +102,6 @@ static unsigned int fips_check_3des_key(const ica_des_key_triple_t *key) {
 }
 #endif
 
-#ifndef NO_CPACF
 static unsigned int check_des_parms(unsigned int mode,
 				    unsigned long data_length,
 				    const unsigned char *in_data,

@@ -147,7 +147,7 @@ static EVP_PKEY *make_eckey(int nid, const unsigned char *p, size_t plen)
 	EC_POINT *point = NULL;
 	BIGNUM *bn_priv = NULL;
 #if !OPENSSL_VERSION_PREREQ(3, 0)
-	EC_KEY *ec_key;
+	EC_KEY *ec_key = NULL;
 #else
 	unsigned char *pub_key = NULL;
 	unsigned int pub_key_len;
@@ -262,7 +262,7 @@ static EVP_PKEY *make_public_eckey(int nid, unsigned char *pubkey, size_t publen
 {
 	int ok = 0;
 #if !OPENSSL_VERSION_PREREQ(3, 0)
-	EC_KEY *ec_key;
+	EC_KEY *ec_key = NULL;
 #else
 	OSSL_PARAM_BLD *tmpl = NULL;
 	int rc;
