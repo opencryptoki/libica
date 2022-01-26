@@ -90,7 +90,7 @@ icastats_SOURCES = icastats.c icastats_shared.c include/icastats.h
 # internal tests
 
 if ICA_INTERNAL_TESTS
-bin_PROGRAMS += internal_tests/ec_internal_test
+noinst_PROGRAMS = internal_tests/ec_internal_test
 
 internal_tests_ec_internal_test_CFLAGS = ${AM_CFLAGS} -I${srcdir}/include \
 					 -I${srcdir}/../include	\
