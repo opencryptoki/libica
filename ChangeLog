@@ -1,3 +1,6 @@
+v4.0.1
+ - [PATCH] Various bug fixes
+ - [PATCH] Compute HMAC from installed library
 v4.0.0
  - [UPDATE] NO_SW_FALLBACKS is now the default for libica.so
    [UPDATE] Removed deprecated API functions including tests
