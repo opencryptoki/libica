@@ -49,9 +49,9 @@ mp.S	: mp.pl
 if ICA_FIPS
 fipsinstall:
 	$(AM_V_GEN) openssl dgst -sha256 -mac hmac -macopt hexkey:00000000 $(DESTDIR)$(libdir)/libica.so.$(VERSION1) | sed -e 's/^.* //' > $(DESTDIR)$(libdir)/.libica.so.$(VERSION1).hmac
-	$(AM_V_GEN) cd $(DESTDIR)$(libdir) && ln -s .libica.so.$(VERSION1).hmac .libica.so.$(MAJOR).hmac
+	$(AM_V_GEN) cd $(DESTDIR)$(libdir) && ln -sf .libica.so.$(VERSION1).hmac .libica.so.$(MAJOR).hmac
 	$(AM_V_GEN) openssl dgst -sha256 -mac hmac -macopt hexkey:00000000 $(DESTDIR)$(libdir)/libica-cex.so.$(VERSION1) | sed -e 's/^.* //' > $(DESTDIR)$(libdir)/.libica-cex.so.$(VERSION1).hmac
-	$(AM_V_GEN) cd $(DESTDIR)$(libdir) && ln -s .libica-cex.so.$(VERSION1).hmac .libica-cex.so.$(MAJOR).hmac
+	$(AM_V_GEN) cd $(DESTDIR)$(libdir) && ln -sf .libica-cex.so.$(VERSION1).hmac .libica-cex.so.$(MAJOR).hmac
 
 hmac-file-lnk: hmac-file
 	$(AM_V_GEN) cd ${top_builddir}/src/.libs && ln -sf .libica.so.$(VERSION1).hmac .libica.so.$(MAJOR).hmac
