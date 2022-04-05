@@ -146,12 +146,4 @@ void __attribute__ ((destructor)) icaexit(void)
 	rng_fini();
 
 	stats_munmap(SHM_CLOSE);
-
-#if OPENSSL_VERSION_PREREQ(3, 0)
-	if (openssl_provider != NULL)
-		OSSL_PROVIDER_unload(openssl_provider);
-	if (openssl_libctx != NULL)
-		OSSL_LIB_CTX_free(openssl_libctx);
-#endif
-
 }
