@@ -65,18 +65,6 @@ void end_sigill_section(struct sigaction *oldact, sigset_t *oldset)
 	sigprocmask(SIG_SETMASK, oldset, NULL);
 }
 
-#if OPENSSL_VERSION_PREREQ(3, 0)
-static void openssl_cleanup()
-{
-	if (openssl_provider != NULL)
-		OSSL_PROVIDER_unload(openssl_provider);
-	openssl_provider = NULL;
-	if (openssl_libctx != NULL)
-		OSSL_LIB_CTX_free(openssl_libctx);
-	openssl_libctx = NULL;
-}
-#endif
-
 void __attribute__ ((constructor)) icainit(void)
 {
 	int value;
@@ -118,17 +106,6 @@ void __attribute__ ((constructor)) icainit(void)
 	 * Create a separate library context for libica's use of OpenSSL services
 	 * and explicitly load the 'default' or 'fips' provider for this context.
 	 */
-
-	/*
-	 * Perform libica's context cleanup when OpenSSL cleanup is run.
-	 * Otherwise it might happen that the library destructor is called
-	 * after OpenSSL cleanup has already been performed, and this will
-	 * cause crashes when trying to free our own OpenSSL library context,
-	 * since the contexts have already been freed by OpenSSL cleanup at that
-	 * time.
-	 * */
-	OPENSSL_atexit(openssl_cleanup);
-
 	openssl_libctx = OSSL_LIB_CTX_new();
 	if (openssl_libctx == NULL) {
 		syslog(LOG_ERR, "Libica: failed to create openssl lib context\n");
@@ -171,7 +148,10 @@ void __attribute__ ((destructor)) icaexit(void)
 	stats_munmap(SHM_CLOSE);
 
 #if OPENSSL_VERSION_PREREQ(3, 0)
-	openssl_cleanup();
+	if (openssl_provider != NULL)
+		OSSL_PROVIDER_unload(openssl_provider);
+	if (openssl_libctx != NULL)
+		OSSL_LIB_CTX_free(openssl_libctx);
 #endif
 
 }
