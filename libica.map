@@ -166,3 +166,9 @@ LIBICA_3.6.0 {
 	ica_ed448_ctx_del;
     local: *;
 } LIBICA_3.5.0;
+
+LIBICA_4.0.2 {
+    global:
+	ica_cleanup;
+    local: *;
+} LIBICA_3.6.0;
