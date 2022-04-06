@@ -65,6 +65,19 @@ void end_sigill_section(struct sigaction *oldact, sigset_t *oldset)
 	sigprocmask(SIG_SETMASK, oldset, NULL);
 }
 
+
+void ica_cleanup(void)
+{
+#if OPENSSL_VERSION_PREREQ(3, 0)
+	if (openssl_provider != NULL)
+		OSSL_PROVIDER_unload(openssl_provider);
+	openssl_provider = NULL;
+	if (openssl_libctx != NULL)
+		OSSL_LIB_CTX_free(openssl_libctx);
+	openssl_libctx = NULL;
+#endif
+}
+
 void __attribute__ ((constructor)) icainit(void)
 {
 	int value;

@@ -3665,4 +3665,12 @@ ICA_EXPORT
 void ica_fips_powerup_tests(void);
 #endif /* ICA_FIPS */
 
+/*
+ * Cleanup ICA resources. Should be called before the application terminates,
+ * or the libica library is unloaded.
+ *
+ */
+ICA_EXPORT
+void ica_cleanup(void);
+
 #endif /* __ICA_API_H__ */

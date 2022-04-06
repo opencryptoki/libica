@@ -385,6 +385,7 @@ int main(int argc, char **argv)
 		default:
 			fprintf(stderr, "Try '%s --help' for more"
 				" information.\n", basename(argv[0]));
+			ica_cleanup();
 			exit(1);
 		}
 	}
@@ -392,6 +393,7 @@ int main(int argc, char **argv)
 		fprintf(stderr, "%s: invalid option.\n"
 			"Try '%s --help' for more information.\n",
 			argv[0], basename(argv[0]));
+		ica_cleanup();
 		exit(1);
 	}
 
@@ -400,12 +402,14 @@ int main(int argc, char **argv)
 
 	if (ica_get_functionlist(NULL, &mech_len) != 0){
 		perror("get_functionlist: ");
+		ica_cleanup();
 		return EXIT_FAILURE;
 	}
 	pmech_list = malloc(sizeof(libica_func_list_element)*mech_len);
 	if (ica_get_functionlist(pmech_list, &mech_len) != 0){
 		perror("get_functionlist: ");
 		free(pmech_list);
+		ica_cleanup();
 		return EXIT_FAILURE;
 	}
 
@@ -470,5 +474,6 @@ int main(int argc, char **argv)
 	printf("CPACF support (including fallbacks) is disabled in libica-cex.\n");
 #endif
 
+	ica_cleanup();
 	return EXIT_SUCCESS;
 }
