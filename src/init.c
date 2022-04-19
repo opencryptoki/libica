@@ -158,5 +158,7 @@ void __attribute__ ((destructor)) icaexit(void)
 {
 	rng_fini();
 
+	s390_prng_fini();
+
 	stats_munmap(SHM_CLOSE);
 }
