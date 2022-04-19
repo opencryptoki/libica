@@ -16,5 +16,6 @@
 
 int s390_prng_init(void);
 int s390_prng(unsigned char *output_data, unsigned int output_length);
+void s390_prng_fini(void);
 #endif
 

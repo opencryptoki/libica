@@ -360,3 +360,9 @@ static int s390_prng_seed(void *srv, unsigned int count)
 	return rc;
 }
 #endif /* ICA_FIPS */
+
+void s390_prng_fini(void)
+{
+	if (ica_drbg_global != NULL)
+		ica_drbg_uninstantiate(&ica_drbg_global);
+}
