@@ -1891,6 +1891,13 @@ unsigned int ecdsa_verify_hw(ica_adapter_handle_t adapter_handle,
 		goto ret;
 	}
 
+	/* Treat return code 12 / 769 also as bad signature as per CCA doc */
+	if (((struct CPRBX*)reply_p)->ccp_rtcode == 12 &&
+		((struct CPRBX*)reply_p)->ccp_rscode == 769) {
+		rc = EFAULT;
+		goto ret;
+	}
+
 	if (((struct CPRBX*)reply_p)->ccp_rtcode != 0 ||
 		((struct CPRBX*)reply_p)->ccp_rscode != 0) {
 		rc = EIO;
