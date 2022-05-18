@@ -113,6 +113,7 @@ EVP_PKEY* rsa_key_generate(unsigned int modulus_bit_length,
 	EVP_PKEY *pkey = NULL;
 	EVP_PKEY_CTX *pctx = NULL;
 	BIGNUM *e = NULL;
+	int try;
 
 #ifdef ICA_FIPS
 	if ((fips & ICA_FIPS_MODE) && (!openssl_in_fips_mode()))
@@ -145,7 +146,14 @@ EVP_PKEY* rsa_key_generate(unsigned int modulus_bit_length,
 		goto done;
 	}
 
-	if (EVP_PKEY_keygen(pctx, &pkey) != 1) {
+	/*
+	 * In OpenSSL 3.0 the RSA key gen algorithm has been changed and can now
+	 * fail to generate a key. Retry up to 10 times in such a case.
+	 */
+	for (try = 1; try <= 10; try++) {
+		if (EVP_PKEY_keygen(pctx, &pkey) == 1)
+			break;
+
 		if (pkey)
 			EVP_PKEY_free(pkey);
 		pkey = NULL;
