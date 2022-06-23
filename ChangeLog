@@ -1,3 +1,5 @@
+v4.0.2
+ - [PATCH] Various bug fixes
 v4.0.1
  - [PATCH] Various bug fixes
  - [PATCH] Compute HMAC from installed library
