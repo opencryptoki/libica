@@ -27,13 +27,11 @@
 #include "icastats.h"
 #include "init.h"
 
-#define NOT_INITIALIZED (-1)
 #define NAME_LENGHT 20
 
 static stats_entry_t *stats = NULL;
-volatile int stats_shm_handle = NOT_INITIALIZED;
 
-/* open shared memory segment
+/* map shared memory segment for statistics
  * Arguments:
  * @user: if user is -1 stats_mmap will open the shared memory segent of the same
  * user.
@@ -46,6 +44,7 @@ volatile int stats_shm_handle = NOT_INITIALIZED;
 
 int stats_mmap(int user)
 {
+	int stats_shm_handle, rc = -1;
 	char shm_id[NAME_LENGHT];
 	struct stat stat_buf;
 
@@ -59,41 +58,38 @@ int stats_mmap(int user)
 				    O_CREAT | O_RDWR,
 				    S_IRUSR | S_IWUSR);
 
-	if (stats_shm_handle == NOT_INITIALIZED)
-		return -1;
+	if (stats_shm_handle == -1)
+		return rc;
 
 	if ((user > 0 && geteuid() == 0) &&
-	    (fchown(stats_shm_handle, user, user) == -1)) {
-		close(stats_shm_handle);
-		return -1;
-	}
+	    (fchown(stats_shm_handle, user, user) == -1))
+		goto end;
 
-	if (fstat(stats_shm_handle, &stat_buf)) {
-		close(stats_shm_handle);
-		return -1;
-	}
+	if (fstat(stats_shm_handle, &stat_buf))
+		goto end;
 
-	if (ftruncate(stats_shm_handle, STATS_SHM_SIZE) == -1) {
-		close(stats_shm_handle);
-		return -1;
-	}
+	if (ftruncate(stats_shm_handle, STATS_SHM_SIZE) == -1)
+		goto end;
 
 	stats = (stats_entry_t *) mmap(NULL, STATS_SHM_SIZE, PROT_READ |
 					 PROT_WRITE, MAP_SHARED,
 					 stats_shm_handle, 0);
+
 	if (stats == MAP_FAILED){
-		close(stats_shm_handle);
 		stats = NULL;
-		return -1;
+		goto end;
 	}
 
 	if (stat_buf.st_size != STATS_SHM_SIZE)
 		memset(stats, 0, STATS_SHM_SIZE);
 
-	return 0;
+	rc = 0;
+end:
+	close(stats_shm_handle);
+	return rc;
 }
 
-/* Close and/or delete the shared memory segment
+/* unmap and (optionally) delete the shared memory segment for statistics
  * Argument:
  * @user: uid for the shm segment handle. If user is -1, the effective uid is used.
  * @unlink - if unlink is true the shared memory segment will be
@@ -108,8 +104,6 @@ void stats_munmap(int user, int unlink)
 
 	munmap(stats, STATS_SHM_SIZE);
 	stats = NULL;
-	close(stats_shm_handle);
-	stats_shm_handle = NOT_INITIALIZED;
 
 	if(unlink == SHM_DESTROY) {
 		char shm_id[NAME_LENGHT];
