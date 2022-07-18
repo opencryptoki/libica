@@ -95,25 +95,30 @@ int stats_mmap(int user)
 
 /* Close and/or delete the shared memory segment
  * Argument:
+ * @user: uid for the shm segment handle. If user is -1, the effective uid is used.
  * @unlink - if unlink is true the shared memory segment will be
  * deleted. If it is false it will only be closed.
  */
 
-void stats_munmap(int unlink)
+void stats_munmap(int user, int unlink)
 {
-	char shm_id[NAME_LENGHT];
-	sprintf(shm_id, "icastats_%d", geteuid());
 
 	if (stats == NULL)
 		return;
 
 	munmap(stats, STATS_SHM_SIZE);
+	stats = NULL;
 	close(stats_shm_handle);
 	stats_shm_handle = NOT_INITIALIZED;
 
-	if(unlink == SHM_DESTROY)
+	if(unlink == SHM_DESTROY) {
+		char shm_id[NAME_LENGHT];
+
+		sprintf(shm_id, "icastats_%d",
+			user == -1 ? geteuid() : (uid_t)user);
+
 		shm_unlink(shm_id);
-	stats = NULL;
+	}
 }
 
 /* query the shared memory segment for a specific field
@@ -301,7 +306,7 @@ char *get_next_usr()
 	static DIR *shmDir = NULL;
 
 	/* Closes shm and set stats NULL */
-	stats_munmap(SHM_CLOSE);
+	stats_munmap(-1, SHM_CLOSE);
 
 	if(shmDir == NULL){
 		if((shmDir = opendir("/dev/shm")) == NULL)
@@ -376,7 +381,7 @@ void stats_reset()
 
 int delete_all()
 {
-	stats_munmap(SHM_DESTROY);
+	stats_munmap(-1, SHM_DESTROY);
 	struct dirent *direntp;
 	DIR *shmDir;
 	if((shmDir = opendir("/dev/shm")) == NULL)

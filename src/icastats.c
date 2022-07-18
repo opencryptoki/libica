@@ -291,7 +291,7 @@ int main(int argc, char *argv[])
 		return EXIT_SUCCESS;
 	} else if(delete){
 		stats_mmap(user);
-		stats_munmap(SHM_DESTROY);
+		stats_munmap(user, SHM_DESTROY);
 		return EXIT_SUCCESS;
 	}
 	if(all){
