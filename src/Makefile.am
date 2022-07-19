@@ -117,3 +117,6 @@ internal_tests_ec_internal_test_SOURCES = \
 endif
 
 .PHONY: hmac-file hmac-file-lnk fipsinstall
+
+CLEANFILES = mp.S
+MAINTAINERCLEANFILES = Makefile.in

@@ -4,6 +4,11 @@ SUBDIRS = doc include src test
 
 dist_doc_DATA = AUTHORS ChangeLog INSTALL LICENSE README.md
 EXTRA_DIST = libica.map libica.spec
+DISTCLEANFILES = *~
+MAINTAINERCLEANFILES = test-driver \
+	Makefile.in aclocal.m4 compile configure config.guess \
+	config.sub depcomp install-sh ltmain.sh m4/* missing \
+	depcomp ylwrap
 MAJOR := `echo $(VERSION) | cut -d. -f1`
 
 coverage: check
