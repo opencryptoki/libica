@@ -90,3 +90,6 @@ rsa_keygen3072_test.sh rsa_keygen_test.sh
 icastats_test.c: icastats_test.c.in
 	@SED@   -e s!\@builddir\@!"@abs_top_builddir@/src/"!g < $< > $@-t
 	mv $@-t $@
+
+CLEANFILES = icastats_test.c
+MAINTAINERCLEANFILES = Makefile.in
