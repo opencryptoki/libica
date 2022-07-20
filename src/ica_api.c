@@ -2311,7 +2311,9 @@ int ica_x25519_key_gen(ICA_X25519_CTX *ctx)
 	memset(ctx, 0, sizeof(*ctx));
 	ctx->pub_init = 0;
 
-	rng_gen(ctx->priv, 32);
+	if (rng_gen(ctx->priv, 32))
+		return -1;
+
 	ctx->priv_init = 1;
 	return 0;
 #endif /* NO_CPACF */
@@ -2329,7 +2331,9 @@ int ica_x448_key_gen(ICA_X448_CTX *ctx)
 	memset(ctx, 0, sizeof(*ctx));
 	ctx->pub_init = 0;
 
-	rng_gen(ctx->priv, 56);
+	if(rng_gen(ctx->priv, 56))
+		return -1;
+
 	ctx->priv_init = 1;
 	return 0;
 #endif /* NO_CPACF */
@@ -2347,7 +2351,9 @@ int ica_ed25519_key_gen(ICA_ED25519_CTX *ctx)
 	memset(ctx, 0, sizeof(*ctx));
 	ctx->pub_init = 0;
 
-	rng_gen(ctx->sign_param.priv, sizeof(ctx->sign_param.priv));
+	if (rng_gen(ctx->sign_param.priv, sizeof(ctx->sign_param.priv)))
+		return -1;
+
 	ctx->priv_init = 1;
 	return 0;
 #endif /* NO_CPACF */
@@ -2365,8 +2371,10 @@ int ica_ed448_key_gen(ICA_ED448_CTX *ctx)
 	memset(ctx, 0, sizeof(*ctx));
 	ctx->pub_init = 0;
 
-	rng_gen(ctx->sign_param.priv + 64 - 57,
-		sizeof(ctx->sign_param.priv) - (64 - 57));
+	if (rng_gen(ctx->sign_param.priv + 64 - 57,
+		    sizeof(ctx->sign_param.priv) - (64 - 57)))
+		return -1;
+
 	ctx->priv_init = 1;
 	return 0;
 #endif /* NO_CPACF */

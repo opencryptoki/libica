@@ -8,6 +8,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <syslog.h>
 
 #include "ica_api.h"
@@ -38,7 +39,7 @@ void rng_init(void)
 			     sizeof("INTERNAL INSTANCE"));
 }
 
-void rng_gen(unsigned char *buf, size_t buflen)
+int rng_gen(unsigned char *buf, size_t buflen)
 {
 	const char *rngdev;
 	FILE *rng_fh;
@@ -47,7 +48,7 @@ void rng_gen(unsigned char *buf, size_t buflen)
 	if (rng_sh != NULL) {
 	    rc = ica_drbg_generate(rng_sh, 256, false, NULL, 0, buf, buflen);
 	    if (!rc)
-		return;
+		return 0;
 	}
 
 	for (rngdev = RNGDEV[0]; rngdev != NULL; rngdev++) {
@@ -56,13 +57,13 @@ void rng_gen(unsigned char *buf, size_t buflen)
 			rc = fread(buf, buflen, 1, rng_fh);
 			fclose(rng_fh);
 			if (rc == 1)
-				return;
+				return 0;
 		}
 	}
 
-	syslog(LOG_ERR, "Libica internal RNG error..");
-	fprintf(stderr, "Libica internal RNG error.");
-	exit(1);
+	/* unable to get any random data. cleanup and return with error */
+	memset(buf, 0, buflen);
+	return 1;
 }
 
 void rng_fini(void)
