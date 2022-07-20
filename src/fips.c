@@ -360,6 +360,37 @@ end:
 	return rc;
 }
 
+static int load_known_hmac(const char *path, unsigned char **hmac, long *hmaclen)
+{
+	int rc = -1;
+	FILE *fp;
+	char *known_hmac_str = NULL;
+	char *hmacpath, *p;
+	size_t n;
+
+	hmacpath = make_hmac_path(path);
+	if (hmacpath == NULL)
+		return rc;
+
+	if ((fp = fopen(hmacpath, "r")) == NULL)
+		return rc;
+
+	if (getline(&known_hmac_str, &n, fp) <= 0)
+		goto end;
+
+	if ((p = strchr(known_hmac_str, '\n')) != NULL)
+		*p = '\0';
+
+	*hmac = OPENSSL_hexstr2buf(known_hmac_str, hmaclen);
+	rc = 0;
+end:
+	fclose(fp);
+	free(known_hmac_str);
+	free(hmacpath);
+
+	return rc;
+}
+
 /**
  * Performs the FIPS check.
  *
@@ -369,49 +400,27 @@ end:
 static int FIPSCHECK_verify(const char *path)
 {
 	int rc = 0;
-	FILE *fp;
 	unsigned char *known_hmac = NULL;
-	long hmaclen;
-	char *hmacpath, *p;
-	char *known_hmac_str = NULL;
-	size_t n, computed_hmac_len;
+	long known_hmac_len;
 	void *computed_hmac = NULL;
+	size_t computed_hmac_len;
 
-	hmacpath = make_hmac_path(path);
-	if (hmacpath == NULL)
-		return 0;
-
-	fp = fopen(hmacpath, "r");
-	if (fp == NULL) {
+	if (load_known_hmac(path, &known_hmac,  &known_hmac_len) != 0)
 		goto end;
-	}
-
-	if (getline(&known_hmac_str, &n, fp) <= 0)
-		goto end;
-
-	if ((p = strchr(known_hmac_str, '\n')) != NULL)
-		*p = '\0';
-
-	known_hmac = OPENSSL_hexstr2buf(known_hmac_str, &hmaclen);
 
 	if (compute_file_hmac(path, &computed_hmac, &computed_hmac_len) != 0)
+		goto end;
+
+	if ((size_t)known_hmac_len != computed_hmac_len)
 		goto end;
 
 	if (memcmp(computed_hmac, known_hmac, computed_hmac_len) != 0)
 		goto end;
 
 	rc = 1;
-
 end:
-
 	free(computed_hmac);
-	free(known_hmac_str);
-	free(hmacpath);
-
 	OPENSSL_free(known_hmac);
-
-	if (fp)
-		fclose(fp);
 
 	return rc;
 }
