@@ -14,7 +14,7 @@
  * directly via the api.
  */
 void rng_init(void);
-void rng_gen(unsigned char *buf, size_t buflen);
+int rng_gen(unsigned char *buf, size_t buflen);
 void rng_fini(void);
 
 #endif
