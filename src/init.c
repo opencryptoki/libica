@@ -152,6 +152,8 @@ void __attribute__ ((constructor)) icainit(void)
 #if OPENSSL_VERSION_PREREQ(3, 0)
 	openssl3_initialized = 1;
 #endif
+	/* close the remaining open syslog file descriptor */
+	closelog();
 }
 
 void __attribute__ ((destructor)) icaexit(void)
