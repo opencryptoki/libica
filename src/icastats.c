@@ -88,7 +88,7 @@ void print_stats(stats_entry_t *stats, int key_sizes)
 		if (!key_sizes && strncmp(STATS_DESC[i], "- ", 2) == 0)
 			continue;
 
-		if(i <= ICA_STATS_RSA_CRT_4096) {
+		if (i <= ICA_STATS_RSA_CRT_4096) {
 			printf(" %14s |        %*lu          |         %*lu\n",
 			       STATS_DESC[i],
 			       CELL_SIZE,
@@ -106,8 +106,7 @@ void print_stats(stats_entry_t *stats, int key_sizes)
 			       stats[i].enc.sw,
 			       CELL_SIZE,
 			       stats[i].dec.sw);
-
-	       }
+		}
 	}
 }
 
@@ -222,7 +221,7 @@ int main(int argc, char *argv[])
 			reset = 1;
 			break;
 		case 'R':
-			if(geteuid() != 0){
+			if (geteuid() != 0) {
 				fprintf(stderr,"You have no rights to reset all shared memory"
 					" segments!\n");
 				return EXIT_FAILURE;
@@ -233,16 +232,15 @@ int main(int argc, char *argv[])
 			delete = 1;
 			break;
 		case 'D':
-			if(geteuid() != 0){
+			if (geteuid() != 0) {
 				fprintf(stderr,"You have no rights to delete all shared memory"
 					" segments!\n");
 				return EXIT_FAILURE;
 			}
-
 			delete = 2;
 			break;
 		case 'U':
-			if((pswd = getpwnam(optarg)) == NULL){
+			if ((pswd = getpwnam(optarg)) == NULL) {
 				fprintf(stderr, "The username %s is not known"
 					" on this system.\n", optarg );
 				return EXIT_FAILURE;
@@ -283,24 +281,24 @@ int main(int argc, char *argv[])
 		return EXIT_FAILURE;
 	}
 
-	if(delete == 2){
-		if(delete_all() == -1){
+	if (delete == 2) {
+		if (delete_all() == -1) {
 			perror("deleteall: ");
 			return EXIT_FAILURE;
 		}
 		return EXIT_SUCCESS;
-	} else if(delete){
+	} else if (delete) {
 		stats_mmap(user);
 		stats_munmap(user, SHM_DESTROY);
 		return EXIT_SUCCESS;
 	}
-	if(all){
+	if (all) {
 		char *usr;
 		stats_entry_t *entries;
 		if (json)
 			print_json_header();
-		while((usr = get_next_usr()) != NULL){
-			if((entries = malloc(sizeof(stats_entry_t)*ICA_NUM_STATS)) == NULL){
+		while ((usr = get_next_usr()) != NULL){
+			if ((entries = malloc(sizeof(stats_entry_t)*ICA_NUM_STATS)) == NULL) {
 				perror("malloc: ");
 				return EXIT_FAILURE;
 			}
@@ -320,12 +318,12 @@ int main(int argc, char *argv[])
 
 	if (sum){
 		stats_entry_t *entries;
-		if((entries = malloc(sizeof(stats_entry_t)*ICA_NUM_STATS)) == NULL){
+		if ((entries = malloc(sizeof(stats_entry_t)*ICA_NUM_STATS)) == NULL) {
 			perror("malloc: ");
 			return EXIT_FAILURE;
 		}
 
-		if(!get_stats_sum(entries)){
+		if (!get_stats_sum(entries)) {
 			perror("get_stats_sum: ");
 			return EXIT_FAILURE;
 		}
@@ -339,12 +337,12 @@ int main(int argc, char *argv[])
 		return EXIT_SUCCESS;
 	}
 
-	if(reset == 2){
-		while(get_next_usr() != NULL)
+	if (reset == 2) {
+		while (get_next_usr() != NULL)
 			stats_reset();
 		return EXIT_SUCCESS;
-
 	}
+
 	/* Need to open shm before it can be reseted */
 	if (stats_mmap(user)) {
 		fprintf(stderr, "Could not map shared memory region to local "
@@ -354,9 +352,9 @@ int main(int argc, char *argv[])
 
 	if (reset) {
 		stats_reset();
-	} else{
+	} else {
 		stats_entry_t *stats;
-		if((stats = malloc(sizeof(stats_entry_t)*ICA_NUM_STATS)) == NULL){
+		if ((stats = malloc(sizeof(stats_entry_t)*ICA_NUM_STATS)) == NULL) {
 			perror("malloc: ");
 			return EXIT_FAILURE;
 		}

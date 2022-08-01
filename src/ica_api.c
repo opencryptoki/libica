@@ -1300,7 +1300,7 @@ unsigned int ica_rsa_crt(ica_adapter_handle_t adapter_handle,
 		else
 			rc = ENODEV;
 
-		if(!rc)
+		if (!rc)
 			hardware = ALGO_HW;
 		else
 			rc = ica_fallbacks_enabled ?
@@ -2331,7 +2331,7 @@ int ica_x448_key_gen(ICA_X448_CTX *ctx)
 	memset(ctx, 0, sizeof(*ctx));
 	ctx->pub_init = 0;
 
-	if(rng_gen(ctx->priv, 56))
+	if (rng_gen(ctx->priv, 56))
 		return -1;
 
 	ctx->priv_init = 1;
@@ -2648,7 +2648,7 @@ unsigned int ica_des_cmac_intermediate(const unsigned char *message,
 		       DES_BLOCK_SIZE, NULL,	/* no mac available (intermediate) */
 		       iv);
 
-	if(!rc)
+	if (!rc)
 		stats_increment(ICA_STATS_DES_CMAC, ALGO_HW, ICA_DECRYPT);
 	return rc;
 #endif /* NO_CPACF */
@@ -4047,7 +4047,7 @@ ica_drbg_mech_t *const ICA_DRBG_SHA512 = &DRBG_SHA512;
 
 static inline int ica_drbg_error(int status)
 {
-	switch(status){
+	switch(status) {
 	case 0:
 		return 0;
 	case DRBG_RESEED_REQUIRED:
@@ -4097,20 +4097,20 @@ int ica_drbg_instantiate(ica_drbg_t **sh,
 #endif /* ICA_FIPS */
 
 	status = drbg_mech_valid(mech);
-	if(status)
+	if (status)
 		return ica_drbg_error(status);
 
 	/* Run instantiate health test (11.3.2). */
 	pthread_rwlock_wrlock(&mech->lock);
 	status = drbg_health_test(drbg_instantiate, sec, pr, mech);
 	pthread_rwlock_unlock(&mech->lock);
-	if(status)
+	if (status)
 		return ica_drbg_error(status);
 
 	/* Instantiate. */
 	status = drbg_instantiate(sh, sec, pr, mech, pers, pers_len, false,
 				  NULL, 0, NULL, 0);
-	if(0 > status)
+	if (0 > status)
 		mech->error_state = status;
 
 	return ica_drbg_error(status);
@@ -4136,17 +4136,17 @@ int ica_drbg_reseed(ica_drbg_t *sh,
 		return EACCES;
 #endif /* ICA_FIPS */
 
-	if(!sh)
+	if (!sh)
 		return ica_drbg_error(DRBG_SH_INV);
 	status = drbg_mech_valid(sh->mech);
-	if(status)
+	if (status)
 		return ica_drbg_error(status);
 
 	/* Reseed health test runs whenever generate is tested (11.3.4). */
 
 	/* Reseed. */
 	status = drbg_reseed(sh, pr, add, add_len, false, NULL, 0);
-	if(0 > status)
+	if (0 > status)
 		sh->mech->error_state = status;
 
 	return ica_drbg_error(status);
@@ -4178,21 +4178,21 @@ int ica_drbg_generate(ica_drbg_t *sh,
 		return EACCES;
 #endif /* ICA_FIPS */
 
-	if(!sh)
+	if (!sh)
 		return ica_drbg_error(DRBG_SH_INV);
 	status = drbg_mech_valid(sh->mech);
-	if(status)
+	if (status)
 		return ica_drbg_error(status);
 
 	/* Run generate and reseed health tests before first use of these
 	 * functions and when indicated by the test counter (11.3.3). */
 	pthread_rwlock_wrlock(&sh->mech->lock);
-	if(!(sh->mech->test_ctr %= sh->mech->test_intervall)){
+	if (!(sh->mech->test_ctr %= sh->mech->test_intervall)) {
 		status = drbg_health_test(drbg_reseed, sec, pr, sh->mech);
-		if(!status)
+		if (!status)
 			status = drbg_health_test(drbg_generate, sec, pr,
 						  sh->mech);
-		if(status){
+		if (status) {
 			pthread_rwlock_unlock(&sh->mech->lock);
 			return ica_drbg_error(status);
 		}
@@ -4202,16 +4202,16 @@ int ica_drbg_generate(ica_drbg_t *sh,
 
 	/* Generate. */
 	status = pthread_rwlock_rdlock(&sh->mech->lock);
-	if(EAGAIN == status)
+	if (EAGAIN == status)
 		return ica_drbg_error(DRBG_REQUEST_INV);
 	status = drbg_generate(sh, sec, pr, add, add_len, false, NULL, 0, prnd,
 			       prnd_len);
 	pthread_rwlock_unlock(&sh->mech->lock);
-	if(0 > status)
+	if (0 > status)
 		sh->mech->error_state = status;
 
 	/* Inhibit output if mechanism is in error state (11.3.6). */
-	if(sh->mech->error_state)
+	if (sh->mech->error_state)
 		drbg_zmem(prnd, prnd_len);
 
 	return ica_drbg_error(status);
@@ -4247,18 +4247,18 @@ int ica_drbg_health_test(void *func,
 	int status;
 
 	status = drbg_mech_valid(mech);
-	if(status)
+	if (status)
 		return ica_drbg_error(status);
 
 	/* Health test. */
 	pthread_rwlock_wrlock(&mech->lock);
-	if(ica_drbg_instantiate == func)
+	if (ica_drbg_instantiate == func)
 		status = drbg_health_test(drbg_instantiate, sec, pr, mech);
-	else if(ica_drbg_reseed == func)
+	else if (ica_drbg_reseed == func)
 		status = drbg_health_test(drbg_reseed, sec, pr, mech);
-	else if(ica_drbg_generate == func){
+	else if (ica_drbg_generate == func) {
 		status = drbg_health_test(drbg_reseed, sec, pr, mech);
-		if(!status)
+		if (!status)
 			status = drbg_health_test(drbg_generate, sec, pr,
 						  mech);
 		mech->test_ctr = 1; /* reset test counter */

@@ -75,7 +75,7 @@ int stats_mmap(int user)
 					 PROT_WRITE, MAP_SHARED,
 					 stats_shm_handle, 0);
 
-	if (stats == MAP_FAILED){
+	if (stats == MAP_FAILED) {
 		stats = NULL;
 		goto end;
 	}
@@ -105,7 +105,7 @@ void stats_munmap(int user, int unlink)
 	munmap(stats, STATS_SHM_SIZE);
 	stats = NULL;
 
-	if(unlink == SHM_DESTROY) {
+	if (unlink == SHM_DESTROY) {
 		char shm_id[NAME_LENGHT];
 
 		sprintf(shm_id, "icastats_%d",
@@ -158,7 +158,7 @@ static uint64_t calc_summary(stats_fields_t start, unsigned int num,
 void get_stats_data(stats_entry_t *entries)
 {
 	unsigned int i;
-	for(i = 0; i < ICA_NUM_STATS; i++) {
+	for (i = 0; i < ICA_NUM_STATS; i++) {
 		switch (i) {
 		case ICA_STATS_AES_ECB:
 		case ICA_STATS_AES_CBC:
@@ -243,32 +243,32 @@ int get_stats_sum(stats_entry_t *sum)
 	DIR *shmDir;
 
 	memset(sum, 0, sizeof(stats_entry_t)*ICA_NUM_STATS);
-	if((shmDir = opendir("/dev/shm")) == NULL)
+	if ((shmDir = opendir("/dev/shm")) == NULL)
 		return 0;
 
-	while((direntp = readdir(shmDir)) != NULL){
-		if(strstr(direntp->d_name, "icastats_") != NULL){
+	while ((direntp = readdir(shmDir)) != NULL) {
+		if (strstr(direntp->d_name, "icastats_") != NULL) {
 			int fd;
 			stats_entry_t *tmp;
 
-			if((getpwuid(atoi(&direntp->d_name[9]))) == NULL){
+			if ((getpwuid(atoi(&direntp->d_name[9]))) == NULL) {
 				closedir(shmDir);
 				return 0;
 			}
 
-			if ((fd = shm_open(direntp->d_name, O_RDONLY, 0)) == -1){
+			if ((fd = shm_open(direntp->d_name, O_RDONLY, 0)) == -1) {
 				closedir(shmDir);
 				return 0;
 			}
 			if ((tmp = (stats_entry_t *)mmap(NULL, STATS_SHM_SIZE,
 						    PROT_READ, MAP_SHARED,
-						    fd, 0)) == MAP_FAILED){
+						    fd, 0)) == MAP_FAILED) {
 				closedir(shmDir);
 				close(fd);
 				return 0;
 			}
 
-			for(i = 0; i<ICA_NUM_STATS; ++i){
+			for (i = 0; i<ICA_NUM_STATS; ++i) {
 				sum[i].enc.hw += tmp[i].enc.hw;
 				sum[i].enc.sw += tmp[i].enc.sw;
 				sum[i].dec.hw += tmp[i].dec.hw;
@@ -302,21 +302,21 @@ char *get_next_usr()
 	/* Closes shm and set stats NULL */
 	stats_munmap(-1, SHM_CLOSE);
 
-	if(shmDir == NULL){
-		if((shmDir = opendir("/dev/shm")) == NULL)
+	if (shmDir == NULL) {
+		if ((shmDir = opendir("/dev/shm")) == NULL)
 			return NULL;
 	}
-	while((direntp = readdir(shmDir)) != NULL){
-		if(strstr(direntp->d_name, "icastats_") != NULL){
+	while ((direntp = readdir(shmDir)) != NULL) {
+		if (strstr(direntp->d_name, "icastats_") != NULL) {
 			int uid = atoi(&direntp->d_name[9]);
 			struct passwd *pwd;
-			if((pwd = getpwuid(uid)) == NULL)
+			if ((pwd = getpwuid(uid)) == NULL)
 				return NULL;
-			if(stats_mmap(uid) == -1)
+			if (stats_mmap(uid) == -1)
 				return NULL;
 
 			return pwd->pw_name;
-		} else{
+		} else {
 			continue;
 		}
 	}
@@ -342,7 +342,7 @@ void stats_increment(stats_fields_t field, int hardware, int direction)
 	if (stats == NULL)
 		return;
 
-	if(direction == ENCRYPT)
+	if (direction == ENCRYPT)
 		if (hardware == ALGO_HW)
 			__sync_add_and_fetch(&stats[field].enc.hw, 1);
 		else
@@ -378,12 +378,13 @@ int delete_all()
 	stats_munmap(-1, SHM_DESTROY);
 	struct dirent *direntp;
 	DIR *shmDir;
-	if((shmDir = opendir("/dev/shm")) == NULL)
+
+	if ((shmDir = opendir("/dev/shm")) == NULL)
 		return 0;
 
-	while((direntp = readdir(shmDir)) != NULL){
-		if(strstr(direntp->d_name, "icastats_") != NULL){
-			if(shm_unlink(direntp->d_name) == -1)
+	while ((direntp = readdir(shmDir)) != NULL) {
+		if (strstr(direntp->d_name, "icastats_") != NULL) {
+			if (shm_unlink(direntp->d_name) == -1)
 				return 0;
 		}
 	}

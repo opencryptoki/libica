@@ -87,7 +87,7 @@ void __attribute__ ((constructor)) icainit(void)
 	if (!strcmp(program_invocation_name, "icastats"))
 		return;
 
-	if(stats_mmap(-1) == -1){
+	if (stats_mmap(-1) == -1) {
 		syslog(LOG_INFO,
 		  "Failed to access shared memory segment for libica statistics.");
 	}
