@@ -1085,7 +1085,7 @@ _err_:
 }
 
 static int
-des3_cbc_cs_kat(void){
+des3_cbc_cs_kat(void) {
 	const struct des3_cbc_cs_tv *tv;
 	size_t i;
 	unsigned char iv[DES3_BLKSIZE], *out;
