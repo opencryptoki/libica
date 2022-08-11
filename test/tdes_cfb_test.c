@@ -151,6 +151,13 @@ int main(int argc, char **argv)
 	unsigned int lcfb = 1;
 	unsigned int j;
 
+#ifdef ICA_FIPS
+	if (ica_fips_status() & ICA_FIPS_MODE) {
+		printf("All TDES-CFB tests skipped."
+		    " (TDES not FIPS 140-3 compliant)\n");
+		return TEST_SKIP;
+	}
+#endif /* ICA_FIPS */
 	set_verbosity(argc, argv);
 
 	for(iteration = 1; iteration <= NR_RANDOM_TESTS; iteration++)	{

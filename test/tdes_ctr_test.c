@@ -128,6 +128,14 @@ int main(int argc, char **argv)
 	int i = 0;
 	int rc = 0;
 
+#ifdef ICA_FIPS
+	if (ica_fips_status() & ICA_FIPS_MODE) {
+		printf("All TDES-CTR tests skipped."
+		    " (TDES not FIPS 140-3 compliant)\n");
+		return TEST_SKIP;
+	}
+#endif /* ICA_FIPS */
+
 	set_verbosity(argc, argv);
 	if (argc > 1) {
 		if (strstr(argv[1], "endless"))
