@@ -127,7 +127,16 @@ void __attribute__ ((constructor)) icainit(void)
 #endif
 
 #ifdef ICA_FIPS
-	fips_init();
+	fips_init(); /* before powerup tests and initialize functionlist */
+#endif
+
+	rng_init();
+
+	s390_prng_init();
+
+	s390_initialize_functionlist();
+
+#ifdef ICA_FIPS
 	fips_powerup_tests();
 #else
 #if OPENSSL_VERSION_PREREQ(3, 0)
@@ -142,12 +151,6 @@ void __attribute__ ((constructor)) icainit(void)
 	ica_drbg_health_test(ica_drbg_generate, 256, true,
 				     ICA_DRBG_SHA512);
 #endif /* ICA_FIPS */
-
-	rng_init();
-
-	s390_prng_init();
-
-	s390_initialize_functionlist();
 
 #if OPENSSL_VERSION_PREREQ(3, 0)
 	openssl3_initialized = 1;
