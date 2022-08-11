@@ -1,3 +1,6 @@
+v4.0.3
+ - [PATCH] Reduce the number of open file descriptors
+ - [PATCH] Various bug fixes
 v4.0.2
  - [PATCH] Various bug fixes
 v4.0.1
