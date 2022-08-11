@@ -91,16 +91,6 @@ void ica_set_stats_mode(int stats_mode)
 }
 
 #ifndef NO_CPACF
-#ifdef ICA_FIPS
-static unsigned int fips_check_3des_key(const ica_des_key_triple_t *key) {
-	if (!CRYPTO_memcmp(key->key1, key->key2, DES_KEY_LEN64)
-	    | !CRYPTO_memcmp(key->key1, key->key3, DES_KEY_LEN64)
-	    | !CRYPTO_memcmp(key->key2, key->key3, DES_KEY_LEN64))
-		return EINVAL;
-
-	return 0;
-}
-#endif
 
 static unsigned int check_des_parms(unsigned int mode,
 				    unsigned long data_length,
@@ -2724,10 +2714,8 @@ unsigned int ica_3des_ecb(const unsigned char *in_data, unsigned char *out_data,
 	return EPERM;
 #else
 #ifdef ICA_FIPS
-	if (fips >> 1)
+	if (fips)
 		return EACCES;
-	if (fips_check_3des_key((ica_des_key_triple_t *)key))
-		return EINVAL;
 #endif /* ICA_FIPS */
 
 	if (check_des_parms(MODE_ECB, data_length, in_data, NULL, key, out_data))
@@ -2753,10 +2741,8 @@ unsigned int ica_3des_cbc(const unsigned char *in_data, unsigned char *out_data,
 	return EPERM;
 #else
 #ifdef ICA_FIPS
-	if (fips >> 1)
+	if (fips)
 		return EACCES;
-	if (fips_check_3des_key((ica_des_key_triple_t *)key))
-		return EINVAL;
 #endif /* ICA_FIPS */
 
 	if (check_des_parms(MODE_CBC, data_length, in_data, iv, key, out_data))
@@ -2783,10 +2769,8 @@ unsigned int ica_3des_cbc_cs(const unsigned char *in_data, unsigned char *out_da
 	return EPERM;
 #else
 #ifdef ICA_FIPS
-	if (fips >> 1)
+	if (fips)
 		return EACCES;
-	if (fips_check_3des_key((ica_des_key_triple_t *)key))
-		return EINVAL;
 #endif /* ICA_FIPS */
 
 	if (check_des_parms(MODE_CBCCS, data_length, in_data, iv, key, out_data))
@@ -2814,10 +2798,8 @@ unsigned int ica_3des_cfb(const unsigned char *in_data, unsigned char *out_data,
 	return EPERM;
 #else
 #ifdef ICA_FIPS
-	if (fips >> 1)
+	if (fips)
 		return EACCES;
-	if (fips_check_3des_key((ica_des_key_triple_t *)key))
-		return EINVAL;
 #endif /* ICA_FIPS */
 
 	if (check_des_parms(MODE_CFB, data_length, in_data, iv, key, out_data))
@@ -2845,10 +2827,8 @@ unsigned int ica_3des_ofb(const unsigned char *in_data, unsigned char *out_data,
 	return EPERM;
 #else
 #ifdef ICA_FIPS
-	if (fips >> 1)
+	if (fips)
 		return EACCES;
-	if (fips_check_3des_key((ica_des_key_triple_t *)key))
-		return EINVAL;
 #endif /* ICA_FIPS */
 
 	if (check_des_parms(MODE_OFB, data_length, in_data, iv, key, out_data))
@@ -2876,18 +2856,8 @@ unsigned int ica_3des_ctr(const unsigned char *in_data, unsigned char *out_data,
 	return EPERM;
 #else
 #ifdef ICA_FIPS
-	/* Note that the FIPS ctr check cannot detect ctr wraps
-	 * over chained calls to this function. */
-	unsigned long num_blocks = data_length / DES_BLOCK_SIZE;
-	unsigned int num_additional_bytes = data_length % DES_BLOCK_SIZE;
-	if (fips >> 1)
+	if (fips)
 		return EACCES;
-	if (fips_check_3des_key((ica_des_key_triple_t *)key))
-		return EINVAL;
-	if (num_additional_bytes > 0)
-		num_blocks++;
-	if (ctr_width < 64U && num_blocks > (1ULL << ctr_width))
-		return EINVAL;
 #endif /* ICA_FIPS */
 
 	if (check_des_parms(MODE_CTR, data_length, in_data, ctr, key, out_data))
@@ -2920,10 +2890,8 @@ unsigned int ica_3des_ctrlist(const unsigned char *in_data, unsigned char *out_d
 	return EPERM;
 #else
 #ifdef ICA_FIPS
-	if (fips >> 1)
+	if (fips)
 		return EACCES;
-	if (fips_check_3des_key((ica_des_key_triple_t *)key))
-		return EINVAL;
 #endif /* ICA_FIPS */
 
 	if (check_des_parms(MODE_CTR, data_length, in_data, ctrlist, key, out_data))
@@ -2950,10 +2918,8 @@ unsigned int ica_3des_cmac(const unsigned char *message, unsigned long message_l
 	return EPERM;
 #else
 #ifdef ICA_FIPS
-	if (fips >> 1)
+	if (fips)
 		return EACCES;
-	if (fips_check_3des_key((ica_des_key_triple_t *)key))
-		return EINVAL;
 #endif /* ICA_FIPS */
 
 	return ica_3des_cmac_last(message, message_length,
@@ -2980,10 +2946,8 @@ unsigned int ica_3des_cmac_intermediate(const unsigned char *message,
 	int rc;
 
 #ifdef ICA_FIPS
-	if (fips >> 1)
+	if (fips)
 		return EACCES;
-	if (fips_check_3des_key((ica_des_key_triple_t *)key))
-		return EINVAL;
 #endif /* ICA_FIPS */
 
 	if (check_cmac_parms(DES_BLOCK_SIZE,
@@ -3026,10 +2990,8 @@ unsigned int ica_3des_cmac_last(const unsigned char *message, unsigned long mess
 	int rc;
 
 #ifdef ICA_FIPS
-	if (fips >> 1)
+	if (fips)
 		return EACCES;
-	if (fips_check_3des_key((ica_des_key_triple_t *)key))
-		return EINVAL;
 #endif /* ICA_FIPS */
 
 	if (check_cmac_parms(DES_BLOCK_SIZE,

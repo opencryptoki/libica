@@ -38,7 +38,9 @@ void fips_powerup_tests(void);
  * List of non-fips-approved algorithms
  */
 static const int FIPS_BLACKLIST[] = {DES_ECB, DES_CBC, DES_CBC_CS, DES_OFB,
-    DES_CFB, DES_CTR, DES_CTRLST, DES_CBC_MAC, DES_CMAC, P_RNG};
+    DES_CFB, DES_CTR, DES_CTRLST, DES_CBC_MAC, DES_CMAC, P_RNG, DES3_ECB,
+    DES3_CBC, DES3_CBC_CS, DES3_OFB, DES3_CFB, DES3_CTR, DES3_CTRLST,
+    DES3_CBC_MAC, DES3_CMAC };
 static const size_t FIPS_BLACKLIST_LEN = sizeof(FIPS_BLACKLIST)
     / sizeof(FIPS_BLACKLIST[0]);
 

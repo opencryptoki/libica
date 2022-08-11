@@ -209,6 +209,14 @@ int test_3des_new_api(unsigned int variant)
 	int rc = 0;
 	unsigned int i = 0;
 
+#ifdef ICA_FIPS
+	if (ica_fips_status() & ICA_FIPS_MODE) {
+		printf("All 3DES-CBC-CS tests skipped."
+		    " (3DES not FIPS 140-3 approved)\n");
+		return TEST_SKIP;
+	}
+#endif /* ICA_FIPS */
+
 	for (i = 0; i < number_of_testcases ; i++) {
 		memcpy(tmp_iv, NIST_IV, iv_size);
 		rc = ica_3des_cbc_cs(NIST_TEST_DATA[i], enc_text,
@@ -538,7 +546,7 @@ int main(int argc, char **argv)
 
 		/* 3DES tests */
 		rc = test_3des_new_api(variant);
-		if (rc) {
+		if (rc && rc != TEST_SKIP) {
 			error_count++;
 			printf("test_des_new_api for CBC_CS mode with 3DES "
 			       "failed.\n");

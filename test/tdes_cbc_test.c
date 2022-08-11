@@ -148,6 +148,14 @@ int main(int argc, char **argv)
 	int iteration;
 	unsigned int data_length = sizeof(ica_des_vector_t);
 
+#ifdef ICA_FIPS
+	if (ica_fips_status() & ICA_FIPS_MODE) {
+		printf("All TDES-CBC tests skipped."
+		    " (TDES not FIPS 140-3 compliant)\n");
+		return TEST_SKIP;
+	}
+#endif /* ICA_FIPS */
+
 	set_verbosity(argc, argv);
 
 	for(iteration = 1; iteration <= NR_RANDOM_TESTS; iteration++)	{

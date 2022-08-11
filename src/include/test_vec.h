@@ -127,64 +127,6 @@ struct aes_cmac_tv {
 	unsigned int rv;
 };
 
-struct des3_ecb_tv {
-	size_t len;
-	unsigned char key[DES3_KEYLEN];
-	unsigned char *plaintext;
-	unsigned char *ciphertext;
-};
-
-struct des3_cbc_tv {
-	size_t len;
-	unsigned char key[DES3_KEYLEN];
-	unsigned char iv[DES3_BLKSIZE];
-	unsigned char *plaintext;
-	unsigned char *ciphertext;
-};
-
-struct des3_cbc_cs_tv {
-	size_t len;
-	unsigned char key[DES3_KEYLEN];
-	unsigned char iv[DES3_BLKSIZE];
-	unsigned char *plaintext;
-	unsigned char *ciphertext;
-	int variant;
-};
-
-struct des3_cfb_tv {
-	size_t len;
-	int lcfb;
-	unsigned char key[DES3_KEYLEN];
-	unsigned char iv[DES3_BLKSIZE];
-	unsigned char *plaintext;
-	unsigned char *ciphertext;
-};
-
-struct des3_ofb_tv {
-	size_t len;
-	unsigned char key[DES3_KEYLEN];
-	unsigned char iv[DES3_BLKSIZE];
-	unsigned char *plaintext;
-	unsigned char *ciphertext;
-};
-
-struct des3_ctr_tv {
-	size_t len;
-	unsigned char key[DES3_KEYLEN];
-	unsigned char ctr[DES3_BLKSIZE];
-	unsigned char *plaintext;
-	unsigned char *ciphertext;
-};
-
-struct des3_cmac_tv {
-	size_t msglen;
-	size_t maclen;
-	unsigned char key[DES3_KEYLEN];
-	unsigned char *msg;
-	unsigned char *mac;
-	unsigned int rv;
-};
-
 struct rsa_tv {
 	unsigned char *n;
 	unsigned char *p;
@@ -327,27 +269,6 @@ extern const size_t AES_XTS_TV_LEN;
 
 extern const struct aes_cmac_tv AES_CMAC_TV[];
 extern const size_t AES_CMAC_TV_LEN;
-
-extern const struct des3_ecb_tv DES3_ECB_TV[];
-extern const size_t DES3_ECB_TV_LEN;
-
-extern const struct des3_cbc_tv DES3_CBC_TV[];
-extern const size_t DES3_CBC_TV_LEN;
-
-extern const struct des3_cbc_cs_tv DES3_CBC_CS_TV[];
-extern const size_t DES3_CBC_CS_TV_LEN;
-
-extern const struct des3_cfb_tv DES3_CFB_TV[];
-extern const size_t DES3_CFB_TV_LEN;
-
-extern const struct des3_ofb_tv DES3_OFB_TV[];
-extern const size_t DES3_OFB_TV_LEN;
-
-extern const struct des3_ctr_tv DES3_CTR_TV[];
-extern const size_t DES3_CTR_TV_LEN;
-
-extern const struct des3_cmac_tv DES3_CMAC_TV[];
-extern const size_t DES3_CMAC_TV_LEN;
 
 extern const struct rsa_tv RSA_TV[];
 extern const size_t RSA_TV_LEN;

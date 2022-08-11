@@ -509,6 +509,14 @@ void tdes_tests(unsigned char *iv, unsigned char *cmac, unsigned char *ctr)
 		0x02, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
 	};
 
+#ifdef ICA_FIPS
+	if (ica_fips_status() & ICA_FIPS_MODE) {
+		V_(printf("All icastats TDES tests skipped."
+		    " (TDES not FIPS 140-3 approved)\n"));
+		return;
+	}
+#endif /* ICA_FIPS */
+
 	if((out_buffer = malloc(DATA_LENGHT*sizeof(char))) == NULL){
 		perror("Error in malloc: ");
 		exit(TEST_FAIL);
