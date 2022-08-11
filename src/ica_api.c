@@ -1413,6 +1413,16 @@ int ica_ec_key_generate(ica_adapter_handle_t adapter_handle, ICA_EC_KEY *key)
 #else
 	icapath = 1;
 #endif
+
+#ifdef ICA_FIPS
+	/*
+	 * FIPS 140-3 requires internal self-tests on generated key material.
+	 * Such tests are already performed by openssl, so let's use openssl
+	 * in FIPS 140-3 mode.
+	 */
+	icapath = 2;
+#endif
+
 	switch (icapath) {
 	case 1: /* hw only */
 		hardware = ALGO_HW;
