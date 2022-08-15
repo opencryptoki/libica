@@ -87,8 +87,9 @@ static int aes_gcm_kat(void);
 static int aes_xts_kat(void);
 static int aes_cmac_kat(void);
 
-
 static int rsa_kat(void);
+static int ecdsa_kat(void);
+static int ecdh_kat(void);
 
 #ifndef NO_CPACF
 #define SHA_KAT(_sha_, _ctx_)						\
@@ -507,7 +508,8 @@ fips_powerup_tests(void)
 	    + sha3_512_kat() + aes_ecb_kat()
 	    + aes_cbc_kat() + aes_cbc_cs_kat() + aes_cfb_kat()
 	    + aes_ctr_kat() + aes_ofb_kat() + aes_ccm_kat() + aes_gcm_kat()
-	    + aes_xts_kat() + aes_cmac_kat() + rsa_kat();
+	    + aes_xts_kat() + aes_cmac_kat() + rsa_kat()
+		+ ecdsa_kat() + ecdh_kat();
 #ifndef NO_CPACF
 	if (rc != 0) {
 #else
@@ -1000,6 +1002,150 @@ _err_:
 #ifndef NO_CPACF
 	syslog(LOG_ERR, "Libica AES-CMAC test failed.");
 #endif
+	return 1;
+}
+
+static int function_supported_via_cpacf(unsigned int func)
+{
+	ica_adapter_handle_t ah;
+	libica_func_list_element* libica_func_list = NULL;
+	unsigned int count;
+	size_t i;
+	int ret = 0;
+
+	if (ica_open_adapter(&ah))
+		return ret;
+
+	if (ica_get_functionlist(NULL, &count) != 0)
+		return ret;
+
+	libica_func_list = malloc(sizeof(libica_func_list_element) *count);
+	if (!libica_func_list)
+		return ret;
+
+	if (ica_get_functionlist(libica_func_list, &count) != 0)
+		goto done;
+
+	for (i = 0; i < count; i++) {
+		if (libica_func_list[i].mech_mode_id == func &&
+			libica_func_list[i].flags == ICA_FLAG_SHW) {
+			ret = 1;
+			goto done;
+		}
+	}
+
+done:
+	free(libica_func_list);
+	ica_close_adapter(ah);
+	return ret;
+}
+
+static int
+ecdh_kat()
+{
+	ica_adapter_handle_t ah;
+	const struct ecdh_kat_tv *tv;
+	unsigned char shared_secret[MAX_ECC_PRIV_SIZE];
+	ICA_EC_KEY *eckey_A, *eckey_B;
+	unsigned int privlen;
+	size_t i;
+
+	if (!function_supported_via_cpacf(EC_DH))
+		return 0;
+
+	if (ica_open_adapter(&ah))
+		return 0;
+
+	for (i = 0; i < ECDH_KAT_TV_LEN; i++) {
+
+		tv = &ECDH_KAT_TV[i];
+
+		eckey_A = ica_ec_key_new(tv->nid, &privlen);
+		if (!eckey_A)
+			goto _err_;
+
+		if (ica_ec_key_init(tv->xa, tv->ya, tv->da, eckey_A))
+			goto _err_;
+
+		eckey_B = ica_ec_key_new(tv->nid, &privlen);
+		if (!eckey_B)
+			goto _err_;
+
+		if (ica_ec_key_init(tv->xb, tv->yb, tv->db, eckey_B))
+			goto _err_;
+
+		/* calculate shared secret with priv_A, pub_B */
+		memset(shared_secret, 0, sizeof(shared_secret));
+		if (ica_ecdh_derive_secret(ah, eckey_A, eckey_B, shared_secret, privlen))
+			goto _err_;
+
+		/* compare result with known result */
+		if (memcmp(shared_secret, tv->z, tv->privlen) != 0)
+			goto _err_;
+
+		/* calculate shared secret with priv_B, pub_A */
+		memset(shared_secret, 0, sizeof(shared_secret));
+		if (ica_ecdh_derive_secret(ah, eckey_B, eckey_A, shared_secret, privlen))
+			goto _err_;
+
+		/* compare result with known result */
+		if (memcmp(shared_secret, tv->z, tv->privlen) != 0)
+			goto _err_;
+
+		ica_ec_key_free(eckey_A);
+		ica_ec_key_free(eckey_B);
+	}
+
+	ica_close_adapter(ah);
+	return 0;
+
+_err_:
+	ica_ec_key_free(eckey_A);
+	ica_ec_key_free(eckey_B);
+	ica_close_adapter(ah);
+	syslog(LOG_ERR, "Libica ECDH test failed.");
+	return 1;
+}
+
+static int
+ecdsa_kat(void)
+{
+	ICA_EC_KEY *eckey;
+	const struct ecdsa_kat_tv *tv;
+	unsigned char sigbuf[MAX_ECDSA_SIG_SIZE];
+	unsigned int privlen;
+	size_t i;
+	int rc;
+
+	if (!function_supported_via_cpacf(EC_DSA_SIGN))
+		return 0;
+
+	for (i = 0; i < ECDSA_KAT_TV_LEN; i++) {
+		tv = &ECDSA_KAT_TV[i];
+		eckey = ica_ec_key_new(tv->nid, &privlen);
+		if (!eckey)
+			goto _err_;
+		rc = ica_ec_key_init(tv->x, tv->y, tv->d, eckey);
+		if (rc)
+			goto _err_;
+		/* adapter handle not needed here, just CPACF */
+		rc = ica_ecdsa_sign_ex(0, eckey, tv->hash, tv->hashlen, sigbuf, tv->siglen, tv->k);
+		if (rc)
+			goto _err_;
+		rc = ica_ecdsa_verify(0, eckey, tv->hash, tv->hashlen, sigbuf, tv->siglen);
+		if (rc)
+			goto _err_;
+		if (memcmp(sigbuf, tv->sig, tv->siglen) != 0) {
+			goto _err_;
+		}
+		ica_ec_key_free(eckey);
+	}
+
+	return 0;
+
+_err_:
+	ica_ec_key_free(eckey);
+	syslog(LOG_ERR, "Libica ECDSA test failed.");
 	return 1;
 }
 

@@ -127,6 +127,30 @@ struct aes_cmac_tv {
 	unsigned int rv;
 };
 
+struct ecdsa_kat_tv {
+	unsigned int nid;
+	unsigned char *x;
+	unsigned char *y;
+	unsigned char *k;
+	unsigned char *d;
+	unsigned char *hash;
+	unsigned int hashlen;
+	unsigned char *sig;
+	unsigned int siglen;
+};
+
+struct ecdh_kat_tv {
+	unsigned int nid;
+	unsigned int privlen;
+	unsigned char *da;
+	unsigned char *xa;
+	unsigned char *ya;
+	unsigned char *db;
+	unsigned char *xb;
+	unsigned char *yb;
+	unsigned char *z;
+};
+
 struct rsa_tv {
 	unsigned char *n;
 	unsigned char *p;
@@ -272,6 +296,12 @@ extern const size_t AES_CMAC_TV_LEN;
 
 extern const struct rsa_tv RSA_TV[];
 extern const size_t RSA_TV_LEN;
+
+extern const struct ecdsa_kat_tv ECDSA_KAT_TV[];
+extern const size_t ECDSA_KAT_TV_LEN;
+
+extern const struct ecdh_kat_tv ECDH_KAT_TV[];
+extern const size_t ECDH_KAT_TV_LEN;
 
 extern const struct sha_tv SHA1_TV[];
 extern const size_t SHA1_TV_LEN;
