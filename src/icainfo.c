@@ -61,6 +61,12 @@ static const unsigned int cpacf_nids[] = {
 	NID_ED25519, NID_ED448, NID_X25519, NID_X448 };
 static const unsigned int cpacf_nids_len = sizeof(cpacf_nids) / sizeof(unsigned int);
 
+#ifdef ICA_FIPS
+static const unsigned int cpacf_fips_nids[] = {
+	NID_X9_62_prime256v1, NID_secp384r1, NID_secp521r1 };
+static const unsigned int cpacf_fips_nids_len = sizeof(cpacf_fips_nids) / sizeof(unsigned int);
+#endif
+
 static int is_msa9(void)
 {
 	unsigned int mech_len, j;
@@ -182,29 +188,18 @@ void add_hw_curves(s390_supported_curves_t *curve_array, size_t array_len,
 
 void add_curves(s390_supported_curves_t *curve_array, size_t array_len)
 {
+#ifdef ICA_FIPS
+	(void) cca_nids_len;
+	(void) cpacf_nids_len;
+	if (is_msa9())
+		add_hw_curves(curve_array, array_len, cpacf_fips_nids, cpacf_fips_nids_len, ICA_FLAG_SHW);
+#else
 	if (online_cca_card())
 		add_hw_curves(curve_array, array_len, cca_nids, cca_nids_len, ICA_FLAG_DHW);
 
 	if (is_msa9())
 		add_hw_curves(curve_array, array_len, cpacf_nids, cpacf_nids_len, ICA_FLAG_SHW);
-}
-
-/**
- * These are nids that are fips approved, but libica has no sw fallbacks
- * implemented for them. If they are supported via hw, we want them in the
- * icainfo output.
- */
-unsigned int fips_override(unsigned int nid)
-{
-	switch (nid) {
-	case NID_ED25519:
-	case NID_ED448:
-	case NID_X25519:
-	case NID_X448:
-		return 1;
-	default:
-		return 0;
-	}
+#endif
 }
 
 void print_ec_curves(void)
@@ -229,10 +224,10 @@ void print_ec_curves(void)
 
 	for (n = 0; n < array_len; n++) {
 #ifdef ICA_FIPS
-		/* In fips mode, only allow openssl-fips supported curves, and curves
-		 * that are fips approved, but have no sw fallback implemented.*/
-		if (curve_array[n].nid != 0 &&
-			((curve_array[n].flags & ICA_FLAG_SW) || (fips_override(curve_array[n].nid)))) {
+		/* In fips mode, only allow fips-approved curves: supported by openssl
+		 * in fips mode and supported by CPACF, because of the availability of
+		 * self-tests.*/
+		if (curve_array[n].nid != 0 && (curve_array[n].flags & ICA_FLAG_SW)) {
 #else
 		if (curve_array[n].nid != 0) {
 #endif
@@ -256,7 +251,7 @@ void print_ec_curves(void)
 	}
 	printf("-------------------------------------------------------\n");
 #ifdef ICA_FIPS
-	printf("Built-in FIPS support: FIPS mode %s.\n",
+	printf("Built-in FIPS support: FIPS 140-3 mode %s.\n",
 	    ica_fips_status() & ICA_FIPS_MODE ? "active" : "inactive");
 	if (ica_fips_status() >> 1)
 		printf("FIPS SELF-TEST FAILURE. CHECK THE SYSLOG.\n");
@@ -459,7 +454,7 @@ int main(int argc, char **argv)
 	printf("------------------------------------------------------\n");
 
 #ifdef ICA_FIPS
-	printf("Built-in FIPS support: FIPS mode %s.\n",
+	printf("Built-in FIPS support: FIPS 140-3 mode %s.\n",
 	    ica_fips_status() & ICA_FIPS_MODE ? "active" : "inactive");
 	if (ica_fips_status() >> 1)
 		printf("FIPS SELF-TEST FAILURE. CHECK THE SYSLOG.\n");
