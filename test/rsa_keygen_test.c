@@ -61,6 +61,15 @@ int main(int argc, char **argv)
 		return TEST_ERR;
 	}
 
+#ifdef ICA_FIPS
+	if ((ica_fips_status() & ICA_FIPS_MODE) && key_bit_length < 2048) {
+		printf("RSA-%d keygen test skipped."
+		    " (RSA key lengths smaller than 2048 bits not FIPS 140-3 compliant)\n",
+			key_bit_length);
+		return TEST_SKIP;
+	}
+#endif /* ICA_FIPS */
+
 	if(0 == (strcmp(argv[argno_expo], "3")))
 		expo_type = EXPO_TYPE_3;
 	else if(0 == (strcmp(argv[argno_expo], "65537")))

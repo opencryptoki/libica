@@ -64,6 +64,13 @@ int main(int argc, char **argv)
 		memset(my_result, 0, sizeof(my_result));
 		memset(my_result2, 0, sizeof(my_result2));
 
+#ifdef ICA_FIPS
+		if ((ica_fips_status() & ICA_FIPS_MODE) && RSA_BYTE_LENGHT[i] < 256) {
+			V_(printf("Skipping test for this modulus size: not FIPS 140-3 approved\n"));
+			continue;
+		}
+#endif
+
 		ica_rsa_key_mod_expo_t mod_expo_key = {RSA_BYTE_LENGHT[i],
 						       n[i], e[i]};
 

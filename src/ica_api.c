@@ -1145,6 +1145,11 @@ unsigned int ica_rsa_mod_expo(ica_adapter_handle_t adapter_handle,
 	if (rsa_key->key_length * 8 > MAX_RSA_KEY_BITS)
 		return EPERM;
 
+#ifdef ICA_FIPS
+	if ((fips & ICA_FIPS_MODE) && rsa_key->key_length * 8 < 2048)
+		return EPERM;
+#endif
+
 	/* fill driver structure */
 	rb.inputdata = (unsigned char *)input_data;
 	rb.inputdatalength = rsa_key->key_length;
@@ -1265,6 +1270,11 @@ unsigned int ica_rsa_crt(ica_adapter_handle_t adapter_handle,
 		return EINVAL;
 	if (rsa_key->key_length * 8 > MAX_RSA_KEY_BITS)
 		return EPERM;
+
+#ifdef ICA_FIPS
+	if ((fips & ICA_FIPS_MODE) && rsa_key->key_length * 8 < 2048)
+		return EPERM;
+#endif
 
 	/* fill driver structure */
 	rb.inputdata = (unsigned char *)input_data;
