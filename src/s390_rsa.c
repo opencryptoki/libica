@@ -197,10 +197,8 @@ unsigned int rsa_key_generate_mod_expo(ica_adapter_handle_t deviceHandle,
 #ifdef ICA_FIPS
 	if ((fips & ICA_FIPS_MODE) && (!openssl_in_fips_mode()))
 		return EACCES;
-#if OPENSSL_VERSION_PREREQ(3, 0)
-	if ((fips & ICA_FIPS_MODE) && (modulus_bit_length <= 1024))
+	if ((fips & ICA_FIPS_MODE) && (modulus_bit_length < 2048))
 		return EPERM;
-#endif
 #endif /* ICA_FIPS */
 
 	BEGIN_OPENSSL_LIBCTX(openssl_libctx, rc);
@@ -302,10 +300,8 @@ unsigned int rsa_key_generate_crt(ica_adapter_handle_t deviceHandle,
 #ifdef ICA_FIPS
 	if ((fips & ICA_FIPS_MODE) && (!openssl_in_fips_mode()))
 		return EACCES;
-#if OPENSSL_VERSION_PREREQ(3, 0)
-	if ((fips & ICA_FIPS_MODE) && (modulus_bit_length <= 1024))
+	if ((fips & ICA_FIPS_MODE) && (modulus_bit_length < 2048))
 		return EPERM;
-#endif
 #endif /* ICA_FIPS */
 
 	BEGIN_OPENSSL_LIBCTX(openssl_libctx, rc);
