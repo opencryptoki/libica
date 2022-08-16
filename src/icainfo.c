@@ -127,6 +127,74 @@ static int online_cca_card(void)
 	return 0;
 }
 
+int rsa_keylen_supported_by_openssl(unsigned int modulus_bitlength)
+{
+	unsigned char modexpo_public_e[512] = { 0 };
+	unsigned char modexpo_public_n[512] = { 0 };
+	unsigned char crt_private_p[256] = { 0 };
+	unsigned char crt_private_q[256] = { 0 };
+	unsigned char crt_private_dp[256] = { 0 };
+	unsigned char crt_private_dq[256] = { 0 };
+	unsigned char crt_private_inv_q[256] = { 0 };
+	ica_adapter_handle_t ah;
+	ica_rsa_key_mod_expo_t public_key;
+	ica_rsa_key_crt_t private_key;
+	int rc;
+
+	rc = ica_open_adapter(&ah);
+	if (rc != 0)
+		return 0;
+
+	public_key.modulus = modexpo_public_n;
+	public_key.exponent = modexpo_public_e;
+	public_key.key_length = (modulus_bitlength + 7) / 8;
+
+	private_key.p = crt_private_p;
+	private_key.q = crt_private_q;
+	private_key.dp = crt_private_dp;
+	private_key.dq = crt_private_dq;
+	private_key.qInverse = crt_private_inv_q;
+	private_key.key_length = (modulus_bitlength + 7) / 8;
+
+	rc = ica_rsa_key_generate_crt(ah, modulus_bitlength,
+							&public_key, &private_key);
+
+	ica_close_adapter(ah);
+
+	return rc == 0 ? 1 : 0;
+}
+
+/**
+ * Print out the minimum and maximum RSA key length. The maximum length is
+ * restricted to 4096 bits by crypto cards. The minimum accepted length in
+ * libica is 57 bits, but the available min length depends on the openssl
+ * version and fips mode.
+ */
+void print_rsa(void)
+{
+	int keylen_array[] = { 57, 512, 1024, 2048, 4096 };
+	int minrsa = 0;
+	size_t i;
+
+	for (i = 0; i < sizeof(keylen_array) / sizeof(int); i++) {
+		if (rsa_keylen_supported_by_openssl(keylen_array[i])) {
+			minrsa = keylen_array[i];
+			break;
+		}
+	}
+
+	printf("RSA key lengths: %d ... 4096 bits.\n", minrsa);
+
+#ifdef ICA_FIPS
+	printf("Built-in FIPS support: FIPS 140-3 mode %s.\n",
+	    ica_fips_status() & ICA_FIPS_MODE ? "active" : "inactive");
+	if (ica_fips_status() >> 1)
+		printf("FIPS SELF-TEST FAILURE. CHECK THE SYSLOG.\n");
+#else
+	printf("No built-in FIPS support.\n");
+#endif /* ICA_FIPS */
+}
+
 static int num_cpacf_curves(void)
 {
 	if (!is_msa9())
@@ -280,12 +348,14 @@ void print_help(char *cmd)
 	     "\n" "Options:\n"
 	     " -v, --version        show version information\n"
 	     " -c, --list-curves    list supported EC curves\n"
+	     " -r, --list-rsa       list supported RSA key lengths\n"
 	     " -h, --help           display this help text\n");
 }
 
-#define getopt_string "qcvh"
+#define getopt_string "qcrvh"
 static struct option getopt_long_options[] = {
 	{"list-curves", 0, 0, 'c'},
+	{"list-rsa", 0, 0, 'r'},
 	{"version", 0, 0, 'v'},
 	{"help", 0, 0, 'h'},
 	{0, 0, 0, 0}
@@ -369,6 +439,9 @@ int main(int argc, char **argv)
 		switch (rc) {
 		case 'c':
 			print_ec_curves();
+			exit(0);
+		case 'r':
+			print_rsa();
 			exit(0);
 		case 'v':
 			print_version();

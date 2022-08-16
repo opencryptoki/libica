@@ -6,12 +6,12 @@
 .\"   nroff -man icainfo.1
 .\" to process this source
 .\"
-.TH ICAINFO 1 2021-06-21 IBM "icainfo user manual"
+.TH ICAINFO 1 2022-08-22 IBM "icainfo user manual"
 .SH NAME
 icainfo \- print information about cryptographic functions supported by libica
 .SH SYNOPSIS
 .B icainfo
-[-v | --version] [-h | --help] [-c | --list-curves]
+[-v | --version] [-h | --help] [-c | --list-curves] [-r | --list-rsa]
 .SH DESCRIPTION
 .B icainfo
 prints a table that shows libica's support for various cryptographic
@@ -55,6 +55,8 @@ show libica version and copyright
 display this help and exit
 .IP "-c or --list-curves"
 show supported elliptic curves
+.IP "-r or --list-rsa"
+show min and max supported RSA key lengths
 .SH RETURN VALUE
 .IP 1
 unknown or invalid argument on invocation
