@@ -598,15 +598,6 @@ int s390_initialize_functionlist()
 				e->property |= ICA_PROPERTY_RSA_ALL;
 			}
 			break;
-		case RSA_KEY_GEN_ME: /* fall-through */
-		case RSA_KEY_GEN_CRT:
-#if defined(ICA_FIPS) && OPENSSL_VERSION_PREREQ(3, 0)
-			if (fips & ICA_FIPS_MODE)
-				e->property |= ICA_PROPERTY_RSA_FIPS;
-			else
-				e->property |= ICA_PROPERTY_RSA_ALL;
-#endif
-			break;
 		default:
 			/* Do nothing. */
 			break;
@@ -675,6 +666,47 @@ int s390_get_functionlist(libica_func_list_element *pmech_list,
 		pmech_list[x].flags = 0;
 		pmech_list[x].property = 0;
 	}
+
+	/* Adjust the flags and properties for algorithms that are allowed in fips
+	 * mode, but not on any hardware, or not with any key length, curve etc. */
+	if (fips & ICA_FIPS_MODE) {
+		/* RSA >= 2048 bits in FIPS 140-3 mode */
+		switch (pmech_list[x].mech_mode_id) {
+		case RSA_KEY_GEN_ME:
+		case RSA_KEY_GEN_CRT:
+		case RSA_ME:
+		case RSA_CRT:
+			if (pmech_list[x].flags)
+				pmech_list[x].property = ICA_PROPERTY_RSA_FIPS;
+			else
+				pmech_list[x].property = 0;
+			break;
+		default:
+			break;
+		}
+
+		/* ECDSA/ECDH only via CPACF in FIPS 140-3 mode */
+		switch (pmech_list[x].mech_mode_id) {
+		case EC_DH:
+		case EC_DSA_SIGN:
+		case EC_DSA_VERIFY:
+		case EC_KGEN:
+			pmech_list[x].flags &= ~ICA_FLAG_DHW; /* No ECC op via CEX */
+			if (pmech_list[x].mech_mode_id == EC_KGEN)
+				pmech_list[x].flags &= ~ICA_FLAG_SHW; /* EC keygen via openssl */
+			else
+				pmech_list[x].flags &= ~ICA_FLAG_SW; /* EC ops via CPACF */
+			if (pmech_list[x].flags) {
+				pmech_list[x].property &= ~ICA_PROPERTY_EC_BP;
+				pmech_list[x].property &= ~ICA_PROPERTY_EC_ED;
+			} else {
+				pmech_list[x].property = 0;
+			}
+			break;
+		default:
+			break;
+		}
+	}
 #endif /* ICA_FIPS */
 
 #ifdef NO_CPACF
@@ -689,12 +721,20 @@ int s390_get_functionlist(libica_func_list_element *pmech_list,
 #endif /* NO_CPACF */
 
 #ifdef NO_SW_FALLBACKS
+#ifdef ICA_FIPS
 	/* Set SW flag to 0 if we don't have sw fallbacks, except for RSA keygen,
-	 * because there is no hw path for RSA keygen. */
+	 * because there is no hw path for RSA keygen. In fips mode also
+	 * perform EC keygen via openssl because of FIPS 140-3 compliance. */
+	if (pmech_list[x].mech_mode_id != RSA_KEY_GEN_ME &&
+		pmech_list[x].mech_mode_id != RSA_KEY_GEN_CRT &&
+		pmech_list[x].mech_mode_id != EC_KGEN)
+		pmech_list[x].flags &= ~ICA_FLAG_SW;
+#else
 	if (pmech_list[x].mech_mode_id != RSA_KEY_GEN_ME &&
 		pmech_list[x].mech_mode_id != RSA_KEY_GEN_CRT)
 		pmech_list[x].flags &= ~ICA_FLAG_SW;
-#endif
+#endif /* ICA_FIPS */
+#endif /* NO_SW_FALLBACKS */
   }
   return 0;
 }
