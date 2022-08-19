@@ -18,7 +18,7 @@ prints a table that shows libica-cex's support for various cryptographic
 algorithms and information about FIPS support.
 
 The icainfo-cex output also indicates, whether it is in an error state.
-Algorithms that are not FIPS approved are marked as blocked in both table
+Algorithms that are not FIPS approved are marked as blocked in all table
 columns when running in FIPS mode. All algorithms are marked as blocked when
 libica is in an error state.
 
@@ -49,7 +49,7 @@ A shortened sample output is given below:
        RSA CRT |    yes     |      -     |      -
            ...
 ------------------------------------------------------
-Built-in FIPS support: FIPS mode active.
+Built-in FIPS support: FIPS 140-3 mode active.
 Software fallbacks are disabled in libica-cex.
 CPACF support (including fallbacks) is disabled in libica-cex.
 .fi
