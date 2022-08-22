@@ -1077,6 +1077,50 @@ int ica_ecdsa_sign(ica_adapter_handle_t adapter_handle,
 		unsigned char *signature, unsigned int signature_length);
 
 /**
+ * Create a deterministic ECDSA signature for the given hash data using
+ * the given private ICA_EC_KEY and value k.
+ *
+ * Note: Creating deterministic signatures is only supported via CPACF on MSA9
+ * or later. Check your icainfo [-c] output if ECDSA is available on your
+ * hardware via CPACF. The function returns EPERM if ECDSA is not supported
+ * via CPACF.
+ *
+ * @param privkey
+ * Pointer to a readable private ICA_EC_KEY object.
+ *
+ * @param hash
+ * Pointer to a readable buffer containing hashed data.
+ *
+ * @param
+ * The length of the hashed data. Supported lengths are
+ * 20, 28, 32, 48, and 64 bytes.
+ *
+ * @param signature
+ * Pointer to a writable buffer where the ECDSA signature is returned.
+ *
+ * @param signature_length
+ * The length of the buffer. It must be greater or equal to 2*privlen
+ * as returned when creating the ICA_EC_KEY object.
+ *
+ * @param k
+ * Pointer to a readable buffer containing the k-value, used together with
+ * private key and input hash to create a deterministic signature. This
+ * allows to implement known-answer tests using test vectors available
+ * from various sources, e.g. NIST or RFCs. The length of k is expected
+ * to be equal to the lengths of the r and s parts of the signature.
+ *
+ * @return 0 if success
+ * EINVAL if at least one invalid parameter is given.
+ * EPERM if ECDSA is not supported via CPACF (MSA9 or later).
+ * EIO if an internal processing error occurred.
+ */
+ICA_EXPORT
+int ica_ecdsa_sign_ex(ica_adapter_handle_t adapter_handle,
+		const ICA_EC_KEY *privkey, const unsigned char *hash, unsigned int hash_length,
+		unsigned char *signature, unsigned int signature_length,
+		const unsigned char *k);
+
+/**
  * Verify a given ECDSA signature with given hash data and public ICA_EC_KEY.
  *
  * @param pubkey

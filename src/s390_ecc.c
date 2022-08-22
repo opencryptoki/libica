@@ -46,7 +46,7 @@ extern OSSL_LIB_CTX *openssl_libctx;
 static int eckeygen_cpacf(ICA_EC_KEY *key);
 static int ecdsa_sign_cpacf(const ICA_EC_KEY *priv, const unsigned char *hash,
 			    size_t hashlen, unsigned char *sig,
-			    void (*rng_cb)(unsigned char *, size_t));
+			    const unsigned char *k);
 static int ecdsa_verify_cpacf(const ICA_EC_KEY *pub, const unsigned char *hash,
 			      size_t hashlen, const unsigned char *sig);
 static int scalar_mul_cpacf(unsigned char *res_x, unsigned char *res_y,
@@ -1342,7 +1342,7 @@ end:
  */
 unsigned int ecdsa_sign_hw(ica_adapter_handle_t adapter_handle,
 		const ICA_EC_KEY *privkey, const unsigned char *hash, unsigned int hash_length,
-		unsigned char *signature)
+		unsigned char *signature, const unsigned char *k)
 {
 	uint8_t *buf = NULL;
 	size_t len;
@@ -1354,11 +1354,13 @@ unsigned int ecdsa_sign_hw(ica_adapter_handle_t adapter_handle,
 	unsigned char Y[MAX_ECC_PRIV_SIZE];
 
 	if (msa9_switch && !ica_offload_enabled) {
-		rc = ecdsa_sign_cpacf(privkey, hash, hash_length, signature,
-				      NULL);
+		rc = ecdsa_sign_cpacf(privkey, hash, hash_length, signature, k);
 		if (rc != EINVAL) /* EINVAL: curve not supported by cpacf */
 			return rc;
 	}
+
+	if (k != NULL)
+		return EPERM; /* deterministic signatures only supported via CPACF */
 
 	if (!curve_supported_via_online_card(privkey->nid))
 		return ENODEV;
@@ -1678,7 +1680,7 @@ struct {				\
  */
 static int ecdsa_sign_cpacf(const ICA_EC_KEY *priv, const unsigned char *hash,
 			    size_t hashlen, unsigned char *sig,
-			    void (*rng_cb)(unsigned char *, size_t))
+			    const unsigned char *k)
 {
 #define DEF_PARAM(curve, size)		\
 struct {				\
@@ -1723,13 +1725,12 @@ struct {				\
 
 		fc = s390_kdsa_functions[ECDSA_SIGN_P256].hw_fc;
 
-		if (rng_cb == NULL) {
+		if (k == NULL) {
 			rc = s390_kdsa(fc, param.buff, NULL, 0);
 		} else {
 			fc |= 0x80; /* deterministic signature */
 			do {
-				rng_cb(param.P256.rand + off,
-				       sizeof(param.P256.rand) - off);
+				memcpy(param.P256.rand + off, k, sizeof(param.P256.rand) - off);
 				rc = s390_kdsa(fc, param.buff, NULL, 0);
 			} while (rc);
 		}
@@ -1762,13 +1763,12 @@ struct {				\
 
 		fc = s390_kdsa_functions[ECDSA_SIGN_P384].hw_fc;
 
-		if (rng_cb == NULL) {
+		if (k == NULL) {
 			rc = s390_kdsa(fc, param.buff, NULL, 0);
 		} else {
 			fc |= 0x80; /* deterministic signature */
 			do {
-				rng_cb(param.P384.rand + off,
-				       sizeof(param.P384.rand) - off);
+				memcpy(param.P384.rand + off, k, sizeof(param.P384.rand) - off);
 				rc = s390_kdsa(fc, param.buff, NULL, 0);
 			} while (rc);
 		}
@@ -1801,13 +1801,12 @@ struct {				\
 
 		fc = s390_kdsa_functions[ECDSA_SIGN_P521].hw_fc;
 
-		if (rng_cb == NULL) {
+		if (k == NULL) {
 			rc = s390_kdsa(fc, param.buff, NULL, 0);
 		} else {
 			fc |= 0x80; /* deterministic signature */
 			do {
-				rng_cb(param.P521.rand + off,
-				       sizeof(param.P521.rand) - off);
+				memcpy(param.P521.rand + off, k, sizeof(param.P521.rand) - off);
 				rc = s390_kdsa(fc, param.buff, NULL, 0);
 			} while (rc);
 		}
@@ -2731,12 +2730,9 @@ static void ecdsa_test(void)
 		if (rc)
 			TEST_ERROR("Hashing failed", "ECDSA", i);
 
-		deterministic_rng_output = t->k;
-
 		/* Sign hashed message */
 
-		rc = ecdsa_sign_cpacf(t->key, hash, hashlen, sig,
-				      deterministic_rng);
+		rc = ecdsa_sign_cpacf(t->key, hash, hashlen, sig, t->k);
 		if (rc)
 			TEST_ERROR("Signing failed", "ECDSA", i);
 

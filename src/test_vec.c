@@ -5381,12 +5381,3 @@ const size_t SCALAR_MULX_KEX_TV_LEN
 #endif /* ICA_INTERNAL_TEST_EC */
 const size_t DRBG_SHA512_TV_LEN = sizeof(DRBG_SHA512_TV)
     / sizeof(DRBG_SHA512_TV[0]);
-
-#ifdef ICA_INTERNAL_TEST_EC
-const unsigned char *deterministic_rng_output;
-
-void deterministic_rng(unsigned char *buf, size_t buflen)
-{
-	memcpy(buf, deterministic_rng_output, buflen);
-}
-#endif

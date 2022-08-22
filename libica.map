@@ -172,3 +172,9 @@ LIBICA_4.0.2 {
 	ica_cleanup;
     local: *;
 } LIBICA_3.6.0;
+
+LIBICA_4.1.0 {
+    global:
+	ica_ecdsa_sign_ex;
+    local: *;
+} LIBICA_4.0.2;
