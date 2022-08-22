@@ -1520,6 +1520,15 @@ int ica_ecdsa_sign(ica_adapter_handle_t adapter_handle,
 		const ICA_EC_KEY *privkey, const unsigned char *hash, unsigned int hash_length,
 		unsigned char *signature, unsigned int signature_length)
 {
+	return ica_ecdsa_sign_ex(adapter_handle, privkey, hash, hash_length,
+			signature, signature_length, NULL);
+}
+
+int ica_ecdsa_sign_ex(ica_adapter_handle_t adapter_handle,
+		const ICA_EC_KEY *privkey, const unsigned char *hash, unsigned int hash_length,
+		unsigned char *signature, unsigned int signature_length,
+		const unsigned char *k)
+{
 	int hardware, rc;
 	unsigned int privlen;
 	unsigned int icapath = 0;
@@ -1547,22 +1556,29 @@ int ica_ecdsa_sign(ica_adapter_handle_t adapter_handle,
 	case 1: /* hw only */
 		hardware = ALGO_HW;
 		if (ecc_via_online_card || msa9_switch)
-			rc = ecdsa_sign_hw(adapter_handle, privkey, hash, hash_length, signature);
+			rc = ecdsa_sign_hw(adapter_handle, privkey, hash, hash_length,
+						signature, k);
 		else
 			rc = ENODEV;
 		break;
 	case 2: /* sw only */
+		if (k != NULL)
+			return EPERM;
 		hardware = ALGO_SW;
 		rc = ecdsa_sign_sw(privkey, hash, hash_length, signature);
 		break;
 	default: /* hw with sw fallback (default) */
 		hardware = ALGO_SW;
-		rc = ecdsa_sign_hw(adapter_handle, privkey, hash, hash_length, signature);
+		rc = ecdsa_sign_hw(adapter_handle, privkey, hash, hash_length,
+					signature, k);
 		if (rc == 0)
 			hardware = ALGO_HW;
-		else
+		else {
+			if (k != NULL)
+				return EPERM;
 			rc = ica_fallbacks_enabled ?
 				ecdsa_sign_sw(privkey, hash, hash_length, signature) : ENODEV;
+		}
 	}
 
 	if (rc == 0)

@@ -323,7 +323,7 @@ typedef struct {
 
 unsigned int ecdsa_sign_hw(ica_adapter_handle_t adapter_handle,
 		const ICA_EC_KEY *privkey, const unsigned char *hash, unsigned int hash_length,
-		unsigned char *signature);
+		unsigned char *signature, const unsigned char *k);
 
 unsigned int ecdsa_sign_sw(const ICA_EC_KEY *privkey,
 		const unsigned char *hash, unsigned int hash_length,

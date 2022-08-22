@@ -318,8 +318,6 @@ extern const size_t SCALAR_MULX_IT_TV_LEN;
 extern const struct scalar_mulx_kex_tv SCALAR_MULX_KEX_TV[];
 extern const size_t SCALAR_MULX_KEX_TV_LEN;
 
-extern const unsigned char *deterministic_rng_output;
-void deterministic_rng(unsigned char *buf, size_t buflen);
 #endif /* ICA_INTERNAL_TEST_EC */
 
 extern const struct drbg_sha512_tv DRBG_SHA512_TV[];
