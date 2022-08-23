@@ -346,6 +346,8 @@ end:
 	if (pkey != NULL)
 		EVP_PKEY_free(pkey);
 
+	if (keybuf)
+		OPENSSL_cleanse(keybuf, keylen);
 	OPENSSL_free(keybuf);
 	EVP_MD_CTX_destroy(mdctx);
 	if (fp)
@@ -379,6 +381,8 @@ static int load_known_hmac(const char *path, unsigned char **hmac, long *hmaclen
 	rc = 0;
 end:
 	fclose(fp);
+	if (known_hmac_str)
+		OPENSSL_cleanse(known_hmac_str, strlen(known_hmac_str));
 	free(known_hmac_str);
 	free(hmacpath);
 
@@ -395,9 +399,9 @@ static int FIPSCHECK_verify(const char *path)
 {
 	int rc = 0;
 	unsigned char *known_hmac = NULL;
-	long known_hmac_len;
+	long known_hmac_len = 0;
 	void *computed_hmac = NULL;
-	size_t computed_hmac_len;
+	size_t computed_hmac_len = 0;
 
 	if (load_known_hmac(path, &known_hmac,  &known_hmac_len) != 0)
 		goto end;
@@ -413,6 +417,10 @@ static int FIPSCHECK_verify(const char *path)
 
 	rc = 1;
 end:
+	if (computed_hmac)
+		OPENSSL_cleanse(computed_hmac, computed_hmac_len);
+	if (known_hmac)
+		OPENSSL_cleanse(known_hmac, known_hmac_len);
 	free(computed_hmac);
 	OPENSSL_free(known_hmac);
 
