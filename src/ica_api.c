@@ -1350,16 +1350,16 @@ int ica_ec_key_init(const unsigned char *X, const unsigned char *Y,
 {
 	unsigned int privlen;
 
-#ifdef ICA_FIPS
-	if (fips >> 1)
-		return EACCES;
-	if (!curve_supported_via_openssl(key->nid))
-		return EPERM;
-#endif /* ICA_FIPS */
-
 	/* check for obvious errors in parms */
 	if (key == NULL)
 		return EINVAL;
+
+#ifdef ICA_FIPS
+	if (fips >> 1)
+		return EACCES;
+	if (!curve_supported_via_openssl(key->nid) || !curve_supported_via_cpacf(key->nid))
+		return EPERM;
+#endif /* ICA_FIPS */
 
 	/* check if curve is supported by hw */
 	if (!(curve_supported_via_online_card(key->nid) ||
@@ -1392,16 +1392,16 @@ int ica_ec_key_generate(ica_adapter_handle_t adapter_handle, ICA_EC_KEY *key)
 	int hardware, rc;
 	unsigned int icapath = 0;
 
-#ifdef ICA_FIPS
-	if (fips >> 1)
-		return EACCES;
-	if (!curve_supported_via_openssl(key->nid))
-		return EPERM;
-#endif /* ICA_FIPS */
-
 	/* check for obvious errors in parms */
 	if (key == NULL)
 		return EINVAL;
+
+#ifdef ICA_FIPS
+	if (fips >> 1)
+		return EACCES;
+	if (!curve_supported_via_openssl(key->nid) || !curve_supported_via_cpacf(key->nid))
+		return EPERM;
+#endif /* ICA_FIPS */
 
 	/* check if curve is supported by hw */
 	if (!(curve_supported_via_online_card(key->nid) ||
@@ -1461,16 +1461,17 @@ int ica_ecdh_derive_secret(ica_adapter_handle_t adapter_handle,
 	unsigned int privlen;
 	unsigned int icapath = 0;
 
-#ifdef ICA_FIPS
-	if (fips >> 1)
-		return EACCES;
-	if (privkey_A != NULL && !curve_supported_via_openssl(privkey_A->nid))
-		return EPERM;
-#endif /* ICA_FIPS */
-
 	/* check for obvious errors in parms */
 	if (privkey_A == NULL || pubkey_B == NULL)
 		return EINVAL;
+
+#ifdef ICA_FIPS
+	if (fips >> 1)
+		return EACCES;
+	if (!curve_supported_via_openssl(privkey_A->nid) ||
+		!curve_supported_via_cpacf(privkey_A->nid))
+		return EPERM;
+#endif /* ICA_FIPS */
 
 	privlen = privlen_from_nid(privkey_A->nid);
 	if (z == NULL || z_length < privlen || privkey_A->nid != pubkey_B->nid)
@@ -1533,14 +1534,17 @@ int ica_ecdsa_sign_ex(ica_adapter_handle_t adapter_handle,
 	unsigned int privlen;
 	unsigned int icapath = 0;
 
-#ifdef ICA_FIPS
-	if (fips >> 1)
-		return EACCES;
-#endif /* ICA_FIPS */
-
 	/* check for obvious errors in parms */
 	if (privkey == NULL)
 		return EINVAL;
+
+#ifdef ICA_FIPS
+	if (fips >> 1)
+		return EACCES;
+	if (!curve_supported_via_openssl(privkey->nid) ||
+		!curve_supported_via_cpacf(privkey->nid))
+		return EPERM;
+#endif /* ICA_FIPS */
 
 	privlen = privlen_from_nid(privkey->nid);
 	if (hash == NULL || !hash_length_valid(hash_length) ||
@@ -1597,14 +1601,17 @@ int ica_ecdsa_verify(ica_adapter_handle_t adapter_handle,
 	unsigned int privlen;
 	unsigned int icapath = 0;
 
-#ifdef ICA_FIPS
-	if (fips >> 1)
-		return EACCES;
-#endif /* ICA_FIPS */
-
 	/* check for obvious errors in parms */
 	if (pubkey == NULL)
 		return EINVAL;
+
+#ifdef ICA_FIPS
+	if (fips >> 1)
+		return EACCES;
+	if (!curve_supported_via_openssl(pubkey->nid) ||
+		!curve_supported_via_cpacf(pubkey->nid))
+		return EPERM;
+#endif /* ICA_FIPS */
 
 	privlen = privlen_from_nid(pubkey->nid);
 	if (hash == NULL || !hash_length_valid(hash_length) ||
@@ -1685,10 +1692,11 @@ void ica_ec_key_free(ICA_EC_KEY *key)
 	free(key);
 }
 
-static inline int check_fips(void)
+static inline int check_fips_ed_x(void)
 {
 #ifdef ICA_FIPS
-	return fips >> 1;
+	/* As of now, ED/X are not FIPS 140-3 approved. This may change. */
+	return 1;
 #else
 	return 0;
 #endif
@@ -1761,7 +1769,7 @@ int ica_x25519_key_set(ICA_X25519_CTX *ctx,
 	UNUSED(pub);
 	return EPERM;
 #else
-	if (check_fips() || !msa9_switch || ctx == NULL)
+	if (check_fips_ed_x() || !msa9_switch || ctx == NULL)
 		return -1;
 
 	if (priv != NULL) {
@@ -1790,7 +1798,7 @@ int ica_x448_key_set(ICA_X448_CTX *ctx,
 	UNUSED(pub);
 	return EPERM;
 #else
-	if (check_fips() || !msa9_switch || ctx == NULL)
+	if (check_fips_ed_x() || !msa9_switch || ctx == NULL)
 		return -1;
 
 	if (priv != NULL) {
@@ -1819,7 +1827,7 @@ int ica_ed25519_key_set(ICA_ED25519_CTX *ctx,
 	UNUSED(pub);
 	return EPERM;
 #else
-	if (check_fips() || !msa9_switch || ctx == NULL)
+	if (check_fips_ed_x() || !msa9_switch || ctx == NULL)
 		return -1;
 
 	if (priv != NULL) {
@@ -1848,7 +1856,7 @@ int ica_ed448_key_set(ICA_ED448_CTX *ctx,
 	UNUSED(pub);
 	return EPERM;
 #else
-	if (check_fips() || !msa9_switch || ctx == NULL)
+	if (check_fips_ed_x() || !msa9_switch || ctx == NULL)
 		return -1;
 
 	if (priv != NULL) {
@@ -1883,7 +1891,7 @@ int ica_x25519_key_get(ICA_X25519_CTX *ctx, unsigned char priv[32],
 #else
 	int rc;
 
-	if (check_fips() || !msa9_switch || ctx == NULL)
+	if (check_fips_ed_x() || !msa9_switch || ctx == NULL)
 		return -1;
 
 	if (priv != NULL) {
@@ -1925,7 +1933,7 @@ int ica_x448_key_get(ICA_X448_CTX *ctx, unsigned char priv[56],
 #else
 	int rc;
 
-	if (check_fips() || !msa9_switch || ctx == NULL)
+	if (check_fips_ed_x() || !msa9_switch || ctx == NULL)
 		return -1;
 
 	if (priv != NULL) {
@@ -1967,7 +1975,7 @@ int ica_ed25519_key_get(ICA_ED25519_CTX *ctx, unsigned char priv[32],
 #else
 	int rc;
 
-	if (check_fips() || !msa9_switch || ctx == NULL)
+	if (check_fips_ed_x() || !msa9_switch || ctx == NULL)
 		return -1;
 
 	if (priv != NULL) {
@@ -2012,7 +2020,7 @@ int ica_ed448_key_get(ICA_ED448_CTX *ctx, unsigned char priv[57],
 	unsigned char pub64[64];
 	int rc;
 
-	if (check_fips() || !msa9_switch || ctx == NULL)
+	if (check_fips_ed_x() || !msa9_switch || ctx == NULL)
 		return -1;
 
 	if (priv != NULL) {
@@ -2058,7 +2066,7 @@ int ica_x25519_derive(ICA_X25519_CTX *ctx,
 #else
 	int rc;
 
-	if (check_fips() || !msa9_switch || ctx == NULL
+	if (check_fips_ed_x() || !msa9_switch || ctx == NULL
 	    || !ctx->priv_init || shared_secret == NULL || peer_pub == NULL)
 		return -1;
 
@@ -2082,7 +2090,7 @@ int ica_x448_derive(ICA_X448_CTX *ctx,
 #else
 	int rc;
 
-	if (check_fips() || !msa9_switch || ctx == NULL
+	if (check_fips_ed_x() || !msa9_switch || ctx == NULL
 	    || !ctx->priv_init || shared_secret == NULL || peer_pub == NULL)
 		return -1;
 
@@ -2105,7 +2113,7 @@ int ica_ed25519_sign(ICA_ED25519_CTX *ctx, unsigned char sig[64],
 #else
 	int rc;
 
-	if (check_fips() || !msa9_switch || ctx == NULL
+	if (check_fips_ed_x() || !msa9_switch || ctx == NULL
 	    || !ctx->priv_init || sig == NULL || (msg == NULL && msglen != 0))
 		return -1;
 
@@ -2137,7 +2145,7 @@ int ica_ed448_sign(ICA_ED448_CTX *ctx, unsigned char sig[114],
 #else
 	int rc;
 
-	if (check_fips() || !msa9_switch || ctx == NULL
+	if (check_fips_ed_x() || !msa9_switch || ctx == NULL
 	    || !ctx->priv_init || sig == NULL || (msg == NULL && msglen != 0))
 		return -1;
 
@@ -2172,7 +2180,7 @@ int ica_ed25519_verify(ICA_ED25519_CTX *ctx, const unsigned char sig[64],
 #else
 	int rc;
 
-	if (check_fips() || !msa9_switch || ctx == NULL || sig == NULL
+	if (check_fips_ed_x() || !msa9_switch || ctx == NULL || sig == NULL
 	    || (msg == NULL && msglen != 0))
 		return -1;
 
@@ -2215,7 +2223,7 @@ int ica_ed448_verify(ICA_ED448_CTX *ctx, const unsigned char sig[114],
 #else
 	int rc;
 
-	if (check_fips() || !msa9_switch || ctx == NULL || sig == NULL
+	if (check_fips_ed_x() || !msa9_switch || ctx == NULL || sig == NULL
 	    || (msg == NULL && msglen != 0))
 		return -1;
 
@@ -2321,7 +2329,7 @@ int ica_x25519_key_gen(ICA_X25519_CTX *ctx)
 	UNUSED(ctx);
 	return EPERM;
 #else
-	if (check_fips() || !msa9_switch || ctx == NULL)
+	if (check_fips_ed_x() || !msa9_switch || ctx == NULL)
 		return -1;
 
 	memset(ctx, 0, sizeof(*ctx));
@@ -2341,7 +2349,7 @@ int ica_x448_key_gen(ICA_X448_CTX *ctx)
 	UNUSED(ctx);
 	return EPERM;
 #else
-	if (check_fips() || !msa9_switch || ctx == NULL)
+	if (check_fips_ed_x() || !msa9_switch || ctx == NULL)
 		return -1;
 
 	memset(ctx, 0, sizeof(*ctx));
@@ -2361,7 +2369,7 @@ int ica_ed25519_key_gen(ICA_ED25519_CTX *ctx)
 	UNUSED(ctx);
 	return EPERM;
 #else
-	if (check_fips() || !msa9_switch || ctx == NULL)
+	if (check_fips_ed_x() || !msa9_switch || ctx == NULL)
 		return -1;
 
 	memset(ctx, 0, sizeof(*ctx));
@@ -2381,7 +2389,7 @@ int ica_ed448_key_gen(ICA_ED448_CTX *ctx)
 	UNUSED(ctx);
 	return EPERM;
 #else
-	if (check_fips() || !msa9_switch || ctx == NULL)
+	if (check_fips_ed_x() || !msa9_switch || ctx == NULL)
 		return -1;
 
 	memset(ctx, 0, sizeof(*ctx));
