@@ -921,6 +921,12 @@ unsigned int ecdh_hw(ica_adapter_handle_t adapter_handle,
 			return rc;
 	}
 
+#ifdef ICA_FIPS
+	/* if we are here in fips mode, then return, because the CEX path is not
+	 * fips compliant. Self-tests were only performed for CPACF. */
+	return EPERM;
+#endif
+
 	if (privkey_A->nid != pubkey_B->nid ||
 		!curve_supported_via_online_card(privkey_A->nid))
 		return ENODEV;
@@ -1358,6 +1364,12 @@ unsigned int ecdsa_sign_hw(ica_adapter_handle_t adapter_handle,
 		if (rc != EINVAL) /* EINVAL: curve not supported by cpacf */
 			return rc;
 	}
+
+#ifdef ICA_FIPS
+	/* if we are here in fips mode, then return, because the CEX path is not
+	 * fips compliant. Self-tests were only performed for CPACF. */
+	return EPERM;
+#endif
 
 	if (k != NULL)
 		return EPERM; /* deterministic signatures only supported via CPACF */
@@ -1853,6 +1865,12 @@ unsigned int ecdsa_verify_hw(ica_adapter_handle_t adapter_handle,
 		if (rc != EINVAL) /* EINVAL: curve not supported by cpacf */
 			return rc;
 	}
+
+#ifdef ICA_FIPS
+	/* if we are here in fips mode, then return, because the CEX path is not
+	 * fips compliant. Self-tests were only performed for CPACF. */
+	return EPERM;
+#endif
 
 	if (!curve_supported_via_online_card(pubkey->nid))
 		return ENODEV;
