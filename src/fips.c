@@ -291,22 +291,38 @@ static char *make_hmac_path(const char *origpath)
 	return path;
 }
 
+static EVP_PKEY *get_pkey(void)
+{
+	unsigned char *keybuf;
+	long keylen;
+	EVP_PKEY *pkey = NULL;
+
+	keybuf = OPENSSL_hexstr2buf(hmackey, &keylen);
+	if (keybuf == NULL)
+		goto end;
+
+	pkey = EVP_PKEY_new_mac_key(EVP_PKEY_HMAC, NULL, keybuf, (int)keylen);
+end:
+	if (keybuf) {
+		OPENSSL_cleanse(keybuf, keylen);
+		OPENSSL_free(keybuf);
+	}
+	return pkey;
+}
+
 static int compute_file_hmac(const char *path, void **buf, size_t *hmaclen)
 {
 	FILE *fp = NULL;
 	int rc = -1;
 	unsigned char rbuf[READ_BUFFER_LENGTH];
-	unsigned char *keybuf;
 	EVP_MD_CTX *mdctx = NULL;
 	EVP_PKEY *pkey = NULL;
 	size_t hlen, len;
-	long keylen;
 
 	*buf = NULL;
 	*hmaclen = 0;
 
-	keybuf = OPENSSL_hexstr2buf(hmackey, &keylen);
-	pkey = EVP_PKEY_new_mac_key(EVP_PKEY_HMAC, NULL, keybuf, (int)keylen);
+	pkey = get_pkey();
 	if (!pkey)
 		goto end;
 
@@ -346,9 +362,6 @@ end:
 	if (pkey != NULL)
 		EVP_PKEY_free(pkey);
 
-	if (keybuf)
-		OPENSSL_cleanse(keybuf, keylen);
-	OPENSSL_free(keybuf);
 	EVP_MD_CTX_destroy(mdctx);
 	if (fp)
 		fclose(fp);
