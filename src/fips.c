@@ -12,6 +12,7 @@
 #ifdef ICA_FIPS
 
 #include <errno.h>
+#include <fcntl.h>
 #include <openssl/crypto.h>
 #include <openssl/evp.h>
 #include <stdint.h>
@@ -19,8 +20,11 @@
 #include <stdlib.h>
 #include <string.h>
 #include <syslog.h>
+#include <unistd.h>
 #include <dlfcn.h>
 #include <link.h>
+#include <sys/mman.h>
+#include <sys/stat.h>
 
 #include <openssl/opensslconf.h>
 #ifdef OPENSSL_FIPS
@@ -310,17 +314,36 @@ end:
 	return pkey;
 }
 
+static void* mmap_file(const char *path, struct stat *statbuf)
+{
+	int fd;
+	void *ptr = NULL;
+
+	fd = open(path, O_RDONLY);
+	if (fd < 0)
+		goto end;
+
+	if (fstat(fd, statbuf) < 0)
+		goto end_close;
+
+	ptr = mmap(0, statbuf->st_size, PROT_READ, MAP_SHARED, fd, 0);
+	if (ptr == MAP_FAILED)
+		ptr = NULL;
+end_close:
+	close(fd);
+end:
+	return ptr;
+}
+
 static int compute_file_hmac(const char *path, void **buf, size_t *hmaclen)
 {
-	FILE *fp = NULL;
 	int rc = -1;
-	unsigned char rbuf[READ_BUFFER_LENGTH];
+	unsigned char tmp[32];
+	size_t tmp_len = sizeof(tmp);
 	EVP_MD_CTX *mdctx = NULL;
 	EVP_PKEY *pkey = NULL;
-	size_t hlen, len;
-
-	*buf = NULL;
-	*hmaclen = 0;
+	void *fdata = NULL;
+	struct stat fdata_stat;
 
 	pkey = get_pkey();
 	if (!pkey)
@@ -330,41 +353,36 @@ static int compute_file_hmac(const char *path, void **buf, size_t *hmaclen)
 	if (!mdctx)
 		goto end;
 
-	fp = fopen(path, "r");
-	if (fp == NULL)
+	fdata = mmap_file(path, &fdata_stat);
+	if (fdata == NULL)
 		goto end;
 
-	if (EVP_DigestSignInit(mdctx, NULL, EVP_sha256(), NULL, pkey) <= 0)
+	if (EVP_DigestSignInit(mdctx, NULL, EVP_sha256(), NULL, pkey) != 1)
 		goto end;
 
-	while ((len = fread(rbuf, 1, sizeof(rbuf), fp)) != 0) {
-		if (EVP_DigestSignUpdate(mdctx, rbuf, len) <= 0) {
-			goto end;
-		}
-	}
-
-	hlen = sizeof(rbuf);
-	if (EVP_DigestSignFinal(mdctx, rbuf, &hlen) <= 0)
+	if (EVP_DigestSign(mdctx, tmp, &tmp_len, fdata, fdata_stat.st_size) != 1)
 		goto end;
 
-	*buf = malloc(hlen);
+	*buf = malloc(tmp_len);
 	if (*buf == NULL)
 		goto end;
 
-	*hmaclen = hlen;
-
-	memcpy(*buf, rbuf, hlen);
+	*hmaclen = tmp_len;
+	memcpy(*buf, tmp, tmp_len);
 
 	rc = 0;
 
 end:
+	if (fdata != NULL)
+		munmap(fdata, fdata_stat.st_size);
 
 	if (pkey != NULL)
 		EVP_PKEY_free(pkey);
 
-	EVP_MD_CTX_destroy(mdctx);
-	if (fp)
-		fclose(fp);
+	if (mdctx != NULL)
+		EVP_MD_CTX_destroy(mdctx);
+
+	OPENSSL_cleanse(tmp, sizeof(tmp));
 
 	return rc;
 }
