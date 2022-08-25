@@ -34,10 +34,10 @@ static void x448_pc(void);
 
 int main(int argc, char *argv[])
 {
-#ifdef NO_CPACF
+#if defined(NO_CPACF) || defined(ICA_FIPS)
 	UNUSED(argc);
 	UNUSED(argv);
-	printf("Skipping X25519/X448 test, because CPACF support disabled via config option.\n");
+	printf("Skipping X25519/X448 test, because of FIPS mode or CPACF support disabled via config option.\n");
 	return TEST_SKIP;
 #else
 	int i;
