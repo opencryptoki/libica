@@ -377,7 +377,7 @@ unsigned int eckeygen_hw(ica_adapter_handle_t adapter_handle, ICA_EC_KEY *key);
 
 unsigned int eckeygen_sw(ICA_EC_KEY *key);
 
-int ec_key_check(ICA_EC_KEY *ica_key);
+int ec_key_check(const ICA_EC_KEY *ica_key);
 
 /**
  * returns 1 if the given data length is valid for Crypto Express, 0 otherwise.
