@@ -1100,14 +1100,11 @@ ecdh_kat()
 		tv = &ECDH_KAT_TV[i];
 
 		eckey_A = ica_ec_key_new(tv->nid, &privlen);
-		if (!eckey_A)
+		eckey_B = ica_ec_key_new(tv->nid, &privlen);
+		if (!eckey_A || !eckey_B)
 			goto _err_;
 
 		if (ica_ec_key_init(tv->xa, tv->ya, tv->da, eckey_A))
-			goto _err_;
-
-		eckey_B = ica_ec_key_new(tv->nid, &privlen);
-		if (!eckey_B)
 			goto _err_;
 
 		if (ica_ec_key_init(tv->xb, tv->yb, tv->db, eckey_B))
