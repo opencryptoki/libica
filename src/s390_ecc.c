@@ -2476,7 +2476,7 @@ err:
  *    0       success
  *    EINVAL  key check failed
  */
-int ec_key_check(ICA_EC_KEY *ica_key)
+int ec_key_check(const ICA_EC_KEY *ica_key)
 {
 	EVP_PKEY *privkey = NULL, *pubkey = NULL;
 	BIGNUM *d = NULL, *x = NULL, *y = NULL;
