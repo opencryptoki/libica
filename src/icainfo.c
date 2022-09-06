@@ -164,6 +164,20 @@ int rsa_keylen_supported_by_openssl(unsigned int modulus_bitlength)
 	return rc == 0 ? 1 : 0;
 }
 
+int get_rsa_minlen(void)
+{
+	int keylen_array[] = { 57, 512, 1024, 2048, 4096 };
+	size_t i;
+
+	for (i = 0; i < sizeof(keylen_array) / sizeof(int); i++) {
+		if (rsa_keylen_supported_by_openssl(keylen_array[i])) {
+			return keylen_array[i];
+		}
+	}
+
+	return -1;
+}
+
 /**
  * Print out the minimum and maximum RSA key length. The maximum length is
  * restricted to 4096 bits by crypto cards. The minimum accepted length in
@@ -172,18 +186,12 @@ int rsa_keylen_supported_by_openssl(unsigned int modulus_bitlength)
  */
 void print_rsa(void)
 {
-	int keylen_array[] = { 57, 512, 1024, 2048, 4096 };
-	int minrsa = 0;
-	size_t i;
+	int minlen = get_rsa_minlen();
 
-	for (i = 0; i < sizeof(keylen_array) / sizeof(int); i++) {
-		if (rsa_keylen_supported_by_openssl(keylen_array[i])) {
-			minrsa = keylen_array[i];
-			break;
-		}
-	}
-
-	printf("RSA key lengths: %d ... 4096 bits.\n", minrsa);
+	if (minlen > 0)
+		printf("RSA key lengths: %d ... 4096 bits.\n", minlen);
+	else
+		printf("Error: cannot determine supported RSA key lengths via openssl.\n");
 
 #ifdef ICA_FIPS
 	printf("Built-in FIPS support: FIPS 140-3 mode %s.\n",
