@@ -1104,13 +1104,13 @@ ecdh_kat()
 		if (!eckey_A || !eckey_B)
 			goto _err_;
 
-		if (ica_ec_key_init(tv->xa, tv->ya, tv->da, eckey_A))
+		/* calculate shared secret with pub_B, priv_A */
+		if (ica_ec_key_init(NULL, NULL, tv->da, eckey_A))
 			goto _err_;
 
-		if (ica_ec_key_init(tv->xb, tv->yb, tv->db, eckey_B))
+		if (ica_ec_key_init(tv->xb, tv->yb, NULL, eckey_B))
 			goto _err_;
 
-		/* calculate shared secret with priv_A, pub_B */
 		memset(shared_secret, 0, sizeof(shared_secret));
 		if (ica_ecdh_derive_secret(ah, eckey_A, eckey_B, shared_secret, privlen))
 			goto _err_;
@@ -1119,7 +1119,21 @@ ecdh_kat()
 		if (memcmp(shared_secret, tv->z, tv->privlen) != 0)
 			goto _err_;
 
-		/* calculate shared secret with priv_B, pub_A */
+		ica_ec_key_free(eckey_A);
+		ica_ec_key_free(eckey_B);
+
+		eckey_A = ica_ec_key_new(tv->nid, &privlen);
+		eckey_B = ica_ec_key_new(tv->nid, &privlen);
+		if (!eckey_A || !eckey_B)
+			goto _err_;
+
+		/* calculate shared secret with pub_A, priv_B */
+		if (ica_ec_key_init(NULL, NULL, tv->db, eckey_B))
+			goto _err_;
+
+		if (ica_ec_key_init(tv->xa, tv->ya, NULL, eckey_A))
+			goto _err_;
+
 		memset(shared_secret, 0, sizeof(shared_secret));
 		if (ica_ecdh_derive_secret(ah, eckey_B, eckey_A, shared_secret, privlen))
 			goto _err_;
