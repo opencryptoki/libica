@@ -484,13 +484,13 @@ int main(int argc, char **argv)
 	printf("               |         hardware        |            \n");
 	printf(" function      |   dynamic  |   static   |  software  \n");
 	printf("---------------+------------+------------+------------\n");
-	for(i = 0; crypt_map[i].algo_id; i++){
-		for(j = 0; j < mech_len; j++){
-			if(crypt_map[i].algo_id == pmech_list[j].mech_mode_id){
+	for (i = 0; crypt_map[i].algo_id; i++) {
+		for (j = 0; j < mech_len; j++) {
+			if (crypt_map[i].algo_id == pmech_list[j].mech_mode_id) {
 #ifdef ICA_FIPS
 				if (((ica_fips_status() & ICA_FIPS_MODE)
-				    && !fips_approved(pmech_list[j].mech_mode_id))
-				    || ica_fips_status() >> 1) {
+					&& !fips_approved(pmech_list[j].mech_mode_id))
+					|| ica_fips_status() >> 1) {
 #if defined(NO_SW_FALLBACKS) && defined(NO_CPACF)
 					printf("%14s |  blocked   |      -     |      -   \n",
 #elif defined (NO_CPACF)
@@ -528,7 +528,7 @@ int main(int argc, char **argv)
 
 #ifdef ICA_FIPS
 	printf("Built-in FIPS support: FIPS 140-3 mode %s.\n",
-	    ica_fips_status() & ICA_FIPS_MODE ? "active" : "inactive");
+		ica_fips_status() & ICA_FIPS_MODE ? "active" : "inactive");
 	if (ica_fips_status() >> 1)
 		printf("FIPS SELF-TEST FAILURE. CHECK THE SYSLOG.\n");
 #else
