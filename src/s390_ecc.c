@@ -2468,55 +2468,80 @@ err:
 	return rc;
 }
 
-/**
- * Check if the given ICA_EC_KEY is valid. This check is performed via openssl,
- * so we can only check keys that are supported by openssl. If e.g. openssl
- * is in fips mode, very few curves are supported.
- *
- * @return:
- *    0       success
- *    EINVAL  key check failed
+/*
+ * Convert an ICA_EC_KEY into an openssl EVP_PKEY. The caller must free the
+ * returned EVP_PKEY obj. Output parm *is_public_key tells the caller if
+ * the key is a private/public key pair or just a public key.
  */
-int ec_key_check(const ICA_EC_KEY *ica_key)
+EVP_PKEY *icakey2pkey(const ICA_EC_KEY *icakey, int *is_public_key)
 {
-	EVP_PKEY *privkey = NULL, *pubkey = NULL;
-	BIGNUM *d = NULL, *x = NULL, *y = NULL;
-	int privlen, rc = EINVAL;
+	EVP_PKEY *pkey = NULL;
+	BIGNUM *bn_D, *bn_X, *bn_Y;
 
-	BEGIN_OPENSSL_LIBCTX(openssl_libctx, rc);
+	if (icakey == NULL)
+		return NULL;
 
-	if (!ica_key)
+	/* Check if any key parts available */
+	bn_D = BN_bin2bn(icakey->D, privlen_from_nid(icakey->nid), NULL);
+	bn_X = BN_bin2bn(icakey->X, privlen_from_nid(icakey->nid), NULL);
+	bn_Y = BN_bin2bn(icakey->Y, privlen_from_nid(icakey->nid), NULL);
+	if (BN_is_zero(bn_D) && BN_is_zero(bn_X) && BN_is_zero(bn_Y))
 		goto done;
 
-	privlen = privlen_from_nid(ica_key->nid);
-
-	d = BN_bin2bn(ica_key->D, privlen, NULL);
-	if (!BN_is_zero(d)) {
-		privkey = make_eckey(ica_key->nid, ica_key->D, privlen);
-		if (!privkey)
-			goto done;
+	if (!BN_is_zero(bn_D)) {
+		*is_public_key = 0;
+		pkey = make_pkey(icakey->nid, icakey->D, privlen_from_nid(icakey->nid));
+		goto done;
 	}
 
-	x = BN_bin2bn(ica_key->X, privlen, NULL);
-	y = BN_bin2bn(ica_key->Y, privlen, NULL);
-	if (!BN_is_zero(x) && !BN_is_zero(y)) {
-		pubkey = make_public_eckey(ica_key->nid, ica_key->X, 2 * privlen);
-		if (!pubkey)
-			goto done;
+	if (!BN_is_zero(bn_X) && !BN_is_zero(bn_Y)) {
+		*is_public_key = 1;
+		pkey = make_public_pkey(icakey->nid, icakey->X, 2 * privlen_from_nid(icakey->nid));
 	}
-
-	rc = 0;
 
 done:
-	BN_clear_free(d);
-	BN_clear_free(x);
-	BN_clear_free(y);
-	if (pubkey)
-		EVP_PKEY_free(pubkey);
-	if (privkey)
-		EVP_PKEY_free(privkey);
+	BN_free(bn_X);
+	BN_free(bn_Y);
+	BN_free(bn_D);
+	return pkey;
+}
 
-	END_OPENSSL_LIBCTX(rc);
+/*
+ * ECC Key validation as specified in SP800-56Arev3. The openssl 3.0 key
+ * checks are SP800-56Arev3 compliant. On openssl 1.1 it depends on the
+ * distribution.
+ * Returns 1 if successful, 0 otherwise.
+ */
+int ec_key_check(const ICA_EC_KEY *icakey)
+{
+	int is_public_key, rc = 0;
+	EVP_PKEY_CTX *pctx;
+	EVP_PKEY *pkey;
+
+	if (icakey == NULL)
+		return 0;
+
+	pkey = icakey2pkey(icakey, &is_public_key);
+	if (pkey == NULL)
+		return 0;
+
+	pctx = EVP_PKEY_CTX_new(pkey, NULL);
+	if (pctx == NULL)
+		goto done;
+
+	if (is_public_key) {
+		if (EVP_PKEY_public_check(pctx) != 1)
+			goto done;
+	} else {
+		if (EVP_PKEY_check(pctx) != 1)
+			goto done;
+	}
+
+	rc = 1;
+
+done:
+	EVP_PKEY_free(pkey);
+	EVP_PKEY_CTX_free(pctx);
 	return rc;
 }
 

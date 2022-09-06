@@ -1391,7 +1391,7 @@ int ica_ec_key_init(const unsigned char *X, const unsigned char *Y,
 
 	/* try to check key via openssl. This may not be possible if curve is
 	 * supported via card or CPACF, but openssl is in fips mode. */
-	if (curve_supported_via_openssl(key->nid) && ec_key_check(key) != 0)
+	if (curve_supported_via_openssl(key->nid) && !ec_key_check(key))
 		return EINVAL;
 
 	return 0;
@@ -1481,7 +1481,7 @@ int ica_ecdh_derive_secret(ica_adapter_handle_t adapter_handle,
 	if (!curve_supported_via_openssl(privkey_A->nid) ||
 		!curve_supported_via_cpacf(privkey_A->nid))
 		return EPERM;
-	if (ec_key_check(privkey_A) != 0 || ec_key_check(pubkey_B) != 0)
+	if (!ec_key_check(privkey_A) || !ec_key_check(pubkey_B))
 		return EINVAL;
 #endif /* ICA_FIPS */
 
