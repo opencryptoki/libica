@@ -61,7 +61,7 @@ ${top_builddir}/src/internal_tests/ec_internal_test
 endif
 
 TEST_EXTENSIONS = .sh .pl
-TESTS_ENVIRONMENT = export LD_LIBRARY_PATH=${builddir}/../src/.libs/ \
+TESTS_ENVIRONMENT = export LD_LIBRARY_PATH=${builddir}/../src/.libs/:$$LD_LIBRARY_PATH \
 			   PATH=${builddir}/../src/:$$PATH \
 			   LIBICA_TESTDATA=${srcdir}/testdata/;
 AM_CFLAGS = @FLAGS@ -DNO_SW_FALLBACKS -I${srcdir}/../include/ -I${srcdir}/../src/include/
