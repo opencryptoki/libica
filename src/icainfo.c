@@ -233,8 +233,10 @@ void append_nid(unsigned int nid, unsigned int flag,
 				sname = "";
 			curve_array[i].sname = (unsigned char *)sname;
 			curve_array[i].flags |= flag;
+#ifndef NO_SW_FALLBACKS
 			if (curve_supported_via_openssl(nid) && sw_fallbacks_implemented(nid))
 				curve_array[i].flags |= ICA_FLAG_SW;
+#endif
 			break;
 		}
 	}
@@ -251,8 +253,10 @@ void add_hw_curves(s390_supported_curves_t *curve_array, size_t array_len,
 		for (j = 0; j < array_len; j++) {
 			if (curve_array[j].nid == nids[i]) {
 				curve_array[j].flags |= flag;
+#ifndef NO_SW_FALLBACKS
 				if (curve_supported_via_openssl(nids[i]) && sw_fallbacks_implemented(nids[i]))
 					curve_array[j].flags |= ICA_FLAG_SW;
+#endif
 				merged = 1;
 				break;
 			}
@@ -265,10 +269,19 @@ void add_hw_curves(s390_supported_curves_t *curve_array, size_t array_len,
 void add_curves(s390_supported_curves_t *curve_array, size_t array_len)
 {
 #ifdef ICA_FIPS
-	(void) cca_nids_len;
-	(void) cpacf_nids_len;
-	if (is_msa9())
-		add_hw_curves(curve_array, array_len, cpacf_fips_nids, cpacf_fips_nids_len, ICA_FLAG_SHW);
+	if (is_msa9()) {
+		if (ica_fips_status() & ICA_FIPS_MODE) {
+			add_hw_curves(curve_array, array_len, cpacf_fips_nids, cpacf_fips_nids_len, ICA_FLAG_SHW);
+		} else {
+			add_hw_curves(curve_array, array_len, cpacf_nids, cpacf_nids_len, ICA_FLAG_SHW);
+			if (online_cca_card())
+				add_hw_curves(curve_array, array_len, cca_nids, cca_nids_len, ICA_FLAG_DHW);
+		}
+	} else {
+		/* No MSA9, ECC only available via CEX cards */
+		if (online_cca_card())
+			add_hw_curves(curve_array, array_len, cca_nids, cca_nids_len, ICA_FLAG_DHW);
+	}
 #else
 	if (online_cca_card())
 		add_hw_curves(curve_array, array_len, cca_nids, cca_nids_len, ICA_FLAG_DHW);
@@ -282,6 +295,16 @@ void print_ec_curves(void)
 {
 	s390_supported_curves_t *curve_array;
 	unsigned int array_len, array_size, n;
+#ifdef NO_CPACF
+	char *no_shw = "-";
+#else
+	char *no_shw = "no";
+#endif
+#ifdef NO_SW_FALLBACKS
+	char *no_sw = "-";
+#else
+	char *no_sw = "no";
+#endif
 
 	array_len = num_cca_curves() + num_cpacf_curves();
 	array_size = array_len * sizeof(s390_supported_curves_t);
@@ -299,30 +322,15 @@ void print_ec_curves(void)
 	printf("-----------------+------------+------------+-----------\n");
 
 	for (n = 0; n < array_len; n++) {
-#ifdef ICA_FIPS
-		/* In fips mode, only allow fips-approved curves: supported by openssl
-		 * in fips mode and supported by CPACF, because of the availability of
-		 * self-tests.*/
-		if (curve_array[n].nid != 0 && (curve_array[n].flags & ICA_FLAG_SW)) {
-#else
 		if (curve_array[n].nid != 0) {
-#endif
 			printf("%16s |    %*s     |    %*s     |    %*s\n",
 				curve_array[n].sname,
 				CELL_SIZE,
 				curve_array[n].flags & ICA_FLAG_DHW ? "yes" : "no",
 				CELL_SIZE,
-#ifdef NO_CPACF
-				"-",
-#else
-				curve_array[n].flags & ICA_FLAG_SHW ? "yes" : "no",
-#endif
+				curve_array[n].flags & ICA_FLAG_SHW ? "yes" : no_shw,
 				CELL_SIZE,
-#if defined(NO_SW_FALLBACKS) || defined(NO_CPACF)
-				"-");
-#else
-				curve_array[n].flags & ICA_FLAG_SW ? "yes" : "no");
-#endif
+				curve_array[n].flags & ICA_FLAG_SW ? "yes" : no_sw);
 		}
 	}
 	printf("-------------------------------------------------------\n");
