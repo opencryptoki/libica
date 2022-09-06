@@ -585,16 +585,25 @@ int s390_initialize_functionlist()
 		case EC_DSA_SIGN: /* fall-through */
 		case EC_DSA_VERIFY: /* fall-through */
 		case EC_KGEN:
+			e->flags |= *s390_kdsa_functions[e->id].enabled ? ICA_FLAG_SHW : 0;
+			if (e->flags)
+				e->property |= ICA_PROPERTY_EC_NIST;
 			if (ecc_via_online_card) {
 				e->flags |= ICA_FLAG_DHW;
 				e->property |= ICA_PROPERTY_EC_BP | ICA_PROPERTY_EC_NIST;
 			}
-			e->flags |= *s390_kdsa_functions[e->id].enabled ? ICA_FLAG_SHW : 0;
 			break;
 		case RSA_ME: /* fall-through */
 		case RSA_CRT:
 			if (any_card_online) {
 				e->flags |= ICA_FLAG_DHW;
+				e->property |= ICA_PROPERTY_RSA_ALL;
+			}
+			break;
+		case RSA_KEY_GEN_ME: /* fall-through */
+		case RSA_KEY_GEN_CRT:
+			if (any_card_online) {
+				/* sw flag already pre-set in icaList */
 				e->property |= ICA_PROPERTY_RSA_ALL;
 			}
 			break;
@@ -668,7 +677,8 @@ int s390_get_functionlist(libica_func_list_element *pmech_list,
 	}
 
 	/* Adjust the flags and properties for algorithms that are allowed in fips
-	 * mode, but not on any hardware, or not with any key length, curve etc. */
+	 * mode, but not on any hardware, with any openssl, not with any key
+	 * length, curve etc. */
 	if (fips & ICA_FIPS_MODE) {
 		/* RSA >= 2048 bits in FIPS 140-3 mode */
 		switch (pmech_list[x].mech_mode_id) {
@@ -685,23 +695,21 @@ int s390_get_functionlist(libica_func_list_element *pmech_list,
 			break;
 		}
 
-		/* ECDSA/ECDH only via CPACF in FIPS 140-3 mode */
+		/* ECDSA/ECDH in FIPS 140-3 mode */
 		switch (pmech_list[x].mech_mode_id) {
+		case EC_KGEN:
+			/* EC keygen only via openssl because of internal key checks */
+			pmech_list[x].flags = ICA_FLAG_SW;
+			pmech_list[x].property &= ~ICA_PROPERTY_EC_BP;
+			pmech_list[x].property &= ~ICA_PROPERTY_EC_ED;
+			break;
 		case EC_DH:
 		case EC_DSA_SIGN:
 		case EC_DSA_VERIFY:
-		case EC_KGEN:
-			pmech_list[x].flags &= ~ICA_FLAG_DHW; /* No ECC op via CEX */
-			if (pmech_list[x].mech_mode_id == EC_KGEN)
-				pmech_list[x].flags &= ~ICA_FLAG_SHW; /* EC keygen via openssl */
-			else
-				pmech_list[x].flags &= ~ICA_FLAG_SW; /* EC ops via CPACF */
-			if (pmech_list[x].flags) {
-				pmech_list[x].property &= ~ICA_PROPERTY_EC_BP;
-				pmech_list[x].property &= ~ICA_PROPERTY_EC_ED;
-			} else {
-				pmech_list[x].property = 0;
-			}
+			/* EC sign/verify/dh only NIST curves via CPACF because of self-tests */
+			pmech_list[x].flags &= ~ICA_FLAG_DHW;
+			pmech_list[x].property &= ~ICA_PROPERTY_EC_BP;
+			pmech_list[x].property &= ~ICA_PROPERTY_EC_ED;
 			break;
 		default:
 			break;
@@ -721,20 +729,26 @@ int s390_get_functionlist(libica_func_list_element *pmech_list,
 #endif /* NO_CPACF */
 
 #ifdef NO_SW_FALLBACKS
-#ifdef ICA_FIPS
 	/* Set SW flag to 0 if we don't have sw fallbacks, except for RSA keygen,
-	 * because there is no hw path for RSA keygen. In fips mode also
-	 * perform EC keygen via openssl because of FIPS 140-3 compliance. */
-	if (pmech_list[x].mech_mode_id != RSA_KEY_GEN_ME &&
-		pmech_list[x].mech_mode_id != RSA_KEY_GEN_CRT &&
-		pmech_list[x].mech_mode_id != EC_KGEN)
-		pmech_list[x].flags &= ~ICA_FLAG_SW;
-#else
+	 * because there is no hw path for RSA keygen. */
 	if (pmech_list[x].mech_mode_id != RSA_KEY_GEN_ME &&
 		pmech_list[x].mech_mode_id != RSA_KEY_GEN_CRT)
 		pmech_list[x].flags &= ~ICA_FLAG_SW;
-#endif /* ICA_FIPS */
 #endif /* NO_SW_FALLBACKS */
+
+#ifdef ICA_FIPS
+	if (fips & ICA_FIPS_MODE) {
+		/* When running in fips mode, finally enable EC keygen via sw only.
+		 * This was already set above, but the NO_SW_FALLBACKS block might
+		 * have toggled the sw flag off. The property field is already set. */
+		if (pmech_list[x].mech_mode_id == EC_KGEN)
+			pmech_list[x].flags = ICA_FLAG_SW;
+	}
+#endif
+
+	/* Finally zeroize properties if no flags set, i.e. function not available */
+	if (pmech_list[x].flags == 0)
+		pmech_list[x].property = 0;
   }
   return 0;
 }
