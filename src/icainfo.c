@@ -433,6 +433,17 @@ int main(int argc, char **argv)
 	unsigned int mech_len, j;
 	libica_func_list_element *pmech_list = NULL;
 	unsigned int i;
+	char *no_dhw = "no";
+#ifdef NO_CPACF
+	char *no_shw = "-";
+#else
+	char *no_shw = "no";
+#endif
+#ifdef NO_SW_FALLBACKS
+	char *no_sw = "-";
+#else
+	char *no_sw = "no";
+#endif
 
 	while ((rc = getopt_long(argc, argv, getopt_string,
 				 getopt_long_options, &index)) != -1) {
@@ -488,38 +499,22 @@ int main(int argc, char **argv)
 		for (j = 0; j < mech_len; j++) {
 			if (crypt_map[i].algo_id == pmech_list[j].mech_mode_id) {
 #ifdef ICA_FIPS
-				if (((ica_fips_status() & ICA_FIPS_MODE)
-					&& !fips_approved(pmech_list[j].mech_mode_id))
-					|| ica_fips_status() >> 1) {
-#if defined(NO_SW_FALLBACKS) && defined(NO_CPACF)
-					printf("%14s |  blocked   |      -     |      -   \n",
-#elif defined (NO_CPACF)
-					printf("%14s |  blocked   |      -     |      -   \n",
-#elif defined (NO_SW_FALLBACKS)
-					printf("%14s |  blocked   |   blocked  |      -   \n",
-#else
-					printf("%14s |  blocked   |   blocked  |   blocked\n",
-#endif
+				if (((ica_fips_status() & ICA_FIPS_MODE) &&
+					!fips_approved(pmech_list[j].mech_mode_id)) ||
+					ica_fips_status() >> 1) {
+					printf("%14s |  blocked   |  blocked   |  blocked\n",
 						crypt_map[i].name);
 					break;
 				}
 #endif /* ICA_FIPS */
-				printf("%14s |    %*s     |    %*s     |    %*s\n",
+				printf("%14s |    %*s     |    %*s     |    %*s     \n",
 					crypt_map[i].name,
 					CELL_SIZE,
-					pmech_list[j].flags & ICA_FLAG_DHW ? "yes" : "no",
+					pmech_list[j].flags & ICA_FLAG_DHW ? "yes" : no_dhw,
 					CELL_SIZE,
-#ifdef NO_CPACF
-					pmech_list[j].flags & ICA_FLAG_SHW ? "yes" : "-",
-#else
-					pmech_list[j].flags & ICA_FLAG_SHW ? "yes" : "no",
-#endif
+					pmech_list[j].flags & ICA_FLAG_SHW ? "yes" : no_shw,
 					CELL_SIZE,
-#if defined(NO_SW_FALLBACKS) || defined(NO_CPACF)
-					pmech_list[j].flags & ICA_FLAG_SW ? "yes" : "-");
-#else
-					pmech_list[j].flags & ICA_FLAG_SW ? "yes" : "no");
-#endif
+					pmech_list[j].flags & ICA_FLAG_SW ? "yes" : no_sw);
 			}
 		}
 	}
