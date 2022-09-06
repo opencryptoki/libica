@@ -80,6 +80,7 @@ int fips;
 
 #define LIBICA_FIPS_CONFIG		LIBICA_CONFDIR "/libica/openssl3-fips.cnf"
 
+static int drbg_kat(void);
 static int aes_ecb_kat(void);
 static int aes_cbc_kat(void);
 static int aes_cbc_cs_kat(void);
@@ -95,12 +96,49 @@ static int rsa_kat(void);
 static int ecdsa_kat(void);
 static int ecdh_kat(void);
 
+static int function_supported_via_cpacf(unsigned int func)
+{
+	ica_adapter_handle_t ah;
+	libica_func_list_element* libica_func_list = NULL;
+	unsigned int count;
+	size_t i;
+	int ret = 0;
+
+	if (ica_open_adapter(&ah))
+		return ret;
+
+	if (ica_get_functionlist(NULL, &count) != 0)
+		return ret;
+
+	libica_func_list = malloc(sizeof(libica_func_list_element) * count);
+	if (!libica_func_list)
+		return ret;
+
+	if (ica_get_functionlist(libica_func_list, &count) != 0)
+		goto done;
+
+	for (i = 0; i < count; i++) {
+		if (libica_func_list[i].mech_mode_id == func &&
+			libica_func_list[i].flags == ICA_FLAG_SHW) {
+			ret = 1;
+			goto done;
+		}
+	}
+
+done:
+	free(libica_func_list);
+	ica_close_adapter(ah);
+	return ret;
+}
+
 #ifndef NO_CPACF
 #define SHA_KAT(_sha_, _ctx_)						\
 static int sha##_sha_##_kat(void) {					\
 	sha##_ctx_##_context_t ctx;					\
 	size_t i;							\
 	unsigned char out[SHA##_sha_##_HASH_LENGTH];			\
+	if (!function_supported_via_cpacf(SHA1))			\
+		return 0;										\
 	for (i = 0; i < SHA##_sha_##_TV_LEN; i++) {			\
 		if (ica_sha##_sha_(SHA_MSG_PART_ONLY,			\
 		    SHA##_sha_##_TV[i].msg_len, SHA##_sha_##_TV[i].msg,	\
@@ -125,6 +163,8 @@ static int sha##_sha_##_kat(void) {					\
 	sha##_ctx_##_context_t ctx;					\
 	size_t i;							\
 	unsigned char out[SHA##_sha_##_HASH_LENGTH];			\
+	if (!function_supported_via_cpacf(SHA1))			\
+		return 0;										\
 	for (i = 0; i < SHA##_sha_##_TV_LEN; i++) {			\
 		if (ica_sha##_sha_(SHA_MSG_PART_ONLY,			\
 		    SHA##_sha_##_TV[i].msg_len, SHA##_sha_##_TV[i].msg,	\
@@ -153,7 +193,7 @@ static inline int sha3_available(void)
 	rc = ica_sha3_224(SHA_MSG_PART_ONLY, sizeof(test_data), test_data,
 			&sha3_224_context, output_hash);
 
-	return (rc == ENODEV ? 0 : 1);
+	return (rc != 0 ? 0 : 1);
 }
 
 #ifndef NO_CPACF
@@ -533,29 +573,21 @@ static void fips_lib_integrity_check(void)
 void
 fips_powerup_tests(void)
 {
-#ifdef NO_CPACF
-	/* 27 out of the 28 tests return EPERM if CPACF is disabled via config.
-	 * The rsa_kat() is not affected. */
-	int num_cpacf_tests = 27;
-#endif
-	int rc;
+	typedef int (*kat_func)(void);
+	kat_func kats[] = {
+		drbg_kat, sha1_kat, sha224_kat, sha256_kat, sha384_kat, sha512_kat,
+		sha3_224_kat, sha3_256_kat, sha3_384_kat, sha3_512_kat, aes_ecb_kat,
+		aes_cbc_kat, aes_cbc_cs_kat, aes_cfb_kat, aes_ctr_kat, aes_ofb_kat,
+		aes_ccm_kat, aes_gcm_kat, aes_xts_kat, aes_cmac_kat, rsa_kat,
+		ecdsa_kat, ecdh_kat,
+	};
+	size_t i, num_kats = sizeof(kats) / sizeof(kat_func);
 
-	/* Cryptographic algorithm test. */
-	rc = ica_drbg_health_test(ica_drbg_generate, 256, true, ICA_DRBG_SHA512)
-	    + sha1_kat() + sha224_kat() + sha256_kat() + sha384_kat()
-	    + sha512_kat() + sha3_224_kat() + sha3_256_kat() + sha3_384_kat()
-	    + sha3_512_kat() + aes_ecb_kat()
-	    + aes_cbc_kat() + aes_cbc_cs_kat() + aes_cfb_kat()
-	    + aes_ctr_kat() + aes_ofb_kat() + aes_ccm_kat() + aes_gcm_kat()
-	    + aes_xts_kat() + aes_cmac_kat() + rsa_kat()
-		+ ecdsa_kat() + ecdh_kat();
-#ifndef NO_CPACF
-	if (rc != 0) {
-#else
-	if (rc != 0 && rc != num_cpacf_tests * EPERM) {
-#endif
-		fips |= ICA_FIPS_CRYPTOALG;
-		return;
+	for (i = 0; i < num_kats; i++) {
+		if (kats[i]() != 0) {
+			fips |= ICA_FIPS_CRYPTOALG;
+			return;
+		}
 	}
 
 /* ICA internal test does not link against the library. So we should
@@ -567,11 +599,22 @@ fips_powerup_tests(void)
 #endif
 }
 
+static int drbg_kat(void)
+{
+	if (!function_supported_via_cpacf(SHA512_DRNG))
+		return 0;
+
+	return ica_drbg_health_test(ica_drbg_generate, 256, true, ICA_DRBG_SHA512);
+}
+
 static int
 aes_ecb_kat(void) {
 	const struct aes_ecb_tv *tv;
 	size_t i;
 	unsigned char *out;
+
+	if (!function_supported_via_cpacf(AES_ECB))
+		return 0;
 
 	for (i = 0; i < AES_ECB_TV_LEN; i++) {
 		tv = &AES_ECB_TV[i];
@@ -605,6 +648,9 @@ aes_cbc_kat(void) {
 	const struct aes_cbc_tv *tv;
 	size_t i;
 	unsigned char iv[AES_BLKSIZE], *out;
+
+	if (!function_supported_via_cpacf(AES_CBC))
+		return 0;
 
 	for (i = 0; i < AES_CBC_TV_LEN; i++) {
 		tv = &AES_CBC_TV[i];
@@ -645,6 +691,9 @@ aes_cbc_cs_kat(void)
 	size_t i;
 	unsigned char iv[AES_BLKSIZE], *out;
 
+	if (!function_supported_via_cpacf(AES_CBC_CS))
+		return 0;
+
 	for (i = 0; i < AES_CBC_CS_TV_LEN; i++) {
 		tv = &AES_CBC_CS_TV[i];
 
@@ -684,6 +733,9 @@ aes_cfb_kat(void) {
 	size_t i;
 	unsigned char iv[AES_BLKSIZE], *out;
 
+	if (!function_supported_via_cpacf(AES_CFB))
+		return 0;
+
 	for (i = 0; i < AES_CFB_TV_LEN; i++) {
 		tv = &AES_CFB_TV[i];
 
@@ -721,6 +773,9 @@ aes_ofb_kat(void) {
 	const struct aes_ofb_tv *tv;
 	size_t i;
 	unsigned char iv[AES_BLKSIZE], *out;
+
+	if (!function_supported_via_cpacf(AES_OFB))
+		return 0;
 
 	for (i = 0; i < AES_OFB_TV_LEN; i++) {
 		tv = &AES_OFB_TV[i];
@@ -760,6 +815,9 @@ aes_ctr_kat(void) {
 	size_t i;
 	unsigned char *out, ctr[AES_BLKSIZE];
 
+	if (!function_supported_via_cpacf(AES_CTR))
+		return 0;
+
 	for (i = 0; i < AES_CTR_TV_LEN; i++) {
 		tv = &AES_CTR_TV[i];
 
@@ -797,6 +855,9 @@ aes_ccm_kat(void) {
 	const struct aes_ccm_tv *tv;
 	size_t i;
 	unsigned char *ciphertext, *payload;
+
+	if (!function_supported_via_cpacf(AES_CCM))
+		return 0;
 
 	for (i = 0; i < AES_CCM_TV_LEN; i++) {
 		tv = &AES_CCM_TV[i];
@@ -841,6 +902,9 @@ aes_gcm_kat(void) {
 	size_t i, lastlen;
 	unsigned char *out, *tag, icb[AES_BLKSIZE], ucb[AES_BLKSIZE],
 	    subkey[AES_BLKSIZE];
+
+	if (!function_supported_via_cpacf(AES_GCM))
+		return 0;
 
 	for (i = 0; i < AES_GCM_TV_LEN; i++) {
 		tv = &AES_GCM_TV[i];
@@ -943,6 +1007,9 @@ aes_xts_kat(void) {
 	size_t i;
 	unsigned char *out, tweak[16];
 
+	if (!function_supported_via_cpacf(AES_XTS))
+		return 0;
+
 	for (i = 0; i < AES_XTS_TV_LEN; i++) {
 		tv = &AES_XTS_TV[i];
 
@@ -981,6 +1048,9 @@ aes_cmac_kat(void)
 	const struct aes_cmac_tv *tv;
 	size_t i, lastlen;
 	unsigned char *mac, iv[AES_BLKSIZE];
+
+	if (!function_supported_via_cpacf(AES_CMAC))
+		return 0;
 
 	for (i = 0; i < AES_CMAC_TV_LEN; i++) {
 		tv = &AES_CMAC_TV[i];
@@ -1042,41 +1112,6 @@ _err_:
 	syslog(LOG_ERR, "Libica AES-CMAC test failed.");
 #endif
 	return 1;
-}
-
-static int function_supported_via_cpacf(unsigned int func)
-{
-	ica_adapter_handle_t ah;
-	libica_func_list_element* libica_func_list = NULL;
-	unsigned int count;
-	size_t i;
-	int ret = 0;
-
-	if (ica_open_adapter(&ah))
-		return ret;
-
-	if (ica_get_functionlist(NULL, &count) != 0)
-		return ret;
-
-	libica_func_list = malloc(sizeof(libica_func_list_element) *count);
-	if (!libica_func_list)
-		return ret;
-
-	if (ica_get_functionlist(libica_func_list, &count) != 0)
-		goto done;
-
-	for (i = 0; i < count; i++) {
-		if (libica_func_list[i].mech_mode_id == func &&
-			libica_func_list[i].flags == ICA_FLAG_SHW) {
-			ret = 1;
-			goto done;
-		}
-	}
-
-done:
-	free(libica_func_list);
-	ica_close_adapter(ah);
-	return ret;
 }
 
 static int
