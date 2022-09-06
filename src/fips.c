@@ -1093,7 +1093,7 @@ ecdh_kat()
 		return 0;
 
 	if (ica_open_adapter(&ah))
-		return 0;
+		return 1;
 
 	for (i = 0; i < ECDH_KAT_TV_LEN; i++) {
 
