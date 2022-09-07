@@ -1708,7 +1708,7 @@ static inline int check_fips_ed_x(void)
 {
 #ifdef ICA_FIPS
 	/* As of now, ED/X are not FIPS 140-3 approved. This may change. */
-	return 1;
+	return (fips & ICA_FIPS_MODE);
 #else
 	return 0;
 #endif
