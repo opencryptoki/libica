@@ -212,6 +212,15 @@ int main(int argc, char **argv)
 
 	/* Iterate over curves */
 	for (i = 0; i < NUM_ECDSA_TESTS; i++) {
+
+		if (ica_fips_status() & ICA_FIPS_MODE) {
+			if (!is_supported_by_hw(ecdsa_kats[i].nid)) {
+				V_(printf("Skipping nid %d, because not allowed in fips mode"
+					" on this system.\n", ecdsa_kats[i].nid));
+				continue;
+			}
+		}
+
 		setenv("ICAPATH", icapath, 1);
 
 		V_(printf("Testing curve %d \n", ecdsa_kats[i].nid));
