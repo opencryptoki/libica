@@ -1367,8 +1367,12 @@ int ica_ec_key_init(const unsigned char *X, const unsigned char *Y,
 #ifdef ICA_FIPS
 	if (fips >> 1)
 		return EACCES;
-	if (!curve_supported_via_openssl(key->nid) || !curve_supported_via_cpacf(key->nid))
-		return EPERM;
+	if (fips & ICA_FIPS_MODE) {
+		if (!curve_supported_via_openssl(key->nid) ||
+			!curve_supported_via_cpacf(key->nid)) {
+			return EPERM;
+		}
+	}
 #endif /* ICA_FIPS */
 
 	/* check if curve is supported by hw */
@@ -1409,8 +1413,11 @@ int ica_ec_key_generate(ica_adapter_handle_t adapter_handle, ICA_EC_KEY *key)
 #ifdef ICA_FIPS
 	if (fips >> 1)
 		return EACCES;
-	if (!curve_supported_via_openssl(key->nid) || !curve_supported_via_cpacf(key->nid))
-		return EPERM;
+	if (fips & ICA_FIPS_MODE) {
+		if (!curve_supported_via_openssl(key->nid) ||
+			!curve_supported_via_cpacf(key->nid))
+			return EPERM;
+	}
 #endif /* ICA_FIPS */
 
 	/* check if curve is supported by hw */
@@ -1430,7 +1437,8 @@ int ica_ec_key_generate(ica_adapter_handle_t adapter_handle, ICA_EC_KEY *key)
 	 * Such tests are already performed by openssl, so let's use openssl
 	 * in FIPS 140-3 mode.
 	 */
-	icapath = 2;
+	if (fips & ICA_FIPS_MODE)
+		icapath = 2;
 #endif
 
 	switch (icapath) {
@@ -1478,11 +1486,13 @@ int ica_ecdh_derive_secret(ica_adapter_handle_t adapter_handle,
 #ifdef ICA_FIPS
 	if (fips >> 1)
 		return EACCES;
-	if (!curve_supported_via_openssl(privkey_A->nid) ||
-		!curve_supported_via_cpacf(privkey_A->nid))
-		return EPERM;
-	if (!ec_key_check(privkey_A) || !ec_key_check(pubkey_B))
-		return EINVAL;
+	if (fips & ICA_FIPS_MODE) {
+		if (!curve_supported_via_openssl(privkey_A->nid) ||
+			!curve_supported_via_cpacf(privkey_A->nid))
+			return EPERM;
+		if (!ec_key_check(privkey_A) || !ec_key_check(pubkey_B))
+			return EINVAL;
+	}
 #endif /* ICA_FIPS */
 
 	privlen = privlen_from_nid(privkey_A->nid);
@@ -1553,9 +1563,11 @@ int ica_ecdsa_sign_ex(ica_adapter_handle_t adapter_handle,
 #ifdef ICA_FIPS
 	if (fips >> 1)
 		return EACCES;
-	if (!curve_supported_via_openssl(privkey->nid) ||
-		!curve_supported_via_cpacf(privkey->nid))
-		return EPERM;
+	if (fips & ICA_FIPS_MODE) {
+		if (!curve_supported_via_openssl(privkey->nid) ||
+			!curve_supported_via_cpacf(privkey->nid))
+			return EPERM;
+	}
 #endif /* ICA_FIPS */
 
 	privlen = privlen_from_nid(privkey->nid);
@@ -1620,9 +1632,11 @@ int ica_ecdsa_verify(ica_adapter_handle_t adapter_handle,
 #ifdef ICA_FIPS
 	if (fips >> 1)
 		return EACCES;
-	if (!curve_supported_via_openssl(pubkey->nid) ||
-		!curve_supported_via_cpacf(pubkey->nid))
-		return EPERM;
+	if (fips & ICA_FIPS_MODE) {
+		if (!curve_supported_via_openssl(pubkey->nid) ||
+			!curve_supported_via_cpacf(pubkey->nid))
+			return EPERM;
+	}
 #endif /* ICA_FIPS */
 
 	privlen = privlen_from_nid(pubkey->nid);
@@ -3260,10 +3274,12 @@ unsigned int ica_aes_ctr(const unsigned char *in_data, unsigned char *out_data,
 	unsigned int num_additional_bytes = data_length % AES_BLOCK_SIZE;
 	if (fips >> 1)
 		return EACCES;
-	if (num_additional_bytes > 0)
-		num_blocks++;
-	if (ctr_width < 64U && num_blocks > (1ULL << ctr_width))
-		return EINVAL;
+	if (fips & ICA_FIPS_MODE) {
+		if (num_additional_bytes > 0)
+			num_blocks++;
+		if (ctr_width < 64U && num_blocks > (1ULL << ctr_width))
+			return EINVAL;
+	}
 #endif /* ICA_FIPS */
 
 	if (check_aes_parms(MODE_CTR, data_length, in_data, ctr, key_length,
@@ -3337,7 +3353,7 @@ unsigned int ica_aes_xts(const unsigned char *in_data, unsigned char *out_data,
 #ifdef ICA_FIPS
 	if (fips >> 1)
 		return EACCES;
-	if (!CRYPTO_memcmp(key1, key2, key_length))
+	if ((fips & ICA_FIPS_MODE) && !CRYPTO_memcmp(key1, key2, key_length))
 		return EINVAL;
 #endif /* ICA_FIPS */
 
