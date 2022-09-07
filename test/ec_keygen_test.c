@@ -96,6 +96,14 @@ int main(int argc, char **argv)
 
 		test_failed = 0;
 
+		if (ica_fips_status() & ICA_FIPS_MODE) {
+			if (!is_supported_by_hw(eckeygen_tests[i].nid)) {
+				V_(printf("Skipping nid %d, because not allowed in fips mode"
+					" on this system.\n", eckeygen_tests[i].nid));
+				continue;
+			}
+		}
+
 		memset(pub_X, 0, sizeof(pub_X));
 		memset(pub_Y, 0, sizeof(pub_Y));
 		memset(priv_D, 0, sizeof(priv_D));
