@@ -137,9 +137,10 @@ out:
 #endif
 
 /**
- * makes a private EC key from given private value using openssl 3.0.
+ * makes an EVP_PKEY key pair from given private key value. The corresponding
+ * public key is calculated and added to the EVP_PKEY obj.
  */
-static EVP_PKEY *make_eckey(int nid, const unsigned char *p, size_t plen)
+static EVP_PKEY *make_pkey(int nid, const unsigned char *p, size_t plen)
 {
 	int ok = 0;
 	EVP_PKEY *ec_pkey = NULL;
@@ -256,9 +257,9 @@ err:
 }
 
 /**
- * makes a public EC key using openssl 3.0.
+ * makes a public EVP_PKEY object from given public key array.
  */
-static EVP_PKEY *make_public_eckey(int nid, unsigned char *pubkey, size_t publen)
+static EVP_PKEY *make_public_pkey(int nid, unsigned char *pubkey, size_t publen)
 {
 	int ok = 0;
 #if !OPENSSL_VERSION_PREREQ(3, 0)
@@ -998,8 +999,8 @@ unsigned int ecdh_sw(const ICA_EC_KEY *privkey_A, const ICA_EC_KEY *pubkey_B,
 		goto err;
 	}
 
-	a = make_eckey(privkey_A->nid, privkey_A->D, privlen);
-	b = make_public_eckey(pubkey_B->nid, pubkey_B->X, 2 * privlen);
+	a = make_pkey(privkey_A->nid, privkey_A->D, privlen);
+	b = make_public_pkey(pubkey_B->nid, pubkey_B->X, 2 * privlen);
 	if (!a || !b) {
 		ret = EIO;
 		goto err;
@@ -1294,7 +1295,7 @@ static unsigned int provide_pubkey(const ICA_EC_KEY *privkey, unsigned char *X, 
 	BN_bn2binpad(bn_y, Y, privlen);
 
 #else
-	eckey = make_eckey(privkey->nid, privkey->D, privlen);
+	eckey = make_pkey(privkey->nid, privkey->D, privlen);
 	if (eckey == NULL) {
 		goto end;
 	}
@@ -1454,7 +1455,7 @@ unsigned int ecdsa_sign_sw(const ICA_EC_KEY *privkey,
 		goto err;
 	}
 
-	ec_pkey = make_eckey(privkey->nid, privkey->D, privlen);
+	ec_pkey = make_pkey(privkey->nid, privkey->D, privlen);
 	if (ec_pkey == NULL) {
 		rc = EIO;
 		goto err;
@@ -1985,7 +1986,7 @@ unsigned int ecdsa_verify_sw(const ICA_EC_KEY *pubkey,
 		goto err;
 	}
 
-	ec_pkey = make_public_eckey(pubkey->nid, pubkey->X, 2 * privlen);
+	ec_pkey = make_public_pkey(pubkey->nid, pubkey->X, 2 * privlen);
 	if (ec_pkey == NULL) {
 		rc = EIO;
 		goto err;
