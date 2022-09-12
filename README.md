@@ -26,6 +26,8 @@ See `configure -help`.
 
 `make (un)install` : (un)install the library and the tools
 
+`make fipsinstall` : install the fips hmac file (only when configured in FIPS mode)
+
 `make coverage` : build and run the test-suite plus coverage tests (`--enable-coverage` required)
 
 See the INSTALL file.
