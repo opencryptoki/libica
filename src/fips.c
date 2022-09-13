@@ -273,12 +273,18 @@ fips_init(void)
 		FIPS_mode_set(1);
 #else
 		fips = 0;
+
+#ifndef NO_FIPS_CONFIG_LOAD
+		/* Allow to skip reading the openssl 3.x fips config. Tests showed
+		 * that this step must be skipped on RHEL9 systems. But on other
+		 * systems, or with a locally built openssl, this step is necessary. */
 		if (!OSSL_LIB_CTX_load_config(openssl_libctx, LIBICA_FIPS_CONFIG)) {
 			syslog(LOG_ERR, "Libica failed to load openssl fips config %s\n",
 					LIBICA_FIPS_CONFIG);
 			fips |= ICA_FIPS_INTEGRITY;
 			return;
 		}
+#endif
 
 		openssl_provider = OSSL_PROVIDER_load(openssl_libctx, "fips");
 		if (openssl_provider == NULL) {
