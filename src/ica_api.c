@@ -4015,7 +4015,10 @@ unsigned int ica_get_version(libica_version_info *version_info)
 	char *pch;
 	char *saveptr;
 
-	int length = strnlen(VERSION, MAX_VERSION_LENGTH);
+	int length = strlen(VERSION);
+	if (length > MAX_VERSION_LENGTH)
+		return EIO;
+
 	char buffer[length+1];
 
 	if (version_info == NULL) {
