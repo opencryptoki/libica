@@ -251,6 +251,7 @@ fips_init(void)
 {
 	FILE *fd;
 	char fips_flag;
+	char *fips_override;
 
 	if ((fd = fopen(FIPS_FLAG, "r")) == NULL)
 		return;
@@ -260,6 +261,12 @@ fips_init(void)
 		return;
 	}
 	fclose(fd);
+
+	/* Allow to override the kernel fips indication for testing on
+	 * non-fips systems. */
+	fips_override = getenv("LIBICA_FIPS_FLAG");
+	if ((fips_override != NULL) && (atoi(fips_override) == 1))
+		fips_flag = '1';
 
 	if (fips_flag - '0') {
 #if !OPENSSL_VERSION_PREREQ(3, 0)

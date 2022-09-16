@@ -50,6 +50,13 @@ main(void)
 	rv = EXIT_SUCCESS;
 #ifdef ICA_FIPS
 	if ((fips & ICA_FIPS_MODE) != fips_flag) {
+		/* Check if the fips_flag is turned on via env variable. In this case
+		 * skip the test. */
+		char *fips_override = getenv("LIBICA_FIPS_FLAG");
+		if ((fips_override != NULL) && (atoi(fips_override) == 1)) {
+			printf("Skip test: kernel is not in fips mode, but libica fips flag is set via env variable.\n");
+			return TEST_SKIP;
+		}
 		printf("This shouldn't happen.\n");
 		rv = EXIT_FAILURE;
 	}
