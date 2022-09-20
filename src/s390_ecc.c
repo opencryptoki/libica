@@ -2518,7 +2518,7 @@ done:
 int ec_key_check(const ICA_EC_KEY *icakey)
 {
 	int is_public_key, rc = 0;
-	EVP_PKEY_CTX *pctx;
+	EVP_PKEY_CTX *pctx = NULL;
 	EVP_PKEY *pkey;
 
 	if (icakey == NULL)
