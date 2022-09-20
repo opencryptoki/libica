@@ -2524,9 +2524,11 @@ int ec_key_check(const ICA_EC_KEY *icakey)
 	if (icakey == NULL)
 		return 0;
 
+	BEGIN_OPENSSL_LIBCTX(openssl_libctx, rc);
+
 	pkey = icakey2pkey(icakey, &is_public_key);
 	if (pkey == NULL)
-		return 0;
+		goto done;
 
 	pctx = EVP_PKEY_CTX_new(pkey, NULL);
 	if (pctx == NULL)
@@ -2545,6 +2547,7 @@ int ec_key_check(const ICA_EC_KEY *icakey)
 done:
 	EVP_PKEY_free(pkey);
 	EVP_PKEY_CTX_free(pctx);
+	END_OPENSSL_LIBCTX(rc);
 	return rc;
 }
 
