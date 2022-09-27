@@ -83,10 +83,10 @@ rsa_key_check_test rsa_test ec_keygen_test ecdh_test ecdsa_test mp_test \
 eddsa_test x_test get_functionlist_cex_test adapter_handle_test
 
 EXTRA_DIST = testdata testcase.h rsa_test.h aes_gcm_test.h ecdsa1_test.sh \
-sha2_test.sh ecdh1_test.sh ecdsa2_test.sh ecdh2_test.sh \
+sha2_test.sh ecdh1_test.sh ecdsa2_test.sh ecdh2_test.sh eddsa_test.h \
 drbg_birthdays_test.pl sha3_test.sh ec_keygen1_test.sh ec_keygen2_test.sh \
 rsa_keygen2048_test.sh rsa_keygen1024_test.sh rsa_keygen4096_test.sh \
-rsa_keygen3072_test.sh rsa_keygen_test.sh
+rsa_keygen3072_test.sh rsa_keygen_test.sh icastats_test.c.in icastats_test.sh
 
 icastats_test.c: icastats_test.c.in
 	@SED@   -e s!\@builddir\@!"@abs_top_builddir@/src/"!g < $< > $@-t

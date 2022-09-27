@@ -42,7 +42,7 @@ libica_cex_la_LIBADD = ${LIBS_common}
 libica_cex_la_LDFLAGS = ${LDFLAGS_common}
 libica_cex_la_SOURCES = ${SOURCES_common}
 
-EXTRA_DIST = mp.pl
+EXTRA_DIST = mp.pl perlasm/s390x.pm
 mp.S	: mp.pl
 	./mp.pl mp.S
 
