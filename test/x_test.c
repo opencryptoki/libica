@@ -32,14 +32,8 @@ static void x25519_pc(void);
 static void x448_pc(void);
 #endif /* NO_CPACF */
 
-int main(int argc, char *argv[])
+int perform_tests(int argc, char *argv[])
 {
-#if defined(NO_CPACF) || defined(ICA_FIPS)
-	UNUSED(argc);
-	UNUSED(argv);
-	printf("Skipping X25519/X448 test, because of FIPS mode or CPACF support disabled via config option.\n");
-	return TEST_SKIP;
-#else
 	int i;
 
 	set_verbosity(argc, argv);
@@ -59,7 +53,28 @@ int main(int argc, char *argv[])
 	VV_(printf("\n=== X448 PC ===\n"));
 	for (i = 0; i < ITERATIONS; i++)
 		x448_pc();
-#endif /* NO_CPACF */
+
+	return TEST_SUCC;
+}
+
+int main(int argc, char *argv[])
+{
+#if defined(NO_CPACF)
+	UNUSED(argc);
+	UNUSED(argv);
+	printf("Skipping X25519/X448 test, because CPACF support disabled via config option.\n");
+	return TEST_SKIP;
+#else
+
+#if defined(ICA_FIPS)
+	if (ica_fips_status() & ICA_FIPS_MODE) {
+		printf("Skipping X25519/X448 test, because of FIPS mode.\n");
+		return TEST_SKIP;
+	}
+#endif
+
+	return perform_tests(argc, argv);
+#endif
 }
 
 #ifndef NO_CPACF
