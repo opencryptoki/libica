@@ -562,6 +562,9 @@ int s390_initialize_functionlist()
 			break;
 		case MSA8:
 			e->flags |= *s390_kma_functions[e->id].enabled ? ICA_FLAG_SHW : 0;
+			e->property |= ICA_PROPERTY_AES_128;
+			e->property |= ICA_PROPERTY_AES_192;
+			e->property |= ICA_PROPERTY_AES_256;
 			break;
 		case MSA9:
 			if (e->mech_mode_id == ED25519_KEYGEN
