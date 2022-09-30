@@ -1,3 +1,8 @@
+v4.1.0
+ - [FEATURE] FIPS: make libica FIPS 140-3 compliant
+   [FEATURE] New API function ica_ecdsa_sign_ex()
+   [FEATURE] New icainfo output option -r
+ - [PATCH] Various bug fixes
 v4.0.3
  - [PATCH] Reduce the number of open file descriptors
  - [PATCH] Various bug fixes
