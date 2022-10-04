@@ -2952,7 +2952,7 @@ unsigned int ica_aes_cmac_last(const unsigned char *message, unsigned long messa
 			       unsigned int direction);
 
 /**
- * Encrypt or decrypt data with an AES key using the XEX Tweakable Bloc Cipher
+ * Encrypt or decrypt data with an AES key using the XEX Tweakable Block Cipher
  * with Ciphertext Stealing (XTS) mode as described in NIST Special Publication
  * 800-38E and IEEE standard 1619-2007.
  *
@@ -2976,7 +2976,7 @@ unsigned int ica_aes_cmac_last(const unsigned char *message, unsigned long messa
  * @param key1
  * Pointer to a buffer containing a valid AES key. key1 is used for the actual
  * encryption of the message buffer combined some vector computed from the
- * tweek value (Key1 in IEEE Std 1619-2007).
+ * tweak value (Key1 in IEEE Std 1619-2007).
  * @param key2
  * Pointer to a buffer containing a valid AES key key2 is used to encrypt the
  * tweak (Key2 in IEEE Std 1619-2007).
@@ -2984,10 +2984,7 @@ unsigned int ica_aes_cmac_last(const unsigned char *message, unsigned long messa
  * The length in bytes of the AES key. For XTS supported AES key sizes are 16
  * and 32 for AES-128 and AES-256 respectively.
  * @param tweak
- * Pointer to a valid 16 byte tweak value (as in IEEE Std 1619-2007). This
- * tweak will be overwritten during the function. If data_length is a multiple
- * of the cipher block size the result value in tweak may be used as tweak
- * value for a chained ica_aes_xts call with the same key pair.
+ * Pointer to a valid 16 byte tweak value (as in IEEE Std 1619-2007).
  * @param direction
  * 0 or 1:
  * 0 Use the decrypt function.
@@ -3004,6 +3001,71 @@ unsigned int ica_aes_xts(const unsigned char *in_data, unsigned char *out_data,
 			 unsigned char *key1, unsigned char *key2,
 			 unsigned int key_length, unsigned char *tweak,
 			 unsigned int direction);
+
+/**
+ * Encrypt or decrypt data with an AES key using the XEX Tweakable Block Cipher
+ * with Ciphertext Stealing (XTS) mode as described in NIST Special Publication
+ * 800-38E and IEEE standard 1619-2007.
+ * This function supports multi-part operations, whereas the ica_aes_xts
+ * function supports single-part operation only.
+ *
+ * Required HW Support
+ * KM-XTS-AES-128 or KM-XTS-AES-256
+ * PCC-Compute-XTS-Parameter-Using-AES-128 or
+ * PCC-Compute-XTS-Parameter-Using-AES-256
+ *
+ * @param in_data
+ * Pointer to a readable buffer, that contains the message to be en/decrypted.
+ * The size of the message in bytes is data_length. The size of this buffer in
+ * bytes must be at least as big as data_length.
+ * @param out_data
+ * Pointer to a writable buffer, that will contain the resulting en/decrypted
+ * message. The size of this buffer in bytes must be at least as big as
+ * data_length.
+ * @param data_length
+ * Length in bytes of the message to be en/decrypted, which resides at the
+ * beginning of in_data. The minimal value of data_length is cipher block size
+ * (i.e. a multiple of 16 for AES).
+ * For multi-part operations, data_length must be a multiple of the cipher
+ * block size, unless for the final part. For the final part, the data_length
+ * must be at least one full cipher block.
+ * @param key1
+ * Pointer to a buffer containing a valid AES key. key1 is used for the actual
+ * encryption of the message buffer combined some vector computed from the
+ * tweak value (Key1 in IEEE Std 1619-2007).
+ * @param key2
+ * Pointer to a buffer containing a valid AES key key2 is used to encrypt the
+ * tweak (Key2 in IEEE Std 1619-2007).
+ * @param key_length
+ * The length in bytes of the AES key. For XTS supported AES key sizes are 16
+ * and 32 for AES-128 and AES-256 respectively.
+ * @param tweak
+ * Pointer to a valid 16 byte tweak value (as in IEEE Std 1619-2007).
+ * For multi-part operations the tweak must only be specified for the initial
+ * part. For subsequent parts, the tweak parameter must be NULL.
+ * @param iv
+ * Pointer to the initialization vector to be used for multi-part operations.
+ * If the tweak parameter is NULL, then the operation uses the initialization
+ * vector specified with this parameter. On return the initialization vector
+ * is updated with the output vector that can be used as initialization vector
+ * for the next part. For single part operations, this parameter can be NULL.
+ * @param direction
+ * 0 or 1:
+ * 0 Use the decrypt function.
+ * 1 Use the encrypt function.
+ *
+ * @return 0 on success
+ * EINVAL if at least one invalid parameter is given.
+ * EPERM if required hardware support is not available.
+ * EIO if the operation fails.
+ */
+ICA_EXPORT
+unsigned int ica_aes_xts_ex(const unsigned char *in_data,
+			    unsigned char *out_data,
+			    unsigned long data_length,
+			    unsigned char *key1, unsigned char *key2,
+			    unsigned int key_length, unsigned char *tweak,
+			    unsigned char *iv, unsigned int direction);
 
 /**
  * Encrypt and authenticate or decrypt data and check authenticity of data with

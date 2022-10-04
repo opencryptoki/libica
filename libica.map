@@ -178,3 +178,9 @@ LIBICA_4.1.0 {
 	ica_ecdsa_sign_ex;
     local: *;
 } LIBICA_4.0.2;
+
+LIBICA_4.1.1 {
+    global:
+	ica_aes_xts_ex;
+    local: *;
+} LIBICA_4.1.0;
