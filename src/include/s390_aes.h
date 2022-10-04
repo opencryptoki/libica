@@ -795,6 +795,7 @@ static inline int s390_aes_xts_hw(unsigned int function_code,
 				  unsigned long input_length,
 				  const unsigned char *input_data,
 				  unsigned char *tweak,
+				  unsigned char *iv,
 				  unsigned char *key1,
 				  unsigned char *key2,
 				  unsigned int key_size,
@@ -810,13 +811,17 @@ static inline int s390_aes_xts_hw(unsigned int function_code,
 	} key_buffer;
 
 	memcpy(key_buffer.keys, key1, key_size);
-	memcpy(&key_buffer.iv, tweak, sizeof(ica_aes_vector_t));
+	if (tweak != NULL) {
+		memcpy(&key_buffer.iv, tweak, sizeof(ica_aes_vector_t));
 
-	/* Get XTS parameter through PCC first. */
-	rc = s390_aes_xts_parm(function_code, key_size, key2,
-			       (unsigned char *) &key_buffer.iv);
-	if (rc)
-		return EIO;
+		/* Get XTS parameter through PCC first. */
+		rc = s390_aes_xts_parm(function_code, key_size, key2,
+				       (unsigned char *) &key_buffer.iv);
+		if (rc)
+			return EIO;
+	} else {
+		memcpy(&key_buffer.iv, iv, sizeof(ica_aes_vector_t));
+	}
 
 	if (function_code & S390_CRYPTO_DIRECTION_MASK)
 		rc = s390_aes_xts_msg_dec(function_code, input_length,
@@ -828,15 +833,18 @@ static inline int s390_aes_xts_hw(unsigned int function_code,
 
 	memset(key_buffer.keys, 0, key_size);
 
-	/* The iv/tweak is not updated for XTS mode. */
 	if (rc < 0)
 		return EIO;
+
+	if (iv != NULL)
+		memcpy(iv, key_buffer.iv, sizeof(ica_aes_vector_t));
 
 	return 0;
 }
 
 static inline int s390_aes_xts(unsigned int fc, unsigned long data_length,
 			const unsigned char *in_data, unsigned char *tweak,
+			unsigned char *iv,
 			unsigned char *key1, unsigned char *key2,
 			unsigned int key_length, unsigned char *out_data)
 {
@@ -844,7 +852,7 @@ static inline int s390_aes_xts(unsigned int fc, unsigned long data_length,
 
 	if (*s390_msa4_functions[fc].enabled)
 		rc = s390_aes_xts_hw(s390_msa4_functions[fc].hw_fc,
-				     data_length, in_data, tweak,
+				     data_length, in_data, tweak, iv,
 				     key1, key2, key_length, out_data);
 	if (rc)
 		return rc;

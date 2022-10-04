@@ -3337,6 +3337,17 @@ unsigned int ica_aes_xts(const unsigned char *in_data, unsigned char *out_data,
 			 unsigned int key_length, unsigned char *tweak,
 			 unsigned int direction)
 {
+	return ica_aes_xts_ex(in_data, out_data, data_length, key1, key2,
+			      key_length, tweak, NULL, direction);
+}
+
+unsigned int ica_aes_xts_ex(const unsigned char *in_data,
+			    unsigned char *out_data,
+			    unsigned long data_length,
+			    unsigned char *key1, unsigned char *key2,
+			    unsigned int key_length, unsigned char *tweak,
+			    unsigned char *iv, unsigned int direction)
+{
 #ifdef NO_CPACF
 	UNUSED(in_data);
 	UNUSED(out_data);
@@ -3345,6 +3356,7 @@ unsigned int ica_aes_xts(const unsigned char *in_data, unsigned char *out_data,
 	UNUSED(key2);
 	UNUSED(key_length);
 	UNUSED(tweak);
+	UNUSED(iv);
 	UNUSED(direction);
 	return EPERM;
 #else
@@ -3357,7 +3369,8 @@ unsigned int ica_aes_xts(const unsigned char *in_data, unsigned char *out_data,
 		return EINVAL;
 #endif /* ICA_FIPS */
 
-	if (check_aes_parms(MODE_XTS, data_length, in_data, tweak, key_length,
+	if (check_aes_parms(MODE_XTS, data_length, in_data,
+			    tweak != NULL ? tweak : iv, key_length,
 			    key1, out_data))
 		return EINVAL;
 
@@ -3377,7 +3390,7 @@ unsigned int ica_aes_xts(const unsigned char *in_data, unsigned char *out_data,
 		return EINVAL;
 	}
 
-	return s390_aes_xts(function_code, data_length, in_data, tweak,
+	return s390_aes_xts(function_code, data_length, in_data, tweak, iv,
 			    key1, key2, key_length, out_data);
 #endif /* NO_CPACF */
 }
