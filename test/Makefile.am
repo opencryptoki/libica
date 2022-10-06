@@ -92,5 +92,6 @@ icastats_test.c: icastats_test.c.in
 	@SED@   -e s!\@builddir\@!"@abs_top_builddir@/src/"!g < $< > $@-t
 	mv $@-t $@
 
+nodist_icastats_test_SOURCES = icastats_test.c
 CLEANFILES = icastats_test.c
 MAINTAINERCLEANFILES = Makefile.in
