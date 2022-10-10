@@ -1,3 +1,6 @@
+v4.1.1
+ - [PATCH] Fix aes-xts multi-part operations
+   [PATCH] Fix make dist
 v4.1.0
  - [FEATURE] FIPS: make libica FIPS 140-3 compliant
    [FEATURE] New API function ica_ecdsa_sign_ex()

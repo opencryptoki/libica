@@ -1,4 +1,4 @@
-VERSION = 4:1:0
+VERSION = 4:1:1
 
 AM_CFLAGS = @FLAGS@
 MAJOR := `echo $(VERSION) | cut -d: -f1`
