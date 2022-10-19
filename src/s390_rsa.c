@@ -66,9 +66,13 @@ static unsigned int mod_expo_sw(int arg_length, unsigned char *arg, int exp_leng
 RSA* rsa_key_generate(unsigned int modulus_bit_length,
 		      unsigned long *public_exponent)
 {
+	int min_pubexp = 3;
+
 #ifdef ICA_FIPS
 	if ((fips & ICA_FIPS_MODE) && (!openssl_in_fips_mode()))
 		return NULL;
+	if (fips & ICA_FIPS_MODE)
+		min_pubexp = 65537;
 #endif /* ICA_FIPS */
 
 	if (*public_exponent == 0)
@@ -77,7 +81,7 @@ RSA* rsa_key_generate(unsigned int modulus_bit_length,
 			if (s390_prng((unsigned char*)public_exponent,
 			    sizeof(unsigned long)) != 0)
 				return NULL;
-		} while (*public_exponent <= 2 || !(*public_exponent % 2));
+		} while (*public_exponent < min_pubexp || !(*public_exponent % 2));
 	}
 
 	RSA *rsa = RSA_new();
