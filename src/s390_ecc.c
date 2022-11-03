@@ -21,6 +21,7 @@
 #include <openssl/ecdsa.h>
 #include <openssl/evp.h>
 #include <openssl/opensslconf.h>
+#include <openssl/rand.h>
 #ifdef OPENSSL_FIPS
 #include <openssl/fips.h>
 #endif /* OPENSSL_FIPS */
@@ -1741,6 +1742,12 @@ struct {				\
 		fc = s390_kdsa_functions[ECDSA_SIGN_P256].hw_fc;
 
 		if (k == NULL) {
+#ifdef ICA_FIPS
+			if (fips & ICA_FIPS_MODE) {
+				fc |= 0x80; /* deterministic signature */
+				RAND_bytes(param.P256.rand + off, sizeof(param.P256.rand) - off);
+			}
+#endif
 			rc = s390_kdsa(fc, param.buff, NULL, 0);
 		} else {
 			fc |= 0x80; /* deterministic signature */
@@ -1779,6 +1786,12 @@ struct {				\
 		fc = s390_kdsa_functions[ECDSA_SIGN_P384].hw_fc;
 
 		if (k == NULL) {
+#ifdef ICA_FIPS
+			if (fips & ICA_FIPS_MODE) {
+				fc |= 0x80; /* deterministic signature */
+				RAND_bytes(param.P384.rand + off, sizeof(param.P384.rand) - off);
+			}
+#endif
 			rc = s390_kdsa(fc, param.buff, NULL, 0);
 		} else {
 			fc |= 0x80; /* deterministic signature */
@@ -1817,6 +1830,14 @@ struct {				\
 		fc = s390_kdsa_functions[ECDSA_SIGN_P521].hw_fc;
 
 		if (k == NULL) {
+#ifdef ICA_FIPS
+			if (fips & ICA_FIPS_MODE) {
+				/* Random number must be invertible by the order of the curve.
+				 * Use one byte less */
+				fc |= 0x80; /* deterministic signature */
+				RAND_bytes(param.P521.rand + off + 1, sizeof(param.P521.rand) - off - 1);
+			}
+#endif
 			rc = s390_kdsa(fc, param.buff, NULL, 0);
 		} else {
 			fc |= 0x80; /* deterministic signature */
