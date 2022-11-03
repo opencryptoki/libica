@@ -4020,6 +4020,13 @@ void ica_aes_gcm_kma_ctx_free(kma_ctx* ctx)
  *
  ***************************************************************************************/
 
+extern int msa;
+
+int ica_get_msa_level(void)
+{
+	return msa;
+}
+
 unsigned int ica_get_version(libica_version_info *version_info)
 {
 #ifdef VERSION
