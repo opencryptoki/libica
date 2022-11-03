@@ -184,3 +184,9 @@ LIBICA_4.1.1 {
 	ica_aes_xts_ex;
     local: *;
 } LIBICA_4.1.0;
+
+LIBICA_4.1.2 {
+    global:
+	ica_get_msa_level;
+    local: *;
+} LIBICA_4.1.1;

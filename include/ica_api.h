@@ -3473,6 +3473,17 @@ void ica_aes_gcm_kma_ctx_free(kma_ctx* ctx);
   ******************************************************************************/
 
 /**
+ * Return processor's highest message security assist (MSA) level.
+ *
+ * Refer to IBM Z Principles of Operation for details about MSA levels.
+ *
+ * @return 0 if msa level could not determined successfully
+ *         >0 msa level according to Principles of Operation
+ */
+ICA_EXPORT
+int ica_get_msa_level(void);
+
+/**
  * Return libica version information.
  * @param version_info
  * Pointer to a libica_version_info structure. The structure will be

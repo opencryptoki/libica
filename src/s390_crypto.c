@@ -36,6 +36,7 @@ unsigned int sha1_switch, sha256_switch, sha512_switch, sha3_switch, des_switch,
 	     prng_switch, tdea128_switch, tdea192_switch, sha512_drng_switch,
 	     msa4_switch, msa5_switch, msa8_switch, trng_switch, msa9_switch,
 		 ecc_via_online_card, any_card_online;
+int msa;
 
 #define CARD_AVAILABLE		0x01
 #define CEXnA_AVAILABLE		0x02
@@ -421,7 +422,7 @@ unsigned int search_for_cards()
 
 void s390_crypto_switches_init(void)
 {
-	int msa, flags;
+	int flags;
 
 	msa = read_facility_bits();
 	if (!msa)
