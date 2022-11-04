@@ -141,7 +141,8 @@ void __attribute__ ((constructor)) icainit(void)
 	s390_initialize_functionlist();
 
 #ifdef ICA_FIPS
-	fips_powerup_tests();
+	if (fips & ICA_FIPS_MODE)
+		fips_powerup_tests();
 #else
 #if OPENSSL_VERSION_PREREQ(3, 0)
 	openssl_provider = OSSL_PROVIDER_load(openssl_libctx, "default");
