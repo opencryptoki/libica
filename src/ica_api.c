@@ -3695,6 +3695,11 @@ unsigned int ica_aes_gcm_initialize(const unsigned char *iv,
 #ifdef ICA_FIPS
 	if (fips >> 1)
 		return EACCES;
+
+	if (fips & ICA_FIPS_MODE) {
+		if (iv_length < GCM_RECOMMENDED_IV_LENGTH)
+			return EPERM;
+	}
 #endif /* ICA_FIPS */
 
 	function_code = aes_directed_fc(key_length, direction);
@@ -3859,6 +3864,13 @@ int ica_aes_gcm_kma_init(unsigned int direction,
 		!is_valid_direction(direction)) {
 		return EINVAL;
 	}
+
+#ifdef ICA_FIPS
+	if (fips & ICA_FIPS_MODE) {
+		if (iv_length < GCM_RECOMMENDED_IV_LENGTH)
+			return EPERM;
+	}
+#endif
 
 	memset(ctx, 0, sizeof(kma_ctx));
 	ctx->version = 0x00;

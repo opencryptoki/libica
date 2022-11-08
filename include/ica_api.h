@@ -3186,6 +3186,7 @@ unsigned int ica_aes_ccm(unsigned char *payload, unsigned long payload_length,
  * @param iv_length
  * Length in bytes of the initialization vector in iv. It must be greater
  * than 0 and less than 2^61. A length of 12 is recommended.
+ * When running in fips mode, the minimum iv_length is 12 bytes.
  * @param aad
  * Pointer to a readable buffer of size greater than or equal to aad_length
  * bytes. The additional authenticated data in the most significant aad_length
@@ -3320,6 +3321,7 @@ kma_ctx* ica_aes_gcm_kma_ctx_new();
  * @param iv_length
  * Length in bytes of the initialization vector in iv. It must be greater
  * than 0 and less than 2^61. A length of 12 is recommended.
+ * When running in fips mode, the minimum iv_length is 12 bytes.
  *
  * @param key
  * Pointer to a valid AES key.
