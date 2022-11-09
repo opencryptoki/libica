@@ -188,5 +188,6 @@ LIBICA_4.1.1 {
 LIBICA_4.1.2 {
     global:
 	ica_get_msa_level;
+	ica_aes_gcm_kma_get_iv;
     local: *;
 } LIBICA_4.1.1;

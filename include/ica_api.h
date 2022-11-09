@@ -3317,6 +3317,13 @@ kma_ctx* ica_aes_gcm_kma_ctx_new();
  * @param iv
  * Pointer to a readable buffer of size greater than or equal to iv_length
  * bytes, that contains an initialization vector of size iv_length.
+ * The pointer may alternatively be NULL, in which case the iv is created
+ * internally via an approved random source. The iv can then be obtained via
+ * API function ica_aes_gcm_kma_get_iv. This is intended to be used in fips
+ * mode, where an external iv is not allowed, but can also be used in non-fips
+ * mode for increased security. The internal iv in the context is not changed
+ * by subsequent crypto operations. It can be safely obtained even after
+ * intermediate and last operations have been performed.
  *
  * @param iv_length
  * Length in bytes of the initialization vector in iv. It must be greater
@@ -3457,6 +3464,32 @@ int ica_aes_gcm_kma_get_tag(unsigned char *tag, unsigned int tag_length,
 ICA_EXPORT
 int ica_aes_gcm_kma_verify_tag(const unsigned char* known_tag, unsigned int tag_length,
 		const kma_ctx* ctx);
+
+/**
+ * Obtain the iv from the given context. This function is mainly intended to
+ * allow applications to query an internally created iv when running in fips
+ * mode, but can also be used in non-fips mode. When encrypting, FIPS requires
+ * the internal creation of the iv via an approved random source. The internal
+ * iv can then be queried for use at decryption.
+ *
+ * @param ctx
+ * Pointer to gcm context.
+ *
+ * @param iv
+ * A writable buffer large enough to receive the iv from given ctx. Specifying
+ * NULL queries the size of the internal iv. The size is then returned in
+ * parameter *iv_length.
+ *
+ * @param iv_length
+ * A pointer to an unsigned integer buffer indicating the size of the application
+ * provided buffer to receive the internal iv from the ctx.
+ *
+ * @return 0 on success
+ * EINVAL if the ctx is NULL.
+ * ENOMEM if *iv_length is too small to receive the internal iv.
+ */
+ICA_EXPORT
+int ica_aes_gcm_kma_get_iv(const kma_ctx* ctx, unsigned char *iv, unsigned int *iv_length);
 
 /**
  * Free gcm context.

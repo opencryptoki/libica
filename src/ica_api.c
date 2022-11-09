@@ -26,6 +26,8 @@
 #include <stdbool.h>
 #include <assert.h>
 
+#include <openssl/rand.h>
+
 #include "init.h"
 #include "ica_api.h"
 #include "icastats.h"
@@ -3858,6 +3860,7 @@ int ica_aes_gcm_kma_init(unsigned int direction,
 #else
 	int rc = 0;
 	unsigned long function_code = aes_directed_fc(key_length, direction);
+	unsigned char *iv_buf;
 
 	/* Check for obvious errors */
 	if (!ctx || !key || iv_length == 0 || !is_valid_aes_key_length(key_length) ||
@@ -3872,18 +3875,35 @@ int ica_aes_gcm_kma_init(unsigned int direction,
 	}
 #endif
 
+	if (iv == NULL) {
+		/* If the iv is NULL, create it internally via an approved
+		 * random source. The application can obtain the internal iv
+		 * later from the ctx. */
+		iv_buf = calloc(1, iv_length);
+		if (iv_buf == NULL)
+			return ENOMEM;
+		if (RAND_bytes(iv_buf, iv_length) != 1) {
+			free(iv_buf);
+			return EIO;
+		}
+	}
+
 	memset(ctx, 0, sizeof(kma_ctx));
 	ctx->version = 0x00;
 	ctx->direction = direction;
 	ctx->key_length = key_length;
-	ctx->iv = (unsigned char*)iv;
+	ctx->iv = (unsigned char *)iv;
+	if (iv == NULL) {
+		ctx->iv = iv_buf;
+		ctx->iv_allocated_internally = 1;
+	}
 	ctx->iv_length = iv_length;
 	memcpy(&(ctx->key), key, key_length);
 
 	/* Calculate subkey_h and j0 depending on iv_length */
 	if (*s390_kma_functions[function_code].enabled && iv_length == GCM_RECOMMENDED_IV_LENGTH) {
 		/* let KMA provide the subkey_h, j0 = iv || 00000001 */
-		memcpy(&(ctx->j0), iv, iv_length);
+		memcpy(&(ctx->j0), ctx->iv, iv_length);
 		ctx->cv = 1;
 		unsigned int* cv = (unsigned int*)&(ctx->j0[GCM_RECOMMENDED_IV_LENGTH]);
 		*cv = 1;
@@ -3894,7 +3914,7 @@ int ica_aes_gcm_kma_init(unsigned int direction,
 				(unsigned char*)key, (unsigned char*)&(ctx->subkey_h));
 		if (rc)
 			return rc;
-		__compute_j0(iv, iv_length, (const unsigned char*)&(ctx->subkey_h),
+		__compute_j0(ctx->iv, iv_length, (const unsigned char*)&(ctx->subkey_h),
 				(unsigned char*)&(ctx->j0));
 		unsigned int *cv = (unsigned int*)&(ctx->j0[GCM_RECOMMENDED_IV_LENGTH]);
 		ctx->cv = *cv;
@@ -4017,14 +4037,38 @@ int ica_aes_gcm_kma_verify_tag(const unsigned char* known_tag, unsigned int tag_
 #endif /* NO_CPACF */
 }
 
+int ica_aes_gcm_kma_get_iv(const kma_ctx* ctx, unsigned char *iv, unsigned int *iv_length)
+{
+	if (ctx == NULL)
+		return EINVAL;
+
+	if (iv == NULL) {
+		*iv_length = ctx->iv_length;
+		return 0;
+	}
+
+	if (*iv_length < ctx->iv_length)
+		return EINVAL;
+
+	memcpy(iv, ctx->iv, ctx->iv_length);
+	*iv_length = ctx->iv_length;
+
+	return 0;
+}
+
 void ica_aes_gcm_kma_ctx_free(kma_ctx* ctx)
 {
-    if (!ctx)
-	return;
+	if (!ctx)
+		return;
 
-    OPENSSL_cleanse((void *)ctx, sizeof(kma_ctx));
+	if (ctx->iv_allocated_internally == 1) {
+		OPENSSL_cleanse((void*)ctx->iv, ctx->iv_length);
+		free(ctx->iv);
+	}
 
-    free(ctx);
+	OPENSSL_cleanse((void*) ctx, sizeof(kma_ctx));
+
+	free(ctx);
 }
 
 /**

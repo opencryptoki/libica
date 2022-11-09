@@ -63,6 +63,7 @@ struct kma_ctx_t {
 	// Below this line: KMA simulation via MSA 4
 	unsigned char* iv;
 	uint32_t iv_length;
+	uint32_t iv_allocated_internally;
 	ica_aes_vector_t ucb;
 	uint32_t done;
 	uint32_t intermediate;
