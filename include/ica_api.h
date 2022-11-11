@@ -1080,10 +1080,13 @@ int ica_ecdsa_sign(ica_adapter_handle_t adapter_handle,
  * Create a deterministic ECDSA signature for the given hash data using
  * the given private ICA_EC_KEY and value k.
  *
- * Note: Creating deterministic signatures is only supported via CPACF on MSA9
- * or later. Check your icainfo [-c] output if ECDSA is available on your
- * hardware via CPACF. The function returns EPERM if ECDSA is not supported
- * via CPACF.
+ * Notes:
+ *  - In fips mode, this function is only allowed for internal self-tests.
+ *    When being called from an application it returns EPERM.
+ *  - Creating deterministic signatures is only supported via CPACF on MSA9
+ *    or later. Check your icainfo [-c] output if ECDSA is available on your
+ *    hardware via CPACF. The function returns EPERM if ECDSA is not supported
+ *    via CPACF.
  *
  * @param privkey
  * Pointer to a readable private ICA_EC_KEY object.

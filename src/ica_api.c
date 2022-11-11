@@ -1541,15 +1541,7 @@ int ica_ecdh_derive_secret(ica_adapter_handle_t adapter_handle,
 	return rc;
 }
 
-int ica_ecdsa_sign(ica_adapter_handle_t adapter_handle,
-		const ICA_EC_KEY *privkey, const unsigned char *hash, unsigned int hash_length,
-		unsigned char *signature, unsigned int signature_length)
-{
-	return ica_ecdsa_sign_ex(adapter_handle, privkey, hash, hash_length,
-			signature, signature_length, NULL);
-}
-
-int ica_ecdsa_sign_ex(ica_adapter_handle_t adapter_handle,
+int ica_ecdsa_sign_ex_internal(ica_adapter_handle_t adapter_handle,
 		const ICA_EC_KEY *privkey, const unsigned char *hash, unsigned int hash_length,
 		unsigned char *signature, unsigned int signature_length,
 		const unsigned char *k)
@@ -1617,6 +1609,28 @@ int ica_ecdsa_sign_ex(ica_adapter_handle_t adapter_handle,
 				hardware, ENCRYPT);
 
 	return rc;
+}
+
+int ica_ecdsa_sign_ex(ica_adapter_handle_t adapter_handle,
+		const ICA_EC_KEY *privkey, const unsigned char *hash, unsigned int hash_length,
+		unsigned char *signature, unsigned int signature_length,
+		const unsigned char *k)
+{
+#ifdef ICA_FIPS
+	if (k != NULL && (fips & ICA_FIPS_MODE))
+		return EPERM;
+#endif
+
+	return ica_ecdsa_sign_ex_internal(adapter_handle, privkey, hash, hash_length,
+			signature, signature_length, k);
+}
+
+int ica_ecdsa_sign(ica_adapter_handle_t adapter_handle,
+		const ICA_EC_KEY *privkey, const unsigned char *hash, unsigned int hash_length,
+		unsigned char *signature, unsigned int signature_length)
+{
+	return ica_ecdsa_sign_ex_internal(adapter_handle, privkey, hash, hash_length,
+			signature, signature_length, NULL);
 }
 
 int ica_ecdsa_verify(ica_adapter_handle_t adapter_handle,
