@@ -3711,6 +3711,33 @@ unsigned int ica_aes_gcm_initialize(const unsigned char *iv,
 #endif /* NO_CPACF */
 }
 
+unsigned int ica_aes_gcm_initialize_fips(unsigned char *iv,
+		unsigned int iv_length, unsigned char *key, unsigned int key_length,
+		unsigned char *icb, unsigned char *ucb, unsigned char *subkey,
+		unsigned int direction)
+{
+	int rc;
+
+#ifdef ICA_FIPS
+	if (fips >> 1)
+		return EACCES;
+	if (fips & ICA_FIPS_MODE) {
+		if (iv_length < GCM_RECOMMENDED_IV_LENGTH)
+			return EPERM;
+	}
+#endif
+
+	if (iv == NULL)
+		return EINVAL;
+
+	rc = RAND_bytes(iv, iv_length);
+	if (rc != 1)
+		return EIO;
+
+	return ica_aes_gcm_initialize(iv, iv_length, key, key_length,
+						icb, ucb, subkey, direction);
+}
+
 unsigned int ica_aes_gcm_intermediate(unsigned char *plaintext,
 			 unsigned long plaintext_length,
 			 unsigned char *ciphertext,

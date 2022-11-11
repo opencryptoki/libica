@@ -189,5 +189,6 @@ LIBICA_4.1.2 {
     global:
 	ica_get_msa_level;
 	ica_aes_gcm_kma_get_iv;
+	ica_aes_gcm_initialize_fips;
     local: *;
 } LIBICA_4.1.1;
