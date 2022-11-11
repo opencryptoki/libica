@@ -35,6 +35,14 @@ void fips_init(void);
 void fips_powerup_tests(void);
 
 /*
+ * Create deterministic ECDSA signatures in self-tests.
+ */
+int ica_ecdsa_sign_ex_internal(ica_adapter_handle_t adapter_handle,
+		const ICA_EC_KEY *privkey, const unsigned char *hash, unsigned int hash_length,
+		unsigned char *signature, unsigned int signature_length,
+		const unsigned char *k);
+
+/*
  * List of non-fips-approved algorithms
  */
 static const int FIPS_BLACKLIST[] = {DES_ECB, DES_CBC, DES_CBC_CS, DES_OFB,

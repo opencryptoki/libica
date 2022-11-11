@@ -1227,7 +1227,8 @@ ecdsa_kat(void)
 		if (rc)
 			goto _err_;
 		/* adapter handle not needed here, just CPACF */
-		rc = ica_ecdsa_sign_ex(0, eckey, tv->hash, tv->hashlen, sigbuf, tv->siglen, tv->k);
+		rc = ica_ecdsa_sign_ex_internal(0, eckey, tv->hash, tv->hashlen,
+								sigbuf, tv->siglen, tv->k);
 		if (rc)
 			goto _err_;
 		rc = ica_ecdsa_verify(0, eckey, tv->hash, tv->hashlen, sigbuf, tv->siglen);
