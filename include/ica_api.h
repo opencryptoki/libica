@@ -3144,8 +3144,14 @@ unsigned int ica_aes_ccm(unsigned char *payload, unsigned long payload_length,
 
 /**
  * This parameter description applies to:
- * ica_aes_gcm(), ica_aes_gcm_initialize(),
+ * ica_aes_gcm(), ica_aes_gcm_initialize(), ica_aes_gcm_initialize_fips(),
  * ica_aes_gcm_intermediate() and ica_aes_gcm_last()
+ *
+ * Note for fips mode: ica_aes_gcm_initialize_fips() allows to create the iv
+ * internally via an approved random source and pass it back to the
+ * application via the iv parm. So here the iv is an output parm and the
+ * application must provide a writable buffer of sufficient length to receive
+ * the internal iv. The minimum iv_length in fips mode is 12 bytes.
  *
  * Encrypt and authenticate or decrypt data and check authenticity data with
  * an AES key using the Galois/Counter (GCM) mode as described in NIST Special
@@ -3269,6 +3275,12 @@ unsigned int ica_aes_gcm_initialize(const unsigned char *iv,
 					unsigned char *key, unsigned int key_length,
 					unsigned char *icb, unsigned char *ucb,
 					unsigned char *subkey, unsigned int direction);
+
+ICA_EXPORT
+unsigned int ica_aes_gcm_initialize_fips(unsigned char *iv,
+		unsigned int iv_length, unsigned char *key, unsigned int key_length,
+		unsigned char *icb, unsigned char *ucb, unsigned char *subkey,
+		unsigned int direction);
 
 ICA_EXPORT
 unsigned int ica_aes_gcm_intermediate(unsigned char *plaintext,
