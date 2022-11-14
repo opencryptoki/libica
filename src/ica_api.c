@@ -4433,4 +4433,10 @@ ica_fips_powerup_tests(void)
 	fips_powerup_tests();
 }
 
+unsigned int ica_get_fips_indicator(libica_fips_indicator_element *fips_list,
+					unsigned int *fips_list_len)
+{
+	return s390_get_fips_indicator(fips_list, fips_list_len);
+}
+
 #endif /* ICA_FIPS */
