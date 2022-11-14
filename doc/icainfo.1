@@ -6,12 +6,13 @@
 .\"   nroff -man icainfo.1
 .\" to process this source
 .\"
-.TH ICAINFO 1 2022-08-22 IBM "icainfo user manual"
+.TH ICAINFO 1 2022-11-21 IBM "icainfo user manual"
 .SH NAME
 icainfo \- print information about cryptographic functions supported by libica
 .SH SYNOPSIS
 .B icainfo
 [-v | --version] [-h | --help] [-c | --list-curves] [-r | --list-rsa]
+[-f | --list-fips-exceptions]
 .SH DESCRIPTION
 .B icainfo
 prints a table that shows libica's support for various cryptographic
@@ -26,6 +27,9 @@ Available hardware support is divided into two columns: dynamic hardware
 means crypto cards, static hardware support means CPACF. Software support
 is provided via openssl.
 
+If a function is disabled via build option, this is indicated
+by a dash '-' in the related column.
+
 A shortened sample output is given below:
 .P
 .nf
@@ -34,19 +38,20 @@ A shortened sample output is given below:
                |         hardware        |
  function      |   dynamic  |   static   |  software
 ---------------+------------+------------+------------
-         SHA-1 |     no     |    yes     |    yes
-       SHA-224 |     no     |    yes     |    yes
-       SHA-256 |     no     |    yes     |    yes
-       SHA-384 |     no     |    yes     |    yes
-       SHA-512 |     no     |    yes     |    yes
-         GHASH |     no     |    yes     |     no
+         SHA-1 |     no     |    yes     |    -
+       SHA-224 |     no     |    yes     |    -
+       SHA-256 |     no     |    yes     |    -
+       SHA-384 |     no     |    yes     |    -
+       SHA-512 |     no     |    yes     |    -
+         GHASH |     no     |    yes     |    -
          P_RNG |  blocked   |  blocked   |  blocked
-  DRBG-SHA-512 |     no     |    yes     |    yes
-        RSA ME |    yes     |     no     |    yes
-       RSA CRT |    yes     |     no     |    yes
+  DRBG-SHA-512 |     no     |    yes     |    -
+        RSA ME |    yes     |     no     |    -
+       RSA CRT |    yes     |     no     |    -
            ...
 ------------------------------------------------------
 Built-in FIPS support: FIPS 140-3 mode active.
+Software fallbacks are disabled.
 .fi
 .SH OPTIONS
 .IP "-v or --version"
@@ -57,6 +62,8 @@ display this help and exit
 show supported elliptic curves
 .IP "-r or --list-rsa"
 show min and max supported RSA key lengths
+.IP "-f or --list-fips-exceptions"
+show available algorithms that are non-approved
 .SH RETURN VALUE
 .IP 1
 unknown or invalid argument on invocation
