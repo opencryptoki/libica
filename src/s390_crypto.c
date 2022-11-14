@@ -448,68 +448,71 @@ void s390_crypto_switches_init(void)
  * SW  - software support
  * Bit field flags: [0|0|0|0|0|SHW|DHW|SW]
  * The last field represents the property flags indicating key lengths
+ * Update with libica 4.2.0:
+ *  - Added two more int fields for the fips service indicator. They do not
+ *    affect the libica functionlist.
  */
 libica_func_list_element_int icaList[] = {
- {SHA1,   KIMD, SHA_1  , 0, 0},
- {SHA224, KIMD, SHA_256, 0, 0},
- {SHA256, KIMD, SHA_256, 0, 0},
- {SHA384, KIMD, SHA_512, 0, 0},
- {SHA512, KIMD, SHA_512, 0, 0},
- {SHA512_224, KIMD, SHA_512_224, 0, 0},
- {SHA512_256, KIMD, SHA_512_256, 0, 0},
- {SHA3_224, KIMD, SHA_3_224, 0, 0},
- {SHA3_256, KIMD, SHA_3_256, 0, 0},
- {SHA3_384, KIMD, SHA_3_384, 0, 0},
- {SHA3_512, KIMD, SHA_3_512, 0, 0},
- {SHAKE128, KIMD, SHAKE_128, 0, 0},
- {SHAKE256, KIMD, SHAKE_256, 0, 0},
- {G_HASH, KIMD, GHASH, 0, 0},
+ {SHA1,   KIMD, SHA_1  , 0, 0, 0, 0},
+ {SHA224, KIMD, SHA_256, 0, 0, 0, 0},
+ {SHA256, KIMD, SHA_256, 0, 0, 0, 0},
+ {SHA384, KIMD, SHA_512, 0, 0, 0, 0},
+ {SHA512, KIMD, SHA_512, 0, 0, 0, 0},
+ {SHA512_224, KIMD, SHA_512_224, 0, 0, 0, 0},
+ {SHA512_256, KIMD, SHA_512_256, 0, 0, 0, 0},
+ {SHA3_224, KIMD, SHA_3_224, 0, 0, 0, 0},
+ {SHA3_256, KIMD, SHA_3_256, 0, 0, 0, 0},
+ {SHA3_384, KIMD, SHA_3_384, 0, 0, 0, 0},
+ {SHA3_512, KIMD, SHA_3_512, 0, 0, 0, 0},
+ {SHAKE128, KIMD, SHAKE_128, 0, 0, 0, 0},
+ {SHAKE256, KIMD, SHAKE_256, 0, 0, 0, 0},
+ {G_HASH, KIMD, GHASH, 0, 0, 0, 0},
 
- {DES_ECB,      KMC,  DEA_ENCRYPT, ICA_FLAG_SW, 0},
- {DES_CBC,      KMC,  DEA_ENCRYPT, ICA_FLAG_SW, 0},
- {DES_OFB,      MSA4, DEA_ENCRYPT, 0, 0},
- {DES_CFB,      MSA4, DEA_ENCRYPT, 0, 0},
- {DES_CTR,      MSA4, DEA_ENCRYPT, 0, 0},
- {DES_CMAC,     MSA4, DEA_ENCRYPT, 0, 0}, // CPACF only (MSA4)
+ {DES_ECB,      KMC,  DEA_ENCRYPT, ICA_FLAG_SW, 0, 0, 0},
+ {DES_CBC,      KMC,  DEA_ENCRYPT, ICA_FLAG_SW, 0, 0, 0},
+ {DES_OFB,      MSA4, DEA_ENCRYPT, 0, 0, 0, 0},
+ {DES_CFB,      MSA4, DEA_ENCRYPT, 0, 0, 0, 0},
+ {DES_CTR,      MSA4, DEA_ENCRYPT, 0, 0, 0, 0},
+ {DES_CMAC,     MSA4, DEA_ENCRYPT, 0, 0, 0, 0}, // CPACF only (MSA4)
 
- {DES3_ECB,     KMC,  TDEA_192_ENCRYPT, ICA_FLAG_SW, 0},
- {DES3_CBC,     KMC,  TDEA_192_ENCRYPT, ICA_FLAG_SW, 0},
- {DES3_OFB,     MSA4, TDEA_192_ENCRYPT,           0, 0},
- {DES3_CFB,     MSA4, TDEA_192_ENCRYPT,           0, 0},
- {DES3_CTR,     MSA4, TDEA_192_ENCRYPT,           0, 0},
- {DES3_CMAC,    MSA4, TDEA_192_ENCRYPT,           0, 0},
+ {DES3_ECB,     KMC,  TDEA_192_ENCRYPT, ICA_FLAG_SW, 0, 0, 0},
+ {DES3_CBC,     KMC,  TDEA_192_ENCRYPT, ICA_FLAG_SW, 0, 0, 0},
+ {DES3_OFB,     MSA4, TDEA_192_ENCRYPT,           0, 0, 0, 0},
+ {DES3_CFB,     MSA4, TDEA_192_ENCRYPT,           0, 0, 0, 0},
+ {DES3_CTR,     MSA4, TDEA_192_ENCRYPT,           0, 0, 0, 0},
+ {DES3_CMAC,    MSA4, TDEA_192_ENCRYPT,           0, 0, 0, 0},
 
- {AES_ECB,      KMC,  AES_128_ENCRYPT, ICA_FLAG_SW, 0},
- {AES_CBC,      KMC,  AES_128_ENCRYPT, ICA_FLAG_SW, 0},
- {AES_OFB,      MSA4, AES_128_ENCRYPT,           0, 0},
- {AES_CFB,      MSA4, AES_128_ENCRYPT,           0, 0},
- {AES_CTR,      MSA4, AES_128_ENCRYPT,           0, 0},
- {AES_CMAC,     MSA4, AES_128_ENCRYPT,           0, 0},
- {AES_CCM,      MSA4, AES_128_ENCRYPT,           0, 0},
- {AES_GCM,      MSA4, AES_128_ENCRYPT,           0, 0},
- {AES_GCM_KMA,  MSA8, AES_128_GCM_ENCRYPT,       0, 0},
- {AES_XTS,      MSA4, AES_128_XTS_ENCRYPT,       0, 0},
- {P_RNG,        ADAPTER, 0, ICA_FLAG_SHW | ICA_FLAG_SW, 0}, // SHW (CPACF) + SW
- {EC_DH,        ADAPTER, 0, ICA_FLAG_SW, 0},
- {EC_DSA_SIGN,	ADAPTER, 0, ICA_FLAG_SW, 0},
- {EC_DSA_VERIFY, ADAPTER, 0, ICA_FLAG_SW, 0},
- {EC_KGEN,      ADAPTER, 0, ICA_FLAG_SW, 0},
- {ED25519_KEYGEN, MSA9, SCALAR_MULTIPLY_ED25519, 0, 0},
- {ED25519_SIGN,   MSA9, EDDSA_SIGN_ED25519, 0, 0},
- {ED25519_VERIFY, MSA9, EDDSA_VERIFY_ED25519, 0, 0},
- {ED448_KEYGEN,   MSA9, SCALAR_MULTIPLY_ED448, 0, 0},
- {ED448_SIGN,     MSA9, EDDSA_SIGN_ED448, 0, 0},
- {ED448_VERIFY,   MSA9, EDDSA_VERIFY_ED448, 0, 0},
- {X25519_KEYGEN,   MSA9, SCALAR_MULTIPLY_X25519, 0, 0},
- {X25519_DERIVE,   MSA9, SCALAR_MULTIPLY_X25519, 0, 0},
- {X448_KEYGEN,   MSA9, SCALAR_MULTIPLY_X448, 0, 0},
- {X448_DERIVE,   MSA9, SCALAR_MULTIPLY_X448, 0, 0},
- {RSA_ME,       ADAPTER, 0, ICA_FLAG_SW, 0},
- {RSA_CRT,      ADAPTER, 0, ICA_FLAG_SW, 0},
- {RSA_KEY_GEN_ME, ADAPTER, 0, ICA_FLAG_SW, 0},  // SW (openssl)
- {RSA_KEY_GEN_CRT, ADAPTER, 0, ICA_FLAG_SW, 0}, // SW (openssl)
+ {AES_ECB,      KMC,  AES_128_ENCRYPT, ICA_FLAG_SW, 0, 0, 0},
+ {AES_CBC,      KMC,  AES_128_ENCRYPT, ICA_FLAG_SW, 0, 0, 0},
+ {AES_OFB,      MSA4, AES_128_ENCRYPT,           0, 0, 0, 0},
+ {AES_CFB,      MSA4, AES_128_ENCRYPT,           0, 0, 0, 0},
+ {AES_CTR,      MSA4, AES_128_ENCRYPT,           0, 0, 0, 0},
+ {AES_CMAC,     MSA4, AES_128_ENCRYPT,           0, 0, 0, 0},
+ {AES_CCM,      MSA4, AES_128_ENCRYPT,           0, 0, 0, 0},
+ {AES_GCM,      MSA4, AES_128_ENCRYPT,           0, 0, 0, 0},
+ {AES_GCM_KMA,  MSA8, AES_128_GCM_ENCRYPT,       0, 0, 0, 0},
+ {AES_XTS,      MSA4, AES_128_XTS_ENCRYPT,       0, 0, 0, 0},
+ {P_RNG,        ADAPTER, 0, ICA_FLAG_SHW | ICA_FLAG_SW, 0, 0, 0}, // SHW (CPACF) + SW
+ {EC_DH,        ADAPTER, 0, ICA_FLAG_SW, 0, 0, 0},
+ {EC_DSA_SIGN,	ADAPTER, 0, ICA_FLAG_SW, 0, 0, 0},
+ {EC_DSA_VERIFY, ADAPTER, 0, ICA_FLAG_SW, 0, 0, 0},
+ {EC_KGEN,      ADAPTER, 0, ICA_FLAG_SW, 0, 0, 0},
+ {ED25519_KEYGEN, MSA9, SCALAR_MULTIPLY_ED25519, 0, 0, 0, 0},
+ {ED25519_SIGN,   MSA9, EDDSA_SIGN_ED25519, 0, 0, 0, 0},
+ {ED25519_VERIFY, MSA9, EDDSA_VERIFY_ED25519, 0, 0, 0, 0},
+ {ED448_KEYGEN,   MSA9, SCALAR_MULTIPLY_ED448, 0, 0, 0, 0},
+ {ED448_SIGN,     MSA9, EDDSA_SIGN_ED448, 0, 0, 0, 0},
+ {ED448_VERIFY,   MSA9, EDDSA_VERIFY_ED448, 0, 0, 0, 0},
+ {X25519_KEYGEN,   MSA9, SCALAR_MULTIPLY_X25519, 0, 0, 0, 0},
+ {X25519_DERIVE,   MSA9, SCALAR_MULTIPLY_X25519, 0, 0, 0, 0},
+ {X448_KEYGEN,   MSA9, SCALAR_MULTIPLY_X448, 0, 0, 0, 0},
+ {X448_DERIVE,   MSA9, SCALAR_MULTIPLY_X448, 0, 0, 0, 0},
+ {RSA_ME,       ADAPTER, 0, ICA_FLAG_SW, 0, 0, 0},
+ {RSA_CRT,      ADAPTER, 0, ICA_FLAG_SW, 0, 0, 0},
+ {RSA_KEY_GEN_ME, ADAPTER, 0, ICA_FLAG_SW, 0, 0, 0},  // SW (openssl)
+ {RSA_KEY_GEN_CRT, ADAPTER, 0, ICA_FLAG_SW, 0, 0, 0}, // SW (openssl)
 
- {SHA512_DRNG, PPNO, SHA512_DRNG_GEN, ICA_FLAG_SW, 0},
+ {SHA512_DRNG, PPNO, SHA512_DRNG_GEN, ICA_FLAG_SW, 0, 0, 0},
 
 };
 
@@ -674,7 +677,8 @@ int s390_get_functionlist(libica_func_list_element *pmech_list,
 	 *   approved.
 	 * - We are in an error state.
 	 * */
-	if (((fips & ICA_FIPS_MODE) && !fips_approved(pmech_list[x].mech_mode_id))
+	if (((fips & ICA_FIPS_MODE) && !fips_approved(pmech_list[x].mech_mode_id &&
+		!fips_override(pmech_list[x].mech_mode_id)))
 	    || fips >> 1) {
 		pmech_list[x].flags = 0;
 		pmech_list[x].property = 0;
@@ -756,3 +760,30 @@ int s390_get_functionlist(libica_func_list_element *pmech_list,
   }
   return 0;
 }
+
+#ifdef ICA_FIPS
+int s390_get_fips_indicator(libica_fips_indicator_element *indicator_list,
+						unsigned int *indicator_list_len)
+{
+	size_t i;
+
+	if (!indicator_list_len)
+		return EINVAL;
+
+	if (!indicator_list) {
+		*indicator_list_len = sizeof(icaList) / sizeof(libica_fips_indicator_element);
+		return 0;
+	}
+
+	if (*indicator_list_len < (sizeof(icaList) / sizeof(libica_fips_indicator_element)))
+		return EINVAL;
+
+	for (i = 0; i < *indicator_list_len; i++) {
+		indicator_list[i].mech_mode_id = icaList[i].mech_mode_id;
+		indicator_list[i].fips_approved = fips_approved(icaList[i].mech_mode_id);
+		indicator_list[i].fips_override = fips_override(icaList[i].mech_mode_id);
+	}
+
+	return 0;
+}
+#endif /* ICA_FIPS */

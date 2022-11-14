@@ -25,6 +25,11 @@
 
 #include <openssl/opensslv.h>
 
+#ifdef ICA_FIPS
+int s390_get_fips_indicator(libica_fips_indicator_element *fips_list,
+				unsigned int *fips_list_len);
+#endif
+
 /* major 4.0: no more exported, now internal */
 int s390_initialize_functionlist(void);
 int s390_get_functionlist(libica_func_list_element *pmech_list,

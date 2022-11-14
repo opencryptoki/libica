@@ -441,6 +441,8 @@ typedef struct {
 	unsigned int id;
 	unsigned int flags;
 	unsigned int property;
+	unsigned int fips_approved;
+	unsigned int fips_override;
 } libica_func_list_element_int;
 
 /*
@@ -451,6 +453,12 @@ typedef struct {
 	unsigned int flags;
 	unsigned int property;
 } libica_func_list_element;
+
+typedef struct {
+	unsigned int mech_mode_id;
+	unsigned int fips_approved;
+	unsigned int fips_override;
+} libica_fips_indicator_element;
 
 typedef struct ica_drbg_mech ica_drbg_mech_t;
 typedef struct ica_drbg ica_drbg_t;
@@ -3830,6 +3838,40 @@ int ica_fips_status(void);
  */
 ICA_EXPORT
 void ica_fips_powerup_tests(void);
+
+/**
+ * Function that returns a fips service indicator. For each mechanism id,
+ * an indication is provided whether this mechanism is fips approved or not.
+ *
+ * @param fips_list
+ *    Pointer to an array of libica_fips_indicator_element
+ *    If NULL, the API will return the number of elements to allocate
+ *    in the fips_list_len parameter.
+ *    If not NULL, libica will assume fips_list is an array that has
+ *    *fips_list_len elements.
+ *    On success, fips_list will be filled out with a fips service indicator
+ *    for each crypto mechanism
+ *
+ * @param fips_list_len
+ *    number of list entries
+ *    On input, pointer to the number of elements allocated in the
+ *    @fips_list array.
+ *    On output, @fips_list_len will contain the number of items copied to
+ *    the @fips_list array, or the number of items libica would have returned
+ *    in case the @fips_list parameter is set to NULL.
+ *
+ * @return
+ *    0 on success
+ *    EINVAL if at least one invalid parameter is given, or
+ *           if the application provided buffer size (given in *fips_list_len)
+ *           is too small for the list.
+ *
+ * A typical usage scenario would be that a fips-aware application checks if
+ * a given mechanism is fips approved, before using it.
+ */
+ICA_EXPORT
+unsigned int ica_get_fips_indicator(libica_fips_indicator_element *fips_list,
+					unsigned int *fips_list_len);
 #endif /* ICA_FIPS */
 
 /*
