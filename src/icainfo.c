@@ -319,6 +319,7 @@ void print_ec_curves(void)
 	printf("-------------------------------------------------------\n");
 	printf("                 |         hardware        |           \n");
 	printf("        EC curve |   dynamic  |   static   |  software \n");
+	printf("                 |            |  (msa=%02d)  |         \n",ica_get_msa_level());
 	printf("-----------------+------------+------------+-----------\n");
 
 	for (n = 0; n < array_len; n++) {
@@ -510,6 +511,7 @@ int main(int argc, char **argv)
 
 	printf("               |         hardware        |            \n");
 	printf(" function      |   dynamic  |   static   |  software  \n");
+	printf("               |            |  (msa=%02d)  |            \n",ica_get_msa_level());
 	printf("---------------+------------+------------+------------\n");
 	for (i = 0; crypt_map[i].algo_id; i++) {
 		for (j = 0; j < mech_len; j++) {
