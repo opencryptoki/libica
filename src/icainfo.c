@@ -376,13 +376,15 @@ void print_help(char *cmd)
 	     " -v, --version        show version information\n"
 	     " -c, --list-curves    list supported EC curves\n"
 	     " -r, --list-rsa       list supported RSA key lengths\n"
+	     " -f, --list-fips-exceptions   show fips exception list\n"
 	     " -h, --help           display this help text\n");
 }
 
-#define getopt_string "qcrvh"
+#define getopt_string "qcrfvh"
 static struct option getopt_long_options[] = {
 	{"list-curves", 0, 0, 'c'},
 	{"list-rsa", 0, 0, 'r'},
+	{"list-fips-exceptions", 0, 0, 'f'},
 	{"version", 0, 0, 'v'},
 	{"help", 0, 0, 'h'},
 	{0, 0, 0, 0}
@@ -452,6 +454,113 @@ static struct crypt_pair crypt_map[] = {
 	{NULL,0}
 };
 
+int get_index_in_fips_list(libica_fips_indicator_element *fips_list,
+		unsigned int fips_len, unsigned int algo_id)
+{
+	size_t i;
+
+	for (i = 0; i < fips_len; i++) {
+		if (fips_list[i].mech_mode_id == algo_id)
+			return i;
+	}
+
+	return -1;
+}
+
+int get_index_in_mech_list(libica_func_list_element *mech_list,
+		unsigned int mech_len, unsigned int algo_id)
+{
+	size_t i;
+
+	for (i = 0; i < mech_len; i++) {
+		if (mech_list[i].mech_mode_id == algo_id)
+			return i;
+	}
+
+	return -1;
+}
+
+void print_fips_indicator(void)
+{
+#ifndef ICA_FIPS
+	printf("Built-in FIPS support: FIPS 140-3 mode inactive.\n");
+#else
+	unsigned int fips_len, mech_len, i;
+	int j, k;
+	libica_fips_indicator_element *fips_list = NULL;
+	libica_func_list_element *pmech_list = NULL;
+
+	if (!(ica_fips_status() & ICA_FIPS_MODE)) {
+		printf("Built-in FIPS support: Not running in active fips mode.\n");
+		return;
+	}
+
+	/* Get functionlist */
+	if (ica_get_functionlist(NULL, &mech_len) != 0){
+		perror("get_functionlist: ");
+		goto done;
+	}
+
+	pmech_list = malloc(sizeof(libica_func_list_element)*mech_len);
+	if (!pmech_list) {
+		perror("error malloc");
+		goto done;
+	}
+
+	if (ica_get_functionlist(pmech_list, &mech_len) != 0){
+		perror("get_functionlist: ");
+		goto done;
+	}
+
+	/* Get fips indicator list */
+	if (ica_get_fips_indicator(NULL, &fips_len) != 0){
+		perror("get_fips_indicator: ");
+		goto done;
+	}
+
+	fips_list = malloc(sizeof(libica_fips_indicator_element)*fips_len);
+	if (!fips_list) {
+		perror("error malloc");
+		goto done;
+	}
+
+	if (ica_get_fips_indicator(fips_list, &fips_len) != 0){
+		perror("get_fips_indicator: ");
+		goto done;
+	}
+
+	printf("              FIPS service indicator                  \n");
+	printf("------------------------------------------------------\n");
+	printf("               |      Available but non-approved      \n");
+	printf(" function      |   dynamic  |   static   |  software  \n");
+	printf("---------------+--------------------------------------\n");
+
+	for (i = 0; crypt_map[i].algo_id; i++) {
+		j = get_index_in_fips_list(fips_list, fips_len, crypt_map[i].algo_id);
+		k = get_index_in_mech_list(pmech_list, mech_len, crypt_map[i].algo_id);
+		if (j < 0 || k < 0)
+			continue;
+		if (pmech_list[k].flags != 0 && fips_list[j].fips_approved == 0 &&
+			fips_list[j].fips_override == 1) {
+			printf("%14s |    %*s     |    %*s     |    %*s     \n",
+				crypt_map[i].name,
+				CELL_SIZE,
+				pmech_list[k].flags & ICA_FLAG_DHW ? "yes" : "-",
+				CELL_SIZE,
+				pmech_list[k].flags & ICA_FLAG_SHW ? "yes" : "-",
+				CELL_SIZE,
+				pmech_list[k].flags & ICA_FLAG_SW ? "yes" : "-");
+		}
+	}
+
+	printf("------------------------------------------------------\n");
+
+done:
+	free(fips_list);
+	free(pmech_list);
+	ica_cleanup();
+#endif
+}
 
 int main(int argc, char **argv)
 {
@@ -475,6 +584,9 @@ int main(int argc, char **argv)
 	while ((rc = getopt_long(argc, argv, getopt_string,
 				 getopt_long_options, &index)) != -1) {
 		switch (rc) {
+		case 'f':
+			print_fips_indicator();
+			exit(0);
 		case 'c':
 			print_ec_curves();
 			exit(0);
