@@ -78,6 +78,11 @@ static int is_msa9(void)
 	}
 
 	pmech_list = malloc(sizeof(libica_func_list_element)*mech_len);
+	if (!pmech_list) {
+		perror("is_msa9: error malloc");
+		return 0;
+	}
+
 	if (ica_get_functionlist(pmech_list, &mech_len) != 0) {
 		perror("get_functionlist: ");
 		free(pmech_list);
@@ -108,6 +113,11 @@ static int online_cca_card(void)
 	}
 
 	pmech_list = malloc(sizeof(libica_func_list_element)*mech_len);
+	if (!pmech_list) {
+		perror("online_cca_card: error malloc");
+		return 0;
+	}
+
 	if (ica_get_functionlist(pmech_list, &mech_len) != 0) {
 		perror("get_functionlist: ");
 		free(pmech_list);
@@ -501,7 +511,13 @@ int main(int argc, char **argv)
 		ica_cleanup();
 		return EXIT_FAILURE;
 	}
+
 	pmech_list = malloc(sizeof(libica_func_list_element)*mech_len);
+	if (!pmech_list) {
+		perror("error malloc");
+		return EXIT_FAILURE;
+	}
+
 	if (ica_get_functionlist(pmech_list, &mech_len) != 0){
 		perror("get_functionlist: ");
 		free(pmech_list);
