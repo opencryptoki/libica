@@ -518,7 +518,8 @@ int main(int argc, char **argv)
 			if (crypt_map[i].algo_id == pmech_list[j].mech_mode_id) {
 #ifdef ICA_FIPS
 				if (((ica_fips_status() & ICA_FIPS_MODE) &&
-					!fips_approved(pmech_list[j].mech_mode_id)) ||
+					!fips_approved(pmech_list[j].mech_mode_id) &&
+					!fips_override(pmech_list[j].mech_mode_id)) ||
 					ica_fips_status() >> 1) {
 					printf("%14s |  blocked   |  blocked   |  blocked\n",
 						crypt_map[i].name);
