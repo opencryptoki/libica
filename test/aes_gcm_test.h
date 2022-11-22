@@ -11,6 +11,10 @@
 #define MAX_ARRAY_SIZE 128
 #define NUM_GCM_TESTS		(sizeof(gcm_kats)/sizeof(gcm_kat_t))
 
+/* The recommended iv length for GCM is 96 bit or 12 bytes. This is also the
+ * minimum iv length when running in fips mode. */
+#define GCM_RECOMMENDED_IV_LENGTH 12
+
 typedef struct {
     unsigned char key[MAX_ARRAY_SIZE];
     unsigned int keylen;

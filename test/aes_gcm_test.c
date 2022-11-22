@@ -43,6 +43,13 @@ int test_gcm_kat(int iteration)
 	    "iv length = %i aad_length = %i\n", key_length, data_length,
 	    t_length, iv_length, aad_length));
 
+#ifdef ICA_FIPS
+	if (ica_fips_status() & ICA_FIPS_MODE) {
+		V_(printf("Skipping test because external iv not allowed in fips mode.\n"));
+		return TEST_SKIP;
+	}
+#endif
+
 	rc = ica_aes_gcm(input_data, data_length,
 			 encrypt,
 			 iv, iv_length,
@@ -175,6 +182,13 @@ int test_gcm_kat_update(int iteration)
 	VV_(printf("key length = %i, data length = %i, tag length = %i,"
 		"iv length = %i aad_length = %i\n", key_length, data_length,
 		t_length, iv_length, aad_length));
+
+#ifdef ICA_FIPS
+	if (ica_fips_status() & ICA_FIPS_MODE) {
+		V_(printf("Skipping test because external iv not allowed in fips mode.\n"));
+		return TEST_SKIP;
+	}
+#endif
 
 	aad_length_tmp = aad_length;
 	memset(running_tag, 0, AES_BLOCK_SIZE);
@@ -358,6 +372,13 @@ int test_gcm_kat_update_aad(int iteration)
 	VV_(printf("key length = %i, data length = %i, tag length = %i,"
 		"iv length = %i aad_length = %i\n", key_length, data_length,
 		t_length, iv_length, aad_length));
+
+#ifdef ICA_FIPS
+	if (ica_fips_status() & ICA_FIPS_MODE) {
+		V_(printf("Skipping test because external iv not allowed in fips mode.\n"));
+		return TEST_SKIP;
+	}
+#endif
 
 	aad_length_tmp = aad_length;
 	memset(running_tag, 0, AES_BLOCK_SIZE);
@@ -559,6 +580,13 @@ int test_gcm_kat_update_in_place(int iteration)
 		"iv length = %i aad_length = %i\n", key_length, data_length,
 		t_length, iv_length, aad_length));
 
+#ifdef ICA_FIPS
+	if (ica_fips_status() & ICA_FIPS_MODE) {
+		V_(printf("Skipping test because external iv not allowed in fips mode.\n"));
+		return TEST_SKIP;
+	}
+#endif
+
 	aad_length_tmp = aad_length;
 	memset(running_tag, 0, AES_BLOCK_SIZE);
 	rc = ica_aes_gcm_initialize(iv, iv_length, key, key_length,
@@ -704,6 +732,197 @@ int test_gcm_kat_update_in_place(int iteration)
 	return TEST_SUCC;
 }
 
+int test_gcm_update_fips(int iteration)
+{
+	unsigned int aad_length_tmp;
+	unsigned int aad_length = gcm_kats[iteration].aadlen;
+	unsigned int data_length = gcm_kats[iteration].datalen;
+	unsigned int t_length = gcm_kats[iteration].taglen;
+	unsigned int iv_length = gcm_kats[iteration].ivlen;
+	unsigned int key_length = gcm_kats[iteration].keylen;
+	unsigned int num_chunks =  gcm_kats[iteration].num_chunks;
+
+	unsigned char iv[iv_length];
+	unsigned char iv_save[iv_length];
+	unsigned char* input_data = (unsigned char*)&(gcm_kats[iteration].data);
+	unsigned char* aad = (unsigned char*)&(gcm_kats[iteration].aad);
+	unsigned char* key = (unsigned char*)&(gcm_kats[iteration].key);
+	unsigned char t[t_length];
+	unsigned char* t_result = (unsigned char*)&(gcm_kats[iteration].tag);
+	unsigned int chunk_len;
+	unsigned int offset;
+	unsigned char *chunk_data;
+	unsigned char icb[AES_BLOCK_SIZE];
+	unsigned char ucb[AES_BLOCK_SIZE];
+	unsigned char subkey[AES_BLOCK_SIZE];
+	unsigned char running_tag[AES_BLOCK_SIZE];
+	unsigned int  sum_A_len;
+	unsigned int  sum_C_len;
+	int rc = 0;
+	unsigned int i;
+
+	unsigned int vla_length = data_length ? data_length : 1;
+
+	unsigned char encrypt[vla_length];
+	unsigned char decrypt[vla_length];
+
+	VV_(printf("Test Parameters for iteration = %i\n", iteration));
+	VV_(printf("key length = %i, data length = %i, tag length = %i,"
+		"iv length = %i aad_length = %i\n", key_length, data_length,
+		t_length, iv_length, aad_length));
+
+#ifdef ICA_FIPS
+	if (ica_fips_status() & ICA_FIPS_MODE) {
+		if (iv_length < GCM_RECOMMENDED_IV_LENGTH) {
+			V_(printf("Skipping test because iv_length %d not allowed in fips mode.\n",
+					iv_length));
+			return TEST_SKIP;
+		}
+
+		/* Try to use an external iv for encrypt in fips mode: expect EPERM */
+		rc = ica_aes_gcm_initialize(iv, iv_length, key, key_length,
+								icb, ucb, subkey, ICA_ENCRYPT);
+		if (rc != EPERM) {
+			V_(printf("Error: unexpected rc=%d from ica_aes_gcm_initialize (expected EPERM=%d).\n",
+					rc, EPERM));
+			return TEST_FAIL;
+		}
+	}
+#endif
+
+	/* For encryption use ica_aes_gcm_initialize_fips() to create an internal
+	 * fips compliant iv, which is returned in *output* variable iv, rather than
+	 * specifying an external iv via *input* variable iv in
+	 * ica_aes_gcm_initialize(). */
+	aad_length_tmp = aad_length;
+	memset(running_tag, 0, AES_BLOCK_SIZE);
+	rc = ica_aes_gcm_initialize_fips(iv, iv_length, key, key_length,
+								icb, ucb, subkey, ICA_ENCRYPT);
+	if (rc != 0) {
+		VV_(printf("Error: ica_aes_gcm_initialize_fips failed with rc=%d.\n", rc));
+		return TEST_FAIL;
+	}
+
+	/* As the iv will change through the intermediate encryption steps,
+	 * save it now, because we will need it later for decryption. */
+	memcpy(iv_save, iv, iv_length);
+
+	if (num_chunks == 0 && aad_length > 0) {
+		rc = ica_aes_gcm_intermediate(input_data, 0, encrypt,
+								ucb, aad, aad_length,
+								running_tag, AES_BLOCK_SIZE,
+								key, key_length, subkey, ICA_ENCRYPT);
+	}
+
+	offset = 0;
+	for (i = 0; i < num_chunks; i++) {
+		chunk_len = gcm_kats[iteration].chunks[i];
+		chunk_data = input_data + offset;
+
+		rc = ica_aes_gcm_intermediate(chunk_data, chunk_len, encrypt + offset,
+									ucb, aad, aad_length,
+									running_tag, AES_BLOCK_SIZE,
+									key, key_length, subkey, ICA_ENCRYPT);
+		/* clear aad_length after first run*/
+		aad_length = 0;
+		offset += chunk_len;
+	}
+	sum_A_len = aad_length_tmp;
+	sum_C_len = offset;
+	rc = ica_aes_gcm_last(icb, sum_A_len, sum_C_len, running_tag,
+						t, t_length, key, key_length, subkey, ICA_ENCRYPT);
+
+	if (rc == EPERM) {
+		VV_(printf("ica_aes_gcm returns with EPERM (%d).\n", rc));
+		VV_(printf("Operation is not permitted on this machine. Test skipped!\n"));
+		return TEST_SKIP;
+	}
+	if (rc) {
+		VV_(printf("ica_aes_gcm encrypt failed with rc = %i\n", rc));
+		dump_gcm_data(iv, iv_length, aad, aad_length, key, key_length,
+				input_data, data_length, encrypt, t, t_length);
+	}
+	if (!rc) {
+		VV_(printf("Encrypt:\n"));
+		dump_gcm_data(iv, iv_length, aad, aad_length, key, key_length,
+				input_data, data_length, encrypt, running_tag,
+				t_length);
+	}
+
+	if (rc) {
+		VV_(printf("GCM test exited after encryption\n"));
+		return TEST_FAIL;
+	}
+
+	/* Save final tag from encryption for later use at decryption. The
+	 * running_tag variable is re-used and changed while decrypting. */
+	memcpy(t_result, running_tag, t_length);
+
+	aad_length = aad_length_tmp;
+	memset(running_tag, 0, AES_BLOCK_SIZE);
+	rc = ica_aes_gcm_initialize(iv_save, iv_length, key, key_length,
+								icb, ucb, subkey, ICA_DECRYPT);
+
+	if (num_chunks == 0 && aad_length > 0) {
+		rc = ica_aes_gcm_intermediate(input_data, 0, encrypt,
+								ucb, aad, aad_length,
+								running_tag, AES_BLOCK_SIZE,
+								key, key_length, subkey, ICA_DECRYPT);
+	}
+
+	offset = 0;
+	for (i = 0; i < num_chunks; i++) {
+		chunk_len = gcm_kats[iteration].chunks[i];
+		chunk_data = encrypt + offset;
+
+		rc = ica_aes_gcm_intermediate(decrypt + offset, chunk_len, chunk_data,
+									ucb, aad, aad_length,
+									running_tag, AES_BLOCK_SIZE,
+									key, key_length, subkey, ICA_DECRYPT);
+
+		/* clear aad_length after first run*/
+		aad_length = 0;
+		offset += chunk_len;
+	}
+	sum_A_len = aad_length_tmp;
+	sum_C_len = offset;
+	rc = ica_aes_gcm_last(icb, sum_A_len, sum_C_len, running_tag,
+					t_result, t_length, key, key_length, subkey, ICA_DECRYPT);
+
+	if (rc == EPERM) {
+		VV_(printf("ica_aes_gcm returns with EPERM (%d).\n", rc));
+		VV_(printf("Operation is not permitted on this machine. Test skipped!\n"));
+		return TEST_SKIP;
+	}
+	if (rc) {
+		VV_(printf("ica_aes_gcm decrypt failed with rc = %i\n", rc));
+		dump_gcm_data(iv, iv_length, aad, aad_length, key, key_length,
+				encrypt, data_length, decrypt, running_tag,
+				t_length);
+	}
+
+	if (!rc) {
+		VV_(printf("Decrypt:\n"));
+		dump_gcm_data(iv, iv_length, aad, aad_length, key, key_length,
+				encrypt, data_length, decrypt, running_tag,
+				t_length);
+	}
+
+	if (memcmp(decrypt, input_data, data_length)) {
+		V_(printf("Decryption Result does not match the original data!\n"));
+		VV_(printf("Original data:\n"));
+		dump_array(input_data, data_length);
+		VV_(printf("Decryption Result:\n"));
+		dump_array(decrypt, data_length);
+		rc++;
+	}
+
+	if (rc)
+		return TEST_FAIL;
+
+	return TEST_SUCC;
+}
+
 /*
  * Performs GCM tests.
  */
@@ -724,26 +943,32 @@ int main(int argc, char **argv)
 	for(iteration = 0; iteration < NUM_GCM_TESTS; iteration++)	{
 
 		rc = test_gcm_kat(iteration);
-		if (rc) {
+		if (rc == TEST_FAIL) {
 			V_(printf("test_gcm_kat %i failed with rc = %i\n", iteration, rc));
 			error_count++;
 		}
 
 		rc = test_gcm_kat_update(iteration);
-		if (rc) {
+		if (rc == TEST_FAIL) {
 			V_(printf("test_gcm_kat_update %i failed with rc = %i\n", iteration, rc));
 			error_count++;
 		}
 
 		rc = test_gcm_kat_update_aad(iteration);
-		if (rc) {
+		if (rc == TEST_FAIL) {
 			V_(printf("test_gcm_kat_update_aad %i failed with rc = %i\n", iteration, rc));
 			error_count++;
 		}
 
 		rc = test_gcm_kat_update_in_place(iteration);
-		if (rc) {
+		if (rc == TEST_FAIL) {
 			V_(printf("test_gcm_kat_update_in_place %i failed with rc = %i\n", iteration, rc));
+			error_count++;
+		}
+
+		rc = test_gcm_update_fips(iteration);
+		if (rc == TEST_FAIL) {
+			V_(printf("test_gcm_update_fips %i failed with rc = %i\n", iteration, rc));
 			error_count++;
 		}
 	}
