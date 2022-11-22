@@ -3704,14 +3704,14 @@ unsigned int ica_aes_gcm(unsigned char *plaintext,
 			key, key_length, direction);
 }
 
-unsigned int ica_aes_gcm_initialize(const unsigned char *iv,
-				    unsigned int iv_length,
-				    unsigned char *key,
-				    unsigned int key_length,
-				    unsigned char *icb,
-				    unsigned char *ucb,
-				    unsigned char *subkey,
-				    unsigned int direction)
+unsigned int ica_aes_gcm_initialize_internal(const unsigned char *iv,
+				unsigned int iv_length,
+				unsigned char *key,
+				unsigned int key_length,
+				unsigned char *icb,
+				unsigned char *ucb,
+				unsigned char *subkey,
+				unsigned int direction)
 {
 #ifdef NO_CPACF
 	UNUSED(iv);
@@ -3726,21 +3726,29 @@ unsigned int ica_aes_gcm_initialize(const unsigned char *iv,
 #else
 	unsigned long function_code;
 
-#ifdef ICA_FIPS
-	if (fips >> 1)
-		return EACCES;
-
-	if (fips & ICA_FIPS_MODE) {
-		if (iv_length < GCM_RECOMMENDED_IV_LENGTH)
-			return EPERM;
-	}
-#endif /* ICA_FIPS */
-
 	function_code = aes_directed_fc(key_length, direction);
 
 	return s390_gcm_initialize(function_code, iv, iv_length,
 							   key, icb, ucb, subkey);
 #endif /* NO_CPACF */
+}
+
+unsigned int ica_aes_gcm_initialize(const unsigned char *iv,
+				unsigned int iv_length,
+				unsigned char *key,
+				unsigned int key_length,
+				unsigned char *icb,
+				unsigned char *ucb,
+				unsigned char *subkey,
+				unsigned int direction)
+{
+#ifdef ICA_FIPS
+	if (direction == ENCRYPT && (fips & ICA_FIPS_MODE))
+		return EPERM;
+#endif /* ICA_FIPS */
+
+	return ica_aes_gcm_initialize_internal(iv, iv_length, key, key_length,
+									icb, ucb, subkey, direction);
 }
 
 unsigned int ica_aes_gcm_initialize_fips(unsigned char *iv,
@@ -3766,8 +3774,8 @@ unsigned int ica_aes_gcm_initialize_fips(unsigned char *iv,
 	if (rc != 1)
 		return EIO;
 
-	return ica_aes_gcm_initialize(iv, iv_length, key, key_length,
-						icb, ucb, subkey, direction);
+	return ica_aes_gcm_initialize_internal(iv, iv_length, key, key_length,
+									icb, ucb, subkey, direction);
 }
 
 unsigned int ica_aes_gcm_intermediate(unsigned char *plaintext,

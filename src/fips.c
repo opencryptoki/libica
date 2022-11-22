@@ -967,7 +967,7 @@ aes_gcm_kat(void) {
 			goto _err_;
 
 		memset(tag, 0, AES_BLKSIZE);
-		if (ica_aes_gcm_initialize(tv->iv, tv->ivlen, tv->key,
+		if (ica_aes_gcm_initialize_internal(tv->iv, tv->ivlen, tv->key,
 		    tv->keylen, icb, ucb, subkey, ICA_DECRYPT)
 		    || ica_aes_gcm_intermediate(out, tv->len - lastlen,
 		    tv->ciphertext, ucb, tv->aad, tv->aadlen, tag,
@@ -986,7 +986,7 @@ aes_gcm_kat(void) {
 		memset(icb, 0, sizeof(icb));
 		memset(icb, 0, sizeof(ucb));
 		memset(subkey, 0, sizeof(subkey));
-		if ((tv->rv == 0) && (ica_aes_gcm_initialize(tv->iv, tv->ivlen,
+		if ((tv->rv == 0) && (ica_aes_gcm_initialize_internal(tv->iv, tv->ivlen,
 		    tv->key, tv->keylen, icb, ucb, subkey, ICA_ENCRYPT)
 		    || ica_aes_gcm_intermediate(tv->plaintext,
 		    tv->len - lastlen, out, ucb, tv->aad, tv->aadlen, tag,
