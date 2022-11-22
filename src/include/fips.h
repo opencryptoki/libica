@@ -43,6 +43,18 @@ int ica_ecdsa_sign_ex_internal(ica_adapter_handle_t adapter_handle,
 		const unsigned char *k);
 
 /*
+ * Use ica_aes_gcm_internal for fips self-test KATs. External iv are
+ * allowed here.
+ */
+unsigned int ica_aes_gcm_internal(unsigned char *plaintext,
+			unsigned long plaintext_length, unsigned char *ciphertext,
+			const unsigned char *iv, unsigned int iv_length,
+			const unsigned char *aad, unsigned long aad_length,
+			unsigned char *tag, unsigned int tag_length,
+			unsigned char *key, unsigned int key_length,
+			unsigned int direction);
+
+/*
  * List of non-fips-approved algorithms
  */
 static const int FIPS_BLACKLIST[] = {DES_ECB, DES_CBC, DES_CBC_CS, DES_OFB,

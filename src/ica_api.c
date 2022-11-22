@@ -3608,13 +3608,13 @@ unsigned int ica_aes_ccm(unsigned char *payload, unsigned long payload_length,
 #endif /* NO_CPACF */
 }
 
-unsigned int ica_aes_gcm(unsigned char *plaintext, unsigned long plaintext_length,
-			 unsigned char *ciphertext,
-			 const unsigned char *iv, unsigned int iv_length,
-			 const unsigned char *aad, unsigned long aad_length,
-			 unsigned char *tag, unsigned int tag_length,
-			 unsigned char *key, unsigned int key_length,
-			 unsigned int direction)
+unsigned int ica_aes_gcm_internal(unsigned char *plaintext,
+			unsigned long plaintext_length, unsigned char *ciphertext,
+			const unsigned char *iv, unsigned int iv_length,
+			const unsigned char *aad, unsigned long aad_length,
+			unsigned char *tag, unsigned int tag_length,
+			unsigned char *key, unsigned int key_length,
+			unsigned int direction)
 {
 #ifdef NO_CPACF
 	UNUSED(plaintext);
@@ -3684,6 +3684,24 @@ unsigned int ica_aes_gcm(unsigned char *plaintext, unsigned long plaintext_lengt
 	}
 	return 0;
 #endif /* NO_CPACF */
+}
+
+unsigned int ica_aes_gcm(unsigned char *plaintext,
+			unsigned long plaintext_length, unsigned char *ciphertext,
+			const unsigned char *iv, unsigned int iv_length,
+			const unsigned char *aad, unsigned long aad_length,
+			unsigned char *tag, unsigned int tag_length,
+			unsigned char *key, unsigned int key_length,
+			unsigned int direction)
+{
+#ifdef ICA_FIPS
+	if (fips & ICA_FIPS_MODE)
+		return EPERM;
+#endif /* ICA_FIPS */
+
+	return ica_aes_gcm_internal(plaintext, plaintext_length, ciphertext,
+			iv, iv_length, aad, aad_length, tag, tag_length,
+			key, key_length, direction);
 }
 
 unsigned int ica_aes_gcm_initialize(const unsigned char *iv,
