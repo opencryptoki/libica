@@ -43,6 +43,13 @@ int test_gcm_kat(int iteration)
 	    "iv length = %i aad_length = %i\n", key_length, data_length,
 	    t_length, iv_length, aad_length));
 
+#ifdef ICA_FIPS
+	if (ica_fips_status() & ICA_FIPS_MODE) {
+		V_(printf("Skipping test because external iv not allowed in fips mode.\n"));
+		return TEST_SKIP;
+	}
+#endif
+
 	/* Allocate context */
 	kma_ctx* ctx = ica_aes_gcm_kma_ctx_new();
 	if (!ctx) {
@@ -169,6 +176,13 @@ int test_gcm_kat_update(int iteration)
 	VV_(printf("key length = %i, data length = %i, tag length = %i,"
 		"iv length = %i aad_length = %i\n", key_length, data_length,
 		t_length, iv_length, aad_length));
+
+#ifdef ICA_FIPS
+	if (ica_fips_status() & ICA_FIPS_MODE) {
+		V_(printf("Skipping test because external iv not allowed in fips mode.\n"));
+		return TEST_SKIP;
+	}
+#endif
 
 	aad_length_tmp = aad_length;
 
@@ -362,6 +376,13 @@ int test_gcm_kat_update_aad(int iteration)
 	VV_(printf("key length = %i, data length = %i, tag length = %i,"
 		"iv length = %i aad_length = %i\n", key_length, data_length,
 		t_length, iv_length, aad_length));
+
+#ifdef ICA_FIPS
+	if (ica_fips_status() & ICA_FIPS_MODE) {
+		V_(printf("Skipping test because external iv not allowed in fips mode.\n"));
+		return TEST_SKIP;
+	}
+#endif
 
 	aad_length_tmp = aad_length;
 
@@ -560,6 +581,13 @@ int test_gcm_kat_update_in_place(int iteration)
 		"iv length = %i aad_length = %i\n", key_length, data_length,
 		t_length, iv_length, aad_length));
 
+#ifdef ICA_FIPS
+	if (ica_fips_status() & ICA_FIPS_MODE) {
+		V_(printf("Skipping test because external iv not allowed in fips mode.\n"));
+		return TEST_SKIP;
+	}
+#endif
+
 	aad_length_tmp = aad_length;
 
 	/* Allocate context */
@@ -711,6 +739,141 @@ int test_gcm_kat_update_in_place(int iteration)
 	return TEST_SUCC;
 }
 
+int test_gcm_with_internal_iv(int iteration)
+{
+	unsigned int aad_length = gcm_kats[iteration].aadlen;
+	unsigned int data_length = gcm_kats[iteration].datalen;
+	unsigned int t_length = gcm_kats[iteration].taglen;
+	unsigned int iv_length = gcm_kats[iteration].ivlen;
+	unsigned int key_length = gcm_kats[iteration].keylen;
+
+	unsigned char iv[iv_length];
+	unsigned char t[t_length];
+	unsigned char* input_data = (unsigned char*)&(gcm_kats[iteration].data);
+	unsigned char* aad = (unsigned char*)&(gcm_kats[iteration].aad);
+	unsigned char* key = (unsigned char*)&(gcm_kats[iteration].key);
+
+	int rc = 0;
+
+	unsigned int vla_length = data_length ? data_length : 1;
+
+	unsigned char encrypt[vla_length];
+	unsigned char decrypt[vla_length];
+
+
+	VV_(printf("Test Parameters for iteration = %i\n", iteration));
+	VV_(printf("key length = %i, data length = %i, tag length = %i,"
+		"iv length = %i aad_length = %i\n", key_length, data_length,
+		t_length, iv_length, aad_length));
+
+#ifdef ICA_FIPS
+	if (ica_fips_status() & ICA_FIPS_MODE) {
+		/* Skip test when in fips mode and iv_length is not fips compliant */
+		if (iv_length < GCM_RECOMMENDED_IV_LENGTH) {
+			V_(printf("Skipping test because iv_length of %d is not fips compliant.\n",
+					iv_length));
+			return TEST_SKIP;
+		}
+	}
+#endif
+
+	/* Allocate context */
+	kma_ctx* ctx = ica_aes_gcm_kma_ctx_new();
+	if (!ctx) {
+		V_(printf("Error: Cannot create gcm context.\n"));
+		return TEST_FAIL;
+	}
+
+#ifdef ICA_FIPS
+	if (ica_fips_status() & ICA_FIPS_MODE) {
+		/* Try to use an external iv for encrypt in fips mode: expect EPERM */
+		rc = ica_aes_gcm_kma_init(ICA_ENCRYPT, iv, iv_length, key, key_length, ctx);
+		if (rc != EPERM) {
+			V_(printf("Error: unexpected rc=%d from ica_aes_gcm_kma_init (expected EPERM=%d).\n",
+					rc, EPERM));
+			return TEST_FAIL;
+		}
+	}
+#endif
+
+	/* Initialize context for encrypt: create internal iv */
+	rc = ica_aes_gcm_kma_init_fips(ICA_ENCRYPT, iv_length, key, key_length, ctx);
+	if (rc) {
+		V_(printf("Error: Cannot initialize gcm context with internal iv.\n"));
+		return TEST_FAIL;
+	}
+
+	/* Update for encrypt */
+	rc = ica_aes_gcm_kma_update(input_data, encrypt, data_length, aad, aad_length, 1, 1, ctx);
+	if (rc == ENODEV) {
+		VV_(printf("ica_aes_gcm returns with ENODEV (%d).\n", rc));
+		VV_(printf("Operation is not permitted on this machine. Test skipped!\n"));
+		return TEST_SKIP;
+	}
+
+	if (rc) {
+		V_(printf("ica_aes_gcm_kma encrypt failed with rc = %i\n", rc));
+		VV_(printf("GCM test exited after encryption\n"));
+		return TEST_FAIL;
+	}
+
+	/* Get internally created iv from context */
+	rc = ica_aes_gcm_kma_get_iv(ctx, iv, &iv_length);
+	if (rc) {
+		V_(printf("Error: Cannot get internal iv from gcm context for decrypt.\n"));
+		return TEST_FAIL;
+	}
+
+	/* Get final tag from context */
+	rc = ica_aes_gcm_kma_get_tag(t, t_length, ctx);
+	if (rc) {
+		V_(printf("Error: Cannot get final tag from gcm context.\n"));
+		return TEST_FAIL;
+	}
+
+	/* Initialize context for decrypt with iv from context */
+	rc = ica_aes_gcm_kma_init(ICA_DECRYPT, iv, iv_length, key, key_length, ctx);
+	if (rc) {
+		V_(printf("Error: Cannot initialize gcm context for decrypt. \n"));
+		return TEST_FAIL;
+	}
+
+	/* Update for decrypt */
+	rc = ica_aes_gcm_kma_update(encrypt, decrypt, data_length, aad, aad_length, 1, 1, ctx);
+	if (rc == ENODEV) {
+		VV_(printf("ica_aes_gcm returns with ENODEV (%d).\n", rc));
+		VV_(printf("Operation is not permitted on this machine. Test skipped!\n"));
+		return TEST_SKIP;
+	}
+
+	if (rc) {
+		VV_(printf("ica_aes_gcm_kma decrypt failed with rc = %i\n", rc));
+	}
+
+	if (memcmp(decrypt, input_data, data_length)) {
+		V_(printf("Decryption Result does not match the original data!\n"));
+		VV_(printf("Original data:\n"));
+		dump_array(input_data, data_length);
+		VV_(printf("Decryption Result:\n"));
+		dump_array(decrypt, data_length);
+		rc++;
+	}
+
+	/* Verify tag against the one from encrypt */
+	rc = ica_aes_gcm_kma_verify_tag(t, t_length, ctx);
+	if (rc == EFAULT) {
+		V_(printf("Tag result does not match the expected tag!\n"));
+		rc++;
+	}
+
+	ica_aes_gcm_kma_ctx_free(ctx);
+
+	if (rc)
+		return TEST_FAIL;
+
+	return TEST_SUCC;
+}
+
 /*
  * Performs GCM tests.
  */
@@ -731,26 +894,32 @@ int main(int argc, char **argv)
 	for(iteration = 0; iteration < NUM_GCM_TESTS; iteration++)	{
 
 		rc = test_gcm_kat(iteration);
-		if (rc) {
+		if (rc == TEST_FAIL) {
 			V_(printf("test_gcm_kat %i failed with rc = %i\n", iteration, rc));
 			error_count++;
 		}
 
 		rc = test_gcm_kat_update(iteration);
-		if (rc) {
+		if (rc == TEST_FAIL) {
 			V_(printf("test_gcm_kat_update %i failed with rc = %i\n", iteration, rc));
 			error_count++;
 		}
 
 		rc = test_gcm_kat_update_aad(iteration);
-		if (rc) {
+		if (rc == TEST_FAIL) {
 			V_(printf("test_gcm_kat_update_aad %i failed with rc = %i\n", iteration, rc));
 			error_count++;
 		}
 
 		rc = test_gcm_kat_update_in_place(iteration);
-		if (rc) {
+		if (rc == TEST_FAIL) {
 			V_(printf("test_gcm_kat_update_in_place %i failed with rc = %i\n", iteration, rc));
+			error_count++;
+		}
+
+		rc = test_gcm_with_internal_iv(iteration);
+		if (rc == TEST_FAIL) {
+			V_(printf("test_gcm_fips %i failed with rc = %i\n", iteration, rc));
 			error_count++;
 		}
 	}
