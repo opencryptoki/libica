@@ -928,14 +928,14 @@ aes_gcm_kat(void) {
 		if (tag == NULL || out == NULL)
 			goto _err_;
 
-		if ((ica_aes_gcm(out, tv->len, tv->ciphertext, tv->iv,
+		if ((ica_aes_gcm_internal(out, tv->len, tv->ciphertext, tv->iv,
 		    tv->ivlen, tv->aad, tv->aadlen, tv->tag, tv->taglen,
 		    tv->key, tv->keylen, ICA_DECRYPT) != tv->rv)
 		    || ((tv->rv == 0)
 		    && memcmp(tv->plaintext, out, tv->len)))
 			goto _err_;
 
-		if ((tv->rv == 0) && (ica_aes_gcm(tv->plaintext, tv->len,
+		if ((tv->rv == 0) && (ica_aes_gcm_internal(tv->plaintext, tv->len,
 		    out, tv->iv, tv->ivlen, tv->aad, tv->aadlen, tag,
 		    tv->taglen, tv->key, tv->keylen, ICA_ENCRYPT)
 		    || memcmp(tv->tag, tag, tv->taglen)
