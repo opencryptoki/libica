@@ -55,6 +55,16 @@ unsigned int ica_aes_gcm_internal(unsigned char *plaintext,
 			unsigned int direction);
 
 /*
+ * Use ica_aes_gcm_initialize_internal for fips self-test KATs. External iv are
+ * allowed here.
+ */
+unsigned int ica_aes_gcm_initialize_internal(const unsigned char *iv,
+				unsigned int iv_length, unsigned char *key,
+				unsigned int key_length, unsigned char *icb,
+				unsigned char *ucb, unsigned char *subkey,
+				unsigned int direction);
+
+/*
  * List of non-fips-approved algorithms
  */
 static const int FIPS_BLACKLIST[] = {DES_ECB, DES_CBC, DES_CBC_CS, DES_OFB,
