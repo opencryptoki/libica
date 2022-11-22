@@ -3330,14 +3330,18 @@ ICA_EXPORT
 kma_ctx* ica_aes_gcm_kma_ctx_new();
 
 /**
- * Initialize the GCM context.
+ * Initialize the GCM context. This description applies to both,
+ * ica_aes_gcm_kma_init, and ica_aes_gcm_kma_init_fips. The latter is
+ * intended to be used in fips mode and has no iv parm as external iv are
+ * not allowed in fips mode. An internal fips-compliant iv is created and
+ * can be obtained from the context via ica_aes_gcm_kma_get_iv.
  *
  * @param direction
  * 0 or 1:
  * 0 when initialized for decryption.
  * 1 when initialized for encryption.
  *
- * @param iv
+ * @param iv (only ica_aes_gcm_kma_init)
  * Pointer to a readable buffer of size greater than or equal to iv_length
  * bytes, that contains an initialization vector of size iv_length.
  * The pointer may alternatively be NULL, in which case the iv is created
@@ -3376,6 +3380,11 @@ kma_ctx* ica_aes_gcm_kma_ctx_new();
 ICA_EXPORT
 int ica_aes_gcm_kma_init(unsigned int direction,
 					const unsigned char *iv, unsigned int iv_length,
+					const unsigned char *key, unsigned int key_length,
+					kma_ctx* ctx);
+
+ICA_EXPORT
+int ica_aes_gcm_kma_init_fips(unsigned int direction, unsigned int iv_length,
 					const unsigned char *key, unsigned int key_length,
 					kma_ctx* ctx);
 
