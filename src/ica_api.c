@@ -3911,7 +3911,7 @@ kma_ctx* ica_aes_gcm_kma_ctx_new(void)
 #endif /* NO_CPACF */
 }
 
-int ica_aes_gcm_kma_init(unsigned int direction,
+int ica_aes_gcm_kma_init_internal(unsigned int direction,
 		const unsigned char *iv, unsigned int iv_length,
 		const unsigned char *key, unsigned int key_length,
 		kma_ctx* ctx)
@@ -3934,13 +3934,6 @@ int ica_aes_gcm_kma_init(unsigned int direction,
 		!is_valid_direction(direction)) {
 		return EINVAL;
 	}
-
-#ifdef ICA_FIPS
-	if (fips & ICA_FIPS_MODE) {
-		if (iv_length < GCM_RECOMMENDED_IV_LENGTH)
-			return EPERM;
-	}
-#endif
 
 	if (iv == NULL) {
 		/* If the iv is NULL, create it internally via an approved
@@ -3990,6 +3983,38 @@ int ica_aes_gcm_kma_init(unsigned int direction,
 
 	return rc;
 #endif /* NO_CPACF */
+}
+
+int ica_aes_gcm_kma_init(unsigned int direction,
+					const unsigned char *iv, unsigned int iv_length,
+					const unsigned char *key, unsigned int key_length,
+					kma_ctx* ctx)
+{
+#ifdef ICA_FIPS
+	if (direction == ICA_ENCRYPT && (fips & ICA_FIPS_MODE))
+		return EPERM;
+#endif /* ICA_FIPS */
+
+	return ica_aes_gcm_kma_init_internal(direction, iv, iv_length,
+									key, key_length, ctx);
+}
+
+int ica_aes_gcm_kma_init_fips(unsigned int direction, unsigned int iv_length,
+					const unsigned char *key, unsigned int key_length,
+					kma_ctx* ctx)
+{
+#ifdef ICA_FIPS
+	if (fips >> 1)
+		return EACCES;
+
+	if (fips & ICA_FIPS_MODE) {
+		if (iv_length < GCM_RECOMMENDED_IV_LENGTH)
+			return EPERM;
+	}
+#endif /* ICA_FIPS */
+
+	return ica_aes_gcm_kma_init_internal(direction, NULL, iv_length,
+									key, key_length, ctx);
 }
 
 int ica_aes_gcm_kma_update(const unsigned char *in_data,
