@@ -396,10 +396,11 @@ static short get_default_domain(void)
 		return domain;
 
 	if (fscanf(f, "%d", &temp) != 1)
-		return domain;
+		goto done;
 
 	domain = (short)temp;
 
+done:
 	if (f)
 		fclose(f);
 
