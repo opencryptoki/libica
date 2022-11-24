@@ -4105,13 +4105,15 @@ int ica_aes_gcm_kma_verify_tag(const unsigned char* known_tag, unsigned int tag_
 	return EPERM;
 #else
 	int rc;
-	unsigned int function_code = aes_directed_fc(ctx->key_length, ctx->direction);
+	unsigned int function_code;
 
 	if (!ctx || !known_tag || !is_valid_tag_length(tag_length))
 		return EINVAL;
 
 	if (ctx->direction == ICA_ENCRYPT)
 		return EFAULT;
+
+	function_code = aes_directed_fc(ctx->key_length, ctx->direction);
 
 	if (!(*s390_kma_functions[function_code].enabled) && !ctx->done) {
 		rc = s390_gcm_last(function_code, (unsigned char*)ctx->j0,
