@@ -3565,30 +3565,33 @@ unsigned int ica_get_version(libica_version_info *version_info);
 
 /**
  * Function that returns a list of crypto mechanisms supported by libica.
+ *
  * @param pmech_list
  *    Pointer to an array of libica_func_list_element
  *    If NULL, the API will return the number of elements to allocate
- *    in the @mech_list_len parameter.
- *    If not NULL, libica will assume @mech_list is an array that has
- *    @num elements.
- *    On success, @mech_list will be filled out with the supported libica
+ *    in the *pmech_list_len parameter.
+ *    If not NULL, libica will assume pmech_list is an array that has
+ *    *pmech_list_len elements.
+ *    On success, pmech_list will be filled out with the supported libica
  *    crypto mechanisms.
+ *
  * @param pmech_list_len
  *    number of list entries
  *    On input, pointer to the number of elements allocated in the
- *    @mech_list array.
- *    On output, @mech_list_len will contain the number of items copied to
- *    the @mech_list array, or the number of items libica would have returned
- *    in case the @mech_list parameter is set to NULL.
+ *    pmech_list array.
+ *    On output, *pmech_list_len will contain the number of items copied to
+ *    the pmech_list array, or the number of items libica would have returned
+ *    in case the pmech_list parameter is set to NULL.
+ *
  * @return
  *    0 on success
  *    EINVAL if at least one invalid parameter is given
  *
- *   A typical usage scenario would be that an exploiter makes a first call to
- *   ica_get_functionlist() with @mech_list set to NULL in order to determine
- *   the number of elements to allocate. This is followed by a second call to
- *   ica_get_functionlist() with a valid pointer @list to an array of
- *   libica_func_list_element structures with @mech_list_len elements.
+ * A typical usage scenario would be that an exploiter makes a first call to
+ * ica_get_functionlist() with pmech_list set to NULL in order to determine
+ * the number of elements to allocate. This is followed by a second call to
+ * ica_get_functionlist() with a valid pointer pmech_list to an array of
+ * libica_func_list_element structures with *pmech_list_len elements.
  */
 ICA_EXPORT
 unsigned int ica_get_functionlist(libica_func_list_element *pmech_list,
