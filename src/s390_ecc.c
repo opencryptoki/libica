@@ -386,10 +386,7 @@ static short get_default_domain(void)
 	const char *domainfile = "/sys/bus/ap/ap_domain";
 	static short domain = -1;
 	int temp;
-	FILE *f = NULL;
-
-	if (domain >= 0)
-		return domain;
+	FILE *f;
 
 	f = fopen(domainfile, "r");
 	if (!f)
