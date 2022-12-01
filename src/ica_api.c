@@ -4177,6 +4177,32 @@ int ica_get_msa_level(void)
 	return msa;
 }
 
+int ica_get_hw_info(libica_hw_info *hw_info)
+{
+	char line[32];
+	char dummy[32];
+	FILE *fd;
+
+	if (hw_info == NULL)
+		return EINVAL;
+
+	if ((fd = fopen("/proc/cpuinfo", "r")) == NULL)
+		return EIO;
+
+	memset(hw_info, 0, sizeof(libica_hw_info));
+
+	while (fgets(line, sizeof(line), fd)) {
+		if (strstr(line, "vendor_id") != NULL)
+			sscanf(line, "%s : %s", dummy, hw_info->vendor_id);
+		if (strstr(line, "machine") != NULL)
+			sscanf(line, "%s : %s", dummy, hw_info->machine_type);
+	}
+
+	fclose(fd);
+
+	return 0;
+}
+
 unsigned int ica_get_version(libica_version_info *version_info)
 {
 #ifdef VERSION
