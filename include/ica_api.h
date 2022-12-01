@@ -409,6 +409,14 @@ typedef struct {
 } libica_version_info;
 
 /**
+ * Libica hardware information
+ */
+typedef struct {
+	unsigned char vendor_id[16];
+	unsigned char machine_type[16];
+} libica_hw_info;
+
+/**
  * Definition of a mechanism type
  **/
 typedef unsigned int libica_mechanism_type;
@@ -3549,6 +3557,20 @@ void ica_aes_gcm_kma_ctx_free(kma_ctx* ctx);
  */
 ICA_EXPORT
 int ica_get_msa_level(void);
+
+/**
+ * Return hardware info about the processor.
+ *
+ * @param libica_hw_info
+ * Pointer to a libica_hw_info structure. The structure will be
+ * filled with hardware related information.
+ *
+ * @return 0 if success
+ *         EINVAL if parameter hw_info is NULL
+ *         EIO if hardware info could not be determined
+ */
+ICA_EXPORT
+int ica_get_hw_info(libica_hw_info *hw_info);
 
 /**
  * Return libica version information.
