@@ -74,7 +74,9 @@ endif
 
 bin_PROGRAMS = icainfo icastats icainfo-cex
 
-icainfo_CFLAGS_COMMON = ${AM_CFLAGS} -DNO_SW_FALLBACKS -I${srcdir}/include -I${srcdir}/../include
+icainfo_CFLAGS_COMMON = ${AM_CFLAGS} -DNO_SW_FALLBACKS -I${srcdir}/include -I${srcdir}/../include \
+					   -DDEFAULT_BUILD_VERSION="\"$(DEFAULT_BUILD_VERSION)\"" \
+					   -DBUILD_VERSION="\"$(BUILD_VERSION)\""
 icainfo_LDADD_COMMON = @LIBS@ -lcrypto
 icainfo_SOURCES_COMMON = icainfo.c include/fips.h include/s390_crypto.h \
 		  ../include/ica_api.h

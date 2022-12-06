@@ -364,6 +364,9 @@ void print_version(void)
 #else
 	printf(CMD_NAME ": libica version " VERSION "\n" COPYRIGHT "\n");
 #endif
+
+	if (strcmp(BUILD_VERSION, DEFAULT_BUILD_VERSION) != 0)
+		printf("build: " BUILD_VERSION "\n");
 }
 
 void print_help(char *cmd)
