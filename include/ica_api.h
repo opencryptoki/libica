@@ -3586,6 +3586,16 @@ ICA_EXPORT
 unsigned int ica_get_version(libica_version_info *version_info);
 
 /**
+ * Return libica build information.
+ *
+ * @return a string indicating a specific libica build version. It can be
+ *         freely defined e.g. by distributors/vendors.
+ *         The default is "UNSPECIFIED".
+ */
+ICA_EXPORT
+const char *ica_get_build_version(void);
+
+/**
  * Function that returns a list of crypto mechanisms supported by libica.
  *
  * @param pmech_list

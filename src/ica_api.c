@@ -4203,6 +4203,11 @@ int ica_get_hw_info(libica_hw_info *hw_info)
 	return 0;
 }
 
+const char* ica_get_build_version(void)
+{
+	return BUILD_VERSION;
+}
+
 unsigned int ica_get_version(libica_version_info *version_info)
 {
 #ifdef VERSION

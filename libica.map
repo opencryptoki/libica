@@ -193,5 +193,6 @@ LIBICA_4.1.2 {
 	ica_get_fips_indicator;
 	ica_aes_gcm_kma_init_fips;
 	ica_get_hw_info;
+	ica_get_build_version;
     local: *;
 } LIBICA_4.1.1;
