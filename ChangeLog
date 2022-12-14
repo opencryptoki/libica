@@ -1,3 +1,12 @@
+v4.2.0
+   [FEATURE] Display build info via icainfo -v 
+   [FEATURE] New API function ica_get_build_version()
+   [FEATURE] Display fips indication via icainfo -f
+   [FEATURE] New API function ica_get_fips_indicator()
+   [FEATURE] New API function ica_aes_gcm_initialize_fips()
+   [FEATURE] New API function ica_aes_gcm_kma_get_iv()
+   [FEATURE] New API function ica_get_msa_level()
+   [PATCH] icainfo: check for malloc error when getting functionlist
 v4.1.1
  - [PATCH] Fix aes-xts multi-part operations
    [PATCH] Fix make dist

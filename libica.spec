@@ -1,5 +1,5 @@
 Name:          libica
-Version:       4.1.1
+Version:       4.2.0
 Release:       1%{?dist}
 Summary:       Interface library to the ICA device driver
 
