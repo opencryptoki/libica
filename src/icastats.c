@@ -41,17 +41,17 @@ void print_help(char *cmd)
 	       "software fallbacks. It provides an overview of the algorithms with modes of operation.\n"
 	       "\n"
 	       "Options:\n"
-	       " -r, --reset         set the own function counters to zero.\n"
-	       " -R, --reset-all     reset the statistsics from all users. (root user only)\n"
-	       " -d, --delete        delete your own statistics.\n"
-	       " -D, --delete-all    delete the statistics from all users. (root user only)\n"
-	       " -U, --user <userid> show the statistics from one user. (root user only)\n"
-	       " -S, --summary       show the accumulated statistics from all users. (root user only)\n"
-	       " -A, --all	     show the statistic tables from all users. (root user only)\n"
-	       " -k, --key-sizes     show statistics per key size.\n"
-	       " -j, --json          output the statistics in JSON format.\n"
-	       " -v, --version       output version information\n"
-	       " -h, --help          display help information\n");
+	       " -r, --reset           set the own function counters to zero.\n"
+	       " -R, --reset-all       reset the statistsics from all users. (root user only)\n"
+	       " -d, --delete          delete your own statistics.\n"
+	       " -D, --delete-all      delete the statistics from all users. (root user only)\n"
+	       " -U, --user <username> show the statistics from one user. (root user only)\n"
+	       " -S, --summary         show the accumulated statistics from all users. (root user only)\n"
+	       " -A, --all             show the statistic tables from all users. (root user only)\n"
+	       " -k, --key-sizes       show statistics per key size.\n"
+	       " -j, --json            output the statistics in JSON format.\n"
+	       " -v, --version         output version information\n"
+	       " -h, --help            display help information\n");
 }
 
 #define getopt_string "rRdDU:SAkjvh"
