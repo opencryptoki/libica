@@ -634,15 +634,15 @@ int main(int argc, char **argv)
 
 	set_verbosity(argc, argv);
 
-	for(iteration = 1; iteration <= NR_TESTS; iteration++)	{
+	for (iteration = 1; iteration <= NR_TESTS; iteration++) {
 		rc = kat_aes_xts(iteration);
 		if (rc) {
 			V_(printf("kat_aes_xts failed with rc = %i\n", rc));
 			error_count++;
 		}
-
 	}
-	for(iteration = 1; iteration <= NR_RANDOM_TESTS; iteration++)	{
+
+	for (iteration = 1; iteration <= NR_RANDOM_TESTS; iteration++) {
 		rc = random_aes_xts(iteration, data_length);
 		if (rc) {
 			V_(printf("random_aes_xts failed with rc = %i\n", rc));
