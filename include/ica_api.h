@@ -368,6 +368,12 @@ typedef struct {
 	unsigned char* exponent;
 } ica_rsa_key_mod_expo_t;
 
+/*
+ * buffers pointed by p, q, dp, dq and qInverse in struct
+ * ica_rsa_key_crt_t must be of size key_length/2 or larger.
+ * p, dp and qInverse have an additional 8-byte padding.
+ * All fields are right-aligned.
+ */
 typedef struct {
 	unsigned int key_length;
 	unsigned char* p;
