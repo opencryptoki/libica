@@ -891,8 +891,8 @@ static int set_error_state(ica_drbg_mech_t *mech,
 #ifdef ICA_FIPS
 	fips |= ICA_FIPS_RNG;
 
-	/* Write to syslog in FIPS-enabled built. The DRBG failure is critical
-	 * here since the old PRNG code is diasbled at compile time. */
+	/* Write to syslog in FIPS-enabled build. The DRBG failure is critical
+	 * here since the old PRNG code is disabled at compile time. */
 	switch (error) {
 	case DRBG_HEALTH_TEST_FAIL:
 		syslog(LOG_ERR, "Libica DRBG-%s test failed.", mech->id);
