@@ -513,7 +513,6 @@ end:
 
 static const char msg1[] = "Libica FIPS library integrity check failed. Cannot determine library path.\n";
 static const char msg2[] = "Libica FIPS library integrity check failed. Module %s probably corrupted.\n";
-static const char msg3[] = "Libica FIPS library integrity check passed.\n";
 
 struct phdr_cb_data {
 	/* User-provided storage for library path. */
@@ -578,8 +577,6 @@ static void fips_lib_integrity_check(void)
 		fips |= ICA_FIPS_INTEGRITY;
 		return;
 	}
-
-	syslog(LOG_INFO, msg3);
 }
 #endif /* ICA_INTERNAL_TEST */
 
