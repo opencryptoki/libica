@@ -510,6 +510,175 @@ int kat_aes_xts(int iteration)
 	return TEST_SUCC;
 }
 
+int kat_aes_xts_ex(int iteration)
+{
+	unsigned int data_length, temp_len;
+	unsigned int tweak_length;
+	unsigned int key_length;
+
+	get_sizes(&data_length, &tweak_length, &key_length, iteration);
+
+	unsigned char tweak[tweak_length];
+	unsigned char tmp_tweak[tweak_length];
+	unsigned char expected_tweak[tweak_length];
+	unsigned char key[key_length];
+	unsigned char input_data[data_length];
+	unsigned char encrypt[data_length];
+	unsigned char decrypt[data_length];
+	unsigned char result[data_length];
+	unsigned char iv[16];
+	size_t offset;
+
+	int rc = 0;
+
+	memset(encrypt, 0x00, data_length);
+	memset(decrypt, 0x00, data_length);
+	memset(iv, 0, sizeof(iv));
+	temp_len = data_length;
+
+	load_test_data(input_data, data_length, result, tweak, expected_tweak,
+				tweak_length, key, key_length, iteration);
+	memcpy(tmp_tweak, tweak, tweak_length);
+
+	VV_(printf("Test Parameters for iteration = %i\n", iteration));
+	VV_(printf("key length = %i, data length = %i, tweak length = %i,",
+		key_length, data_length, tweak_length));
+
+	/* First data chunk: 16 bytes */
+	rc = ica_aes_xts_ex(input_data, encrypt, 16,
+			key, key + (key_length / 2), (key_length / 2),
+			tmp_tweak, iv, 1);
+	if (rc) {
+		VV_(printf("ica_aes_xts_ex encrypt failed with rc = %i\n", rc));
+		dump_xts_data(tweak, tweak_length, key, key_length, input_data,
+				data_length, encrypt);
+	}
+
+	/* Intermediate data chunks, if any ... */
+	temp_len -= 16;
+	offset = 16;
+	while (temp_len > 2 * 16) {
+		rc = ica_aes_xts_ex(&(input_data[offset]), &(encrypt[offset]), 16,
+				key, key + (key_length / 2), (key_length / 2),
+				NULL, iv, 1);
+		if (rc) {
+			VV_(printf("ica_aes_xts_ex encrypt failed with rc = %i\n", rc));
+			dump_xts_data(tweak, tweak_length, key, key_length, input_data,
+					temp_len, encrypt);
+		}
+		temp_len -= 16;
+		offset += 16;
+	}
+
+	/* Last chunk of at least one full block, if any ... */
+	if (temp_len > 0) {
+		rc = ica_aes_xts_ex(&(input_data[offset]), &(encrypt[offset]), temp_len,
+				key, key + (key_length / 2), (key_length / 2),
+				NULL, iv, 1);
+		if (rc) {
+			VV_(printf("ica_aes_xts_ex encrypt failed with rc = %i\n", rc));
+			dump_xts_data(tweak, tweak_length, key, key_length, input_data,
+					temp_len, encrypt);
+		}
+	}
+
+	if (!rc) {
+		VV_(printf("Encrypt:\n"));
+		dump_xts_data(tweak, tweak_length, key, key_length, input_data,
+					data_length, encrypt);
+	}
+
+	if (memcmp(result, encrypt, data_length)) {
+		VV_(printf("Encryption Result does not match the known ciphertext!\n"));
+		VV_(printf("Expected data:\n"));
+		dump_array(result, data_length);
+		VV_(printf("Encryption Result:\n"));
+		dump_array(encrypt, data_length);
+		rc++;
+	}
+
+	if (memcmp(expected_tweak, tmp_tweak, tweak_length)) {
+		VV_(printf("Update of TWEAK does not match the expected TWEAK!\n"));
+		VV_(printf("Expected TWEAK:\n"));
+		dump_array(expected_tweak, tweak_length);
+		VV_(printf("Updated TWEAK:\n"));
+		dump_array(tmp_tweak, tweak_length);
+		VV_(printf("Original TWEAK:\n"));
+		dump_array(tweak, tweak_length);
+		rc++;
+	}
+
+	if (rc) {
+		VV_(printf("AES XTS test exited after encryption\n"));
+		goto done;
+	}
+
+	/* Decryption */
+	memset(iv, 0, sizeof(iv));
+	memcpy(tmp_tweak, tweak, tweak_length);
+	temp_len = data_length;
+
+	/* First data chunk: 16 bytes */
+	rc = ica_aes_xts_ex(encrypt, decrypt, 16,
+			 key, key + (key_length / 2), (key_length / 2),
+			 tmp_tweak, iv, 0);
+	if (rc) {
+		VV_(printf("ica_aes_xts_ex decrypt failed with rc = %i\n", rc));
+		dump_xts_data(tweak, tweak_length, key, key_length, encrypt,
+			      data_length, decrypt);
+		goto done;
+	}
+
+	/* Intermediate data chunks, if any ... */
+	temp_len -= 16;
+	offset = 16;
+	while (temp_len > 2 * 16) {
+		rc = ica_aes_xts_ex(&(encrypt[offset]), &(decrypt[offset]), 16,
+				key, key + (key_length / 2), (key_length / 2),
+				NULL, iv, 0);
+		if (rc) {
+			VV_(printf("ica_aes_xts_ex decrypt failed with rc = %i\n", rc));
+			dump_xts_data(tweak, tweak_length, key, key_length, encrypt,
+						temp_len, decrypt);
+		}
+		temp_len -= 16;
+		offset += 16;
+	}
+
+	/* Last chunk of at least one full block, if any ... */
+	if (temp_len > 0) {
+		rc = ica_aes_xts_ex(&(encrypt[offset]), &(decrypt[offset]), temp_len,
+				key, key + (key_length / 2), (key_length / 2),
+				NULL, iv, 0);
+		if (rc) {
+			VV_(printf("ica_aes_xts_ex decrypt failed with rc = %i\n", rc));
+			dump_xts_data(tweak, tweak_length, key, key_length, encrypt,
+						temp_len, decrypt);
+		}
+	}
+
+	if (!rc) {
+		VV_(printf("Decrypt:\n"));
+		dump_xts_data(tweak, tweak_length, key, key_length, encrypt,
+					data_length, decrypt);
+	}
+
+	if (memcmp(decrypt, input_data, data_length)) {
+		VV_(printf("Decryption Result does not match the original data!\n"));
+		VV_(printf("Original data:\n"));
+		dump_array(input_data, data_length);
+		VV_(printf("Decryption Result:\n"));
+		dump_array(decrypt, data_length);
+		rc++;
+	}
+
+done:
+	if (rc)
+		return TEST_FAIL;
+
+	return TEST_SUCC;
+}
+
 int load_random_test_data(unsigned char *data, unsigned int data_length,
 			   unsigned char *iv, unsigned int iv_length,
 			   unsigned char *key, unsigned int key_length)
@@ -638,6 +807,14 @@ int main(int argc, char **argv)
 		rc = kat_aes_xts(iteration);
 		if (rc) {
 			V_(printf("kat_aes_xts failed with rc = %i\n", rc));
+			error_count++;
+		}
+	}
+
+	for (iteration = 1; iteration <= NR_TESTS; iteration++) {
+		rc = kat_aes_xts_ex(iteration);
+		if (rc) {
+			V_(printf("kat_aes_xts_ex failed with rc = %i\n", rc));
 			error_count++;
 		}
 	}
