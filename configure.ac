@@ -40,6 +40,21 @@ AM_INIT_AUTOMAKE([-Wall -Wno-portability foreign])
 
 FLAGS="-Wall -Wextra -mzarch"
 
+dnl --- check for perl
+AC_PATH_PROG(PERL, perl)
+if test -z "$PERL" ; then
+	AC_MSG_ERROR([Please install perl])
+fi
+
+dnl --- check for perl-FindBin module
+AC_MSG_CHECKING([if perl module 'FindBin' is installed])
+(echo "use FindBin;" ; echo "exit(0);") | $PERL > /dev/null 2>&1
+if test $? != 0 ; then
+	AC_MSG_RESULT(no)
+	AC_MSG_ERROR([Please install perl-FindBin])
+fi
+AC_MSG_RESULT(yes)
+
 dnl --- enable_debug
 AC_ARG_ENABLE(debug,
               [  --enable-debug          turn on debugging flags],
