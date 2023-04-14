@@ -43,6 +43,8 @@ extern OSSL_LIB_CTX *openssl_libctx;
 extern OSSL_PROVIDER *openssl_provider;
 #endif
 
+extern int ica_stats_enabled;
+
 int openssl_in_fips_mode(void)
 {
 #if !OPENSSL_VERSION_PREREQ(3, 0)
@@ -592,13 +594,19 @@ fips_powerup_tests(void)
 		ecdsa_kat, ecdh_kat,
 	};
 	size_t i, num_kats = sizeof(kats) / sizeof(kat_func);
+	int stats_mode_temp = ica_stats_enabled;
+
+	ica_stats_enabled = 0;
 
 	for (i = 0; i < num_kats; i++) {
 		if (kats[i]() != 0) {
 			fips |= ICA_FIPS_CRYPTOALG;
+			ica_stats_enabled = stats_mode_temp;
 			return;
 		}
 	}
+
+	ica_stats_enabled = stats_mode_temp;
 
 /* ICA internal test does not link against the library. So we should
  * skip the library integrity check in that case.
