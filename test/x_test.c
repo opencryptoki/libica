@@ -142,7 +142,7 @@ static void x25519_pc(void)
 	pkey1 = EVP_PKEY_new_raw_private_key(EVP_PKEY_X25519, NULL,
 					     priv, sizeof(priv));
 	if (pkey1 == NULL)
-		EXIT_ERR("EVP_PKEY_new_raw_private_key failed.");
+		EXIT_ERR("EVP_PKEY_new_raw_private_key failed. Check if openssl probably runs in fips mode.");
 
 	pkey2 = EVP_PKEY_new_raw_public_key(EVP_PKEY_X25519, NULL, pub,
 					    sizeof(pub));
