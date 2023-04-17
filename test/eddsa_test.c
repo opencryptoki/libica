@@ -313,7 +313,7 @@ static void ed25519_pc(void)
 	pkey = EVP_PKEY_new_raw_private_key(EVP_PKEY_ED25519, NULL,
 					    priv, sizeof(priv));
 	if (pkey == NULL)
-		EXIT_ERR("EVP_PKEY_new_raw_private_key failed.");
+		EXIT_ERR("EVP_PKEY_new_raw_private_key failed. Check if openssl probably runs in fips mode.");
 
 	if (EVP_DigestSignInit(ctx2, &pctx, NULL, NULL, pkey) != 1)
 		EXIT_ERR("EVP_DigestSignInit failed.");
