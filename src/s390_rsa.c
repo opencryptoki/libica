@@ -417,6 +417,10 @@ unsigned int rsa_key_generate_crt(ica_adapter_handle_t deviceHandle,
 
 	BN_bn2bin(iqmp, private_key->qInverse + 8 + offset);
 
+	rc = ica_rsa_crt_key_check(private_key);
+	if (rc == 1)
+		rc = 0;
+
 err:
 #if !OPENSSL_VERSION_PREREQ(3, 0)
 	RSA_free(rsa);
