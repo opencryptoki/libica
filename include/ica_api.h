@@ -1441,6 +1441,14 @@ unsigned int ica_rsa_mod_expo(ica_adapter_handle_t adapter_handle,
  * has to be the same. Thus right justify input data inside the data block.
  * @param rsa_key
  * Pointer to the key to be used, in CRT format.
+ * Note that if the key in CRT format is presented in privileged form,
+ * respectively prime 'p' > prime 'q', then the key credentials 'p' and 'q' as
+ * well as 'dp' and 'dq' will be swapped and qInverse will be recalculated
+ * by function ica_rsa_crt(). This modifies the key in a non-thread-save way.
+ * If the same key is used by other threads concurrently this may lead to
+ * nondeterministic results. You must serialize calls to ica_rsa_crt() in an
+ * appropriate way, or call ica_rsa_crt_key_check() once prior to using the key
+ * with ica_rsa_crt() the first time.
  * @param output_data
  * Pointer to where the output results are to be placed. Buffer has to be as
  * large as the input_data and length of the modulus specified in rsa_key.
