@@ -1,4 +1,4 @@
-AC_INIT([libica], [4.2.1], [https://github.com/opencryptoki/libica/issues],, [https://github.com/opencryptoki/libica])
+AC_INIT([libica], [4.2.2], [https://github.com/opencryptoki/libica/issues],, [https://github.com/opencryptoki/libica])
 
 # save cmdline flags
 cmdline_CFLAGS="$CFLAGS"
