@@ -345,12 +345,11 @@ static unsigned int check_message_part(unsigned int message_part)
 
 unsigned int ica_open_adapter(ica_adapter_handle_t *adapter_handle)
 {
-	char *name, status_mask[64];
+	char *name;
 
 	if (!adapter_handle)
 		return EINVAL;
 
-	*adapter_handle = DRIVER_NOT_LOADED;
 	name = getenv("LIBICA_CRYPT_DEVICE");
 	if (name)
 		*adapter_handle = open(name, O_RDWR);
@@ -360,12 +359,6 @@ unsigned int ica_open_adapter(ica_adapter_handle_t *adapter_handle)
 			*adapter_handle = open(DEFAULT2_CRYPT_DEVICE, O_RDWR);
 		if (*adapter_handle == -1)
 			*adapter_handle = open(DEFAULT3_CRYPT_DEVICE, O_RDWR);
-	}
-	if (*adapter_handle != -1) {
-		/* Test if character device is accessible. */
-		if (!ioctl(*adapter_handle, Z90STAT_STATUS_MASK, &status_mask)) {
-			return 0;
-		}
 	}
 
 	/*
