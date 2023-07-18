@@ -124,39 +124,46 @@ void stats_munmap(int user, int unlink)
  * @direction - valid values are ENCRYPT and DECRYPT
  */
 
-uint64_t stats_query(stats_fields_t field, int hardware, int direction)
+uint64_t stats_query(stats_entry_t *source, stats_fields_t field,
+		     int hardware, int direction)
 {
-	if (stats == NULL)
+	if (source == NULL)
+		source = stats;
+
+	if (source == NULL)
 		return 0;
 
 	if (direction == ENCRYPT)
 		if (hardware == ALGO_HW)
-			return stats[field].enc.hw;
+			return source[field].enc.hw;
 		else
-			return stats[field].enc.sw;
+			return source[field].enc.sw;
 	else
 		if (hardware == ALGO_HW)
-			return stats[field].dec.hw;
+			return source[field].dec.hw;
 		else
-			return stats[field].dec.sw;
+			return source[field].dec.sw;
 }
 
-static uint64_t calc_summary(stats_fields_t start, unsigned int num,
+static uint64_t calc_summary(stats_entry_t *source,
+		             stats_fields_t start, unsigned int num,
 		             int hardware, int direction)
 {
 	unsigned int i;
 	uint64_t sum = 0;
 
 	for (i = 0; i < num; i++)
-		sum += stats_query(start + i, hardware, direction);
+		sum += stats_query(source, start + i, hardware, direction);
 
 	return sum;
 }
 
 /* Returns the statistic data in a stats_entry_t array
+ * @source - source of the statistics data. If NULL, then the global stats
+ *           are used, which must have been mapped via stats_mmap() before.
  * @entries - Needs to be a array of size ICA_NUM_STATS.
  */
-void get_stats_data(stats_entry_t *entries)
+void get_stats_data(stats_entry_t *source, stats_entry_t *entries)
 {
 	unsigned int i;
 	for (i = 0; i < ICA_NUM_STATS; i++) {
@@ -168,58 +175,62 @@ void get_stats_data(stats_entry_t *entries)
 		case ICA_STATS_AES_CTR:
 		case ICA_STATS_AES_CMAC:
 		case ICA_STATS_AES_GCM:
-			entries[i].enc.hw = calc_summary(i + 1, 3,
-					                 ALGO_HW, ENCRYPT);
-			entries[i].enc.sw = calc_summary(i + 1, 3,
-					                 ALGO_SW, ENCRYPT);
-			entries[i].dec.hw = calc_summary(i + 1, 3,
-					                 ALGO_HW, DECRYPT);
-			entries[i].dec.sw = calc_summary(i + 1, 3,
-					                 ALGO_SW, DECRYPT);
+			entries[i].enc.hw = calc_summary(source, i + 1, 3,
+							 ALGO_HW, ENCRYPT);
+			entries[i].enc.sw = calc_summary(source, i + 1, 3,
+							 ALGO_SW, ENCRYPT);
+			entries[i].dec.hw = calc_summary(source, i + 1, 3,
+							 ALGO_HW, DECRYPT);
+			entries[i].dec.sw = calc_summary(source, i + 1, 3,
+							 ALGO_SW, DECRYPT);
 			break;
 
 		case ICA_STATS_AES_XTS:
-			entries[i].enc.hw = calc_summary(i + 1, 2,
-					                 ALGO_HW, ENCRYPT);
-			entries[i].enc.sw = calc_summary(i + 1, 2,
-					                 ALGO_SW, ENCRYPT);
-			entries[i].dec.hw = calc_summary(i + 1, 2,
-					                 ALGO_HW, DECRYPT);
-			entries[i].dec.sw = calc_summary(i + 1, 2,
-					                 ALGO_SW, DECRYPT);
+			entries[i].enc.hw = calc_summary(source, i + 1, 2,
+							 ALGO_HW, ENCRYPT);
+			entries[i].enc.sw = calc_summary(source, i + 1, 2,
+							 ALGO_SW, ENCRYPT);
+			entries[i].dec.hw = calc_summary(source, i + 1, 2,
+							 ALGO_HW, DECRYPT);
+			entries[i].dec.sw = calc_summary(source, i + 1, 2,
+							 ALGO_SW, DECRYPT);
 			break;
 
 		case ICA_STATS_RSA_ME:
 		case ICA_STATS_RSA_CRT:
-			entries[i].enc.hw = calc_summary(i + 1, 4,
-					                 ALGO_HW, ENCRYPT);
-			entries[i].enc.sw = calc_summary(i + 1, 4,
-					                 ALGO_SW, ENCRYPT);
-			entries[i].dec.hw = calc_summary(i + 1, 4,
-					                 ALGO_HW, DECRYPT);
-			entries[i].dec.sw = calc_summary(i + 1, 4,
-					                 ALGO_SW, DECRYPT);
+			entries[i].enc.hw = calc_summary(source, i + 1, 4,
+							 ALGO_HW, ENCRYPT);
+			entries[i].enc.sw = calc_summary(source, i + 1, 4,
+							 ALGO_SW, ENCRYPT);
+			entries[i].dec.hw = calc_summary(source, i + 1, 4,
+							 ALGO_HW, DECRYPT);
+			entries[i].dec.sw = calc_summary(source, i + 1, 4,
+							 ALGO_SW, DECRYPT);
 			break;
 
 		case ICA_STATS_ECDH:
 		case ICA_STATS_ECDSA_SIGN:
 		case ICA_STATS_ECDSA_VERIFY:
 		case ICA_STATS_ECKGEN:
-			entries[i].enc.hw = calc_summary(i + 1, 8,
-					                 ALGO_HW, ENCRYPT);
-			entries[i].enc.sw = calc_summary(i + 1, 8,
-					                 ALGO_SW, ENCRYPT);
-			entries[i].dec.hw = calc_summary(i + 1, 8,
-					                 ALGO_HW, DECRYPT);
-			entries[i].dec.sw = calc_summary(i + 1, 8,
-					                 ALGO_SW, DECRYPT);
+			entries[i].enc.hw = calc_summary(source, i + 1, 8,
+							 ALGO_HW, ENCRYPT);
+			entries[i].enc.sw = calc_summary(source, i + 1, 8,
+							 ALGO_SW, ENCRYPT);
+			entries[i].dec.hw = calc_summary(source, i + 1, 8,
+							 ALGO_HW, DECRYPT);
+			entries[i].dec.sw = calc_summary(source, i + 1, 8,
+							 ALGO_SW, DECRYPT);
 			break;
 
 		default:
-			entries[i].enc.hw = stats_query(i, ALGO_HW, ENCRYPT);
-			entries[i].enc.sw = stats_query(i, ALGO_SW, ENCRYPT);
-			entries[i].dec.hw = stats_query(i, ALGO_HW, DECRYPT);
-			entries[i].dec.sw = stats_query(i, ALGO_SW, DECRYPT);
+			entries[i].enc.hw = stats_query(source, i,
+							ALGO_HW, ENCRYPT);
+			entries[i].enc.sw = stats_query(source, i,
+							ALGO_SW, ENCRYPT);
+			entries[i].dec.hw = stats_query(source, i,
+							ALGO_HW, DECRYPT);
+			entries[i].dec.sw = stats_query(source, i,
+							ALGO_SW, DECRYPT);
 			break;
 		}
 	}
@@ -280,6 +291,7 @@ int get_stats_sum(stats_entry_t *sum)
 		}
 	}
 	closedir(shmDir);
+	get_stats_data(sum, sum);
 	return 1;
 }
 
