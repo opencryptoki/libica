@@ -302,7 +302,7 @@ int main(int argc, char *argv[])
 				perror("malloc: ");
 				return EXIT_FAILURE;
 			}
-			get_stats_data(entries);
+			get_stats_data(NULL, entries);
 			if (json) {
 				print_stats_json(entries, usr);
 			} else {
@@ -358,7 +358,7 @@ int main(int argc, char *argv[])
 			perror("malloc: ");
 			return EXIT_FAILURE;
 		}
-		get_stats_data(stats);
+		get_stats_data(NULL, stats);
 		if (json) {
 			pswd = getpwuid(user == -1 ? geteuid() : (uid_t)user);
 			if (pswd == NULL) {

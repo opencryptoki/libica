@@ -286,8 +286,9 @@ typedef enum stats_fields {
 
 int stats_mmap(int user);
 void stats_munmap(int user, int unlink);
-uint64_t stats_query(stats_fields_t field, int hardware, int direction);
-void get_stats_data(stats_entry_t *entries);
+uint64_t stats_query(stats_entry_t *source, stats_fields_t field,
+		     int hardware, int direction);
+void get_stats_data(stats_entry_t *source, stats_entry_t *entries);
 void stats_increment(stats_fields_t field, int hardware, int direction);
 int get_stats_sum(stats_entry_t *sum);
 char *get_next_usr();
