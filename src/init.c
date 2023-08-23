@@ -118,7 +118,15 @@ void __attribute__ ((constructor)) icainit(void)
 	 * OpenSSL >= 3.0:
 	 * Create a separate library context for libica's use of OpenSSL services
 	 * and explicitly load the 'default' or 'fips' provider for this context.
+	 *
+	 * Ensure OpenSSL is initialized and the OpenSSL config is loaded
+	 * BEFORE creating the library context. Otherwise the OpenSSL config
+	 * is loaded later, which may cause that all configured providers
+	 * are also loaded into the library context. We need to make sure that
+	 * only the default or fips provider is loaded in the library context.
 	 */
+	OPENSSL_init_crypto(OPENSSL_INIT_LOAD_CONFIG, NULL);
+
 	openssl_libctx = OSSL_LIB_CTX_new();
 	if (openssl_libctx == NULL) {
 		syslog(LOG_ERR, "Libica: failed to create openssl lib context\n");
