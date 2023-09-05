@@ -39,7 +39,7 @@
 #else
 #define CMD_NAME "icainfo"
 #endif
-#define COPYRIGHT "Copyright IBM Corp. 2007, 2022."
+#define COPYRIGHT "Copyright IBM Corp. 2007-2023."
 
 #define CELL_SIZE 3
 

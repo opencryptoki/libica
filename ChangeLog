@@ -1,3 +1,7 @@
+v4.2.3
+   [PATCH] Add OPENSSL_init_crypto in libica constructor
+   [PATCH] remove deprecated ioctl Z90STAT_STATUS_MASK
+   [PATCH] bug fixes
 v4.2.2
    [UPDATE] syslog msgs only in error cases
    [UPDATE] don't count statistics in fips power-on self tests
