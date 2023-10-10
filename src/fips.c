@@ -400,6 +400,8 @@ static int compute_file_hmac(const char *path, void **buf, size_t *hmaclen)
 	void *fdata = NULL;
 	struct stat fdata_stat;
 
+	BEGIN_OPENSSL_LIBCTX(openssl_libctx, rc);
+
 	pkey = get_pkey();
 	if (!pkey)
 		goto end;
@@ -438,6 +440,7 @@ end:
 		EVP_MD_CTX_destroy(mdctx);
 
 	OPENSSL_cleanse(tmp, sizeof(tmp));
+	END_OPENSSL_LIBCTX(rc);
 
 	return rc;
 }
