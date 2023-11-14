@@ -263,10 +263,8 @@ int get_stats_sum(stats_entry_t *sum)
 			int fd;
 			stats_entry_t *tmp;
 
-			if ((getpwuid(atoi(&direntp->d_name[9]))) == NULL) {
-				closedir(shmDir);
-				return 0;
-			}
+			if ((getpwuid(atoi(&direntp->d_name[9]))) == NULL)
+				continue;
 
 			if ((fd = shm_open(direntp->d_name, O_RDONLY, 0)) == -1) {
 				closedir(shmDir);
@@ -324,9 +322,9 @@ char *get_next_usr()
 			int uid = atoi(&direntp->d_name[9]);
 			struct passwd *pwd;
 			if ((pwd = getpwuid(uid)) == NULL)
-				return NULL;
+				continue;
 			if (stats_mmap(uid) == -1)
-				return NULL;
+				break;
 
 			return pwd->pw_name;
 		} else {
