@@ -1,8 +1,9 @@
-dist: bionic
+os: linux
+dist: focal
 
 language: c
 
-matrix:
+jobs:
     include:
         - name: "linux-s390x-gcc"
           os: linux
