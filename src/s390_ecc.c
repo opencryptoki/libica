@@ -42,6 +42,7 @@ extern OSSL_LIB_CTX *openssl_libctx;
 
 #define CPRBXSIZE (sizeof(struct CPRBX))
 #define PARMBSIZE (2048)
+#define MAX_KDSA_RETRIES         10000
 
 
 static int eckeygen_cpacf(ICA_EC_KEY *key);
@@ -1715,7 +1716,7 @@ struct {				\
 #undef DEF_PARAM
 
 	unsigned long fc;
-	size_t off;
+	size_t off, counter = 0;
 	int rc;
 
 	memset(&param, 0, sizeof(param));
@@ -1743,16 +1744,25 @@ struct {				\
 #ifdef ICA_FIPS
 			if (fips & ICA_FIPS_MODE) {
 				fc |= 0x80; /* deterministic signature */
-				RAND_bytes(param.P256.rand + off, sizeof(param.P256.rand) - off);
+				do {
+					/* If the random number is not invertible, s390_kdsa will
+					 * cause to loop. Same for p384 and p521 below. */
+					if (RAND_bytes(param.P256.rand + off, sizeof(param.P256.rand) - off) != 1) {
+						rc = EIO;
+						break;
+					}
+					rc = s390_kdsa(fc, param.buff, NULL, 0) ? EIO : 0;
+				} while ((rc != 0) && (++counter < MAX_KDSA_RETRIES));
+			} else {
+				rc = s390_kdsa(fc, param.buff, NULL, 0) ? EIO : 0;
 			}
+#else
+			rc = s390_kdsa(fc, param.buff, NULL, 0) ? EIO : 0;
 #endif
-			rc = s390_kdsa(fc, param.buff, NULL, 0);
 		} else {
 			fc |= 0x80; /* deterministic signature */
-			do {
-				memcpy(param.P256.rand + off, k, sizeof(param.P256.rand) - off);
-				rc = s390_kdsa(fc, param.buff, NULL, 0);
-			} while (rc);
+			memcpy(param.P256.rand + off, k, sizeof(param.P256.rand) - off);
+			rc = s390_kdsa(fc, param.buff, NULL, 0) ? EIO : 0;
 		}
 
 		memcpy(sig, param.P256.sig_r + off,
@@ -1787,16 +1797,23 @@ struct {				\
 #ifdef ICA_FIPS
 			if (fips & ICA_FIPS_MODE) {
 				fc |= 0x80; /* deterministic signature */
-				RAND_bytes(param.P384.rand + off, sizeof(param.P384.rand) - off);
+				do {
+					if (RAND_bytes(param.P384.rand + off, sizeof(param.P384.rand) - off) != 1) {
+						rc = EIO;
+						break;
+					}
+					rc = s390_kdsa(fc, param.buff, NULL, 0) ? EIO : 0;
+				} while ((rc != 0) && (++counter < MAX_KDSA_RETRIES));
+			} else {
+				rc = s390_kdsa(fc, param.buff, NULL, 0) ? EIO : 0;
 			}
+#else
+			rc = s390_kdsa(fc, param.buff, NULL, 0) ? EIO : 0;
 #endif
-			rc = s390_kdsa(fc, param.buff, NULL, 0);
 		} else {
 			fc |= 0x80; /* deterministic signature */
-			do {
-				memcpy(param.P384.rand + off, k, sizeof(param.P384.rand) - off);
-				rc = s390_kdsa(fc, param.buff, NULL, 0);
-			} while (rc);
+			memcpy(param.P384.rand + off, k, sizeof(param.P384.rand) - off);
+			rc = s390_kdsa(fc, param.buff, NULL, 0) ? EIO : 0;
 		}
 
 		memcpy(sig, param.P384.sig_r + off,
@@ -1830,19 +1847,35 @@ struct {				\
 		if (k == NULL) {
 #ifdef ICA_FIPS
 			if (fips & ICA_FIPS_MODE) {
-				/* Random number must be invertible by the order of the curve.
-				 * Use one byte less */
 				fc |= 0x80; /* deterministic signature */
-				RAND_bytes(param.P521.rand + off + 1, sizeof(param.P521.rand) - off - 1);
+				do {
+					if (RAND_bytes(param.P521.rand + off, sizeof(param.P521.rand) - off) != 1) {
+						rc = EIO;
+						break;
+					}
+					/*
+					 * Before calling KDSA, set the first 7 bits of the leftmost
+					 * byte of the generated random number to zero, which
+					 * actually makes the random number a 521-bit value. If the
+					 * random nonce has anything else than 0x01 or 0x00 in the
+					 * very first byte, it will be larger than the order, and
+					 * thus KDSA will fail with CC=2 and the loop takes a retry.
+					 * So this just minimizes the number of retries without
+					 * decreasing security.
+					 */
+					*(param.P521.rand + off) &= 0x01;
+					rc = s390_kdsa(fc, param.buff, NULL, 0) ? EIO : 0;
+				} while ((rc != 0) && (++counter < MAX_KDSA_RETRIES));
+			} else {
+				rc = s390_kdsa(fc, param.buff, NULL, 0) ? EIO : 0;
 			}
+#else
+			rc = s390_kdsa(fc, param.buff, NULL, 0) ? EIO : 0;
 #endif
-			rc = s390_kdsa(fc, param.buff, NULL, 0);
 		} else {
 			fc |= 0x80; /* deterministic signature */
-			do {
-				memcpy(param.P521.rand + off, k, sizeof(param.P521.rand) - off);
-				rc = s390_kdsa(fc, param.buff, NULL, 0);
-			} while (rc);
+			memcpy(param.P521.rand + off, k, sizeof(param.P521.rand) - off);
+			rc = s390_kdsa(fc, param.buff, NULL, 0) ? EIO : 0;
 		}
 
 		memcpy(sig, param.P521.sig_r + off,
