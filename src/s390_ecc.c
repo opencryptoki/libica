@@ -1754,9 +1754,15 @@ struct {				\
 					rc = s390_kdsa(fc, param.buff, NULL, 0) ? EIO : 0;
 				} while ((rc != 0) && (++counter < MAX_KDSA_RETRIES));
 			} else {
+				/* Also create a random k-value for the non-deterministic
+				 * case as this number will be hashed with an internally
+				 * CPACF-created number and therefore increases quality.
+				 * Same below for p384 and p521. */
+				RAND_bytes(param.P256.rand + off, sizeof(param.P256.rand) - off);
 				rc = s390_kdsa(fc, param.buff, NULL, 0) ? EIO : 0;
 			}
 #else
+			RAND_bytes(param.P256.rand + off, sizeof(param.P256.rand) - off);
 			rc = s390_kdsa(fc, param.buff, NULL, 0) ? EIO : 0;
 #endif
 		} else {
@@ -1805,9 +1811,11 @@ struct {				\
 					rc = s390_kdsa(fc, param.buff, NULL, 0) ? EIO : 0;
 				} while ((rc != 0) && (++counter < MAX_KDSA_RETRIES));
 			} else {
+				RAND_bytes(param.P384.rand + off, sizeof(param.P384.rand) - off);
 				rc = s390_kdsa(fc, param.buff, NULL, 0) ? EIO : 0;
 			}
 #else
+			RAND_bytes(param.P384.rand + off, sizeof(param.P384.rand) - off);
 			rc = s390_kdsa(fc, param.buff, NULL, 0) ? EIO : 0;
 #endif
 		} else {
@@ -1867,9 +1875,11 @@ struct {				\
 					rc = s390_kdsa(fc, param.buff, NULL, 0) ? EIO : 0;
 				} while ((rc != 0) && (++counter < MAX_KDSA_RETRIES));
 			} else {
+				RAND_bytes(param.P521.rand + off, sizeof(param.P521.rand) - off);
 				rc = s390_kdsa(fc, param.buff, NULL, 0) ? EIO : 0;
 			}
 #else
+			RAND_bytes(param.P521.rand + off, sizeof(param.P521.rand) - off);
 			rc = s390_kdsa(fc, param.buff, NULL, 0) ? EIO : 0;
 #endif
 		} else {
