@@ -258,24 +258,16 @@ static unsigned int check_gcm_parms(unsigned long text_length,
 				    const unsigned char *tag, unsigned int tag_length,
 				    unsigned int iv_length)
 {
-#ifdef __s390x__
 	/*
-	 * The following comparisions are alaways false on s390 targets
-	 * due to limited range of data type.
-	 */
-	if ((text_length > S390_GCM_MAX_TEXT_LENGTH) ||
-	    (aad_length > S390_GCM_MAX_AAD_LENGTH))
-		return EINVAL;
-#else
-	(void)text_length;	/* supporess unused param warning */
-	(void)aad_length;
-#endif
-	/*
-	 * The following check must be done but is commented out because
-	 * comparison is always false due to limited range of data type.
+	 * The following comparisons are always false due to limited
+	 * range of data types.
 	 *
-	 * if (iv_length   > S390_GCM_MAX_IV_LENGTH)
-	 *	return EINVAL;
+	 * if ((text_length > S390_GCM_MAX_TEXT_LENGTH) ||
+	 *     (aad_length > S390_GCM_MAX_AAD_LENGTH))
+	 *     return EINVAL;
+	 *
+	 * if (iv_length > S390_GCM_MAX_IV_LENGTH)
+	 *     return EINVAL;
 	 */
 
 	if (iv_length == 0)
