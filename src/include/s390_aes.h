@@ -59,8 +59,8 @@ static inline int s390_aes_gcm_hw(unsigned int function_code,
 		unsigned int cv;
 		ica_aes_vector_t tag;
 		ica_aes_vector_t subkey_h;
-		unsigned long long total_aad_length;
-		unsigned long long total_input_length;
+		unsigned long long total_aad_length; /* bit length */
+		unsigned long long total_input_length; /* bit length */
 		ica_aes_vector_t j0;
 		ica_aes_key_len_256_t key;
 	} parm_block;
