@@ -16,9 +16,23 @@
 
 #include "s390_ctr.h"
 
-#define S390_GCM_MAX_TEXT_LENGTH (0x0000000fffffffe0ul) /* (2^31)-32 */
-#define S390_GCM_MAX_AAD_LENGTH  (0x2000000000000000ul) /* (2^61)    */
-#define S390_GCM_MAX_IV_LENGTH   (0x2000000000000000ul) /* (2^61)    */
+/*
+ * NIST SP 800-38d: bitlen(P) <= 2^39 - 256;
+ *   => 0 <= bytelen(P) <= 2^36 - 32
+ */
+#define S390_GCM_MAX_TEXT_LENGTH         ((2ULL << 36) - 32)
+
+/*
+ * NIST SP 800-38d: bitlen(A) <= 2^64 - 1
+ *   => 0 <= bytelen(A) <= 2^61 - 1
+ */
+#define S390_GCM_MAX_AAD_LENGTH          ((2ULL << 61) - 1)
+
+/*
+ * NIST SP 800-38d: 1 <= bitlen(iv) <= 2^64 - 1
+ *   => 1 <= bytelen(iv) <= 2^61 - 1
+ */
+#define S390_GCM_MAX_IV_LENGTH           ((2ULL << 61) - 1)
 
 /* the recommended iv length for GCM is 96 bit or 12 byte */
 #define GCM_RECOMMENDED_IV_LENGTH 12
