@@ -51,8 +51,8 @@ struct kma_ctx_t {
 	uint32_t cv;
 	ica_aes_vector_t tag;
 	ica_aes_vector_t subkey_h;
-	uint64_t total_aad_length;
-	uint64_t total_input_length;
+	uint64_t total_aad_length; /* bit length */
+	uint64_t total_input_length; /* bit length */
 	ica_aes_vector_t j0;
 	ica_aes_key_len_256_t key;
 	// Above this line: KMA parmblock, never change!
@@ -735,8 +735,8 @@ static inline int s390_aes_gcm_kma(const unsigned char *in_data,
 		data_length = 0;
 
 	/* Actual lengths needed by KMA */
-	ctx->total_aad_length += aad_length*8;
-	ctx->total_input_length += data_length*8;
+	ctx->total_aad_length += aad_length * 8;
+	ctx->total_input_length += data_length * 8;
 
 	/* Call KMA */
 	rc = s390_kma(hw_fc, ctx,
