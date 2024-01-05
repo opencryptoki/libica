@@ -196,3 +196,9 @@ LIBICA_4.1.2 {
 	ica_get_build_version;
     local: *;
 } LIBICA_4.1.1;
+
+LIBICA_4.3.0 {
+    global:
+	ica_allow_external_gcm_iv_in_fips_mode;
+    local: *;
+} LIBICA_4.1.2;
