@@ -92,6 +92,14 @@ void ica_set_stats_mode(int stats_mode)
 	ica_stats_enabled = stats_mode ? 1 : 0;
 }
 
+int ica_external_gcm_iv_in_fips_mode_allowed = 0;
+
+void ica_allow_external_gcm_iv_in_fips_mode(int allow)
+{
+	ica_external_gcm_iv_in_fips_mode_allowed = allow ? 1 : 0;
+}
+
+
 #ifndef NO_CPACF
 
 static unsigned int check_des_parms(unsigned int mode,
@@ -3728,7 +3736,8 @@ unsigned int ica_aes_gcm_initialize(const unsigned char *iv,
 				unsigned int direction)
 {
 #ifdef ICA_FIPS
-	if (direction == ENCRYPT && (fips & ICA_FIPS_MODE))
+	if (!ica_external_gcm_iv_in_fips_mode_allowed &&
+		direction == ENCRYPT && (fips & ICA_FIPS_MODE))
 		return EPERM;
 #endif /* ICA_FIPS */
 
@@ -3976,7 +3985,8 @@ int ica_aes_gcm_kma_init(unsigned int direction,
 					kma_ctx* ctx)
 {
 #ifdef ICA_FIPS
-	if (direction == ICA_ENCRYPT && (fips & ICA_FIPS_MODE))
+	if (!ica_external_gcm_iv_in_fips_mode_allowed &&
+		direction == ICA_ENCRYPT && (fips & ICA_FIPS_MODE))
 		return EPERM;
 #endif /* ICA_FIPS */
 

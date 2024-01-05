@@ -538,6 +538,17 @@ ICA_EXPORT
 void ica_set_stats_mode(int stats_mode);
 
 /**
+ * Allow or disallow using an external GCM iv when running in fips mode.
+ * When running in fips mode, the GCM iv is created internally via an approved
+ * random source. Applications are not allowed to use an own, external iv. If
+ * this function is called with allow = 1, libica will override this behavior
+ * and allow an external GCM iv in fips mode. In this case the application is
+ * responsible for creating the iv in a compliant way. Default is allow = 0.
+ */
+ICA_EXPORT
+void ica_allow_external_gcm_iv_in_fips_mode(int allow);
+
+/**
  * Opens the specified adapter
  * @param adapter_handle Pointer to the file descriptor for the adapter or
  * to DRIVER_NOT_LOADED if opening the crypto adapter failed.
