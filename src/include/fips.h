@@ -25,6 +25,7 @@ int openssl_in_fips_mode(void);
  * Initialize global fips var to 1 resp. 0 when FIPS_FLAG is 1 resp. 0 (or not
  * present).
  */
+void fips_get_indicator(void);
 void fips_init(void);
 
 /*

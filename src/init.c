@@ -113,6 +113,16 @@ void __attribute__ ((constructor)) icainit(void)
 	if (ptr && sscanf(ptr, "%i", &value) == 1)
 		ica_set_stats_mode(value);
 
+#ifdef ICA_FIPS
+	fips_get_indicator();
+#endif
+
+	rng_init();
+
+	s390_prng_init();
+
+	s390_initialize_functionlist();
+
 #if OPENSSL_VERSION_PREREQ(3, 0)
 	/*
 	 * OpenSSL >= 3.0:
@@ -124,6 +134,18 @@ void __attribute__ ((constructor)) icainit(void)
 	 * is loaded later, which may cause that all configured providers
 	 * are also loaded into the library context. We need to make sure that
 	 * only the default or fips provider is loaded in the library context.
+	 *
+	 * Also make sure that OpenSSL initialization happens AFTER the
+	 * mechanism list has been initialized and the fips indicator has been
+	 * obtained. OPENSSL_init_crypto may load configured providers, and a
+	 * provider might use libica in its initialization function. It must
+	 * be ensured that libica has been initialized that far before OpenSSL
+	 * is initialized, so that such libica calls from providers can be
+	 * fulfilled and return correct information.
+	 *
+	 * The remaining FIPS initialization (fips provider load, power on self
+	 * tests, etc) must still happen after OpenSSL initialization, because
+	 * that relies on OpenSSL being initialized.
 	 */
 	OPENSSL_init_crypto(OPENSSL_INIT_LOAD_CONFIG, NULL);
 
@@ -135,18 +157,13 @@ void __attribute__ ((constructor)) icainit(void)
 #endif
 
 #ifdef ICA_FIPS
-	fips_init(); /* before powerup tests and initialize functionlist */
+	fips_init();
 #endif
 
 #if OPENSSL_VERSION_PREREQ(3, 0)
 	openssl3_initialized = 1;
 #endif
 
-	rng_init();
-
-	s390_prng_init();
-
-	s390_initialize_functionlist();
 
 #ifdef ICA_FIPS
 	if (fips & ICA_FIPS_MODE)

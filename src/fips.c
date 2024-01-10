@@ -249,7 +249,7 @@ SHA3_KAT(512, 512);
 #endif
 
 void
-fips_init(void)
+fips_get_indicator(void)
 {
 	FILE *fd;
 	char fips_flag;
@@ -271,18 +271,22 @@ fips_init(void)
 		fips_flag = '1';
 
 	if (fips_flag - '0') {
-#if !OPENSSL_VERSION_PREREQ(3, 0)
 		/* Set libica into FIPS mode. */
 		fips |= ICA_FIPS_MODE;
+	}
+}
 
+void
+fips_init(void)
+{
+	if (fips & ICA_FIPS_MODE) {
+#if !OPENSSL_VERSION_PREREQ(3, 0)
 		/* Try to set OpenSSL into FIPS mode. If this is not possible,
 		 * all software fallbacks (including RSA key generation) will
 		 * be disabled. OpenSSL FIPS mode can be queried using the
 		 * FIPS_mode() function. */
 		FIPS_mode_set(1);
 #else
-		fips = 0;
-
 #ifndef NO_FIPS_CONFIG_LOAD
 		/* Allow to skip reading the openssl 3.x fips config. Tests showed
 		 * that this step must be skipped on RHEL9 systems. But on other
@@ -290,7 +294,7 @@ fips_init(void)
 		if (!OSSL_LIB_CTX_load_config(openssl_libctx, LIBICA_FIPS_CONFIG)) {
 			syslog(LOG_ERR, "Libica failed to load openssl fips config %s\n",
 					LIBICA_FIPS_CONFIG);
-			fips |= ICA_FIPS_INTEGRITY;
+			fips = ICA_FIPS_INTEGRITY;
 			return;
 		}
 #endif
@@ -298,17 +302,15 @@ fips_init(void)
 		openssl_provider = OSSL_PROVIDER_load(openssl_libctx, "fips");
 		if (openssl_provider == NULL) {
 			syslog(LOG_ERR, "Libica failed to load fips provider.\n");
-			fips |= ICA_FIPS_INTEGRITY;
+			fips = ICA_FIPS_INTEGRITY;
 			return;
 		}
 
 		if (!EVP_set_default_properties(openssl_libctx, "fips=yes")) {
 			syslog(LOG_ERR, "Libica failed to set default properties 'fips=yes'\n");
-			fips |= ICA_FIPS_INTEGRITY;
+			fips = ICA_FIPS_INTEGRITY;
 			return;
 		}
-
-		fips |= ICA_FIPS_MODE;
 #endif
 	} else {
 		/* kernel fips flag == 0, load default provider in case we are
