@@ -326,22 +326,37 @@ static void set_switches(int msa)
 			*s390_kdsa_functions[n].enabled = 1;
 }
 
-unsigned int is_device_online(const char *dev)
+int file_fgets(const char *fname, char *buf, size_t buflen)
 {
-	unsigned int ret = 0;
-	FILE *file;
-	char c;
+	FILE *fp;
+	char *end;
+	int rc = 0;
 
-	if ((file = fopen(dev, "r")) == NULL)
-		return 0;
+	buf[0] = '\0';
 
-	/* Check if device online: 0 = offline, 1 = online */
-	if ((c = fgetc(file)) == '1')
-		ret = 1;
+	fp = fopen(fname, "r");
+	if (fp == NULL) {
+		return EIO;
+	}
+	if (fgets(buf, buflen, fp) == NULL) {
+		rc = EIO;
+		goto out_fclose;
+	}
 
-	fclose(file);
+	end = memchr(buf, '\n', buflen);
+	if (end)
+		*end = 0;
+	else
+		buf[buflen - 1] = 0;
 
-	return ret;
+	if (strlen(buf) == 0) {
+		rc = EIO;
+		goto out_fclose;
+	}
+
+out_fclose:
+	fclose(fp);
+	return rc;
 }
 
 unsigned int get_device_type(const char *dev, char *devtype)
@@ -381,8 +396,10 @@ unsigned int search_for_cards()
 	DIR *sysDir;
 	unsigned int ret = 0;
 	char dev[MAX_DEV_LEN] = AP_PATH;
+	char buf[250];
 	struct dirent *direntp;
 	char type[6];
+	int rc;
 
 	if ((sysDir = opendir(dev)) == NULL)
 		return 0;
@@ -393,9 +410,20 @@ unsigned int search_for_cards()
 		if (strncmp(direntp->d_name, "card", 4) != 0)
 			continue;
 
-		/* Check if device online */
+		/* Check if device online, configured, and not in checkstop */
 		snprintf(dev, MAX_DEV_LEN, "%s/%s/online", AP_PATH, direntp->d_name);
-		if (!is_device_online(dev))
+		rc = file_fgets(dev, buf, sizeof(buf));
+		if (rc != 0 || strcmp(buf, "1") != 0)
+			continue;
+
+		snprintf(dev, MAX_DEV_LEN, "%s/%s/config", AP_PATH, direntp->d_name);
+		rc = file_fgets(dev, buf, sizeof(buf));
+		if (rc == 0 && strcmp(buf, "1") != 0)
+			continue;
+
+		snprintf(dev, MAX_DEV_LEN, "%s/%s/chkstop", AP_PATH, direntp->d_name);
+		rc = file_fgets(dev, buf, sizeof(buf));
+		if (rc == 0 && strcmp(buf, "0") != 0)
 			continue;
 
 		/* Get device type (string like "CEXnT") */
