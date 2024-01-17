@@ -1225,11 +1225,7 @@ unsigned int ica_rsa_crt_key_check(ica_rsa_key_crt_t *rsa_key)
 		/* qInv = (1/q) mod p */
 		BN_mod_inverse(bn_invq, bn_q, bn_p, ctx);
 		memset(tmp_buf, 0, rsa_key->key_length/2);
-#if OPENSSL_VERSION_NUMBER < 0x10100000L
-		BN_bn2bin(bn_invq, tmp_buf + rsa_key->key_length/2 - BN_num_bytes(bn_invq));
-#else
 		BN_bn2binpad(bn_invq, tmp_buf, rsa_key->key_length/2);
-#endif
 		memcpy(rsa_key->qInverse + 8, tmp_buf, rsa_key->key_length/2);
 
 		free(tmp_buf);
