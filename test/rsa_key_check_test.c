@@ -41,7 +41,7 @@ int main(int argc, char **argv)
 
 		gettimeofday(&start, NULL);
 		rc = ica_rsa_crt_key_check(&crt_key);
-		if(rc){
+		if (rc > 1) {
 			V_(printf("ica_rsa_crt_key_check failed!\n"));
 		}
 

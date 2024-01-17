@@ -169,10 +169,11 @@ static EVP_PKEY *make_pkey(int nid, const unsigned char *p, size_t plen)
 		goto err;
 	}
 
-	bn_priv = BN_bin2bn(p, plen, NULL);
-	if (bn_priv == NULL) {
+	bn_priv = BN_secure_new();
+	if (bn_priv == NULL)
 		goto err;
-	}
+	if (BN_bin2bn(p, plen, bn_priv) == NULL)
+		goto err;
 
 	if (!EC_POINT_mul(group, point, bn_priv, NULL, NULL, NULL)) {
 		goto err;
@@ -235,7 +236,7 @@ static EVP_PKEY *make_pkey(int nid, const unsigned char *p, size_t plen)
 err:
 	EC_POINT_free(point);
 	EC_GROUP_free(group);
-	BN_free(bn_priv);
+	BN_clear_free(bn_priv);
 
 #if !OPENSSL_VERSION_PREREQ(3, 0)
 	// because we use EVP_PKEY_set1_EC_KEY above, free the ec_key here.
@@ -1268,7 +1269,11 @@ static unsigned int provide_pubkey(const ICA_EC_KEY *privkey, unsigned char *X, 
 	}
 
 	/* Get (D) as BIGNUM */
-	if ((bn_d = BN_bin2bn(privkey->D, privlen, NULL)) == NULL) {
+	bn_d = BN_secure_new();
+	if (bn_d == NULL)
+		return ENOMEM;
+	if (BN_bin2bn(privkey->D, privlen, bn_d) == NULL) {
+		BN_clear_free(bn_d);
 		return EFAULT;
 	}
 
@@ -1716,7 +1721,7 @@ struct {				\
 #undef DEF_PARAM
 
 	unsigned long fc;
-	size_t off, counter = 0;
+	size_t off;
 	int rc;
 
 	memset(&param, 0, sizeof(param));
@@ -1743,6 +1748,7 @@ struct {				\
 		if (k == NULL) {
 #ifdef ICA_FIPS
 			if (fips & ICA_FIPS_MODE) {
+				size_t counter = 0;
 				fc |= 0x80; /* deterministic signature */
 				do {
 					/* If the random number is not invertible, s390_kdsa will
@@ -1802,6 +1808,7 @@ struct {				\
 		if (k == NULL) {
 #ifdef ICA_FIPS
 			if (fips & ICA_FIPS_MODE) {
+				size_t counter = 0;
 				fc |= 0x80; /* deterministic signature */
 				do {
 					if (RAND_bytes(param.P384.rand + off, sizeof(param.P384.rand) - off) != 1) {
@@ -1855,6 +1862,7 @@ struct {				\
 		if (k == NULL) {
 #ifdef ICA_FIPS
 			if (fips & ICA_FIPS_MODE) {
+				size_t counter = 0;
 				fc |= 0x80; /* deterministic signature */
 				do {
 					if (RAND_bytes(param.P521.rand + off, sizeof(param.P521.rand) - off) != 1) {
@@ -2268,7 +2276,7 @@ static int eckeygen_cpacf(ICA_EC_KEY *key)
 	int rv, numbytes;
 
 	ctx = BN_CTX_new();
-	priv = BN_new();
+	priv = BN_secure_new();
 	ord = BN_new();
 
 	if (ctx == NULL || priv == NULL || ord == NULL) {
@@ -2321,7 +2329,7 @@ static int eckeygen_cpacf(ICA_EC_KEY *key)
 		if (ctx != NULL)
 			BN_CTX_free(ctx);
 		if (priv != NULL)
-			BN_free(priv);
+			BN_clear_free(priv);
 		if (ord != NULL)
 			BN_free(ord);
 
@@ -2541,15 +2549,21 @@ err:
 EVP_PKEY *icakey2pkey(const ICA_EC_KEY *icakey, int *is_public_key)
 {
 	EVP_PKEY *pkey = NULL;
-	BIGNUM *bn_D, *bn_X, *bn_Y;
+	BIGNUM *bn_D, *bn_X = NULL, *bn_Y = NULL;
 
 	if (icakey == NULL)
 		return NULL;
 
 	/* Check if any key parts available */
-	bn_D = BN_bin2bn(icakey->D, privlen_from_nid(icakey->nid), NULL);
+	bn_D = BN_secure_new();
+	if (bn_D == NULL)
+		return NULL;
+	if (BN_bin2bn(icakey->D, privlen_from_nid(icakey->nid), bn_D) == NULL)
+		goto done;
 	bn_X = BN_bin2bn(icakey->X, privlen_from_nid(icakey->nid), NULL);
 	bn_Y = BN_bin2bn(icakey->Y, privlen_from_nid(icakey->nid), NULL);
+	if (!bn_X || !bn_Y)
+		goto done;
 	if (BN_is_zero(bn_D) && BN_is_zero(bn_X) && BN_is_zero(bn_Y))
 		goto done;
 
@@ -2567,7 +2581,7 @@ EVP_PKEY *icakey2pkey(const ICA_EC_KEY *icakey, int *is_public_key)
 done:
 	BN_free(bn_X);
 	BN_free(bn_Y);
-	BN_free(bn_D);
+	BN_clear_free(bn_D);
 	return pkey;
 }
 

@@ -1182,12 +1182,12 @@ unsigned int ica_rsa_mod_expo(ica_adapter_handle_t adapter_handle,
 unsigned int ica_rsa_crt_key_check(ica_rsa_key_crt_t *rsa_key)
 {
 	int pq_comp;
-	int keyfmt = 1;
 	BIGNUM *bn_p;
 	BIGNUM *bn_q;
 	BIGNUM *bn_invq;
 	BN_CTX *ctx;
 	unsigned char *tmp_buf = NULL;
+	unsigned int rc;
 
 #ifdef ICA_FIPS
 	if (fips >> 1)
@@ -1195,49 +1195,63 @@ unsigned int ica_rsa_crt_key_check(ica_rsa_key_crt_t *rsa_key)
 #endif /* ICA_FIPS */
 
 	/* check if p > q  */
-	pq_comp = memcmp( (rsa_key->p + 8), (rsa_key->q), rsa_key->key_length/2);
-	if (pq_comp < 0) /* unprivileged key format */
-		keyfmt = 0;
+	pq_comp = memcmp( (rsa_key->p + 8), (rsa_key->q), rsa_key->key_length / 2);
+	if (pq_comp >= 0) /* privileged key format, p and q ok */
+		return 0;
 
-	if (!keyfmt) {
-		/* swap p and q */
-		tmp_buf = calloc(1, rsa_key->key_length/2);
-		if (!tmp_buf)
-			return ENOMEM;
-		memcpy(tmp_buf, rsa_key->p + 8, rsa_key->key_length/2);
-		memcpy(rsa_key->p + 8, rsa_key->q, rsa_key->key_length/2);
-		memcpy(rsa_key->q, tmp_buf, rsa_key->key_length/2);
+	/* unprivileged key format: swap p and q */
+	tmp_buf = calloc(1, rsa_key->key_length / 2);
+	if (!tmp_buf)
+		return ENOMEM;
 
-		/* swap dp and dq */
-		memcpy(tmp_buf, rsa_key->dp + 8, rsa_key->key_length/2);
-		memcpy(rsa_key->dp + 8, rsa_key->dq, rsa_key->key_length/2);
-		memcpy(rsa_key->dq, tmp_buf, rsa_key->key_length/2);
-
-		/* calculate new qInv */
-		bn_p = BN_new();
-		bn_q = BN_new();
-		bn_invq = BN_new();
-		ctx = BN_CTX_new();
-
-		BN_bin2bn(rsa_key->p, rsa_key->key_length/2+8, bn_p);
-		BN_bin2bn(rsa_key->q, rsa_key->key_length/2, bn_q);
-
-		/* qInv = (1/q) mod p */
-		BN_mod_inverse(bn_invq, bn_q, bn_p, ctx);
-		memset(tmp_buf, 0, rsa_key->key_length/2);
-		BN_bn2binpad(bn_invq, tmp_buf, rsa_key->key_length/2);
-		memcpy(rsa_key->qInverse + 8, tmp_buf, rsa_key->key_length/2);
-
-		free(tmp_buf);
-
-		BN_CTX_free(ctx);
-		BN_clear_free(bn_p);
-		BN_clear_free(bn_q);
-		BN_clear_free(bn_invq);
-
-		return 1;
+	bn_p = BN_secure_new();
+	bn_q = BN_secure_new();
+	bn_invq = BN_secure_new();
+	ctx = BN_CTX_new();
+	if (!bn_p || !bn_q || !bn_invq || !ctx) {
+		rc = ENOMEM;
+		goto done;
 	}
-	return 0;
+
+	/* swap p and q */
+	memcpy(tmp_buf, rsa_key->p + 8, rsa_key->key_length / 2);
+	memcpy(rsa_key->p + 8, rsa_key->q, rsa_key->key_length / 2);
+	memcpy(rsa_key->q, tmp_buf, rsa_key->key_length / 2);
+
+	/* swap dp and dq */
+	memcpy(tmp_buf, rsa_key->dp + 8, rsa_key->key_length / 2);
+	memcpy(rsa_key->dp + 8, rsa_key->dq, rsa_key->key_length / 2);
+	memcpy(rsa_key->dq, tmp_buf, rsa_key->key_length / 2);
+
+	if (BN_bin2bn(rsa_key->p, rsa_key->key_length / 2 + 8, bn_p) == NULL ||
+		BN_bin2bn(rsa_key->q, rsa_key->key_length / 2, bn_q) == NULL) {
+		rc = EFAULT;
+		goto done;
+	}
+
+	/* qInv = (1/q) mod p */
+	if (BN_mod_inverse(bn_invq, bn_q, bn_p, ctx) == NULL) {
+		rc = EFAULT;
+		goto done;
+	}
+	memset(tmp_buf, 0, rsa_key->key_length / 2);
+	if (BN_bn2binpad(bn_invq, tmp_buf, rsa_key->key_length / 2) <= 0) {
+		rc = EFAULT;
+		goto done;
+	}
+	memcpy(rsa_key->qInverse + 8, tmp_buf, rsa_key->key_length / 2);
+
+	rc = 1;
+
+done:
+	OPENSSL_cleanse(tmp_buf, rsa_key->key_length / 2);
+	free(tmp_buf);
+	BN_CTX_free(ctx);
+	BN_clear_free(bn_p);
+	BN_clear_free(bn_q);
+	BN_clear_free(bn_invq);
+
+	return rc;
 }
 
 unsigned int ica_rsa_crt(ica_adapter_handle_t adapter_handle,
@@ -1273,7 +1287,9 @@ unsigned int ica_rsa_crt(ica_adapter_handle_t adapter_handle,
 	rb.outputdata = output_data;
 	rb.outputdatalength = rsa_key->key_length;
 
-	ica_rsa_crt_key_check(rsa_key);
+	rc = ica_rsa_crt_key_check(rsa_key);
+	if (rc > 1)
+		return rc;
 
 	rb.np_prime = rsa_key->p;
 	rb.nq_prime = rsa_key->q;
