@@ -232,6 +232,13 @@ unsigned int rsa_key_generate_mod_expo(ica_adapter_handle_t deviceHandle,
 		goto err;
 	}
 
+	n = BN_secure_new();
+	d = BN_secure_new();
+	if (!n || !d) {
+		rc = ENOMEM;
+		goto err;
+	}
+
 	if (!EVP_PKEY_get_bn_param(pkey, OSSL_PKEY_PARAM_RSA_N, &n) ||
 		!EVP_PKEY_get_bn_param(pkey, OSSL_PKEY_PARAM_RSA_D, &d)) {
 		rc = EFAULT;
@@ -270,8 +277,8 @@ err:
 #if !OPENSSL_VERSION_PREREQ(3, 0)
 	RSA_free(rsa);
 #else
-	BN_free(n);
-	BN_free(d);
+	BN_clear_free(n);
+	BN_clear_free(d);
 	EVP_PKEY_free(pkey);
 #endif
 
@@ -334,6 +341,17 @@ unsigned int rsa_key_generate_crt(ica_adapter_handle_t deviceHandle,
 				    sizeof(unsigned long)));
 	if (!pkey) {
 		rc = EFAULT;
+		goto err;
+	}
+
+	n = BN_secure_new();
+	p = BN_secure_new();
+	q = BN_secure_new();
+	dmp1 = BN_secure_new();
+	dmq1 = BN_secure_new();
+	iqmp = BN_secure_new();
+	if (!n || !p || !q || !dmp1 || !dmq1 || !iqmp) {
+		rc = ENOMEM;
 		goto err;
 	}
 
@@ -425,12 +443,12 @@ err:
 #if !OPENSSL_VERSION_PREREQ(3, 0)
 	RSA_free(rsa);
 #else
-	BN_free(n);
-	BN_free(p);
-	BN_free(q);
-	BN_free(dmp1);
-	BN_free(dmq1);
-	BN_free(iqmp);
+	BN_clear_free(n);
+	BN_clear_free(p);
+	BN_clear_free(q);
+	BN_clear_free(dmp1);
+	BN_clear_free(dmq1);
+	BN_clear_free(iqmp);
 	EVP_PKEY_free(pkey);
 #endif
 
