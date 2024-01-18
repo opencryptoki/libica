@@ -799,11 +799,11 @@ int s390_get_fips_indicator(libica_fips_indicator_element *indicator_list,
 		return EINVAL;
 
 	if (!indicator_list) {
-		*indicator_list_len = sizeof(icaList) / sizeof(libica_fips_indicator_element);
+		*indicator_list_len = sizeof(icaList) / sizeof(libica_func_list_element_int);
 		return 0;
 	}
 
-	if (*indicator_list_len < (sizeof(icaList) / sizeof(libica_fips_indicator_element)))
+	if (*indicator_list_len < (sizeof(icaList) / sizeof(libica_func_list_element_int)))
 		return EINVAL;
 
 	for (i = 0; i < *indicator_list_len; i++) {
