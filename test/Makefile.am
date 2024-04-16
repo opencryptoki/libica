@@ -61,10 +61,14 @@ TESTS += \
 ${top_builddir}/src/internal_tests/ec_internal_test
 endif
 
+# disable OpenSSL CEX usage for all tests
+OPENSSL_s390xcap ?= nocex
+
 TEST_EXTENSIONS = .sh .pl
 TESTS_ENVIRONMENT = export LD_LIBRARY_PATH=${builddir}/../src/.libs/:$$LD_LIBRARY_PATH \
 			   PATH=${builddir}/../src/:$$PATH \
-			   LIBICA_TESTDATA=${srcdir}/testdata/;
+			   LIBICA_TESTDATA=${srcdir}/testdata/ \
+			   OPENSSL_s390xcap=${OPENSSL_s390xcap};
 AM_CFLAGS = @FLAGS@ -DNO_SW_FALLBACKS -I${srcdir}/../include/ -I${srcdir}/../src/include/
 LDADD = @LIBS@ ${top_builddir}/src/.libs/libica.so -lcrypto -lpthread
 
