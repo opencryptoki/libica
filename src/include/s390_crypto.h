@@ -244,27 +244,30 @@ void s390_crypto_switches_init(void);
 
 /**
  * s390_pcc:
- * @func: the function code passed to KM; see s390_pcc_functions
+ * @func: the function code passed to PCC; see s390_pcc_functions
  * @param: address of parameter block; see POP for details on each func
  *
  * Executes the PCC operation of the CPU.
  *
- * Returns -1 for failure, 0 for the query func, number of processed
- * bytes for encryption/decryption funcs
+ * Returns condition code of the PCC instruction
  */
 static inline int s390_pcc(unsigned long func, void *param)
 {
 	register unsigned long r0 asm("0") = (unsigned long)func;
 	register unsigned long r1 asm("1") = (unsigned long)param;
+	char cc;
 
-	asm volatile (
-		"0:	.long	%[opc] << 16\n"
-		"	brc	1,0b\n"
-		:
-		: [fc] "d" (r0), [param] "a" (r1), [opc] "i" (0xb92c)
-		: "cc", "memory");
+	asm volatile(
+		"0:     .insn   rre,%[opc] << 16,0,0\n" /* PCC opcode */
+		"       brc     1,0b\n" /* handle partial completion */
+		"       ipm     %[cc]\n"
+		"       srl     %[cc],28\n"
+		: [cc] "=d" (cc)
+		: [func] "d" (r0), [param] "a" (r1), [opc] "i" (0xb92c)
+		: "cc", "memory"
+	);
 
-	return 0;
+	return cc;
 }
 
 /**

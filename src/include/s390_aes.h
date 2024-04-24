@@ -674,7 +674,7 @@ static inline int s390_aes_xts_parm(unsigned long function_code,
 
 	memset(&parm_block.keys, 0, key_size);
 
-	if (rc >= 0) {
+	if (rc == 0) {
 		memcpy(xts_parm, parm_block.xts_parameter,
 		       sizeof(ica_aes_vector_t));
 		return 0;
