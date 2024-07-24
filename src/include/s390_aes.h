@@ -180,7 +180,7 @@ static inline int s390_aes_ctrlist(unsigned int fc, unsigned long data_length,
 			    unsigned char *key, unsigned char *out_data)
 {
 	int rc = 0;
-	unsigned char rest_in_data[AES_BLOCK_SIZE];
+	unsigned char rest_in_data[AES_BLOCK_SIZE] = { 0 };
 	unsigned char rest_out_data[AES_BLOCK_SIZE];
 	unsigned long rest_data_length;
 	unsigned long tmp_data_length;
