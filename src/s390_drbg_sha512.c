@@ -471,7 +471,7 @@ static int test_instantiate(int sec,
 static int test_reseed(int sec,
 		       bool pr)
 {
-	ws_t ws;
+	ws_t ws = { 0 };
 	ica_drbg_t sh = {.mech = &DRBG_SHA512, .ws = &ws, .sec = sec,
 			 .pr = pr};
 	const struct drbg_sha512_tv *tv;
@@ -508,7 +508,7 @@ static int test_reseed(int sec,
 static int test_generate(int sec,
 			 bool pr)
 {
-	ws_t ws;
+	ws_t ws = { 0 };
 	ica_drbg_t sh = {.mech = &DRBG_SHA512, .ws = &ws, .sec = sec,
 			 .pr = true};
 	size_t i;
