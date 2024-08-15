@@ -654,29 +654,59 @@ static inline int s390_aes_xts_parm(unsigned long function_code,
 				    unsigned char *xts_parm)
 {
 	int rc = 0;
-	struct {
-		unsigned char keys[key_size];
-		ica_aes_vector_t tweak;
-		unsigned char block_seq[sizeof(ica_aes_vector_t)];
-		unsigned char intermediate_bit_idx[sizeof(ica_aes_vector_t)];
-		unsigned char xts_parameter[sizeof(ica_aes_vector_t)];
+	union {
+		struct {
+			unsigned char keys[AES_KEY_LEN128];
+			ica_aes_vector_t tweak;
+			unsigned char block_seq[sizeof(ica_aes_vector_t)];
+			unsigned char intermediate_bit_idx[sizeof(ica_aes_vector_t)];
+			unsigned char xts_parameter[sizeof(ica_aes_vector_t)];
+		} aes_128;
+		struct {
+			unsigned char keys[AES_KEY_LEN256];
+			ica_aes_vector_t tweak;
+			unsigned char block_seq[sizeof(ica_aes_vector_t)];
+			unsigned char intermediate_bit_idx[sizeof(ica_aes_vector_t)];
+			unsigned char xts_parameter[sizeof(ica_aes_vector_t)];
+		} aes_256;
 	} parm_block;
 
-	memset(parm_block.block_seq, 0x00, sizeof(parm_block.block_seq));
-	memcpy(&parm_block.tweak, xts_parm,
-	       sizeof(parm_block.tweak));
-	memcpy(&parm_block.keys, key, key_size);
-	memset(parm_block.intermediate_bit_idx, 0x00,
-	       sizeof(parm_block.intermediate_bit_idx));
+	switch (key_size) {
+	case AES_KEY_LEN128:
+		memset(parm_block.aes_128.block_seq, 0x00,
+		       sizeof(parm_block.aes_128.block_seq));
+		memcpy(&parm_block.aes_128.tweak, xts_parm,
+		       sizeof(parm_block.aes_128.tweak));
+		memcpy(&parm_block.aes_128.keys, key, key_size);
+		memset(parm_block.aes_128.intermediate_bit_idx, 0x00,
+		       sizeof(parm_block.aes_128.intermediate_bit_idx));
+		break;
+	case AES_KEY_LEN256:
+		memset(parm_block.aes_256.block_seq, 0x00,
+		       sizeof(parm_block.aes_256.block_seq));
+		memcpy(&parm_block.aes_256.tweak, xts_parm,
+		       sizeof(parm_block.aes_256.tweak));
+		memcpy(&parm_block.aes_256.keys, key, key_size);
+		memset(parm_block.aes_256.intermediate_bit_idx, 0x00,
+		       sizeof(parm_block.aes_256.intermediate_bit_idx));
+		break;
+	default:
+		return EINVAL;
+	}
 
 	/* In PCC we do not differentiate between encryption and decryption */
 	rc = s390_pcc(function_code & 0x7f, &parm_block);
 
-	memset(&parm_block.keys, 0, key_size);
+	memset(key_size == AES_KEY_LEN128 ?
+			parm_block.aes_128.keys : parm_block.aes_256.keys,
+	       0, key_size);
 
 	if (rc == 0) {
-		memcpy(xts_parm, parm_block.xts_parameter,
+		memcpy(xts_parm, key_size == AES_KEY_LEN128 ?
+				parm_block.aes_128.xts_parameter :
+				parm_block.aes_256.xts_parameter,
 		       sizeof(ica_aes_vector_t));
+
 		return 0;
 	} else
 		return EIO;
@@ -692,9 +722,15 @@ static inline int s390_aes_xts_msg_dec(unsigned long function_code,
 	unsigned char tmp_in_data[AES_BLOCK_SIZE];
 	unsigned long rest_data_length;
 	unsigned long tmp_data_length;
-	struct {
-		unsigned char keys[key_size];
-		ica_aes_vector_t iv;
+	union {
+		struct {
+			unsigned char keys[AES_KEY_LEN128];
+			ica_aes_vector_t iv;
+		} aes_128;
+		struct {
+			unsigned char keys[AES_KEY_LEN256];
+			ica_aes_vector_t iv;
+		} aes_256;
 	} tmp_param;
 
 	rest_data_length = data_length % AES_BLOCK_SIZE;
@@ -718,7 +754,8 @@ static inline int s390_aes_xts_msg_dec(unsigned long function_code,
 	}
 
 	/* backup iv n-1 */
-	memcpy(&tmp_param, param, sizeof(tmp_param));
+	memcpy(&tmp_param, param, key_size == AES_KEY_LEN128 ?
+			sizeof(tmp_param.aes_128) : sizeof(tmp_param.aes_256));
 
 	/* dummy step to calculate iv n */
 	rc = s390_km(function_code, param, out_data + tmp_data_length, in_data + tmp_data_length, AES_BLOCK_SIZE);
@@ -805,22 +842,37 @@ static inline int s390_aes_xts_hw(unsigned int function_code,
 	/* This works similar as AES CBC, but uses km instead of kmc. Also we
 	 * need to specify the parameter block in order with key first and
 	 * XTS parameter behind. */
-	struct {
-		unsigned char keys[key_size];
-		ica_aes_vector_t iv;
+	union {
+		struct {
+			unsigned char keys[AES_KEY_LEN128];
+			ica_aes_vector_t iv;
+		} aes_128;
+		struct {
+			unsigned char keys[AES_KEY_LEN256];
+			ica_aes_vector_t iv;
+		} aes_256;
 	} key_buffer;
 
-	memcpy(key_buffer.keys, key1, key_size);
+	memcpy(key_size == AES_KEY_LEN128 ?
+			key_buffer.aes_128.keys : key_buffer.aes_256.keys,
+	       key1, key_size);
 	if (tweak != NULL) {
-		memcpy(&key_buffer.iv, tweak, sizeof(ica_aes_vector_t));
+		memcpy(key_size == AES_KEY_LEN128 ?
+				&key_buffer.aes_128.iv : &key_buffer.aes_256.iv,
+		       tweak, sizeof(ica_aes_vector_t));
 
 		/* Get XTS parameter through PCC first. */
 		rc = s390_aes_xts_parm(function_code, key_size, key2,
-				       (unsigned char *) &key_buffer.iv);
+				       (unsigned char *)(
+					key_size == AES_KEY_LEN128 ?
+						&key_buffer.aes_128.iv :
+						&key_buffer.aes_256.iv));
 		if (rc)
 			return EIO;
 	} else {
-		memcpy(&key_buffer.iv, iv, sizeof(ica_aes_vector_t));
+		memcpy(key_size == AES_KEY_LEN128 ?
+				&key_buffer.aes_128.iv : &key_buffer.aes_256.iv,
+		       iv, sizeof(ica_aes_vector_t));
 	}
 
 	if (function_code & S390_CRYPTO_DIRECTION_MASK)
@@ -831,13 +883,17 @@ static inline int s390_aes_xts_hw(unsigned int function_code,
 		rc = s390_aes_xts_msg_enc(function_code, input_length,
 					  input_data, output_data, &key_buffer);
 
-	memset(key_buffer.keys, 0, key_size);
+	memset(key_size == AES_KEY_LEN128 ?
+			key_buffer.aes_128.keys : key_buffer.aes_256.keys,
+	       0, key_size);
 
 	if (rc < 0)
 		return EIO;
 
 	if (iv != NULL)
-		memcpy(iv, key_buffer.iv, sizeof(ica_aes_vector_t));
+		memcpy(iv, key_size == AES_KEY_LEN128 ?
+				&key_buffer.aes_128.iv : &key_buffer.aes_256.iv,
+		       sizeof(ica_aes_vector_t));
 
 	return 0;
 }
