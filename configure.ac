@@ -38,7 +38,7 @@ AM_PROG_AS
 LT_INIT
 AM_INIT_AUTOMAKE([-Wall -Wno-portability foreign])
 
-FLAGS="-Wall -Wextra -mzarch"
+FLAGS="-Wall -Wextra -m64"
 
 dnl --- check for perl
 AC_PATH_PROG(PERL, perl)
