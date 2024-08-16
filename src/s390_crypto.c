@@ -149,9 +149,7 @@ static int read_cpuinfo(void)
 	FILE *handle = fopen("/proc/cpuinfo", "r");
 	if (handle) {
 		char buffer[80];
-		int i = 0;
 		while(fgets(buffer, sizeof(buffer), handle)) {
-			i++;
 			if(strstr(buffer,"features") && strstr(buffer,"msa")) {
 				msa = 1;
 				break;
