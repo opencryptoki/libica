@@ -62,9 +62,7 @@ int ica_fallbacks_enabled = 1;
 int ica_fallbacks_enabled = 0;
 #endif
 
-#if defined(NO_SW_FALLBACKS) || defined(NO_CPACF)
 #define UNUSED(var)			((void)(var))
-#endif
 
 void ica_set_fallback_mode(int fallback_mode)
 {
@@ -266,6 +264,9 @@ static unsigned int check_gcm_parms(unsigned long text_length,
 				    const unsigned char *tag, unsigned int tag_length,
 				    unsigned int iv_length)
 {
+	UNUSED(text_length);
+	UNUSED(aad_length);
+
 	/*
 	 * The following comparisons are always false due to limited
 	 * range of data types.
