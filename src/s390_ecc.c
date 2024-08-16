@@ -1303,21 +1303,25 @@ static unsigned int provide_pubkey(const ICA_EC_KEY *privkey, unsigned char *X, 
 #else
 	eckey = make_pkey(privkey->nid, privkey->D, privlen);
 	if (eckey == NULL) {
+		rc = EFAULT;
 		goto end;
 	}
 
 	if (!EVP_PKEY_get_octet_string_param(eckey, OSSL_PKEY_PARAM_ENCODED_PUBLIC_KEY,
 									NULL, 0, &ecpoint_len)) {
+		rc = EFAULT;
 		goto end;
 	}
 
 	ecpoint = OPENSSL_zalloc(ecpoint_len);
 	if (ecpoint == NULL) {
+		rc = EFAULT;
 		goto end;
 	}
 
 	if (!EVP_PKEY_get_octet_string_param(eckey, OSSL_PKEY_PARAM_ENCODED_PUBLIC_KEY,
 									ecpoint, ecpoint_len, &ecpoint_len)) {
+		rc = EFAULT;
 		goto end;
 	}
 
