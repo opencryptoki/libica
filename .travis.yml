@@ -10,6 +10,11 @@ jobs:
           arch: s390x
           compiler: gcc
           env: CONFIG_OPTS="--enable-fips --enable-internal-tests"
+        - name: "linux-s390x-clang"
+          os: linux
+          arch: s390x
+          compiler: clang
+          env: CONFIG_OPTS="--enable-fips --enable-internal-tests"
 
 before_script:
     - ./bootstrap.sh
