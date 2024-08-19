@@ -1740,6 +1740,7 @@ void ica_ec_key_free(ICA_EC_KEY *key)
 	free(key);
 }
 
+#ifndef NO_CPACF
 static inline int check_fips_ed_x(void)
 {
 #ifdef ICA_FIPS
@@ -1749,6 +1750,7 @@ static inline int check_fips_ed_x(void)
 	return 0;
 #endif
 }
+#endif
 
 
 int ica_x25519_ctx_new(ICA_X25519_CTX **ctx)
@@ -4281,6 +4283,7 @@ unsigned int ica_get_functionlist(libica_func_list_element *pmech_list,
  */
 ica_drbg_mech_t *const ICA_DRBG_SHA512 = &DRBG_SHA512;
 
+#ifndef NO_CPACF
 static inline int ica_drbg_error(int status)
 {
 	switch(status) {
@@ -4308,6 +4311,7 @@ static inline int ica_drbg_error(int status)
 		return -1;	/* unreachable */
 	}
 }
+#endif
 
 int ica_drbg_instantiate(ica_drbg_t **sh,
 			 int sec,
