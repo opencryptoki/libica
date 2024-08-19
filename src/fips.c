@@ -1262,9 +1262,9 @@ _err_:
 static int
 rsa_kat(void)
 {
-	ica_rsa_key_mod_expo_t pubkey;
-	ica_rsa_key_crt_t privkey;
-	ica_adapter_handle_t ah;
+	ica_rsa_key_mod_expo_t pubkey = { 0 };
+	ica_rsa_key_crt_t privkey = { 0 };
+	ica_adapter_handle_t ah = DRIVER_NOT_LOADED;
 	const struct rsa_tv *tv;
 	size_t i, keylen, crtparamlen;
 	unsigned char *out = NULL;
