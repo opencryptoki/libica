@@ -450,7 +450,7 @@ end:
 static int load_known_hmac(const char *path, unsigned char **hmac, long *hmaclen)
 {
 	int rc = -1;
-	FILE *fp;
+	FILE *fp = NULL;
 	char *known_hmac_str = NULL;
 	char *hmacpath, *p;
 	size_t n;
@@ -460,7 +460,7 @@ static int load_known_hmac(const char *path, unsigned char **hmac, long *hmaclen
 		return rc;
 
 	if ((fp = fopen(hmacpath, "r")) == NULL)
-		return rc;
+		goto end;
 
 	if (getline(&known_hmac_str, &n, fp) <= 0)
 		goto end;
@@ -471,7 +471,8 @@ static int load_known_hmac(const char *path, unsigned char **hmac, long *hmaclen
 	*hmac = OPENSSL_hexstr2buf(known_hmac_str, hmaclen);
 	rc = 0;
 end:
-	fclose(fp);
+	if (fp != NULL)
+		fclose(fp);
 	if (known_hmac_str)
 		OPENSSL_cleanse(known_hmac_str, strlen(known_hmac_str));
 	free(known_hmac_str);
