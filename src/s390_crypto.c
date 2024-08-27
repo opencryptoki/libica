@@ -271,6 +271,12 @@ static void set_switches(int msa)
 		if (S390_CRYPTO_TEST_MASK(mask, s390_kimd_functions[n].hw_fc))
 			*s390_kimd_functions[n].enabled = 1;
 
+	/* Turn sha3/shake availability off if MSA8 is not available. */
+	if (msa < 8) {
+		for (n = SHA_3_224; n < SHAKE_256; n++)
+			*s390_kimd_functions[n].enabled = 0;
+	}
+
 	/* pcc query */
 	memset(mask, 0, sizeof(mask));
 	if (9 <= msa) {
