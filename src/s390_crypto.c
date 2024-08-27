@@ -273,8 +273,8 @@ static void set_switches(int msa)
 
 	/* pcc query */
 	memset(mask, 0, sizeof(mask));
-	if (4 <= msa) {
-		msa4_switch = 1;
+	if (9 <= msa) {
+		msa9_switch = 1;
 		if (begin_sigill_section(&oldact, &oldset) == 0)
 			s390_pcc(S390_CRYPTO_QUERY, mask);
 		end_sigill_section(&oldact, &oldset);
