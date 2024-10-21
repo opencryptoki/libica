@@ -524,11 +524,11 @@ static inline int s390_kimd_shake(unsigned long func, void *param,
 	int ret = -1;
 
 	__asm__ volatile(
-		"0:      .insn   rre,0xb93e0000,%1,%5\n\t" /* KIMD opcode */
+		"0:      .insn   rre,0xb93e0000,%3,%1\n\t" /* KIMD opcode */
 		"        brc     1,0b\n\t" /* handle partial completion */
 		"        la      %0,0\n\t"
-		: "+d" (ret), "+a"(__dest), "+d"(__dest_len)
-		: "d"(__func), "a"(__param), "a"(__src), "d"(__src_len)
+		: "+d" (ret), "+a"(__src), "+d"(__src_len), "+a"(__dest), "+d"(__dest_len)
+		: "d"(__func), "a"(__param)
 		: "cc", "memory"
 	);
 
@@ -578,11 +578,11 @@ static inline int s390_klmd_shake(unsigned long func, void *param,
 	int ret = -1;
 
 	__asm__ volatile(
-		"0:      .insn   rre,0xb93f0000,%1,%5\n\t" /* KLMD opcode */
+		"0:      .insn   rre,0xb93f0000,%3,%1\n\t" /* KLMD opcode */
 		"        brc     1,0b\n\t" /* handle partial completion */
 		"        la      %0,0\n\t"
-		: "+d" (ret), "+a"(__dest), "+d"(__dest_len)
-		: "d"(__func), "a"(__param), "a"(__src), "d"(__src_len)
+		: "+d" (ret), "+a"(__src), "+d"(__src_len), "+a"(__dest), "+d"(__dest_len)
+		: "d"(__func), "a"(__param)
 		: "cc", "memory"
 	);
 
