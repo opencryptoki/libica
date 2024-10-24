@@ -27,7 +27,7 @@
 #include "icastats.h"
 
 #define CMD_NAME "icastats"
-#define COPYRIGHT "Copyright IBM Corp. 2009-2023"
+#define COPYRIGHT "Copyright IBM Corp. 2009-2024"
 
 void print_version(void)
 {
