@@ -1,3 +1,5 @@
+v4.3.1
+   [PATCH] Various bug fixes and housekeeping
 v4.3.0
    [FEATURE] New API function ica_allow_external_gcm_iv_in_fips_mode
    [PATCH] bug fixes
