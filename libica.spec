@@ -1,5 +1,5 @@
 Name:          libica
-Version:       4.3.0
+Version:       4.3.1
 Release:       1%{?dist}
 Summary:       Interface library to the ICA device driver
 
@@ -62,6 +62,24 @@ rm -rf $RPM_BUILD_ROOT
 %{_includedir}/ica_api.h
 
 %changelog
+* Mon Oct 28 2024 Joerg Schmidbauer <jschmidb@linux.vnet.ibm.com>
+- Version v4.3.1
+* Mon Jan 8 2024 Joerg Schmidbauer <jschmidb@linux.vnet.ibm.com>
+- Version v4.3.0
+* Tue Sep 5 2023 Joerg Schmidbauer <jschmidb@linux.vnet.ibm.com>
+- Version v4.2.3
+* Tue May 9 2023 Joerg Schmidbauer <jschmidb@linux.vnet.ibm.com>
+- Version v4.2.2
+* Fri Feb 3 2023 Joerg Schmidbauer <jschmidb@linux.vnet.ibm.com>
+- Version v4.2.1
+* Wed Dec 14 2022 Joerg Schmidbauer <jschmidb@linux.vnet.ibm.com>
+- Version v4.2.0
+* Mon Oct 10 2022 Joerg Schmidbauer <jschmidb@linux.vnet.ibm.com>
+- Version v4.1.1
+* Fri Sep 30 2022 Joerg Schmidbauer <jschmidb@linux.vnet.ibm.com>
+- Version v4.1.0
+* Thu Aug 11 2022 Joerg Schmidbauer <jschmidb@linux.vnet.ibm.com>
+- Version v4.0.3
 * Thu Jun 23 2022 Joerg Schmidbauer <jschmidb@linux.vnet.ibm.com>
 - Version v4.0.2
 * Thu Feb 03 2022 Joerg Schmidbauer <jschmidb@linux.vnet.ibm.com>
@@ -70,7 +88,7 @@ rm -rf $RPM_BUILD_ROOT
 - Version v3.9.0
 * Thu May 06 2021 Joerg Schmidbauer <jschmidb@linux.vnet.ibm.com>
 - Version v3.8.0
-* Tue May 06 2020 Joerg Schmidbauer <jschmidb@linux.vnet.ibm.com>
+* Wed May 06 2020 Joerg Schmidbauer <jschmidb@linux.vnet.ibm.com>
 - Version v3.7.0
 * Wed Nov 13 2019 Patrick Steuer <steuer@linux.vnet.ibm.com>
 - Version v3.6.1
