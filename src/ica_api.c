@@ -1046,12 +1046,18 @@ unsigned int ica_rsa_key_generate_mod_expo(ica_adapter_handle_t adapter_handle,
 					   ica_rsa_key_mod_expo_t *public_key,
 					   ica_rsa_key_mod_expo_t *private_key)
 {
-	unsigned int num_ignored_bytes;
+	unsigned int num_ignored_bytes, rc;
 	unsigned char *public_exponent;
 
 #ifdef ICA_FIPS
+	int approved, errno_tmp = 0;
 	if (fips >> 1)
 		return EACCES;
+	approved = fips_approved(RSA_ME);
+	if (!approved && !fips_override(RSA_ME))
+		return EPERM;
+	if (!approved)
+		errno_tmp = EPERM;
 #endif /* ICA_FIPS */
 
 	if (public_key->key_length != private_key->key_length)
@@ -1079,8 +1085,13 @@ unsigned int ica_rsa_key_generate_mod_expo(ica_adapter_handle_t adapter_handle,
 	/* There is no need to zeroize any buffers here. This will be done in
 	 * the lower routines.
 	 */
-	return rsa_key_generate_mod_expo(adapter_handle, modulus_bit_length,
+	rc = rsa_key_generate_mod_expo(adapter_handle, modulus_bit_length,
 					 public_key, private_key);
+#ifdef ICA_FIPS
+	errno = errno_tmp;
+#endif
+
+	return rc;
 }
 
 unsigned int ica_rsa_key_generate_crt(ica_adapter_handle_t adapter_handle,
@@ -1088,12 +1099,18 @@ unsigned int ica_rsa_key_generate_crt(ica_adapter_handle_t adapter_handle,
 				      ica_rsa_key_mod_expo_t *public_key,
 				      ica_rsa_key_crt_t *private_key)
 {
-	unsigned int num_ignored_bytes;
+	unsigned int num_ignored_bytes, rc;
 	unsigned char *public_exponent;
 
 #ifdef ICA_FIPS
+	int approved, errno_tmp = 0;
 	if (fips >> 1)
 		return EACCES;
+	approved = fips_approved(RSA_CRT);
+	if (!approved && !fips_override(RSA_CRT))
+		return EPERM;
+	if (!approved)
+		errno_tmp = EPERM;
 #endif /* ICA_FIPS */
 
 	if (public_key->key_length != private_key->key_length)
@@ -1115,8 +1132,13 @@ unsigned int ica_rsa_key_generate_crt(ica_adapter_handle_t adapter_handle,
 	/* There is no need to zeroize any buffers here. This will be done in
 	 * the lower routines.
 	 */
-	return rsa_key_generate_crt(adapter_handle, modulus_bit_length,
+	rc = rsa_key_generate_crt(adapter_handle, modulus_bit_length,
 				    public_key, private_key);
+#ifdef ICA_FIPS
+	errno = errno_tmp;
+#endif
+
+	return rc;
 }
 
 unsigned int ica_rsa_mod_expo(ica_adapter_handle_t adapter_handle,
@@ -1128,8 +1150,14 @@ unsigned int ica_rsa_mod_expo(ica_adapter_handle_t adapter_handle,
 	int hardware, rc;
 
 #ifdef ICA_FIPS
+	int approved, errno_tmp = 0;
 	if (fips >> 1)
 		return EACCES;
+	approved = fips_approved(RSA_ME);
+	if (!approved && !fips_override(RSA_ME))
+		return EPERM;
+	if (!approved)
+		errno_tmp = EPERM;
 #endif /* ICA_FIPS */
 
 	/* check for obvious errors in parms */
@@ -1177,6 +1205,10 @@ unsigned int ica_rsa_mod_expo(ica_adapter_handle_t adapter_handle,
 
 	OPENSSL_cleanse(&rb, sizeof(rb));
 
+#ifdef ICA_FIPS
+	errno = errno_tmp;
+#endif
+
 	return rc;
 }
 
@@ -1191,8 +1223,14 @@ unsigned int ica_rsa_crt_key_check(ica_rsa_key_crt_t *rsa_key)
 	unsigned int rc;
 
 #ifdef ICA_FIPS
+	int approved, errno_tmp = 0;
 	if (fips >> 1)
 		return EACCES;
+	approved = fips_approved(RSA_CRT);
+	if (!approved && !fips_override(RSA_CRT))
+		return EPERM;
+	if (!approved)
+		errno_tmp = EPERM;
 #endif /* ICA_FIPS */
 
 	/* check if p > q  */
@@ -1252,6 +1290,10 @@ done:
 	BN_clear_free(bn_q);
 	BN_clear_free(bn_invq);
 
+#ifdef ICA_FIPS
+	errno = errno_tmp;
+#endif
+
 	return rc;
 }
 
@@ -1264,8 +1306,14 @@ unsigned int ica_rsa_crt(ica_adapter_handle_t adapter_handle,
 	int hardware, rc;
 
 #ifdef ICA_FIPS
+	int approved, errno_tmp = 0;
 	if (fips >> 1)
 		return EACCES;
+	approved = fips_approved(RSA_CRT);
+	if (!approved && !fips_override(RSA_CRT))
+		return EPERM;
+	if (!approved)
+		errno_tmp = EPERM;
 #endif /* ICA_FIPS */
 
 	/* check for obvious errors in parms */
@@ -1321,6 +1369,10 @@ unsigned int ica_rsa_crt(ica_adapter_handle_t adapter_handle,
 
 	OPENSSL_cleanse(&rb, sizeof(rb));
 
+#ifdef ICA_FIPS
+	errno = errno_tmp;
+#endif
+
 	return rc;
 }
 
@@ -1335,8 +1387,14 @@ ICA_EC_KEY* ica_ec_key_new(unsigned int nid, unsigned int *privlen)
 	int len;
 
 #ifdef ICA_FIPS
+	int approved, errno_tmp = 0;
 	if (fips >> 1)
 		return NULL;
+	approved = fips_approved(EC_KGEN);
+	if (!approved && !fips_override(EC_KGEN))
+		return NULL;
+	if (!approved)
+		errno_tmp = EPERM;
 #endif /* ICA_FIPS */
 
 	if ((key = malloc(sizeof(ICA_EC_KEY))) == NULL)
@@ -1360,6 +1418,10 @@ ICA_EC_KEY* ica_ec_key_new(unsigned int nid, unsigned int *privlen)
 
 	*privlen = len;
 
+#ifdef ICA_FIPS
+	errno = errno_tmp;
+#endif
+
 	return key;
 }
 
@@ -1373,8 +1435,14 @@ int ica_ec_key_init(const unsigned char *X, const unsigned char *Y,
 		return EINVAL;
 
 #ifdef ICA_FIPS
+	int approved, errno_tmp = 0;
 	if (fips >> 1)
 		return EACCES;
+	approved = fips_approved(EC_KGEN);
+	if (!approved && !fips_override(EC_KGEN))
+		return EPERM;
+	if (!approved)
+		errno_tmp = EPERM;
 	if (fips & ICA_FIPS_MODE) {
 		if (!curve_supported_via_openssl(key->nid) ||
 			!curve_supported_via_cpacf(key->nid)) {
@@ -1406,6 +1474,10 @@ int ica_ec_key_init(const unsigned char *X, const unsigned char *Y,
 	if (curve_supported_via_openssl(key->nid) && !ec_key_check(key))
 		return EINVAL;
 
+#ifdef ICA_FIPS
+	errno = errno_tmp;
+#endif
+
 	return 0;
 }
 
@@ -1419,8 +1491,14 @@ int ica_ec_key_generate(ica_adapter_handle_t adapter_handle, ICA_EC_KEY *key)
 		return EINVAL;
 
 #ifdef ICA_FIPS
+	int approved, errno_tmp = 0;
 	if (fips >> 1)
 		return EACCES;
+	approved = fips_approved(EC_KGEN);
+	if (!approved && !fips_override(EC_KGEN))
+		return EPERM;
+	if (!approved)
+		errno_tmp = EPERM;
 	if (fips & ICA_FIPS_MODE) {
 		if (!curve_supported_via_openssl(key->nid) ||
 			!curve_supported_via_cpacf(key->nid))
@@ -1476,6 +1554,10 @@ int ica_ec_key_generate(ica_adapter_handle_t adapter_handle, ICA_EC_KEY *key)
 				ecc_keysize_stats_ofs(key->nid),
 				hardware, ENCRYPT);
 
+#ifdef ICA_FIPS
+	errno = errno_tmp;
+#endif
+
 	return rc;
 }
 
@@ -1492,8 +1574,14 @@ int ica_ecdh_derive_secret(ica_adapter_handle_t adapter_handle,
 		return EINVAL;
 
 #ifdef ICA_FIPS
+	int approved, errno_tmp = 0;
 	if (fips >> 1)
 		return EACCES;
+	approved = fips_approved(EC_DH);
+	if (!approved && !fips_override(EC_DH))
+		return EPERM;
+	if (!approved)
+		errno_tmp = EPERM;
 	if (fips & ICA_FIPS_MODE) {
 		if (!curve_supported_via_openssl(privkey_A->nid) ||
 			!curve_supported_via_cpacf(privkey_A->nid))
@@ -1544,6 +1632,10 @@ int ica_ecdh_derive_secret(ica_adapter_handle_t adapter_handle,
 				ecc_keysize_stats_ofs(privkey_A->nid),
 				hardware, ENCRYPT);
 
+#ifdef ICA_FIPS
+	errno = errno_tmp;
+#endif
+
 	return rc;
 }
 
@@ -1561,6 +1653,7 @@ int ica_ecdsa_sign_ex_internal(ica_adapter_handle_t adapter_handle,
 		return EINVAL;
 
 #ifdef ICA_FIPS
+	int approved, errno_tmp = 0;
 	if (fips >> 1)
 		return EACCES;
 	if (fips & ICA_FIPS_MODE) {
@@ -1568,6 +1661,11 @@ int ica_ecdsa_sign_ex_internal(ica_adapter_handle_t adapter_handle,
 			!curve_supported_via_cpacf(privkey->nid))
 			return EPERM;
 	}
+	approved = fips_approved(EC_DSA_SIGN);
+	if (!approved && !fips_override(EC_DSA_SIGN))
+		return EPERM;
+	if (!approved)
+		errno_tmp = EPERM;
 #endif /* ICA_FIPS */
 
 	privlen = privlen_from_nid(privkey->nid);
@@ -1614,6 +1712,10 @@ int ica_ecdsa_sign_ex_internal(ica_adapter_handle_t adapter_handle,
 				ecc_keysize_stats_ofs(privkey->nid),
 				hardware, ENCRYPT);
 
+#ifdef ICA_FIPS
+	errno = errno_tmp;
+#endif
+
 	return rc;
 }
 
@@ -1652,8 +1754,14 @@ int ica_ecdsa_verify(ica_adapter_handle_t adapter_handle,
 		return EINVAL;
 
 #ifdef ICA_FIPS
+	int approved, errno_tmp = 0;
 	if (fips >> 1)
 		return EACCES;
+	approved = fips_approved(EC_DSA_VERIFY);
+	if (!approved && !fips_override(EC_DSA_VERIFY))
+		return EPERM;
+	if (!approved)
+		errno_tmp = EPERM;
 	if (fips & ICA_FIPS_MODE) {
 		if (!curve_supported_via_openssl(pubkey->nid) ||
 			!curve_supported_via_cpacf(pubkey->nid))
@@ -1699,6 +1807,10 @@ int ica_ecdsa_verify(ica_adapter_handle_t adapter_handle,
 		stats_increment(ICA_STATS_ECDSA_VERIFY_160 +
 				ecc_keysize_stats_ofs(pubkey->nid),
 				hardware, ENCRYPT);
+
+#ifdef ICA_FIPS
+	errno = errno_tmp;
+#endif
 
 	return rc;
 }
