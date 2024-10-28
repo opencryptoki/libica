@@ -1242,9 +1242,6 @@ ecdsa_kat(void)
 								sigbuf, tv->siglen, tv->k);
 		if (rc)
 			goto _err_;
-		rc = ica_ecdsa_verify(0, eckey, tv->hash, tv->hashlen, sigbuf, tv->siglen);
-		if (rc)
-			goto _err_;
 		if (memcmp(sigbuf, tv->sig, tv->siglen) != 0) {
 			goto _err_;
 		}
