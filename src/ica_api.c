@@ -94,7 +94,23 @@ int ica_external_gcm_iv_in_fips_mode_allowed = 0;
 
 void ica_allow_external_gcm_iv_in_fips_mode(int allow)
 {
+#ifndef ICA_FIPS
+	UNUSED(allow);
+#else
 	ica_external_gcm_iv_in_fips_mode_allowed = allow ? 1 : 0;
+
+	if (ica_external_gcm_iv_in_fips_mode_allowed) {
+		add_to_fips_black_list(AES_GCM);
+		add_to_fips_black_list(AES_GCM_KMA);
+		add_to_fips_override_list(AES_GCM);
+		add_to_fips_override_list(AES_GCM_KMA);
+	} else {
+		remove_from_fips_black_list(AES_GCM);
+		remove_from_fips_black_list(AES_GCM_KMA);
+		remove_from_fips_override_list(AES_GCM);
+		remove_from_fips_override_list(AES_GCM_KMA);
+	}
+#endif /* ICA_FIPS */
 }
 
 
@@ -3862,14 +3878,32 @@ unsigned int ica_aes_gcm_initialize(const unsigned char *iv,
 				unsigned char *subkey,
 				unsigned int direction)
 {
+	int rc;
+
 #ifdef ICA_FIPS
-	if (!ica_external_gcm_iv_in_fips_mode_allowed &&
-		direction == ENCRYPT && (fips & ICA_FIPS_MODE))
-		return EPERM;
+	int approved, errno_tmp = 0;
+	if (fips >> 1)
+		return EACCES;
+	if (fips & ICA_FIPS_MODE) {
+		if (direction == ENCRYPT) {
+			if (!ica_external_gcm_iv_in_fips_mode_allowed)
+				return EPERM;
+			approved = fips_approved(AES_GCM);
+			if (!approved && !fips_override(AES_GCM))
+				return EPERM;
+			if (!approved)
+				errno_tmp = EPERM;
+		}
+	}
 #endif /* ICA_FIPS */
 
-	return ica_aes_gcm_initialize_internal(iv, iv_length, key, key_length,
+	rc = ica_aes_gcm_initialize_internal(iv, iv_length, key, key_length,
 									icb, ucb, subkey, direction);
+#ifdef ICA_FIPS
+	errno = errno_tmp;
+#endif
+
+	return rc;
 }
 
 unsigned int ica_aes_gcm_initialize_fips(unsigned char *iv,
@@ -3927,8 +3961,20 @@ unsigned int ica_aes_gcm_intermediate(unsigned char *plaintext,
 	int rc, iv_length_dummy = 12;
 
 #ifdef ICA_FIPS
+	int approved, errno_tmp = 0;
 	if (fips >> 1)
 		return EACCES;
+	if (fips & ICA_FIPS_MODE) {
+		if (direction == ENCRYPT) {
+			if (!ica_external_gcm_iv_in_fips_mode_allowed)
+				return EPERM;
+			approved = fips_approved(AES_GCM);
+			if (!approved && !fips_override(AES_GCM))
+				return EPERM;
+			if (!approved)
+				errno_tmp = EPERM;
+		}
+	}
 #endif /* ICA_FIPS */
 
 	if (plaintext_length != 0) {
@@ -3959,6 +4005,10 @@ unsigned int ica_aes_gcm_intermediate(unsigned char *plaintext,
 		if (rc)
 			return rc;
 	}
+
+#ifdef ICA_FIPS
+	errno = errno_tmp;
+#endif
 	return 0;
 #endif /* NO_CPACF */
 }
@@ -3987,8 +4037,20 @@ unsigned int ica_aes_gcm_last( unsigned char *icb,
 	int rc;
 
 #ifdef ICA_FIPS
+	int approved, errno_tmp = 0;
 	if (fips >> 1)
 		return EACCES;
+	if (fips & ICA_FIPS_MODE) {
+		if (direction == ENCRYPT) {
+			if (!ica_external_gcm_iv_in_fips_mode_allowed)
+				return EPERM;
+			approved = fips_approved(AES_GCM);
+			if (!approved && !fips_override(AES_GCM))
+				return EPERM;
+			if (!approved)
+				errno_tmp = EPERM;
+		}
+	}
 #endif /* ICA_FIPS */
 
 	function_code = aes_directed_fc(key_length, direction);
@@ -4008,6 +4070,11 @@ unsigned int ica_aes_gcm_last( unsigned char *icb,
 		if (CRYPTO_memcmp(tag, final_tag, final_tag_length))
 			return EFAULT;
 	}
+
+#ifdef ICA_FIPS
+	errno = errno_tmp;
+#endif
+
 	return 0;
 #endif /* NO_CPACF */
 }
@@ -4111,14 +4178,30 @@ int ica_aes_gcm_kma_init(unsigned int direction,
 					const unsigned char *key, unsigned int key_length,
 					kma_ctx* ctx)
 {
+	int rc;
+
 #ifdef ICA_FIPS
-	if (!ica_external_gcm_iv_in_fips_mode_allowed &&
-		direction == ICA_ENCRYPT && (fips & ICA_FIPS_MODE))
-		return EPERM;
+	int approved, errno_tmp = 0;
+	if (fips >> 1)
+		return EACCES;
+	if (direction == ICA_ENCRYPT) {
+		if (!ica_external_gcm_iv_in_fips_mode_allowed && (fips & ICA_FIPS_MODE))
+			return EPERM;
+		approved = fips_approved(AES_GCM_KMA);
+		if (!approved && !fips_override(AES_GCM_KMA))
+			return EPERM;
+		if (!approved)
+			errno_tmp = EPERM;
+	}
 #endif /* ICA_FIPS */
 
-	return ica_aes_gcm_kma_init_internal(direction, iv, iv_length,
+	rc = ica_aes_gcm_kma_init_internal(direction, iv, iv_length,
 									key, key_length, ctx);
+#ifdef ICA_FIPS
+	errno = errno_tmp;
+#endif
+
+	return rc;
 }
 
 int ica_aes_gcm_kma_init_fips(unsigned int direction, unsigned int iv_length,
@@ -4128,7 +4211,6 @@ int ica_aes_gcm_kma_init_fips(unsigned int direction, unsigned int iv_length,
 #ifdef ICA_FIPS
 	if (fips >> 1)
 		return EACCES;
-
 	if (fips & ICA_FIPS_MODE) {
 		if (iv_length < GCM_RECOMMENDED_IV_LENGTH)
 			return EPERM;
@@ -4156,11 +4238,28 @@ int ica_aes_gcm_kma_update(const unsigned char *in_data,
 	UNUSED(ctx);
 	return EPERM;
 #else
+	int rc;
 	unsigned int function_code = aes_directed_fc(ctx->key_length, ctx->direction);
 
 #ifdef ICA_FIPS
+	int approved, errno_tmp = 0;
 	if (fips >> 1)
 		return EACCES;
+	if (fips & ICA_FIPS_MODE) {
+		if (!ica_external_gcm_iv_in_fips_mode_allowed && ctx->key_length == 0) {
+			/* The preceding init failed because no ext iv allowed, no key set */
+			return EPERM;
+		}
+		if (ctx->direction == ENCRYPT) {
+			if (!ica_external_gcm_iv_in_fips_mode_allowed)
+				return EPERM;
+			approved = fips_approved(AES_GCM_KMA);
+			if (!approved && !fips_override(AES_GCM_KMA))
+				return EPERM;
+			if (!approved)
+				errno_tmp = EPERM;
+		}
+	}
 #endif /* ICA_FIPS */
 
 	if (data_length > 0 && (!in_data || !out_data))
@@ -4170,19 +4269,25 @@ int ica_aes_gcm_kma_update(const unsigned char *in_data,
 
 		if (end_of_aad && end_of_data && !ctx->intermediate) {
 			ctx->done = 1;
-			return s390_aes_gcm_simulate_kma_full(in_data, out_data, data_length,
+			rc = s390_aes_gcm_simulate_kma_full(in_data, out_data, data_length,
 									aad, aad_length, ctx);
 		} else {
 			ctx->intermediate = 1;
-			return s390_aes_gcm_simulate_kma_intermediate(in_data, out_data, data_length,
+			rc = s390_aes_gcm_simulate_kma_intermediate(in_data, out_data, data_length,
 									aad, aad_length, ctx);
 		}
 
 	} else {
 
-		return s390_aes_gcm_kma(in_data, out_data, data_length,
+		rc = s390_aes_gcm_kma(in_data, out_data, data_length,
 								aad, aad_length, end_of_aad, end_of_data, ctx);
 	}
+
+#ifdef ICA_FIPS
+	errno = errno_tmp;
+#endif
+
+	return rc;
 #endif /* NO_CPACF */
 }
 
@@ -4197,6 +4302,27 @@ int ica_aes_gcm_kma_get_tag(unsigned char *tag, unsigned int tag_length, const k
 	int rc=0;
 	unsigned int function_code = aes_directed_fc(ctx->key_length, ctx->direction);
 
+#ifdef ICA_FIPS
+	int approved, errno_tmp = 0;
+	if (fips >> 1)
+		return EACCES;
+	if (fips & ICA_FIPS_MODE) {
+		if (!ica_external_gcm_iv_in_fips_mode_allowed && ctx->key_length == 0) {
+			/* The preceding init failed because no ext iv allowed, no key set */
+			return EPERM;
+		}
+		if (ctx->direction == ENCRYPT) {
+			if (!ica_external_gcm_iv_in_fips_mode_allowed)
+				return EPERM;
+			approved = fips_approved(AES_GCM_KMA);
+			if (!approved && !fips_override(AES_GCM_KMA))
+				return EPERM;
+			if (!approved)
+				errno_tmp = EPERM;
+		}
+	}
+#endif /* ICA_FIPS */
+
 	if (!ctx || !tag || !is_valid_tag_length(tag_length))
 		return EINVAL;
 
@@ -4208,12 +4334,18 @@ int ica_aes_gcm_kma_get_tag(unsigned char *tag, unsigned int tag_length, const k
 				ctx->total_aad_length, ctx->total_input_length,
 				(unsigned char*)ctx->tag, AES_BLOCK_SIZE,
 				(unsigned char*)ctx->key, (unsigned char*)ctx->subkey_h);
-		if (rc)
+		if (rc) {
+#ifdef ICA_FIPS
+			errno = errno_tmp;
+#endif
 			return rc;
+		}
 	}
 
 	memcpy(tag, ctx->tag, tag_length);
-
+#ifdef ICA_FIPS
+	errno = errno_tmp;
+#endif
 	return 0;
 #endif /* NO_CPACF */
 }
@@ -4229,6 +4361,27 @@ int ica_aes_gcm_kma_verify_tag(const unsigned char* known_tag, unsigned int tag_
 	int rc;
 	unsigned int function_code;
 
+#ifdef ICA_FIPS
+	int approved, errno_tmp = 0;
+	if (fips >> 1)
+		return EACCES;
+	if (fips & ICA_FIPS_MODE) {
+		if (!ica_external_gcm_iv_in_fips_mode_allowed && ctx->key_length == 0) {
+			/* The preceding init failed because no ext iv allowed, no key set */
+			return EPERM;
+		}
+		if (ctx->direction == ENCRYPT) {
+			if (!ica_external_gcm_iv_in_fips_mode_allowed)
+				return EPERM;
+			approved = fips_approved(AES_GCM_KMA);
+			if (!approved && !fips_override(AES_GCM_KMA))
+				return EPERM;
+			if (!approved)
+				errno_tmp = EPERM;
+		}
+	}
+#endif /* ICA_FIPS */
+
 	if (!ctx || !known_tag || !is_valid_tag_length(tag_length))
 		return EINVAL;
 
@@ -4242,19 +4395,47 @@ int ica_aes_gcm_kma_verify_tag(const unsigned char* known_tag, unsigned int tag_
 				ctx->total_aad_length, ctx->total_input_length,
 				(unsigned char*)ctx->tag, AES_BLOCK_SIZE,
 				(unsigned char*)ctx->key, (unsigned char*)ctx->subkey_h);
-		if (rc)
+		if (rc) {
+#ifdef ICA_FIPS
+			errno = errno_tmp;
+#endif
 			return rc;
+		}
 	}
 
 	if (CRYPTO_memcmp(ctx->tag, known_tag, tag_length) != 0)
 		return EFAULT;
 
+#ifdef ICA_FIPS
+	errno = errno_tmp;
+#endif
 	return 0;
 #endif /* NO_CPACF */
 }
 
 int ica_aes_gcm_kma_get_iv(const kma_ctx* ctx, unsigned char *iv, unsigned int *iv_length)
 {
+#ifdef ICA_FIPS
+	int approved, errno_tmp = 0;
+	if (fips >> 1)
+		return EACCES;
+	if (fips & ICA_FIPS_MODE) {
+		if (!ica_external_gcm_iv_in_fips_mode_allowed && ctx->key_length == 0) {
+			/* The preceding init failed because no ext iv allowed, no key set */
+			return EPERM;
+		}
+		if (ctx->direction == ENCRYPT) {
+			if (!ica_external_gcm_iv_in_fips_mode_allowed)
+				return EPERM;
+			approved = fips_approved(AES_GCM_KMA);
+			if (!approved && !fips_override(AES_GCM_KMA))
+				return EPERM;
+			if (!approved)
+				errno_tmp = EPERM;
+		}
+	}
+#endif /* ICA_FIPS */
+
 	if (ctx == NULL)
 		return EINVAL;
 
@@ -4269,6 +4450,9 @@ int ica_aes_gcm_kma_get_iv(const kma_ctx* ctx, unsigned char *iv, unsigned int *
 	memcpy(iv, ctx->iv, ctx->iv_length);
 	*iv_length = ctx->iv_length;
 
+#ifdef ICA_FIPS
+	errno = errno_tmp;
+#endif
 	return 0;
 }
 

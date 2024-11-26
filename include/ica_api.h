@@ -3303,6 +3303,15 @@ unsigned int ica_aes_ccm(unsigned char *payload, unsigned long payload_length,
  * EIO if the operation fails.
  * EFAULT if direction is 0 and the verification of the message authentication
  * code fails.
+ *
+ * Notes on fips mode:
+ *
+ * 1. When running in fips mode and the application uses an external gcm iv by
+ *    allowing this via API function ica_allow_external_gcm_iv_in_fips_mode,
+ *    the gcm init functions are performed normally, but indicate that they are
+ *    used non-approved by setting errno to EPERM.
+ * 2. API function ica_aes_gcm, which does not need/use an init function, is
+ *    blocked unconditionally in fips mode already. So no errno setting here.
  */
 ICA_EXPORT
 unsigned int ica_aes_gcm(unsigned char *plaintext, unsigned long plaintext_length,

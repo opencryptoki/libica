@@ -1362,19 +1362,19 @@ _err_:
 /*
  * List of non-fips-approved algorithms
  */
-const int FIPS_BLACKLIST[] = {DES_ECB, DES_CBC, DES_CBC_CS, DES_OFB,
+int FIPS_BLACKLIST[] = {DES_ECB, DES_CBC, DES_CBC_CS, DES_OFB,
 	DES_CFB, DES_CTR, DES_CTRLST, DES_CBC_MAC, DES_CMAC, P_RNG, DES3_ECB,
 	DES3_CBC, DES3_CBC_CS, DES3_OFB, DES3_CFB, DES3_CTR, DES3_CTRLST,
 	DES3_CBC_MAC, DES3_CMAC, ED25519_KEYGEN, ED25519_SIGN, ED25519_VERIFY,
 	ED448_KEYGEN, ED448_SIGN, ED448_VERIFY, X25519_KEYGEN, X25519_DERIVE,
-	X448_KEYGEN, X448_DERIVE, RSA_ME, RSA_CRT, SHA512_DRNG };
+	X448_KEYGEN, X448_DERIVE, RSA_ME, RSA_CRT, SHA512_DRNG, -1, -1 };
 const size_t FIPS_BLACKLIST_LEN
 	= sizeof(FIPS_BLACKLIST) / sizeof(FIPS_BLACKLIST[0]);
 
 /*
  * FIPS service indicator: List of tolerated but non-approved algorithms.
  */
-const int FIPS_OVERRIDE_LIST[] = { RSA_ME, RSA_CRT, SHA512_DRNG };
+int FIPS_OVERRIDE_LIST[] = { RSA_ME, RSA_CRT, SHA512_DRNG, -1, -1 };
 const size_t FIPS_OVERRIDE_LIST_LEN
 	= sizeof(FIPS_OVERRIDE_LIST) / sizeof(FIPS_OVERRIDE_LIST[0]);
 
@@ -1409,5 +1409,61 @@ int fips_override(int id)
 	}
 
 	return 0;
+}
+
+/*
+ * Following routines add an algo id to a fips list by replacing a
+ * placeholder indicated by -1 by the given id.
+ */
+void add_to_fips_black_list(int id)
+{
+	size_t i;
+
+	for (i = 0; i < FIPS_BLACKLIST_LEN; i++) {
+		if (FIPS_BLACKLIST[i] == -1) {
+			FIPS_BLACKLIST[i] = id;
+			return;
+		}
+	}
+}
+
+void add_to_fips_override_list(int id)
+{
+	size_t i;
+
+	for (i = 0; i < FIPS_OVERRIDE_LIST_LEN; i++) {
+		if (FIPS_OVERRIDE_LIST[i] == -1) {
+			FIPS_OVERRIDE_LIST[i] = id;
+			return;
+		}
+	}
+}
+
+/*
+ * Following routines remove an algo id from a fips list by replacing the
+ * algo id by the placeholder indicated by -1.
+ */
+void remove_from_fips_black_list(int id)
+{
+	size_t i;
+
+	for (i = 0; i < FIPS_BLACKLIST_LEN; i++) {
+		if (FIPS_BLACKLIST[i] == id) {
+			FIPS_BLACKLIST[i] = -1;
+			return;
+		}
+	}
+}
+
+void remove_from_fips_override_list(int id)
+{
+	size_t i;
+
+	for (i = 0; i < FIPS_OVERRIDE_LIST_LEN; i++) {
+		if (FIPS_OVERRIDE_LIST[i] == id) {
+			FIPS_OVERRIDE_LIST[i] = -1;
+			return;
+		}
+	}
 }
 #endif /* FIPS_H */
