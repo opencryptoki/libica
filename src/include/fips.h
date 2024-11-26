@@ -70,5 +70,9 @@ unsigned int ica_aes_gcm_initialize_internal(const unsigned char *iv,
  */
 int fips_approved(int id);
 int fips_override(int id);
+void add_to_fips_black_list(int id);
+void add_to_fips_override_list(int id);
+void remove_from_fips_black_list(int id);
+void remove_from_fips_override_list(int id);
 #endif /* FIPS_H */
 #endif /* ICA_FIPS */
