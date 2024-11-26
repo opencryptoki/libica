@@ -571,6 +571,10 @@ int main(int argc, char **argv)
 	int index = 0;
 	unsigned int mech_len, j;
 	libica_func_list_element *pmech_list = NULL;
+#ifdef ICA_FIPS
+	libica_fips_indicator_element *fips_list = NULL;
+	unsigned int fips_len, k;
+#endif
 	unsigned int i;
 	char *no_dhw = "no";
 #ifdef NO_CPACF
@@ -640,6 +644,32 @@ int main(int argc, char **argv)
 		return EXIT_FAILURE;
 	}
 
+#ifdef ICA_FIPS
+	/* Get fips indicator list */
+	if (ica_get_fips_indicator(NULL, &fips_len) != 0){
+		perror("get_fips_indicator: ");
+		free(pmech_list);
+		ica_cleanup();
+		return EXIT_FAILURE;
+	}
+
+	fips_list = malloc(sizeof(libica_fips_indicator_element)*fips_len);
+	if (!fips_list) {
+		perror("error malloc");
+		free(pmech_list);
+		ica_cleanup();
+		return EXIT_FAILURE;
+	}
+
+	if (ica_get_fips_indicator(fips_list, &fips_len) != 0){
+		perror("get_fips_indicator: ");
+		free(pmech_list);
+		free(fips_list);
+		ica_cleanup();
+		return EXIT_FAILURE;
+	}
+#endif /* ICA_FIPS */
+
 	printf("               |         hardware        |            \n");
 	printf(" function      |   dynamic  |   static   |  software  \n");
 	printf("               |            |  (msa=%02d)  |            \n",ica_get_msa_level());
@@ -648,9 +678,10 @@ int main(int argc, char **argv)
 		for (j = 0; j < mech_len; j++) {
 			if (crypt_map[i].algo_id == pmech_list[j].mech_mode_id) {
 #ifdef ICA_FIPS
+				k = get_index_in_fips_list(fips_list, fips_len, crypt_map[i].algo_id);
 				if (((ica_fips_status() & ICA_FIPS_MODE) &&
-					!fips_approved(pmech_list[j].mech_mode_id) &&
-					!fips_override(pmech_list[j].mech_mode_id)) ||
+					fips_list[k].fips_approved == 0 &&
+					fips_list[k].fips_override == 0) ||
 					ica_fips_status() >> 1) {
 					printf("%14s |  blocked   |  blocked   |  blocked\n",
 						crypt_map[i].name);
@@ -669,6 +700,9 @@ int main(int argc, char **argv)
 		}
 	}
 	free(pmech_list);
+#ifdef ICA_FIPS
+	free(fips_list);
+#endif
 	printf("------------------------------------------------------\n");
 
 #ifdef ICA_FIPS
