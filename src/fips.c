@@ -23,6 +23,7 @@
 #include <unistd.h>
 #include <dlfcn.h>
 #include <link.h>
+#include <pthread.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
 
@@ -42,6 +43,8 @@
 extern OSSL_LIB_CTX *openssl_libctx;
 extern OSSL_PROVIDER *openssl_provider;
 #endif
+
+extern pthread_rwlock_t fips_list_lock;
 
 extern int ica_stats_enabled;
 
@@ -1385,13 +1388,29 @@ const size_t FIPS_OVERRIDE_LIST_LEN
 int fips_approved(int id)
 {
 	size_t i;
+	int rc;
 
-	for (i = 0; i < FIPS_BLACKLIST_LEN; i++) {
-		if (id == FIPS_BLACKLIST[i])
-			return 0;
+	if (pthread_rwlock_rdlock(&fips_list_lock) != 0) {
+		syslog(LOG_ERR, "Error obtaining read-lock in fips_approved");
+		return 0;
 	}
 
-	return 1;
+	for (i = 0; i < FIPS_BLACKLIST_LEN; i++) {
+		if (id == FIPS_BLACKLIST[i]) {
+			rc = 0;
+			goto done;
+		}
+	}
+
+	rc = 1;
+
+done:
+	if (pthread_rwlock_unlock(&fips_list_lock) != 0) {
+		syslog(LOG_ERR, "Error unlock read-lock in fips_approved");
+		return 0;
+	}
+
+	return rc;
 }
 
 /*
@@ -1402,13 +1421,29 @@ int fips_approved(int id)
 int fips_override(int id)
 {
 	size_t i;
+	int rc;
 
-	for (i = 0; i < FIPS_OVERRIDE_LIST_LEN; i++) {
-		if (id == FIPS_OVERRIDE_LIST[i])
-			return 1;
+	if (pthread_rwlock_rdlock(&fips_list_lock) != 0) {
+		syslog(LOG_ERR, "Error obtaining read-lock in fips_override");
+		return 0;
 	}
 
-	return 0;
+	for (i = 0; i < FIPS_OVERRIDE_LIST_LEN; i++) {
+		if (id == FIPS_OVERRIDE_LIST[i]) {
+			rc = 1;
+			goto done;
+		}
+	}
+
+	rc = 0;
+
+done:
+	if (pthread_rwlock_unlock(&fips_list_lock) != 0) {
+		syslog(LOG_ERR, "Error unlock read-lock in fips_override");
+		return 0;
+	}
+
+	return rc;
 }
 
 /*
@@ -1419,24 +1454,42 @@ void add_to_fips_black_list(int id)
 {
 	size_t i;
 
+	if (pthread_rwlock_wrlock(&fips_list_lock) != 0) {
+		syslog(LOG_ERR, "Error obtaining write-lock in add_to_fips_black_list");
+		return;
+	}
+
 	for (i = 0; i < FIPS_BLACKLIST_LEN; i++) {
 		if (FIPS_BLACKLIST[i] == -1) {
 			FIPS_BLACKLIST[i] = id;
-			return;
+			goto done;
 		}
 	}
+
+done:
+	if (pthread_rwlock_unlock(&fips_list_lock) != 0)
+		syslog(LOG_ERR, "Error unlock write-lock in add_to_fips_black_list");
 }
 
 void add_to_fips_override_list(int id)
 {
 	size_t i;
 
+	if (pthread_rwlock_wrlock(&fips_list_lock) != 0) {
+		syslog(LOG_ERR, "Error obtaining write-lock in add_to_fips_override_list");
+		return;
+	}
+
 	for (i = 0; i < FIPS_OVERRIDE_LIST_LEN; i++) {
 		if (FIPS_OVERRIDE_LIST[i] == -1) {
 			FIPS_OVERRIDE_LIST[i] = id;
-			return;
+			goto done;
 		}
 	}
+
+done:
+	if (pthread_rwlock_unlock(&fips_list_lock) != 0)
+		syslog(LOG_ERR, "Error unlock write-lock in add_to_fips_override_list");
 }
 
 /*
@@ -1447,23 +1500,41 @@ void remove_from_fips_black_list(int id)
 {
 	size_t i;
 
+	if (pthread_rwlock_wrlock(&fips_list_lock) != 0) {
+		syslog(LOG_ERR, "Error obtaining write-lock in remove_from_fips_black_list");
+		return;
+	}
+
 	for (i = 0; i < FIPS_BLACKLIST_LEN; i++) {
 		if (FIPS_BLACKLIST[i] == id) {
 			FIPS_BLACKLIST[i] = -1;
-			return;
+			goto done;
 		}
 	}
+
+done:
+	if (pthread_rwlock_unlock(&fips_list_lock) != 0)
+		syslog(LOG_ERR, "Error unlock write-lock in remove_from_fips_black_list");
 }
 
 void remove_from_fips_override_list(int id)
 {
 	size_t i;
 
+	if (pthread_rwlock_wrlock(&fips_list_lock) != 0) {
+		syslog(LOG_ERR, "Error obtaining write-lock in remove_from_fips_override_list");
+		return;
+	}
+
 	for (i = 0; i < FIPS_OVERRIDE_LIST_LEN; i++) {
 		if (FIPS_OVERRIDE_LIST[i] == id) {
 			FIPS_OVERRIDE_LIST[i] = -1;
-			return;
+			goto done;
 		}
 	}
+
+done:
+	if (pthread_rwlock_unlock(&fips_list_lock) != 0)
+		syslog(LOG_ERR, "Error unlock write-lock in remove_from_fips_override_list");
 }
 #endif /* FIPS_H */

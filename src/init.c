@@ -20,6 +20,7 @@
 #include <stdio.h>
 #include <setjmp.h>
 #include <signal.h>
+#include <pthread.h>
 
 #include "init.h"
 #include "fips.h"
@@ -36,6 +37,8 @@ OSSL_LIB_CTX *openssl_libctx;
 OSSL_PROVIDER *openssl_provider;
 int openssl3_initialized = 0;
 #endif
+
+pthread_rwlock_t fips_list_lock;
 
 static sigjmp_buf sigill_jmp;
 
@@ -157,6 +160,11 @@ void __attribute__ ((constructor)) icainit(void)
 #endif
 
 #ifdef ICA_FIPS
+	if (pthread_rwlock_init(&fips_list_lock, NULL) != 0) {
+		syslog(LOG_ERR, "Initializing fips_list_lock failed.\n");
+		return;
+	}
+
 	fips_init();
 #endif
 
@@ -193,4 +201,6 @@ void __attribute__ ((destructor)) icaexit(void)
 	s390_prng_fini();
 
 	stats_munmap(-1, SHM_CLOSE);
+
+	pthread_rwlock_destroy(&fips_list_lock);
 }
