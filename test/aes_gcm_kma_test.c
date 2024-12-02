@@ -803,6 +803,12 @@ int test_gcm_with_internal_iv(int iteration)
 		return TEST_FAIL;
 	}
 
+	/* 
+	 * Following API functions would not return the expected rc without
+	 * allowing an external iv.
+	 */
+	ica_allow_external_gcm_iv_in_fips_mode(1);
+
 	/* Update for encrypt */
 	rc = ica_aes_gcm_kma_update(input_data, encrypt, data_length, aad, aad_length, 1, 1, ctx);
 	if (rc == ENODEV) {
@@ -866,6 +872,7 @@ int test_gcm_with_internal_iv(int iteration)
 		rc++;
 	}
 
+	ica_allow_external_gcm_iv_in_fips_mode(0);
 	ica_aes_gcm_kma_ctx_free(ctx);
 
 	if (rc)
