@@ -998,7 +998,7 @@ aes_gcm_kat(void) {
 		memset(tag, 0, AES_BLKSIZE);
 		memset(out, 0, tv->len);
 		memset(icb, 0, sizeof(icb));
-		memset(icb, 0, sizeof(ucb));
+		memset(ucb, 0, sizeof(ucb));
 		memset(subkey, 0, sizeof(subkey));
 		if ((tv->rv == 0) && (ica_aes_gcm_initialize_internal(tv->iv, tv->ivlen,
 		    tv->key, tv->keylen, icb, ucb, subkey, ICA_ENCRYPT)
