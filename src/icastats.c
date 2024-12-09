@@ -371,7 +371,7 @@ int main(int argc, char *argv[])
 		} else {
 			print_stats(stats, key_sizes);
 		}
-
+		free(stats);
 	}
 	return EXIT_SUCCESS;
 }
