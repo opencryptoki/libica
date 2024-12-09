@@ -4123,6 +4123,12 @@ int ica_aes_gcm_kma_init_internal(unsigned int direction,
 		return EINVAL;
 	}
 
+	if (ctx->iv_allocated_internally == 1) {
+		OPENSSL_cleanse((void*)ctx->iv, ctx->iv_length);
+		free(ctx->iv);
+		ctx->iv_allocated_internally = 0;
+	}
+
 	if (iv == NULL) {
 		/* If the iv is NULL, create it internally via an approved
 		 * random source. The application can obtain the internal iv
