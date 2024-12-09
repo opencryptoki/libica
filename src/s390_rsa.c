@@ -66,7 +66,7 @@ static unsigned int mod_expo_sw(int arg_length, unsigned char *arg, int exp_leng
 RSA* rsa_key_generate(unsigned int modulus_bit_length,
 		      unsigned long *public_exponent)
 {
-	int min_pubexp = 3;
+	unsigned int min_pubexp = 3;
 
 #ifdef ICA_FIPS
 	if ((fips & ICA_FIPS_MODE) && (!openssl_in_fips_mode()))
