@@ -15,6 +15,11 @@ jobs:
           arch: s390x
           compiler: clang
           env: CONFIG_OPTS="--enable-fips --enable-internal-tests"
+        - name: "linux-s390x-sanitizer"
+          os: linux
+          arch: s390x
+          compiler: gcc
+          env: CONFIG_OPTS="--enable-fips --enable-internal-tests --enable-sanitizer"
 
 before_script:
     - ./bootstrap.sh 2> >(tee)
