@@ -1623,7 +1623,7 @@ struct {				\
 		       sizeof(param.P256.hash) - off);
 
 		off = sizeof(param.P256.pub_x)
-				 - privlen_from_nid(pub->nid);
+				 - privlen_from_nid(NID_X9_62_prime256v1);
 
 		memcpy(param.P256.sig_r + off, sig,
 		       sizeof(param.P256.sig_r) - off);
@@ -1647,7 +1647,7 @@ struct {				\
 		       sizeof(param.P384.hash) - off);
 
 		off = sizeof(param.P384.pub_x)
-				 - privlen_from_nid(pub->nid);
+				 - privlen_from_nid(NID_secp384r1);
 
 		memcpy(param.P384.sig_r + off, sig,
 		       sizeof(param.P384.sig_r) - off);
@@ -1671,7 +1671,7 @@ struct {				\
 		       sizeof(param.P521.hash) - off);
 
 		off = sizeof(param.P521.pub_x)
-				 - privlen_from_nid(pub->nid);
+				 - privlen_from_nid(NID_secp521r1);
 
 		memcpy(param.P521.sig_r + off, sig,
 		       sizeof(param.P521.sig_r) - off);
