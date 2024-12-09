@@ -506,17 +506,15 @@ int main(int argc, char **argv)
 	return TEST_SKIP;
 #else
 	unsigned int variant;
-	int rc, error_count;
+	int rc;
 
 	set_verbosity(argc, argv);
 
 	rc = 0;
-	error_count = 0;
 
 	/* known answer tests for AES128 */
 	rc = test_aes128_new_api();
 	if (rc) {
-		error_count++;
 		printf("test_aes128_new_api for CBC_CS mode with AES-128 "
 		"failed.\n");
 		return TEST_FAIL;
@@ -529,7 +527,6 @@ int main(int argc, char **argv)
 		/* AES 192 & 256 test */
 		rc = test_aes_new_api(variant);
 		if (rc) {
-			error_count++;
 			printf("test_aes_new_api for CBC_CS mode with AES (192|256) "
 			       "failed.\n");
 			return TEST_FAIL;
@@ -538,7 +535,6 @@ int main(int argc, char **argv)
 		/* DES tests */
 		rc = test_des_new_api(variant);
 		if (rc && rc != TEST_SKIP) {
-			error_count++;
 			printf("test_des_new_api for CBC_CS mode with DES "
 			       "failed.\n");
 			return TEST_FAIL;
@@ -547,7 +543,6 @@ int main(int argc, char **argv)
 		/* 3DES tests */
 		rc = test_3des_new_api(variant);
 		if (rc && rc != TEST_SKIP) {
-			error_count++;
 			printf("test_des_new_api for CBC_CS mode with 3DES "
 			       "failed.\n");
 			return TEST_FAIL;
