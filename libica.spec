@@ -1,5 +1,5 @@
 Name:          libica
-Version:       4.3.1
+Version:       4.4.0
 Release:       1%{?dist}
 Summary:       Interface library to the ICA device driver
 
@@ -62,6 +62,8 @@ rm -rf $RPM_BUILD_ROOT
 %{_includedir}/ica_api.h
 
 %changelog
+* Tue Dec 10 2024 Joerg Schmidbauer <jschmidb@linux.ibm.com>
+- Version v4.4.0
 * Mon Oct 28 2024 Joerg Schmidbauer <jschmidb@linux.vnet.ibm.com>
 - Version v4.3.1
 * Mon Jan 8 2024 Joerg Schmidbauer <jschmidb@linux.vnet.ibm.com>
