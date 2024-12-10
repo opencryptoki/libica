@@ -981,18 +981,23 @@ static int rsa_tests(ica_adapter_handle_t handle)
 
 	/* Test RSA-ME */
 	rc = system("@builddir@icastats -r");
-	if (rc == -1)
+	if (rc == -1) {
+		free(output_data);
 		return handle_ica_error(rc, "system");
+	}
 
 	rc = ica_rsa_mod_expo(handle, data, &mod_expo_key, output_data);
 	if (rc) {
 #ifndef NO_SW_FALLBACKS
+		free(output_data);
 		return handle_ica_error(rc, "ica_rsa_mod_expo");
 #else
 		if (rc == ENODEV) {
 			V_(printf("Test RSA-ME and RSA-CRT SKIPPED (no card).\n"));
+			free(output_data);
 			return TEST_SKIP;
 		} else {
+			free(output_data);
 			return handle_ica_error(rc, "ica_rsa_mod_expo");
 		}
 #endif
@@ -1000,22 +1005,29 @@ static int rsa_tests(ica_adapter_handle_t handle)
 
 	/* Test RSA-CRT */
 	rc = check_icastats(RSA_ME, "RSA-ME");
-	if (rc != 0)
+	if (rc != 0) {
+		free(output_data);
 		return rc;
+	}
 
 	rc = system("@builddir@icastats -r");
-	if (rc == -1)
+	if (rc == -1) {
+		free(output_data);
 		return handle_ica_error(rc, "system");
+	}
 
 	rc = ica_rsa_crt(handle, data, &crt_key, output_data);
 	if (rc) {
 #ifndef NO_SW_FALLBACKS
+		free(output_data);
 		return handle_ica_error(rc, "ica_rsa_crt");
 #else
 		if (rc == ENODEV) {
 			V_(printf("Test RSA-CRT SKIPPED (no card).\n"));
+			free(output_data);
 			return TEST_SKIP;
 		} else {
+			free(output_data);
 			return handle_ica_error(rc, "ica_rsa_crt");
 		}
 #endif
@@ -1068,33 +1080,53 @@ static int aes_tests(unsigned char *iv, unsigned char *cmac, unsigned char *ctr)
 
 	/* Test AES-CBC */
 	rc = system("@builddir@icastats -r");
-	if (rc == -1)
+	if (rc == -1) {
+		free(tag);
+		free(output_buffer);
+		free(nonce);
 		return handle_ica_error(rc, "system");
+	}
 
 	for (mode = 1;mode >= 0;mode--) {
 		rc = ica_aes_cbc(input_buffer, output_buffer, DATA_LENGTH, aes_key,
 				AES_KEY_LEN128, iv, mode);
-		if (rc)
+		if (rc) {
+			free(tag);
+			free(output_buffer);
+			free(nonce);
 			return handle_ica_error(rc, "ica_aes_cbc");
+		}
 		if (mode == ICA_ENCRYPT)
 			input_buffer = output_buffer;
 		else if (mode == ICA_DECRYPT)
 			input_buffer = plain_data;
 	}
 	rc = check_icastats(AES_CBC, "AES CBC");
-	if (rc != 0)
+	if (rc != 0) {
+		free(tag);
+		free(output_buffer);
+		free(nonce);
 		return rc;
+	}
 
 	/* Test AES-CFB */
 	rc = system("@builddir@icastats -r");
-	if (rc == -1)
+	if (rc == -1) {
+		free(tag);
+		free(output_buffer);
+		free(nonce);
 		return handle_ica_error(rc, "system");
+	}
 
 	for (mode = 1;mode >= 0;mode--) {
 		rc = ica_aes_cfb(input_buffer, output_buffer, DATA_LENGTH, aes_key,
 				AES_KEY_LEN128, iv, AES_CIPHER_BLOCK, mode);
-		if (rc)
+		if (rc) {
+			free(tag);
+			free(output_buffer);
+			free(nonce);
 			return handle_ica_error(rc, "ica_aes_cfb");
+		}
 
 		if (mode == ICA_ENCRYPT)
 			input_buffer = output_buffer;
@@ -1105,27 +1137,43 @@ static int aes_tests(unsigned char *iv, unsigned char *cmac, unsigned char *ctr)
 
 	/* Test AES-CMAC */
 	rc = system("@builddir@icastats -r");
-	if (rc == -1)
+	if (rc == -1) {
+		free(tag);
+		free(output_buffer);
+		free(nonce);
 		return handle_ica_error(rc, "system");
+	}
 
 	for (mode = 1;mode >= 0;mode--) {
 		rc = ica_aes_cmac(input_buffer, DATA_LENGTH, cmac, AES_CIPHER_BLOCK,
 				aes_key, AES_KEY_LEN128, mode);
-		if (rc)
+		if (rc) {
+			free(tag);
+			free(output_buffer);
+			free(nonce);
 			return handle_ica_error(rc, "ica_aes_cmac");
+		}
 	}
 	check_icastats(AES_CMAC, "AES CMAC");
 
 	/* Test AES-CTR */
 	rc = system("@builddir@icastats -r");
-	if (rc == -1)
+	if (rc == -1) {
+		free(tag);
+		free(output_buffer);
+		free(nonce);
 		return handle_ica_error(rc, "system");
+	}
 
 	for (mode = 1;mode >= 0;mode--) {
 		rc = ica_aes_ctr(input_buffer, output_buffer, DATA_LENGTH, aes_key,
 				AES_KEY_LEN128, ctr, AES_CIPHER_BLOCK, mode);
-		if (rc)
+		if (rc) {
+			free(tag);
+			free(output_buffer);
+			free(nonce);
 			return handle_ica_error(rc, "ica_aes_ctr");
+		}
 
 		if (mode == ICA_ENCRYPT)
 			input_buffer = output_buffer;
@@ -1136,14 +1184,22 @@ static int aes_tests(unsigned char *iv, unsigned char *cmac, unsigned char *ctr)
 
 	/* Test AES-ECB */
 	rc = system("@builddir@icastats -r");
-	if (rc == -1)
+	if (rc == -1) {
+		free(tag);
+		free(output_buffer);
+		free(nonce);
 		return handle_ica_error(rc, "system");
+	}
 
 	for (mode = 1;mode >= 0;mode--) {
 		rc = ica_aes_ecb(input_buffer, output_buffer, DATA_LENGTH, aes_key,
 				AES_KEY_LEN128, mode);
-		if (rc)
+		if (rc) {
+			free(tag);
+			free(output_buffer);
+			free(nonce);
 			return handle_ica_error(rc, "ica_aes_ecb");
+		}
 
 		if (mode == ICA_ENCRYPT)
 			input_buffer = output_buffer;
@@ -1154,14 +1210,22 @@ static int aes_tests(unsigned char *iv, unsigned char *cmac, unsigned char *ctr)
 
 	/* Test AES-OFB */
 	rc = system("@builddir@icastats -r");
-	if (rc == -1)
+	if (rc == -1) {
+		free(tag);
+		free(output_buffer);
+		free(nonce);
 		return handle_ica_error(rc, "system");
+	}
 
 	for (mode = 1;mode >= 0;mode--) {
 		rc = ica_aes_ofb(input_buffer, output_buffer, DATA_LENGTH, aes_key,
 				AES_KEY_LEN128, iv, mode);
-		if (rc)
+		if (rc) {
+			free(tag);
+			free(output_buffer);
+			free(nonce);
 			return handle_ica_error(rc, "ica_aes_ofb");
+		}
 
 		if (mode == ICA_ENCRYPT)
 			input_buffer = output_buffer;
@@ -1172,14 +1236,22 @@ static int aes_tests(unsigned char *iv, unsigned char *cmac, unsigned char *ctr)
 
 	/* Test AES-XTS */
 	rc = system("@builddir@icastats -r");
-	if (rc == -1)
+	if (rc == -1) {
+		free(tag);
+		free(output_buffer);
+		free(nonce);
 		return handle_ica_error(rc, "system");
+	}
 
 	for (mode = 1; mode >= 0; mode--) {
 		rc = ica_aes_xts(input_buffer, output_buffer, DATA_LENGTH, aes_key,
 				aes_key2, AES_KEY_LEN128, tweak, mode);
-		if (rc)
+		if (rc) {
+			free(tag);
+			free(output_buffer);
+			free(nonce);
 			return handle_ica_error(rc, "ica_aes_xts");
+		}
 
 		if (mode == ICA_ENCRYPT)
 			input_buffer = output_buffer;
