@@ -726,10 +726,12 @@ int s390_get_functionlist(libica_func_list_element *pmech_list,
 		case RSA_KEY_GEN_CRT:
 		case RSA_ME:
 		case RSA_CRT:
-			if (pmech_list[x].flags)
+			if (pmech_list[x].flags) {
 				pmech_list[x].property = ICA_PROPERTY_RSA_FIPS;
-			else
+				pmech_list[x].property |= ICA_PROPERTY_RSA_NO_SMALL_EXP;
+			} else {
 				pmech_list[x].property = 0;
+			}
 			break;
 		default:
 			break;
