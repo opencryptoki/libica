@@ -174,6 +174,44 @@ int rsa_keylen_supported_by_openssl(unsigned int modulus_bitlength)
 	return rc == 0 ? 1 : 0;
 }
 
+int rsa_pubexp_supported_by_openssl(unsigned int pubexp)
+{
+	unsigned char modexpo_public_e[256] = { 0 };
+	unsigned char modexpo_public_n[256] = { 0 };
+	unsigned char crt_private_p[128] = { 0 };
+	unsigned char crt_private_q[128] = { 0 };
+	unsigned char crt_private_dp[128] = { 0 };
+	unsigned char crt_private_dq[128] = { 0 };
+	unsigned char crt_private_inv_q[128] = { 0 };
+	ica_adapter_handle_t ah;
+	ica_rsa_key_mod_expo_t public_key;
+	ica_rsa_key_crt_t private_key;
+	int rc;
+
+	rc = ica_open_adapter(&ah);
+	if (rc != 0)
+		return 0;
+
+	public_key.modulus = modexpo_public_n;
+	public_key.exponent = modexpo_public_e;
+	public_key.key_length = 256;
+
+	private_key.p = crt_private_p;
+	private_key.q = crt_private_q;
+	private_key.dp = crt_private_dp;
+	private_key.dq = crt_private_dq;
+	private_key.qInverse = crt_private_inv_q;
+	private_key.key_length = 256;
+
+	*(int*)((unsigned char *)public_key.exponent + 256 - sizeof(int)) = pubexp;
+
+	rc = ica_rsa_key_generate_crt(ah, 2048, &public_key, &private_key);
+
+	ica_close_adapter(ah);
+
+	return rc == 0 ? 1 : 0;
+}
+
 int get_rsa_minlen(void)
 {
 	int keylen_array[] = { 57, 512, 1024, 2048, 4096 };
@@ -188,20 +226,42 @@ int get_rsa_minlen(void)
 	return -1;
 }
 
+int get_rsa_min_pubexp(void)
+{
+	int pubexp_array[] = { 3, 65537 };
+	size_t i;
+
+	for (i = 0; i < sizeof(pubexp_array) / sizeof(int); i++) {
+		if (rsa_pubexp_supported_by_openssl(pubexp_array[i])) {
+			return pubexp_array[i];
+		}
+	}
+
+	return -1;
+}
+
 /**
  * Print out the minimum and maximum RSA key length. The maximum length is
  * restricted to 4096 bits by crypto cards. The minimum accepted length in
  * libica is 57 bits, but the available min length depends on the openssl
  * version and fips mode.
+ * Also print the minimum allowed value of the public exponent. In FIPS mode
+ * the minimum public exponent is 65537.
  */
 void print_rsa(void)
 {
 	int minlen = get_rsa_minlen();
+	int min_pubexp = get_rsa_min_pubexp();
 
 	if (minlen > 0)
 		printf("RSA key lengths: %d ... 4096 bits.\n", minlen);
 	else
 		printf("Error: cannot determine supported RSA key lengths via openssl.\n");
+
+	if (min_pubexp > 0)
+		printf("RSA public exponents greater or equal to %d.\n", min_pubexp);
+	else
+		printf("Error: cannot determine supported RSA public exponents via openssl.\n");
 
 #ifdef ICA_FIPS
 	printf("Built-in FIPS support: FIPS 140-3 mode %s.\n",
