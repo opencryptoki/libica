@@ -709,8 +709,8 @@ int s390_get_functionlist(libica_func_list_element *pmech_list,
 	 *   approved.
 	 * - We are in an error state.
 	 * */
-	if (((fips & ICA_FIPS_MODE) && !fips_approved(pmech_list[x].mech_mode_id &&
-		!fips_override(pmech_list[x].mech_mode_id)))
+	if (((fips & ICA_FIPS_MODE) && !fips_approved(pmech_list[x].mech_mode_id) &&
+		!fips_override(pmech_list[x].mech_mode_id))
 	    || fips >> 1) {
 		pmech_list[x].flags = 0;
 		pmech_list[x].property = 0;
