@@ -403,7 +403,11 @@ unsigned int search_for_cards()
 	char buf[250];
 	struct dirent *direntp;
 	char type[6];
-	int rc;
+	int rc, in_se_guest = 0;
+
+	rc = file_fgets("/sys/firmware/uv/prot_virt_guest", buf, sizeof(buf));
+	if (rc == 0 && strcmp(buf, "1") == 0)
+		in_se_guest = 1;
 
 	if ((sysDir = opendir(dev)) == NULL)
 		return 0;
@@ -440,10 +444,10 @@ unsigned int search_for_cards()
 		if (type[4] == 'A')
 			ret |= CARD_AVAILABLE | CEXnA_AVAILABLE;
 
-		if (type[4] == 'C')
+		if (type[4] == 'C' && !in_se_guest)
 			ret |= CARD_AVAILABLE | CEXnC_AVAILABLE;
 
-		if (type[3] >= '4' && type[4] == 'C')
+		if (type[3] >= '4' && type[4] == 'C' && !in_se_guest)
 			ret |= CARD_AVAILABLE | CEX4C_AVAILABLE;
 	}
 
