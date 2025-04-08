@@ -1,6 +1,6 @@
 #!/bin/bash
 
-if lszcrypt | grep -q -e "CEX.C.*online"; then
+if lszcrypt | grep -q -e "^[0-9a-f][0-9a-f]\.[0-9a-f][0-9a-f][0-9a-f][0-9a-f].*CEX.C.*online"; then
 	ICAPATH=2 ./ec_keygen_test
 else
 	# Show output in log file for debugging
