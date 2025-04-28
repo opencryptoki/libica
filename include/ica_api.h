@@ -3370,7 +3370,7 @@ typedef struct kma_ctx_t kma_ctx;
  * NULL if no memory could be allocated.
  */
 ICA_EXPORT
-kma_ctx* ica_aes_gcm_kma_ctx_new();
+kma_ctx* ica_aes_gcm_kma_ctx_new(void);
 
 /**
  * Initialize the GCM context. This description applies to both,
