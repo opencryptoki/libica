@@ -100,6 +100,13 @@ if test "x$enable_fips" = xyes; then
     fi
 fi
 
+dnl --- with-fips-config
+AC_ARG_WITH([fips-config],
+	AS_HELP_STRING([--with-fips-config=FILE],[OpenSSL FIPS config file name. Default is fipsmodule.cnf]),
+	[], [with_fips_config=fipsmodule.cnf])
+FIPSCONFIGFILE="$with_fips_config"
+AC_SUBST(FIPSCONFIGFILE)
+
 dnl --- enable_sanitizer
 AC_ARG_ENABLE(sanitizer,
               [  --enable-sanitizer      turn on sanitizer (may not work on all systems)],
