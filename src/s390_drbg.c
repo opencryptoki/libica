@@ -364,12 +364,12 @@ int drbg_uninstantiate(ica_drbg_t **sh,
 	/* step 2 */
 	pthread_mutex_lock(&(*sh)->lock);
 	status = (*sh)->mech->uninstantiate(&(*sh)->ws, test_mode);
+	pthread_mutex_unlock(&(*sh)->lock);
 	if(status){
 		if(0 > status)
 			set_error_state((*sh)->mech, status);
 		return status;	/* return uninstantiate status */
 	}
-	pthread_mutex_unlock(&(*sh)->lock);
 	pthread_mutex_destroy(&(*sh)->lock);
 	drbg_zmem(*sh, sizeof(ica_drbg_t));
 	if(test_mode)
