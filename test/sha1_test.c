@@ -196,6 +196,14 @@ int main(int argc, char **argv)
 
 	set_verbosity(argc, argv);
 
+#ifdef ICA_FIPS
+	if (ica_fips_status() & ICA_FIPS_MODE) {
+		printf("All SHA-1 tests skipped."
+		    " (SHA-1 not FIPS approved)\n");
+		return TEST_SKIP;
+	}
+#endif /* ICA_FIPS */
+
 	rc = new_api_sha_test();
 	if (rc) {
 		printf("new_api_sha_test failed with rc = %i\n", rc);

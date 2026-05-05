@@ -692,16 +692,24 @@ static int sha_tests()
 	shake_256_context_t shake_256_context;
 
 	/* Test SHA-1 */
-	rc = system("@builddir@icastats -r");
-	if (rc == -1)
-		return handle_ica_error(rc, "system");
+#ifdef ICA_FIPS
+	if (ica_fips_status() & ICA_FIPS_MODE) {
+		V_(printf("icastats SHA-1 test skipped. (SHA-1 not FIPS 140-3 approved)\n"));
+	} else {
+#endif /* ICA_FIPS */
+		rc = system("@builddir@icastats -r");
+		if (rc == -1)
+			return handle_ica_error(rc, "system");
 
-	rc = ica_sha1(SHA_MSG_PART_ONLY, DATA_LENGTH, plain_data, &sha_context0, hash);
-	if (rc)
-		return handle_ica_error(rc, "ica_sha1");
-	rc = check_icastats(SHA1, "SHA-1");
-	if (rc != 0)
-		return rc;
+		rc = ica_sha1(SHA_MSG_PART_ONLY, DATA_LENGTH, plain_data, &sha_context0, hash);
+		if (rc)
+			return handle_ica_error(rc, "ica_sha1");
+		rc = check_icastats(SHA1, "SHA-1");
+		if (rc != 0)
+			return rc;
+#ifdef ICA_FIPS
+	}
+#endif /* ICA_FIPS */
 
 	/* Test SHA-224 */
 	rc = system("@builddir@icastats -r");

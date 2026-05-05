@@ -156,7 +156,6 @@ static int sha##_sha_##_kat(void) {					\
 	}								\
 	return 0;							\
 }
-SHA_KAT(1, );
 SHA_KAT(224, 256);
 SHA_KAT(256, 256);
 SHA_KAT(384, 512);
@@ -180,7 +179,6 @@ static int sha##_sha_##_kat(void) {					\
 	}								\
 	return 0;							\
 }
-SHA_KAT(1, );
 SHA_KAT(224, 256);
 SHA_KAT(256, 256);
 SHA_KAT(384, 512);
@@ -596,7 +594,7 @@ fips_powerup_tests(void)
 {
 	typedef int (*kat_func)(void);
 	kat_func kats[] = {
-		drbg_kat, sha1_kat, sha224_kat, sha256_kat, sha384_kat, sha512_kat,
+		drbg_kat, sha224_kat, sha256_kat, sha384_kat, sha512_kat,
 		sha3_224_kat, sha3_256_kat, sha3_384_kat, sha3_512_kat, aes_ecb_kat,
 		aes_cbc_kat, aes_cbc_cs_kat, aes_cfb_kat, aes_ctr_kat, aes_ofb_kat,
 		aes_ccm_kat, aes_gcm_kat, aes_xts_kat, aes_cmac_kat, rsa_kat,
@@ -1373,7 +1371,7 @@ int FIPS_BLACKLIST[] = {DES_ECB, DES_CBC, DES_CBC_CS, DES_OFB,
 	DES3_CBC, DES3_CBC_CS, DES3_OFB, DES3_CFB, DES3_CTR, DES3_CTRLST,
 	DES3_CBC_MAC, DES3_CMAC, ED25519_KEYGEN, ED25519_SIGN, ED25519_VERIFY,
 	ED448_KEYGEN, ED448_SIGN, ED448_VERIFY, X25519_KEYGEN, X25519_DERIVE,
-	X448_KEYGEN, X448_DERIVE, RSA_ME, RSA_CRT, SHA512_DRNG, -1, -1 };
+	X448_KEYGEN, X448_DERIVE, RSA_ME, RSA_CRT, SHA512_DRNG, SHA1, -1, -1 };
 const size_t FIPS_BLACKLIST_LEN
 	= sizeof(FIPS_BLACKLIST) / sizeof(FIPS_BLACKLIST[0]);
 

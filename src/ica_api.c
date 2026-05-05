@@ -413,7 +413,7 @@ unsigned int ica_sha1(unsigned int message_part,
 	int rc;
 
 #ifdef ICA_FIPS
-	if (fips >> 1)
+	if (fips)
 		return EACCES;
 #endif /* ICA_FIPS */
 
