@@ -151,6 +151,12 @@ int main(int argc, char *argv[])
 		switch (curr_test->type) {
 		case SHA1:
 			V_(printf("SHA1 ...\n"));
+#ifdef ICA_FIPS
+			if (ica_fips_status() & ICA_FIPS_MODE) {
+				V_(printf("SHA1 test skipped (SHA-1 not FIPS approved)\n"));
+				rc = TEST_SKIP;
+			} else
+#endif /* ICA_FIPS */
 			rc = sha1_new_api_test(curr_test);
 			break;
 		case SHA224:
@@ -201,6 +207,9 @@ int main(int argc, char *argv[])
 		if (!rc) {
 			V_(printf("... Passed.\n"));
 			queue.passed++;
+		}
+		else if (rc == TEST_SKIP) {
+			V_(printf("... Skipped.\n"));
 		}
 		else {
 			V_(printf("error: (%x).\n", rc));

@@ -2828,6 +2828,13 @@ static void ecdsa_test(void)
 	for (i = 0; i < ECDSA_TV_LEN; i++) {
 		switch (t->hash) {
 		case SHA1:
+#ifdef ICA_FIPS
+			if (fips & ICA_FIPS_MODE) {
+				printf("Skipping ECDSA test vector %lu (SHA-1 not FIPS approved)\n", i);
+				t++;
+				continue;
+			}
+#endif /* ICA_FIPS */
 			rc = ica_sha1(SHA_MSG_PART_ONLY, t->msglen, t->msg,
 				      &sha_ctx, hash);
 			hashlen = SHA1_HASH_LENGTH;
