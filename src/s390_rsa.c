@@ -201,7 +201,7 @@ unsigned int rsa_key_generate_mod_expo(ica_adapter_handle_t deviceHandle,
 #ifdef ICA_FIPS
 	if ((fips & ICA_FIPS_MODE) && (!openssl_in_fips_mode()))
 		return EACCES;
-	if ((fips & ICA_FIPS_MODE) && (modulus_bit_length < 2048))
+	if ((fips & ICA_FIPS_MODE) && (modulus_bit_length < 3072))
 		return EPERM;
 #endif /* ICA_FIPS */
 
@@ -311,7 +311,7 @@ unsigned int rsa_key_generate_crt(ica_adapter_handle_t deviceHandle,
 #ifdef ICA_FIPS
 	if ((fips & ICA_FIPS_MODE) && (!openssl_in_fips_mode()))
 		return EACCES;
-	if ((fips & ICA_FIPS_MODE) && (modulus_bit_length < 2048))
+	if ((fips & ICA_FIPS_MODE) && (modulus_bit_length < 3072))
 		return EPERM;
 #endif /* ICA_FIPS */
 

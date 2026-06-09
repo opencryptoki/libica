@@ -176,13 +176,13 @@ int rsa_keylen_supported_by_openssl(unsigned int modulus_bitlength)
 
 int rsa_pubexp_supported_by_openssl(unsigned int pubexp)
 {
-	unsigned char modexpo_public_e[256] = { 0 };
-	unsigned char modexpo_public_n[256] = { 0 };
-	unsigned char crt_private_p[128] = { 0 };
-	unsigned char crt_private_q[128] = { 0 };
-	unsigned char crt_private_dp[128] = { 0 };
-	unsigned char crt_private_dq[128] = { 0 };
-	unsigned char crt_private_inv_q[128] = { 0 };
+	unsigned char modexpo_public_e[384] = { 0 };
+	unsigned char modexpo_public_n[384] = { 0 };
+	unsigned char crt_private_p[192] = { 0 };
+	unsigned char crt_private_q[192] = { 0 };
+	unsigned char crt_private_dp[192] = { 0 };
+	unsigned char crt_private_dq[192] = { 0 };
+	unsigned char crt_private_inv_q[192] = { 0 };
 	ica_adapter_handle_t ah;
 	ica_rsa_key_mod_expo_t public_key;
 	ica_rsa_key_crt_t private_key;
@@ -194,18 +194,18 @@ int rsa_pubexp_supported_by_openssl(unsigned int pubexp)
 
 	public_key.modulus = modexpo_public_n;
 	public_key.exponent = modexpo_public_e;
-	public_key.key_length = 256;
+	public_key.key_length = 384;
 
 	private_key.p = crt_private_p;
 	private_key.q = crt_private_q;
 	private_key.dp = crt_private_dp;
 	private_key.dq = crt_private_dq;
 	private_key.qInverse = crt_private_inv_q;
-	private_key.key_length = 256;
+	private_key.key_length = 384;
 
-	*(int*)((unsigned char *)public_key.exponent + 256 - sizeof(int)) = pubexp;
+	*(int*)((unsigned char *)public_key.exponent + 384 - sizeof(int)) = pubexp;
 
-	rc = ica_rsa_key_generate_crt(ah, 2048, &public_key, &private_key);
+	rc = ica_rsa_key_generate_crt(ah, 3072, &public_key, &private_key);
 
 	ica_close_adapter(ah);
 
@@ -214,7 +214,7 @@ int rsa_pubexp_supported_by_openssl(unsigned int pubexp)
 
 int get_rsa_minlen(void)
 {
-	int keylen_array[] = { 57, 512, 1024, 2048, 4096 };
+	int keylen_array[] = { 57, 512, 1024, 2048, 3072, 4096 };
 	size_t i;
 
 	for (i = 0; i < sizeof(keylen_array) / sizeof(int); i++) {
