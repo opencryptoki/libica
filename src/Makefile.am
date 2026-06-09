@@ -52,9 +52,9 @@ mp.S	: mp.pl
 
 if ICA_FIPS
 fipsinstall:
-	$(AM_V_GEN) openssl dgst -sha256 -mac hmac -macopt hexkey:00000000 $(DESTDIR)$(libdir)/libica.so.$(VERSION1) | sed -e 's/^.* //' > $(DESTDIR)$(libdir)/.libica.so.$(VERSION1).hmac
+	$(AM_V_GEN) openssl dgst -sha256 -mac hmac -macopt hexkey:00000000000000000000000000000000 $(DESTDIR)$(libdir)/libica.so.$(VERSION1) | sed -e 's/^.* //' > $(DESTDIR)$(libdir)/.libica.so.$(VERSION1).hmac
 	$(AM_V_GEN) cd $(DESTDIR)$(libdir) && ln -sf .libica.so.$(VERSION1).hmac .libica.so.$(MAJOR).hmac
-	$(AM_V_GEN) openssl dgst -sha256 -mac hmac -macopt hexkey:00000000 $(DESTDIR)$(libdir)/libica-cex.so.$(VERSION1) | sed -e 's/^.* //' > $(DESTDIR)$(libdir)/.libica-cex.so.$(VERSION1).hmac
+	$(AM_V_GEN) openssl dgst -sha256 -mac hmac -macopt hexkey:00000000000000000000000000000000 $(DESTDIR)$(libdir)/libica-cex.so.$(VERSION1) | sed -e 's/^.* //' > $(DESTDIR)$(libdir)/.libica-cex.so.$(VERSION1).hmac
 	$(AM_V_GEN) cd $(DESTDIR)$(libdir) && ln -sf .libica-cex.so.$(VERSION1).hmac .libica-cex.so.$(MAJOR).hmac
 
 hmac-file-lnk: hmac-file
@@ -62,8 +62,8 @@ hmac-file-lnk: hmac-file
 	$(AM_V_GEN) cd ${top_builddir}/src/.libs && ln -sf .libica-cex.so.$(VERSION1).hmac .libica-cex.so.$(MAJOR).hmac
 
 hmac-file: libica.la libica-cex.la
-	$(AM_V_GEN) openssl dgst -sha256 -mac hmac -macopt hexkey:00000000 ${top_builddir}/src/.libs/libica.so.$(VERSION1) | sed -e 's/^.* //' > ${top_builddir}/src/.libs/.libica.so.$(VERSION1).hmac
-	$(AM_V_GEN) openssl dgst -sha256 -mac hmac -macopt hexkey:00000000 ${top_builddir}/src/.libs/libica-cex.so.$(VERSION1) | sed -e 's/^.* //' > ${top_builddir}/src/.libs/.libica-cex.so.$(VERSION1).hmac
+	$(AM_V_GEN) openssl dgst -sha256 -mac hmac -macopt hexkey:00000000000000000000000000000000 ${top_builddir}/src/.libs/libica.so.$(VERSION1) | sed -e 's/^.* //' > ${top_builddir}/src/.libs/.libica.so.$(VERSION1).hmac
+	$(AM_V_GEN) openssl dgst -sha256 -mac hmac -macopt hexkey:00000000000000000000000000000000 ${top_builddir}/src/.libs/libica-cex.so.$(VERSION1) | sed -e 's/^.* //' > ${top_builddir}/src/.libs/.libica-cex.so.$(VERSION1).hmac
 
 hmac_files = hmac-file hmac-file-lnk
 

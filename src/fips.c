@@ -363,6 +363,9 @@ static EVP_PKEY *get_pkey(void)
 	if (keybuf == NULL)
 		goto end;
 
+	if (keylen < 16)
+		goto end;
+
 	pkey = EVP_PKEY_new_mac_key(EVP_PKEY_HMAC, NULL, keybuf, (int)keylen);
 end:
 	if (keybuf) {
