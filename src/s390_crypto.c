@@ -724,7 +724,7 @@ int s390_get_functionlist(libica_func_list_element *pmech_list,
 	 * mode, but not on any hardware, with any openssl, not with any key
 	 * length, curve etc. */
 	if (fips & ICA_FIPS_MODE) {
-		/* RSA >= 2048 bits in FIPS 140-3 mode */
+		/* RSA >= 3072 bits in FIPS 140-3 mode */
 		switch (pmech_list[x].mech_mode_id) {
 		case RSA_KEY_GEN_ME:
 		case RSA_KEY_GEN_CRT:

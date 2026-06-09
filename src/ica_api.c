@@ -1186,7 +1186,7 @@ unsigned int ica_rsa_mod_expo(ica_adapter_handle_t adapter_handle,
 		return EPERM;
 
 #ifdef ICA_FIPS
-	if ((fips & ICA_FIPS_MODE) && rsa_key->key_length * 8 < 2048)
+	if ((fips & ICA_FIPS_MODE) && rsa_key->key_length * 8 < 3072)
 		return EPERM;
 #endif
 
@@ -1342,7 +1342,7 @@ unsigned int ica_rsa_crt(ica_adapter_handle_t adapter_handle,
 		return EPERM;
 
 #ifdef ICA_FIPS
-	if ((fips & ICA_FIPS_MODE) && rsa_key->key_length * 8 < 2048)
+	if ((fips & ICA_FIPS_MODE) && rsa_key->key_length * 8 < 3072)
 		return EPERM;
 #endif
 

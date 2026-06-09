@@ -62,9 +62,9 @@ int main(int argc, char **argv)
 	}
 
 #ifdef ICA_FIPS
-	if ((ica_fips_status() & ICA_FIPS_MODE) && key_bit_length < 2048) {
+	if ((ica_fips_status() & ICA_FIPS_MODE) && key_bit_length < 3072) {
 		printf("RSA-%d keygen test skipped."
-		    " (RSA key lengths smaller than 2048 bits not FIPS 140-3 compliant)\n",
+		    " (RSA key lengths smaller than 3072 bits not FIPS 140-3 compliant)\n",
 			key_bit_length);
 		return TEST_SKIP;
 	}

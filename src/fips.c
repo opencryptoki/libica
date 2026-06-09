@@ -1299,6 +1299,11 @@ rsa_kat(void)
 	for (i = 0; i < RSA_TV_LEN; i++) {
 		tv = &RSA_TV[i];
 
+#ifdef ICA_FIPS
+		if ((fips & ICA_FIPS_MODE) && tv->mod < 3072)
+			continue;
+#endif
+
 		keylen = (tv->mod + 7) / 8;
 		crtparamlen = (keylen + 1) / 2;
 
@@ -1372,7 +1377,7 @@ int FIPS_BLACKLIST[] = {DES_ECB, DES_CBC, DES_CBC_CS, DES_OFB,
 	DES3_CBC_MAC, DES3_CMAC, ED25519_KEYGEN, ED25519_SIGN, ED25519_VERIFY,
 	ED448_KEYGEN, ED448_SIGN, ED448_VERIFY, X25519_KEYGEN, X25519_DERIVE,
 	X448_KEYGEN, X448_DERIVE, RSA_ME, RSA_CRT, SHA512_DRNG, SHA1, AES_ECB,
-	SHA224, SHA512_224, SHA3_224, -1, -1 };
+	SHA224, SHA512_224, SHA3_224, RSA_KEY_GEN_ME, RSA_KEY_GEN_CRT, -1, -1 };
 const size_t FIPS_BLACKLIST_LEN
 	= sizeof(FIPS_BLACKLIST) / sizeof(FIPS_BLACKLIST[0]);
 
@@ -1380,7 +1385,7 @@ const size_t FIPS_BLACKLIST_LEN
  * FIPS service indicator: List of tolerated but non-approved algorithms.
  */
 int FIPS_OVERRIDE_LIST[] = { RSA_ME, RSA_CRT, SHA512_DRNG, AES_ECB, SHA224,
-	SHA512_224, SHA3_224, -1, -1 };
+	SHA512_224, SHA3_224, RSA_KEY_GEN_ME, RSA_KEY_GEN_CRT, -1, -1 };
 const size_t FIPS_OVERRIDE_LIST_LEN
 	= sizeof(FIPS_OVERRIDE_LIST) / sizeof(FIPS_OVERRIDE_LIST[0]);
 
