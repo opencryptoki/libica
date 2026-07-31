@@ -360,7 +360,7 @@ static inline int __s390_des_cfb(unsigned int fc, unsigned long data_length,
 }
 
 static inline int s390_des_ofb_hw(unsigned int function_code,
-			   unsigned int input_length,
+			   unsigned long input_length,
 			   const unsigned char *input_data, unsigned char *iv,
 			   const unsigned char *keys, unsigned char *output_data)
 {
@@ -387,7 +387,7 @@ static inline int s390_des_ofb_hw(unsigned int function_code,
 		return EIO;
 }
 
-static inline int __s390_des_ofb(unsigned int fc, unsigned int input_length,
+static inline int __s390_des_ofb(unsigned int fc, unsigned long input_length,
 				 const unsigned char *input_data, unsigned char *iv,
 				 const unsigned char *keys, unsigned char *output_data)
 {
