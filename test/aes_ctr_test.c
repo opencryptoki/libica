@@ -14,6 +14,10 @@
 #include "ica_api.h"
 #include "testcase.h"
 
+#ifndef AES_BLOCK_SIZE
+#define AES_BLOCK_SIZE 16
+#endif
+
 #define NR_TESTS 7
 #define NR_RANDOM_TESTS 1000
 
@@ -580,6 +584,117 @@ int kat_aes_ctr(int iteration)
 }
 
 /*
+ * Software reference for the counter increment: add 1 to the least
+ * significant ctr_width bits (multiple of 8) of the counter block, wrapping
+ * at 2^ctr_width and leaving the other (nonce) bytes unchanged.
+ */
+static void ref_inc_ctr(unsigned char *ctr, unsigned int ctr_width)
+{
+	int i;
+
+	for (i = AES_BLOCK_SIZE - 1; i >= (int)(AES_BLOCK_SIZE - ctr_width / 8);
+	     i--) {
+		if (++ctr[i] != 0)
+			break;
+	}
+}
+
+/*
+ * Compare ica_aes_ctr() against a reference built from ica_aes_ecb() and the
+ * software counter above, for various counter widths and with the counter
+ * close to its wrap around point (also across the 64 bit boundary). The data
+ * is processed in two chained calls to also check the returned counter block.
+ */
+int kat_aes_ctr_widths(void)
+{
+	static const unsigned int widths[] = { 8, 16, 32, 56, 64, 72, 96, 120, 128 };
+	const unsigned int nblocks = 6, first_len = 2 * AES_BLOCK_SIZE;
+	unsigned char key[AES_KEY_LEN128];
+	unsigned char data[6 * AES_BLOCK_SIZE];
+	unsigned char expected[6 * AES_BLOCK_SIZE];
+	unsigned char out[6 * AES_BLOCK_SIZE];
+	unsigned char ctr[AES_BLOCK_SIZE], ref_ctr[AES_BLOCK_SIZE];
+	unsigned char ks[AES_BLOCK_SIZE];
+	unsigned int w, pattern, b, i, nbytes;
+	int rc, error_count = 0;
+
+	for (i = 0; i < sizeof(key); i++)
+		key[i] = 0x10 + i;
+	for (i = 0; i < sizeof(data); i++)
+		data[i] = i * 7 + 1;
+
+	for (w = 0; w < sizeof(widths) / sizeof(widths[0]); w++) {
+		nbytes = widths[w] / 8;
+
+		for (pattern = 0; pattern < 2; pattern++) {
+			/* nonce bytes */
+			for (i = 0; i < AES_BLOCK_SIZE; i++)
+				ctr[i] = 0xa0 + i;
+			/*
+			 * Counter bytes: all 0xff, except the last byte which
+			 * is 0xfd, so that the counter wraps within the 3rd
+			 * block. For pattern 1, the counter bytes above the
+			 * lowest 64 bits (if any) are 0x00 instead, so that
+			 * the counter carries out of the lower 64 bits, but
+			 * does not wrap around.
+			 */
+			for (i = AES_BLOCK_SIZE - nbytes; i < AES_BLOCK_SIZE; i++)
+				ctr[i] = 0xff;
+			ctr[AES_BLOCK_SIZE - 1] = 0xfd;
+			if (pattern == 1)
+				for (i = AES_BLOCK_SIZE - nbytes;
+				     i < AES_BLOCK_SIZE - 8; i++)
+					ctr[i] = 0x00;
+
+			/* reference */
+			memcpy(ref_ctr, ctr, AES_BLOCK_SIZE);
+			for (b = 0; b < nblocks; b++) {
+				rc = ica_aes_ecb(ref_ctr, ks, AES_BLOCK_SIZE,
+						 key, sizeof(key), ICA_ENCRYPT);
+				if (rc) {
+					V_(printf("ica_aes_ecb failed with rc = %i\n",
+					    rc));
+					return TEST_FAIL;
+				}
+				for (i = 0; i < AES_BLOCK_SIZE; i++)
+					expected[b * AES_BLOCK_SIZE + i] =
+					    data[b * AES_BLOCK_SIZE + i] ^ ks[i];
+				ref_inc_ctr(ref_ctr, widths[w]);
+			}
+
+			/* ica_aes_ctr in two chained calls */
+			rc = ica_aes_ctr(data, out, first_len, key, sizeof(key),
+					 ctr, widths[w], ICA_ENCRYPT);
+			if (!rc)
+				rc = ica_aes_ctr(data + first_len,
+						 out + first_len,
+						 sizeof(data) - first_len, key,
+						 sizeof(key), ctr, widths[w],
+						 ICA_ENCRYPT);
+			if (rc) {
+				V_(printf("ica_aes_ctr failed with rc = %i "
+				    "(width %u)\n", rc, widths[w]));
+				error_count++;
+				continue;
+			}
+
+			if (memcmp(out, expected, sizeof(data))) {
+				V_(printf("AES-CTR result mismatch: width %u, "
+				    "pattern %u\n", widths[w], pattern));
+				error_count++;
+			}
+			if (memcmp(ctr, ref_ctr, AES_BLOCK_SIZE)) {
+				V_(printf("AES-CTR counter block mismatch: width "
+				    "%u, pattern %u\n", widths[w], pattern));
+				error_count++;
+			}
+		}
+	}
+
+	return error_count ? TEST_FAIL : TEST_SUCC;
+}
+
+/*
  * Perform CTR tests.
  */
 int main(int argc, char **argv)
@@ -616,6 +731,12 @@ int main(int argc, char **argv)
 				V_(printf("kat_aes_ctr failed with rc = %i\n", rc));
 				error_count++;
 			}
+		}
+		// run tests with various counter widths and counter wrap around
+		rc = kat_aes_ctr_widths();
+		if (rc) {
+			V_(printf("kat_aes_ctr_widths failed with rc = %i\n", rc));
+			error_count++;
 		}
 		// run random tests
 		for(iteration = 1; iteration <= NR_RANDOM_TESTS; iteration++) {
