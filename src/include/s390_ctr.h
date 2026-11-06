@@ -38,23 +38,37 @@ static inline void __inc_des_ctr(uint64_t *iv, int ctr_bits)
 	*iv |= ctr & ~mask;
 }
 
+/*
+ * Get the mask of the bits of a 128 bit counter block that are NOT part of
+ * the counter (i.e. the nonce bits), if the counter consists of the least
+ * significant @ctr_bits bits (0 <= @ctr_bits <= 128).
+ */
+static inline void __aes_ctr_nonce_mask(struct uint128 *mask, int ctr_bits)
+{
+	if (ctr_bits >= 128) {
+		/* The shift count must be less than the width of the type. */
+		mask->g[1] = 0ULL;
+		mask->g[0] = 0ULL;
+	} else if (ctr_bits >= 64) {
+		mask->g[1] = 0ULL;
+		mask->g[0] = ~0ULL << (ctr_bits - 64);
+	} else {
+		mask->g[1] = ~0ULL << ctr_bits;
+		mask->g[0] = ~0ULL;
+	}
+}
+
 static inline void __inc_aes_ctr(struct uint128 *iv, int ctr_bits)
 {
 	struct uint128 ctr, mask;
 
 	ctr.g[1] = iv->g[1];
 	ctr.g[0] = iv->g[0];
-	if (ctr_bits >= 64) {
-		mask.g[1] = 0ULL;
-		mask.g[0] = ~0ULL << (ctr_bits - 64);
-	}
-	else {
-		mask.g[1] = ~0ULL << ctr_bits;
-		mask.g[0] = ~0ULL;
-	}
+	__aes_ctr_nonce_mask(&mask, ctr_bits);
 	iv->g[1] &= mask.g[1];
 	iv->g[0] &= mask.g[0];
-	if(++(ctr.g[1]))
+	/* carry into the upper half only if the lower half wrapped */
+	if (++(ctr.g[1]) == 0)
 		++(ctr.g[0]);
 	iv->g[1] |= ctr.g[1] & ~mask.g[1];
 	iv->g[0] |= ctr.g[0] & ~mask.g[0];
@@ -93,14 +107,7 @@ static inline void __fill_aes_ctrlist(uint8_t *ctrlist, size_t ctrlistlen,
 
 	ctr.g[1] = iv->g[1];
 	ctr.g[0] = iv->g[0];
-	if (ctr_bits >= 64) {
-		mask.g[1] = 0ULL;
-		mask.g[0] = ~0ULL << (ctr_bits - 64);
-	}
-	else {
-		mask.g[1] = ~0ULL << ctr_bits;
-		mask.g[0] = ~0ULL;
-	}
+	__aes_ctr_nonce_mask(&mask, ctr_bits);
 	iv->g[1] &= mask.g[1];
 	iv->g[0] &= mask.g[0];
 	for (block = (struct uint128 *)ctrlist; block <
@@ -108,7 +115,8 @@ static inline void __fill_aes_ctrlist(uint8_t *ctrlist, size_t ctrlistlen,
 	    block++) {
 		block->g[1] = (ctr.g[1] & ~mask.g[1]) | iv->g[1];
 		block->g[0] = (ctr.g[0] & ~mask.g[0]) | iv->g[0];
-		if(++(ctr.g[1]))
+		/* carry into the upper half only if the lower half wrapped */
+		if (++(ctr.g[1]) == 0)
 			++(ctr.g[0]);
 	}
 	iv->g[1] |= ctr.g[1] & ~mask.g[1];
