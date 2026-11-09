@@ -15,6 +15,7 @@
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 
 #include "s390_crypto.h"
 #include "s390_drbg.h"
@@ -510,7 +511,7 @@ static int test_generate(int sec,
 {
 	ws_t ws = { 0 };
 	ica_drbg_t sh = {.mech = &DRBG_SHA512, .ws = &ws, .sec = sec,
-			 .pr = true};
+			 .pr = true, .pid = getpid()};
 	size_t i;
 	int status;
 	const struct drbg_sha512_tv *tv;
