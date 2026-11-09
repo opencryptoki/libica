@@ -18,6 +18,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <syslog.h>
+#include <unistd.h>
 
 #include "fips.h"
 #include "s390_crypto.h"
@@ -186,6 +187,7 @@ int drbg_instantiate(ica_drbg_t **sh,
 	(*sh)->ws = init_ws;
 	(*sh)->sec = sec;
 	(*sh)->pr = pr;
+	(*sh)->pid = getpid();
 
 	/* step 12 */
 _exit_:
@@ -256,6 +258,8 @@ int drbg_reseed(ica_drbg_t *sh,
 	/* steps 6 and 7 */
 	pthread_mutex_lock(&sh->lock);
 	status = sh->mech->reseed(sh->ws, add, add_len, entropy, entropy_len);
+	if(status == 0)
+		sh->pid = getpid();
 	pthread_mutex_unlock(&sh->lock);
 	if(0 > status)
 		set_error_state(sh->mech, status);
@@ -315,6 +319,14 @@ int drbg_generate(ica_drbg_t *sh,
 	/* step 7 */
 _reseed_req_:
 	pthread_mutex_lock(&sh->lock);
+	/*
+	 * Fork detection: the working state is copied by fork(), so parent
+	 * and child would otherwise generate identical output. If the state
+	 * was seeded by another process, force a reseed with fresh entropy.
+	 * Test handles live on the stack and have no pid set.
+	 */
+	if(!test_mode && sh->pid != getpid())
+		reseed_required = true;
 	if(pr || reseed_required){
 		/* steps 7.1 and 7.3 */
 		status = drbg_reseed(sh, pr, add, add_len, test_mode,

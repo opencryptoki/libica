@@ -19,6 +19,7 @@
 #define S390_DRBG_H
 
 #include <pthread.h>
+#include <sys/types.h>
 
 #define DRBG_ADD_ENTROPY_LEN	18	/* bytes of entropy input used in
 					   addition to the required minimum */
@@ -118,6 +119,9 @@ struct ica_drbg{
 				/* administrative information: */
 	int sec;		/* security strength */
 	bool pr;		/* prediction resistance flag */
+	pid_t pid;		/* process that (re)seeded the working state;
+				   a mismatch means we were forked and the
+				   state must be reseeded before use */
 };
 
 /*

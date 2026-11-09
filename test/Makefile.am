@@ -6,6 +6,7 @@ get_functionlist_cex_test \
 get_version_test \
 rng_test \
 drbg_test \
+drbg_fork_test \
 drbg_birthdays_test.pl \
 des_ecb_test \
 des_cbc_test \
@@ -76,7 +77,7 @@ get_functionlist_cex_test_SOURCES = get_functionlist_cex_test.c
 get_functionlist_cex_test_LDADD = @LIBS@ ${top_builddir}/src/.libs/libica-cex.so -lcrypto -lpthread
 
 check_PROGRAMS = fips_test icastats_test get_functionlist_test \
-get_version_test rng_test drbg_test drbg_birthdays_test \
+get_version_test rng_test drbg_test drbg_fork_test drbg_birthdays_test \
 des_ecb_test des_cbc_test des_ctr_test des_cfb_test des_ofb_test \
 tdes_ecb_test tdes_cbc_test tdes_ctr_test tdes_cfb_test \
 tdes_ofb_test aes_ecb_test \
