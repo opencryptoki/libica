@@ -582,6 +582,9 @@ unsigned int ica_close_adapter(ica_adapter_handle_t adapter_handle);
 /**
  * Generate a random number.
  *
+ * libica detects fork() and reseeds in the child. As with any library, the
+ * application must ensure no other thread is inside libica when it forks.
+ *
  * Required HW Support
  * KMC-PRNG
  *
@@ -3724,6 +3727,9 @@ static inline unsigned int aes_directed_fc(unsigned int key_length, int directio
  * of the corresponding mechanism are in error state making uninstantiation
  * their only permitted operation. Creation of new DRBG instantiations of
  * this mechanism are not permitted.
+ *
+ * libica detects fork() and reseeds in the child. As with any library, the
+ * application must ensure no other thread is inside libica when it forks.
  */
 ICA_EXPORT
 extern ica_drbg_mech_t *const ICA_DRBG_SHA512;

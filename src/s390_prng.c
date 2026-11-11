@@ -18,6 +18,7 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <semaphore.h>
+#include <syslog.h>
 #include <unistd.h>
 #include <sys/types.h>
 
@@ -56,6 +57,10 @@ unsigned int s390_prng_limit = 4096;
 unsigned long s390_byte_count;
 
 #ifndef ICA_FIPS
+/* zPRNG_PB was seeded from a real entropy source by process s390_prng_pid. */
+static int s390_prng_seeded;
+static pid_t s390_prng_pid;
+
 static const char *const PRNG_SEI_LIST[] = {"/dev/hwrng", "/dev/prandom",
     "/dev/urandom", NULL /* last list element */};
 
@@ -137,10 +142,11 @@ int s390_prng_init(void)
 		}
 	}
 
-	/*
-	 * If the original seeding failed, we should try to stir in some
-	 * entropy anyway (since we already put out a message).
-	 */
+	/* The state is still a public constant: s390_prng_hw() will fail. */
+	if (rc != 0 && rc != ENOTSUP && ica_drbg_global == NULL)
+		syslog(LOG_WARNING, "Libica: no entropy source available to "
+		       "seed the pseudo random number generator.");
+
 	s390_byte_count = 0;
 #endif /* ICA_FIPS */
 
@@ -188,6 +194,8 @@ static int s390_add_entropy(void)
 				    sizeof(seed));
 				if (rc >= 0) {
 					memcpy(zPRNG_PB.ch, seed, sizeof(seed));
+					s390_prng_seeded = 1;
+					s390_prng_pid = getpid();
 					rc = 0;
 				} else {
 					rc = EIO;
@@ -292,8 +300,12 @@ static int s390_prng_hw(unsigned char *random_bytes, unsigned int num_bytes)
 
 	sem_wait(&semaphore);
 
-	/* Add some additional entropy when the byte count is reached.*/
-	if (s390_byte_count > s390_prng_limit)
+	/* Reseed in child if process was forked. */
+	if (s390_prng_pid != getpid())
+		s390_prng_seeded = 0;
+
+	/* Reseed at the byte limit. Fail while unseeded: the state is public. */
+	if (!s390_prng_seeded || s390_byte_count > s390_prng_limit)
 		rc = s390_add_entropy();
 
 	if (!rc) {
@@ -326,7 +338,7 @@ static int s390_prng_hw(unsigned char *random_bytes, unsigned int num_bytes)
 			memcpy(random_bytes + num_bytes, last_dw, remainder);
 		}
 		if (rc < 0)
-			return EIO;
+			rc = EIO;
 		else
 			rc = 0;
 
