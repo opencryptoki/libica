@@ -124,32 +124,35 @@ static int test_sign_ex(ica_adapter_handle_t adapter_handle, const ICA_EC_KEY *e
 				unsigned int sig_len)
 {
 	unsigned char signature[MAX_ECDSA_SIG_SIZE];
-	int rc;
+	unsigned int orig_icapath = getenv_icapath();
+	int rc, toggle = 0, ret = 1;
 
 	if (ica_fips_status() & ICA_FIPS_MODE) {
 		/* ica_ecdsa_sign_ex with k != NULL not allowed in fips mode */
 		return 0;
 	}
 
-	if (can_toggle(nid))
-		toggle_env_icapath();
+	/* sign_ex with a given k-value is only supported via CPACF, so
+	 * always sign via hw and toggle only for the verify. */
+	if (orig_icapath == 2)
+		setenv("ICAPATH", "1", 1);
 
-	/* calculate ECDSA signature */
 	VV_(printf("  performing sign_ex with ICAPATH=%d \n", getenv_icapath()));
 	rc = ica_ecdsa_sign_ex(adapter_handle, eckey, hash, hash_len,
 					signature, MAX_ECDSA_SIG_SIZE, k);
 	if (rc != 0 && rc != EPERM) {
 		V_(printf("Signature could not be created, rc=%i.\n",rc));
-		return 1;
+		goto out;
 	}
 
 	/* Compare created signature with known signature */
 	if (memcmp(signature, known_signature, sig_len) != 0) {
 		V_(printf("Signature does not match with known signature\n"));
-		return 1;
+		goto out;
 	}
 
-	if (can_toggle(nid))
+	toggle = can_toggle(nid);
+	if (toggle)
 		toggle_env_icapath();
 
 	/* Verify ECDSA signature */
@@ -158,10 +161,18 @@ static int test_sign_ex(ica_adapter_handle_t adapter_handle, const ICA_EC_KEY *e
 			signature, sig_len);
 	if (rc) {
 		V_(printf("Signature could not be verified, rc=%i.\n",rc));
-		return 1;
+		goto out;
 	}
 
-	return 0;
+	ret = 0;
+out:
+	/* restore the original ICAPATH */
+	if (toggle)
+		toggle_env_icapath();
+	if (orig_icapath == 2)
+		setenv("ICAPATH", "2", 1);
+
+	return ret;
 }
 
 int main(int argc, char **argv)
