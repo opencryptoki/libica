@@ -18,6 +18,7 @@
 #include <errno.h>
 #include <stdint.h>
 #include <openssl/crypto.h>
+#include <openssl/rand.h>
 #include <openssl/rsa.h>
 #include <openssl/evp.h>
 
@@ -52,9 +53,9 @@ static unsigned int mod_sw(int arg_length, unsigned char *arg, int mod_length,
 			   unsigned char *mod, int *res_length, unsigned char *res, BN_CTX *ctx);
 static unsigned int add_sw(int aug_length, unsigned char *aug, int add_length,
 			   unsigned char *add, int *res_length, unsigned char *res, BN_CTX *ctx);
-static unsigned int mod_sub_sw(int min_length, unsigned char *minu, int sub_length,
-			       unsigned char *sub, int mod_length, unsigned char *mod,
-			       int *res_length, unsigned char *res, BN_CTX * ctx);
+static unsigned int mod_sub_sw(int length, unsigned char *minu,
+			       unsigned char *sub, unsigned char *mod,
+			       unsigned char *res);
 static unsigned int mul_sw(int fc_1_length, unsigned char *fc1, int fc_2_length,
 			   unsigned char *fc2, int *res_length, unsigned char *res, BN_CTX *ctx);
 #endif /* NO_SW_FALLBACKS */
@@ -454,6 +455,67 @@ err:
 }
 
 #ifndef NO_SW_FALLBACKS
+/*
+ * Number of extra bytes needed to hold a CRT exponent that is blinded with
+ * a BLIND_EXP_RAND_BYTES-byte multiple of (prime - 1).
+ */
+#define BLIND_EXP_RAND_BYTES	8
+#define BLIND_EXP_EXTRA		(BLIND_EXP_RAND_BYTES + 1)
+
+/**
+ * Exponent blinding for the CRT exponentiations. Computes
+ * res = d + k * (prime - 1) with a fresh random k. Since prime is a prime
+ * number, x^res = x^d (mod prime) for every x, but the exponent that is
+ * processed differs on each call, so timing and power measurements cannot
+ * be accumulated over several operations.
+ *
+ * @param d Exponent (dp or dq), d_length bytes
+ * @param prime The prime p or q, prime_length bytes
+ * @param res Output buffer of res_length bytes, big endian, zero padded.
+ *	      res_length must be at least max(d_length, prime_length) +
+ *	      BLIND_EXP_EXTRA.
+ *
+ * Returns 0 if successful, EIO otherwise.
+ */
+static unsigned int blind_exponent(const unsigned char *d, int d_length,
+				   const unsigned char *prime, int prime_length,
+				   unsigned char *res, int res_length, BN_CTX *ctx)
+{
+	unsigned char k[BLIND_EXP_RAND_BYTES];
+	BIGNUM *b_d, *b_p, *b_k;
+	unsigned int rc = EIO;
+
+	BN_CTX_start(ctx);
+
+	b_d = BN_CTX_get(ctx);
+	b_p = BN_CTX_get(ctx);
+	if ((b_k = BN_CTX_get(ctx)) == NULL)
+		goto cleanup;
+
+	if (RAND_bytes(k, sizeof(k)) != 1)
+		goto cleanup;
+
+	if (BN_bin2bn(d, d_length, b_d) == NULL ||
+	    BN_bin2bn(prime, prime_length, b_p) == NULL ||
+	    BN_bin2bn(k, sizeof(k), b_k) == NULL)
+		goto cleanup;
+
+	if (!BN_sub_word(b_p, 1) || !BN_mul(b_p, b_p, b_k, ctx) ||
+	    !BN_add(b_d, b_d, b_p))
+		goto cleanup;
+
+	if (BN_bn2binpad(b_d, res, res_length) < 0)
+		goto cleanup;
+
+	rc = 0;
+
+cleanup:
+	OPENSSL_cleanse(k, sizeof(k));
+	BN_CTX_end(ctx);
+
+	return rc;
+}
+
 /**
  * @deprecated Perform a modular muliplication operation in software.
  */
@@ -491,8 +553,6 @@ static unsigned int mod_mul_sw(int fc_1_length, unsigned char *fc1, int fc_2_len
 			      int *res_length, unsigned char *res, BN_CTX *ctx)
 {
 	int rc = 0;
-	int ln = 0;
-	int pad = 0;
 	BIGNUM *b_fc1 = NULL;
 	BIGNUM *b_fc2 = NULL;
 	BIGNUM *b_mod = NULL;
@@ -517,22 +577,22 @@ static unsigned int mod_mul_sw(int fc_1_length, unsigned char *fc1, int fc_2_len
 	b_fc2 = BN_bin2bn((const unsigned char *)fc2, fc_2_length, b_fc2);
 	b_mod = BN_bin2bn((const unsigned char *)mod, mod_length, b_mod);
 
+	if (b_fc1 == NULL || b_fc2 == NULL || b_mod == NULL)
+		goto err;
+
+	/* The operands may be secret (CRT: qInv and the modulus p). */
+	BN_set_flags(b_fc1, BN_FLG_CONSTTIME);
+	BN_set_flags(b_fc2, BN_FLG_CONSTTIME);
+	BN_set_flags(b_mod, BN_FLG_CONSTTIME);
+
 	if (!(BN_mod_mul(b_res, b_fc1, b_fc2, b_mod, ctx))) {
 		goto err;
 	}
 
-	if ((ln = BN_num_bytes(b_res)) > *res_length) {
+	if (BN_bn2binpad(b_res, res, *res_length) < 0) {
 		rc = EIO;
 		goto cleanup;
 	}
-
-	if (ln)
-		pad = *res_length - ln;
-
-	ln = BN_bn2bin(b_res,(unsigned char *)(res + pad));
-
-	if (pad)
-		memset(res, 0, pad);
 
 	goto cleanup;
 
@@ -576,14 +636,14 @@ unsigned int rsa_mod_expo_sw(ica_rsa_modexpo_t *pMex)
 		return EACCES;
 #endif /* ICA_FIPS */
 
-	if ((ctx = BN_CTX_new()) == NULL) {
-		return EFAULT;
-	}
-
 	/* check if modulus value > data value */
 	if ((memcmp(pMex->n_modulus, pMex->inputdata,
 		    pMex->inputdatalength)) <= 0)
 		return EINVAL;
+
+	if ((ctx = BN_CTX_new()) == NULL) {
+		return EFAULT;
+	}
 
 	rc = mod_expo_sw(pMex->inputdatalength, pMex->inputdata,
 		       pMex->inputdatalength, pMex->b_key,
@@ -628,8 +688,6 @@ static unsigned int mod_expo_sw(int arg_length, unsigned char *arg, int exp_leng
 				int *res_length, unsigned char *res, BN_CTX *ctx)
 {
 	int rc = 0;
-	int ln = 0;
-	int pad = 0;
 	BIGNUM *b_arg = NULL;
 	BIGNUM *b_exp = NULL;
 	BIGNUM *b_mod = NULL;
@@ -676,18 +734,11 @@ static unsigned int mod_expo_sw(int arg_length, unsigned char *arg, int exp_leng
 		goto err;
 	}
 
-	if ((ln = BN_num_bytes(b_res)) > *res_length) {
+	/* The result may be secret: do not branch on or copy by its length. */
+	if (BN_bn2binpad(b_res, res, *res_length) < 0) {
 		rc = 1;
 		goto cleanup;
 	}
-
-    if (ln)
-		pad = *res_length - ln;
-
-	ln = BN_bn2bin(b_res, (unsigned char *)(res + pad));
-
-	if (pad)
-		memset(res, 0, pad);
 
 	goto cleanup;
 
@@ -749,6 +800,9 @@ unsigned int rsa_crt_sw(ica_rsa_modexpo_crt_t * pCrt)
 	int ir_2_length = sizeof(ir2);
 	unsigned char temp[long_length];
 	int temp_length = sizeof(temp);
+	/* Blinded exponents: dp or dq plus a 64-bit multiple of p-1 or q-1. */
+	unsigned char bexp1[long_length + BLIND_EXP_EXTRA];
+	unsigned char bexp2[long_length + BLIND_EXP_EXTRA];
 
 	if ((ctx = BN_CTX_new()) == NULL) {
 		return EFAULT;
@@ -759,9 +813,14 @@ unsigned int rsa_crt_sw(ica_rsa_modexpo_crt_t * pCrt)
 			 long_length, pCrt->np_prime, &ir_1_length, ir1, ctx)) != 0)
 		goto err;
 
+	if ((rc = blind_exponent(pCrt->bp_key, long_length,
+				 pCrt->np_prime, long_length,
+				 bexp1, sizeof(bexp1), ctx)) != 0)
+		goto err;
+
 	memset(temp, 0, sizeof(temp));
 	if ((rc = mod_expo_sw(ir_1_length, ir1,
-			      long_length, pCrt->bp_key,
+			      sizeof(bexp1), bexp1,
 			      long_length, pCrt->np_prime,
 			      &temp_length, temp, ctx)) != 0)
 		goto err;
@@ -776,10 +835,15 @@ unsigned int rsa_crt_sw(ica_rsa_modexpo_crt_t * pCrt)
 			 ir2, ctx)) != 0)
 		goto err;
 
+	if ((rc = blind_exponent(pCrt->bq_key, short_length,
+				 pCrt->nq_prime, short_length,
+				 bexp2, sizeof(bexp2), ctx)) != 0)
+		goto err;
+
 	temp_length = sizeof(temp);
 	memset(temp, 0, sizeof(temp));
 	if ((rc = mod_expo_sw(ir_2_length, ir2,
-			      short_length, pCrt->bq_key,
+			      sizeof(bexp2), bexp2,
 			      short_length, pCrt->nq_prime,
 			      &temp_length, temp, ctx)) != 0)
 		goto err;
@@ -788,40 +852,11 @@ unsigned int rsa_crt_sw(ica_rsa_modexpo_crt_t * pCrt)
 	memcpy(ir2, temp, temp_length);
 	ir_2_length = temp_length;
 
-	temp_length = sizeof(ir1);
-	if ((rc = mod_sub_sw(ir_1_length, ir1,
-			   ir_2_length, ir2,
-			   long_length, pCrt->np_prime,
-			   &temp_length, ir1, ctx)) != 0) {
-		if (rc != -1) {
-			goto err;
-		} else {
-			if ((unsigned int)ir_2_length
-			    > pCrt->outputdatalength) {
-				memcpy(pCrt->outputdata,
-				       ir2 + (ir_2_length -
-					      pCrt->outputdatalength),
-				       pCrt->outputdatalength);
-			} else {
-				if ((unsigned int)ir_2_length
-				    < pCrt->outputdatalength) {
-					memset(pCrt->outputdata, 0,
-					       (pCrt->outputdatalength -
-						ir_2_length));
-					memcpy(pCrt->outputdata +
-					       (pCrt->outputdatalength -
-						ir_2_length), ir2, ir_2_length);
-				} else {
-					memcpy(pCrt->outputdata, ir2,
-					       ir_2_length);
-				}
-			}
-			rc = 0;
-			goto cleanup;
-		}
-	}
+	/* ir1, ir2 and np_prime all have long_length bytes here. */
+	if ((rc = mod_sub_sw(long_length, ir1, ir2, pCrt->np_prime, ir1)) != 0)
+		goto err;
 
-	ir_1_length = temp_length;
+	ir_1_length = long_length;
 
 	temp_length = sizeof(temp);
 	memset(temp, 0, sizeof(temp));
@@ -847,6 +882,11 @@ unsigned int rsa_crt_sw(ica_rsa_modexpo_crt_t * pCrt)
 	rc = EIO;
 
       cleanup:
+	OPENSSL_cleanse(ir1, sizeof(ir1));
+	OPENSSL_cleanse(ir2, sizeof(ir2));
+	OPENSSL_cleanse(temp, sizeof(temp));
+	OPENSSL_cleanse(bexp1, sizeof(bexp1));
+	OPENSSL_cleanse(bexp2, sizeof(bexp2));
 	BN_CTX_free(ctx);
 
 	return rc;
@@ -872,8 +912,6 @@ static unsigned int mod_sw(int arg_length, unsigned char *arg, int mod_length,
 			   unsigned char *mod, int *res_length, unsigned char *res, BN_CTX *ctx)
 {
 	int rc = 0;
-	int ln = 0;
-	int pad = 0;
 	BIGNUM *b_arg = NULL;
 	BIGNUM *b_mod = NULL;
 	BIGNUM *b_res = NULL;
@@ -895,22 +933,24 @@ static unsigned int mod_sw(int arg_length, unsigned char *arg, int mod_length,
 	b_arg = BN_bin2bn((const unsigned char *)arg, arg_length, b_arg);
 	b_mod = BN_bin2bn((const unsigned char *)mod, mod_length, b_mod);
 
+	if (b_arg == NULL || b_mod == NULL)
+		goto err;
+
+	/*
+	 * The modulus is a secret prime. Ask OpenSSL to use its constant-time
+	 * division code, as OpenSSL does in its own CRT implementation.
+	 */
+	BN_set_flags(b_arg, BN_FLG_CONSTTIME);
+	BN_set_flags(b_mod, BN_FLG_CONSTTIME);
+
 	if (!(BN_mod(b_res, b_arg, b_mod, ctx))) {
 		goto err;
 	}
 
-	if ((ln = BN_num_bytes(b_res)) > *res_length) {
+	if (BN_bn2binpad(b_res, res, *res_length) < 0) {
 		rc = 1;
 		goto cleanup;
 	}
-
-	if (ln)
-		pad = *res_length - ln;
-
-	ln = BN_bn2bin(b_res, (unsigned char *)(res + pad));
-
-	if (pad)
-		memset(res, 0, pad);
 
 	goto cleanup;
 
@@ -923,114 +963,77 @@ static unsigned int mod_sw(int arg_length, unsigned char *arg, int mod_length,
 	return rc;
 }
 
-/**
- * Perform a multiprecision subtraction modulo a modulus using a minuend,
- * subtrahend and modulus
- *
- * @param min_length The byte length of the minuend
- * @param min Pointer to minuend
- * @param sub_length The byte length of the subtrahend
- * @param sub Pointer to the subtrahend
- * @param mod_length The byte length of the modulus
- * @param mod The modulus
- * @param res_length
- * On input it points to the byte length of the output buffer. On output it
- * points to the actual byte length of the output_data
- * @param res Pointer to the output buffer
- * @param ctx Pointer to a BN_CTX
- *
- * Returns 0 if successful, BN error code if unsuccessful
- * Process:
- * 1) If the subtrahend exceeds the minuend, use add_sw to
- * add the modulus to the minuend
- * 2) Call BN_CTX_get for the minuend, subtrahend & result BN's
- * 3) Convert the minuend and subtrahend BN's using BN_bin2bn
- * 4) Call BN_sub
- * 5) Convert the result from a BN to a string using BN_bn2bin
- * 6) Call BN_free for the minuend, subtrahend and result BN's
+/*
+ * Constant-time helpers for big-endian numbers of equal, public length. The
+ * operands are secret in the CRT code, so neither the control flow nor the
+ * memory accesses may depend on their values.
  */
-static unsigned int mod_sub_sw(int min_length, unsigned char *minu, int sub_length,
-			       unsigned char *sub, int mod_length, unsigned char *mod,
-			       int *res_length, unsigned char *res, BN_CTX * ctx)
-{
-	int rc = 0;
-	int ln = 0;
-	int pad = 0;
 
-	int min_size, sub_size, dif_size = 0;
+/*
+ * res = a - b (mod 2^(8*len)). Returns the borrow: 1 if a < b, otherwise 0.
+ * res may be the same buffer as a or b.
+ */
+static unsigned int ct_sub(unsigned char *res, const unsigned char *a,
+			   const unsigned char *b, size_t len)
+{
+	unsigned int borrow = 0, d;
+	size_t i;
+
+	for (i = len; i-- > 0;) {
+		d = (unsigned int)a[i] - b[i] - borrow;
+		res[i] = (unsigned char)d;
+		borrow = (d >> 8) & 1;
+	}
+
+	return borrow;
+}
+
+/*
+ * res += b (mod 2^(8*len)) if mask is 0xff, leaves res unchanged if mask is
+ * 0x00. res may be the same buffer as b.
+ */
+static void ct_cond_add(unsigned char *res, const unsigned char *b, size_t len,
+			unsigned char mask)
+{
+	unsigned int carry = 0, s;
+	size_t i;
+
+	for (i = len; i-- > 0;) {
+		s = (unsigned int)res[i] + (b[i] & mask) + carry;
+		res[i] = (unsigned char)s;
+		carry = s >> 8;
+	}
+}
+
+/**
+ * Perform (minu - sub) mod mod on big-endian numbers of the same byte length.
+ * minu and sub must be smaller than mod. The operands are secret in the CRT
+ * (m mod p and m mod q), so this is done without BIGNUM arithmetic: the
+ * modulus is added back, masked by the borrow of the subtraction.
+ *
+ * @param length The byte length of minu, sub, mod and res
+ * @param minu Pointer to the minuend
+ * @param sub Pointer to the subtrahend
+ * @param mod Pointer to the modulus
+ * @param res Pointer to the output buffer (may be the same as minu or sub)
+ *
+ * Returns 0 if successful.
+ */
+static unsigned int mod_sub_sw(int length, unsigned char *minu,
+			       unsigned char *sub, unsigned char *mod,
+			       unsigned char *res)
+{
+	unsigned int borrow;
 
 #ifdef ICA_FIPS
 	if ((fips & ICA_FIPS_MODE) && (!openssl_in_fips_mode()))
 		return EACCES;
 #endif /* ICA_FIPS */
 
-	BIGNUM *b_min = NULL;
-	BIGNUM *b_sub = NULL;
-	BIGNUM *b_mod = NULL;
-	BIGNUM *b_res = NULL;
+	borrow = ct_sub(res, minu, sub, length);
+	ct_cond_add(res, mod, length, (unsigned char)(0u - borrow));
 
-	BN_CTX_start(ctx);
-
-	b_min = BN_CTX_get(ctx);
-	b_sub = BN_CTX_get(ctx);
-	b_mod = BN_CTX_get(ctx);
-	if ((b_res = BN_CTX_get(ctx)) == NULL) {
-		rc = -ENOMEM;
-		goto cleanup;
-	}
-
-	b_min = BN_bin2bn((const unsigned char *)minu, min_length, b_min);
-	b_sub = BN_bin2bn((const unsigned char *)sub, sub_length, b_sub);
-	b_mod = BN_bin2bn((const unsigned char *)mod, mod_length, b_mod);
-
-	min_size = BN_num_bytes(b_min);
-	sub_size = BN_num_bytes(b_sub);
-
-	/* if sub == min, the result is zero, but it's an error */
-	if (sub_size == min_size) {
-		dif_size = memcmp(sub, minu, sub_length);
-		if (dif_size == 0) {
-			memset(res, 0, *res_length);
-			rc = -1;
-			goto cleanup;
-		}
-	}
-	/* if sub < min, the result is just min - sub */
-	if ((sub_size < min_size) || ((sub_size == min_size) && (dif_size < 0))) {
-		if (!(BN_sub(b_res, b_min, b_sub))) {
-			goto err;
-		}
-	} else {                /* sub > min, so the result is (min + mod) - sub */
-		if (!(BN_add(b_res, b_min, b_mod))) {
-			goto err;
-		}
-		if (!(BN_sub(b_res, b_res, b_sub))) {
-			goto err;
-		}
-	}
-
-	if ((ln = BN_num_bytes(b_res)) > *res_length) {
-		rc = 1;
-		goto cleanup;
-	}
-
-	if (ln)
-		pad = *res_length - ln;
-
-	ln = BN_bn2bin(b_res, (unsigned char *)(res + pad));
-
-	if (pad)
-		memset(res, 0, pad);
-
-	goto cleanup;
-
-      err:
-	rc = EIO;
-
-      cleanup:
-	BN_CTX_end(ctx);
-
-	return rc;
+	return 0;
 }
 
 /**
@@ -1057,8 +1060,6 @@ static unsigned int add_sw(int aug_length, unsigned char *aug, int add_length,
 			   unsigned char *add, int *res_length, unsigned char *res, BN_CTX *ctx)
 {
 	int rc = 0;
-	int ln = 0;
-	int pad = 0;
 	BIGNUM *b_aug = NULL;
 	BIGNUM *b_add = NULL;
 	BIGNUM *b_res = NULL;
@@ -1084,18 +1085,10 @@ static unsigned int add_sw(int aug_length, unsigned char *aug, int add_length,
 		goto err;
 	}
 
-	if ((ln = BN_num_bytes(b_res)) > *res_length) {
+	if (BN_bn2binpad(b_res, res, *res_length) < 0) {
 		rc = 1;
 		goto cleanup;
 	}
-
-	if (ln)
-		pad = *res_length - ln;
-
-	ln = BN_bn2bin(b_res, (unsigned char *)(res + pad));
-
-	if (pad)
-		memset(res, 0, pad);
 
 	goto cleanup;
 
@@ -1126,8 +1119,6 @@ static unsigned int mul_sw(int fc_1_length, unsigned char *fc1, int fc_2_length,
 			   unsigned char *fc2, int *res_length, unsigned char *res, BN_CTX *ctx)
 {
 	int rc = 0;
-	int ln = 0;
-	int pad = 0;
 	BIGNUM *b_fc1 = NULL;
 	BIGNUM *b_fc2 = NULL;
 	BIGNUM *b_res = NULL;
@@ -1153,18 +1144,11 @@ static unsigned int mul_sw(int fc_1_length, unsigned char *fc1, int fc_2_length,
 		goto err;
 	}
 
-	if ((ln = BN_num_bytes(b_res)) > *res_length) {
+	/* The padded conversion does not depend on the value's length. */
+	if (BN_bn2binpad(b_res, res, *res_length) < 0) {
 		rc = 1;
 		goto cleanup;
 	}
-
-	if (ln)
-		pad = *res_length - ln;
-
-	ln = BN_bn2bin(b_res, (unsigned char *)(res + pad));
-
-	if (pad)
-		memset(res, 0, pad);
 
 	goto cleanup;
 
