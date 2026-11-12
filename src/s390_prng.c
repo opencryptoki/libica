@@ -17,7 +17,9 @@
 #include <string.h>
 #include <errno.h>
 #include <fcntl.h>
+#include <pthread.h>
 #include <semaphore.h>
+#include <syslog.h>
 #include <unistd.h>
 #include <sys/types.h>
 
@@ -56,6 +58,10 @@ unsigned int s390_prng_limit = 4096;
 unsigned long s390_byte_count;
 
 #ifndef ICA_FIPS
+/* Set when zPRNG_PB was seeded from a real entropy source by s390_prng_pid. */
+static int s390_prng_seeded;
+static pid_t s390_prng_pid;
+
 static const char *const PRNG_SEI_LIST[] = {"/dev/hwrng", "/dev/prandom",
     "/dev/urandom", NULL /* last list element */};
 
@@ -99,6 +105,45 @@ static int s390_prng_fips(unsigned char *output_data, unsigned int output_length
 }
 #endif
 
+/*
+ * fork() handlers for the global DRBG lock and the legacy PRNG semaphore:
+ * hold them across fork() so the child cannot inherit them locked by another
+ * thread, and mark the child's copy of the legacy PRNG state as unseeded.
+ */
+static void s390_prng_atfork_prepare(void)
+{
+	if (ica_drbg_global)
+		pthread_mutex_lock(&ica_drbg_global->lock);
+#ifndef ICA_FIPS
+	sem_wait(&semaphore);
+#endif
+}
+
+static void s390_prng_atfork_parent(void)
+{
+#ifndef ICA_FIPS
+	sem_post(&semaphore);
+#endif
+	if (ica_drbg_global)
+		pthread_mutex_unlock(&ica_drbg_global->lock);
+}
+
+static void s390_prng_atfork_child(void)
+{
+#ifndef ICA_FIPS
+	/* The inherited state equals the parent's: reseed before use. */
+	s390_prng_seeded = 0;
+	sem_post(&semaphore);
+#endif
+	/*
+	 * Re-initialise instead of unlocking: the child has a new thread id,
+	 * so unlocking the inherited recursive mutex fails with EPERM and the
+	 * next lock would block forever.
+	 */
+	if (ica_drbg_global)
+		drbg_recursive_mutex_init(&ica_drbg_global->lock);
+}
+
 int s390_prng_init(void)
 {
 	int rc = -1;
@@ -120,6 +165,12 @@ int s390_prng_init(void)
 
 #ifndef ICA_FIPS	/* Old prng code disabled with FIPS built. */
 	sem_init(&semaphore, 0, 1);
+#endif /* ICA_FIPS */
+
+	pthread_atfork(s390_prng_atfork_prepare, s390_prng_atfork_parent,
+		       s390_prng_atfork_child);
+
+#ifndef ICA_FIPS
 
 	rc = ENODEV;
 	for(i = 0; PRNG_SEI_LIST[i] != NULL; i++){
@@ -137,10 +188,11 @@ int s390_prng_init(void)
 		}
 	}
 
-	/*
-	 * If the original seeding failed, we should try to stir in some
-	 * entropy anyway (since we already put out a message).
-	 */
+	/* The state is still a public constant: s390_prng_hw() will fail. */
+	if (rc != 0 && rc != ENOTSUP && ica_drbg_global == NULL)
+		syslog(LOG_WARNING, "Libica: no entropy source available to "
+		       "seed the pseudo random number generator.");
+
 	s390_byte_count = 0;
 #endif /* ICA_FIPS */
 
@@ -188,6 +240,8 @@ static int s390_add_entropy(void)
 				    sizeof(seed));
 				if (rc >= 0) {
 					memcpy(zPRNG_PB.ch, seed, sizeof(seed));
+					s390_prng_seeded = 1;
+					s390_prng_pid = getpid();
 					rc = 0;
 				} else {
 					rc = EIO;
@@ -292,8 +346,12 @@ static int s390_prng_hw(unsigned char *random_bytes, unsigned int num_bytes)
 
 	sem_wait(&semaphore);
 
-	/* Add some additional entropy when the byte count is reached.*/
-	if (s390_byte_count > s390_prng_limit)
+	/* Covers forks that bypass the atfork handlers (e.g. raw clone). */
+	if (s390_prng_pid != getpid())
+		s390_prng_seeded = 0;
+
+	/* Reseed at the byte limit. Fail while unseeded: the state is public. */
+	if (!s390_prng_seeded || s390_byte_count > s390_prng_limit)
 		rc = s390_add_entropy();
 
 	if (!rc) {
@@ -326,7 +384,7 @@ static int s390_prng_hw(unsigned char *random_bytes, unsigned int num_bytes)
 			memcpy(random_bytes + num_bytes, last_dw, remainder);
 		}
 		if (rc < 0)
-			return EIO;
+			rc = EIO;
 		else
 			rc = 0;
 
