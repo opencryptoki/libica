@@ -129,7 +129,18 @@ if test "x$enable_internal_tests" = xyes; then
 	AC_MSG_RESULT([*** Building internal tests at user request ***])
 fi
 
+dnl --- enable_sw_fallbacks
+AC_ARG_ENABLE(sw_fallbacks,
+              [  --enable-sw-fallbacks   enable software fallback implementations],
+              [],[enable_sw_fallbacks="no"])
+AM_CONDITIONAL(SW_FALLBACKS, test x$enable_sw_fallbacks = xyes)
 
+if test "x$enable_sw_fallbacks" != xyes; then
+	FLAGS="$FLAGS -DNO_SW_FALLBACKS"
+	AC_MSG_RESULT([*** Building libica without software fallbacks ***])
+else
+	AC_MSG_RESULT([*** Building libica with software fallbacks enabled ***])
+fi
 
 if test "x$enable_coverage" = xno && test "x$enable_debug" = xno && test "x$enable_sanitizer" = xno; then
 	FLAGS="$FLAGS -O3 -D_FORTIFY_SOURCE=2"
@@ -148,8 +159,9 @@ echo "FLAGS=$FLAGS $CFLAGS"
 echo "LIBS=$LIBS"
 
 echo "Enabled features:"
-echo "  FIPS build:      $enable_fips"
-echo "  Debug build:     $enable_debug"
-echo "  Sanitizer build: $enable_sanitizer"
-echo "  Coverage build:  $enable_coverage"
-echo "  Internal tests:  $enable_internal_tests"
+echo "  FIPS build:         $enable_fips"
+echo "  Debug build:        $enable_debug"
+echo "  Sanitizer build:    $enable_sanitizer"
+echo "  Coverage build:     $enable_coverage"
+echo "  Internal tests:     $enable_internal_tests"
+echo "  Software fallbacks: $enable_sw_fallbacks"

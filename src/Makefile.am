@@ -13,7 +13,7 @@ BUILD_VERSION := $(DEFAULT_BUILD_VERSION)
 
 lib_LTLIBRARIES = libica.la libica-cex.la
 
-CFLAGS_common = ${AM_CFLAGS} -DNO_SW_FALLBACKS -I${srcdir}/include -I${srcdir}/../include \
+CFLAGS_common = ${AM_CFLAGS} -I${srcdir}/include -I${srcdir}/../include \
 		   -DLIBICA_CONFDIR=\"${sysconfdir}\" \
 		   -DBUILD_VERSION="\"$(BUILD_VERSION)\"" \
 		   -fvisibility=hidden -pthread
@@ -74,7 +74,7 @@ endif
 
 bin_PROGRAMS = icainfo icastats icainfo-cex
 
-icainfo_CFLAGS_COMMON = ${AM_CFLAGS} -DNO_SW_FALLBACKS -I${srcdir}/include -I${srcdir}/../include \
+icainfo_CFLAGS_COMMON = ${AM_CFLAGS} -I${srcdir}/include -I${srcdir}/../include \
 					   -DDEFAULT_BUILD_VERSION="\"$(DEFAULT_BUILD_VERSION)\"" \
 					   -DBUILD_VERSION="\"$(BUILD_VERSION)\""
 icainfo_LDADD_COMMON = @LIBS@ -lcrypto

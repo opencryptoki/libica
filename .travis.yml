@@ -20,6 +20,11 @@ jobs:
           arch: s390x
           compiler: gcc
           env: CONFIG_OPTS="--enable-fips --enable-internal-tests --enable-sanitizer"
+        - name: "linux-s390x-gcc-sw-fallbacks"
+          os: linux
+          arch: s390x
+          compiler: gcc
+          env: CONFIG_OPTS="--enable-fips --enable-internal-tests --enable-sw-fallbacks"
 
 before_script:
     - ./bootstrap.sh 2> >(tee)
